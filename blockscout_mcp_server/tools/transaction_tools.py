@@ -1,6 +1,11 @@
 from typing import Annotated, Optional, Dict
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+from blockscout_mcp_server.tools.common import (
+    make_blockscout_request, 
+    get_blockscout_base_url, 
+    make_request_with_periodic_progress
+)
+from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
 
 
@@ -32,18 +37,43 @@ async def get_transactions_by_address(
     if methods:
         query_params["methods"] = methods
 
+    tool_overall_total_steps = 2.0
+
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch transactions for {address} on chain {chain_id}...")
+    await ctx.report_progress(
+        progress=0.0, 
+        total=tool_overall_total_steps, 
+        message=f"Starting to fetch transactions for {address} on chain {chain_id}..."
+    )
 
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transactions...")
+    await ctx.report_progress(
+        progress=1.0, 
+        total=tool_overall_total_steps, 
+        message="Resolved Blockscout instance URL. Now fetching transactions..."
+    )
     
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
+    # Use the periodic progress wrapper for the potentially long-running API call
+    response_data = await make_request_with_periodic_progress(
+        ctx=ctx,
+        request_function=make_blockscout_request,
+        request_args={
+            "base_url": base_url,
+            "api_path": api_path,
+            "params": query_params,
+        },
+        total_duration_hint=config.bs_timeout,  # Use configured timeout
+        progress_interval_seconds=config.progress_interval_seconds,  # Use configured interval
+        in_progress_message_template="Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s hint)",
+        tool_overall_total_steps=tool_overall_total_steps,
+        current_step_number=2.0,  # This is the 2nd step of the tool
+        current_step_message_prefix="Fetching transactions"
+    )
     
-    # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transactions.")
+    # The wrapper make_request_with_periodic_progress handles the final progress report for this step.
+    # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
     
     return response_data
 
@@ -77,18 +107,43 @@ async def get_token_transfers_by_address(
     if token:
         query_params["token_contract_address_hashes_to_include"] = token
 
+    tool_overall_total_steps = 2.0
+
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch token transfers for {address} on chain {chain_id}...")
+    await ctx.report_progress(
+        progress=0.0,
+        total=tool_overall_total_steps,
+        message=f"Starting to fetch token transfers for {address} on chain {chain_id}..."
+    )
 
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching token transfers...")
+    await ctx.report_progress(
+        progress=1.0,
+        total=tool_overall_total_steps,
+        message="Resolved Blockscout instance URL. Now fetching token transfers..."
+    )
     
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
+    # Use the periodic progress wrapper for the potentially long-running API call
+    response_data = await make_request_with_periodic_progress(
+        ctx=ctx,
+        request_function=make_blockscout_request,
+        request_args={
+            "base_url": base_url,
+            "api_path": api_path,
+            "params": query_params,
+        },
+        total_duration_hint=config.bs_timeout,  # Use configured timeout
+        progress_interval_seconds=config.progress_interval_seconds,  # Use configured interval
+        in_progress_message_template="Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s hint)",
+        tool_overall_total_steps=tool_overall_total_steps,
+        current_step_number=2.0,  # This is the 2nd step of the tool
+        current_step_message_prefix="Fetching token transfers"
+    )
     
-    # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched token transfers.")
+    # The wrapper make_request_with_periodic_progress handles the final progress report for this step.
+    # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
     
     return response_data
 

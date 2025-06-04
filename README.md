@@ -10,6 +10,7 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 - Multi-chain support via getting Blockscout instance URLs from Chainscout
 - Custom instructions for MCP host to use the server
 - Supports MCP progress notifications for multi-step tool operations, allowing clients to track execution status
+- Enhanced User Experience: Provides periodic progress updates for long-running API queries (e.g., fetching extensive transaction histories) when requested by the client, improving responsiveness
 
 ## Technical details
 

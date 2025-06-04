@@ -61,6 +61,7 @@ sequenceDiagram
    - MCP Server queries Chainscout for chain metadata including Blockscout instance URL
    - MCP Server reports progress after resolving the Blockscout URL
    - MCP Server forwards the request to the appropriate Blockscout instance
+   - For potentially long-running API calls (e.g., advanced transaction filters), MCP Server provides periodic progress updates every 15 seconds (configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`) showing elapsed time and estimated duration
    - MCP Server reports progress after fetching data from Blockscout
    - Response is processed and formatted before returning to the agent
 
@@ -86,3 +87,55 @@ sequenceDiagram
    - The tool's description forces the MCP Host to call it before any other tools in the session
    - These custom instructions are crucial for providing the LLM with blockchain-specific context
    - Instructions could include information about chain IDs, common error handling patterns, and examples of how to reason about blockchain data and DeFi protocols
+
+### Performance Optimizations and User Experience
+
+#### Periodic Progress Tracking for Long-Running API Calls
+
+The server implements sophisticated progress tracking for potentially long-running API operations, particularly for tools that query the Blockscout `/api/v2/advanced-filters` endpoint (such as `get_transactions_by_address` and `get_token_transfers_by_address`). This feature significantly improves user experience by providing real-time feedback during operations that may take 30 seconds or more.
+
+**Technical Implementation:**
+
+The progress tracking system uses a wrapper function (`make_request_with_periodic_progress`) that employs concurrent task execution to provide periodic updates without blocking the actual API call. The implementation leverages Python's `anyio` library for structured concurrency.
+
+```mermaid
+sequenceDiagram
+    participant Tool as Tool Function
+    participant Wrapper as make_request_with_periodic_progress
+    participant APITask as API Call Task
+    participant ProgressTask as Progress Reporting Task
+    participant Client as MCP Client
+    participant API as Blockscout API
+
+    Tool->>Wrapper: Call with request_function & params
+    Wrapper->>Wrapper: Create anyio.Event for coordination
+    
+    par Concurrent Execution
+        Wrapper->>APITask: Start API call task
+        APITask->>API: Make actual HTTP request
+        and
+        Wrapper->>ProgressTask: Start progress reporting task
+        loop Every N seconds (configurable)
+            ProgressTask->>ProgressTask: Calculate elapsed time
+            ProgressTask->>ProgressTask: Calculate progress percentage
+            ProgressTask->>Client: report_progress(elapsed/total, message)
+            ProgressTask->>ProgressTask: Sleep until next interval or completion
+        end
+    end
+    
+    API-->>APITask: Return response
+    APITask->>APITask: Set completion event
+    ProgressTask->>ProgressTask: Exit loop (event set)
+    APITask-->>Wrapper: Return API result
+    Wrapper->>Client: Final progress report (100%)
+    Wrapper-->>Tool: Return API response
+```
+
+**Key Implementation Details:**
+
+1. **Concurrent Task Management**: Uses `anyio.create_task_group()` to run the API call and progress reporting concurrently
+2. **Event-Driven Coordination**: An `anyio.Event` coordinates between tasks - the progress task continues until the API task signals completion
+3. **Dynamic Progress Calculation**: Progress within the current step is calculated as `min(elapsed_time / expected_duration, 1.0)` to ensure it never exceeds 100%
+4. **Multi-Step Integration**: The wrapper integrates seamlessly with the overall tool progress tracking by accepting `tool_overall_total_steps` and `current_step_number` parameters
+5. **Configurable Intervals**: Progress reporting frequency is configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS` (default: 15 seconds)
+6. **Error Handling**: Exceptions from the API call are properly propagated while ensuring progress task cleanup
