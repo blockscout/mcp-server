@@ -56,9 +56,12 @@ sequenceDiagram
    - MCP Host selects appropriate chain based on user needs
 
 4. **Blockchain Data Retrieval**:
-   - MCP Host requests blockchain data (e.g., `get_latest_block`) with specific chain_id
+   - MCP Host requests blockchain data (e.g., `get_latest_block`) with specific chain_id, optionally requesting progress updates
+   - MCP Server, if progress is requested, reports starting the operation
    - MCP Server queries Chainscout for chain metadata including Blockscout instance URL
+   - MCP Server reports progress after resolving the Blockscout URL
    - MCP Server forwards the request to the appropriate Blockscout instance
+   - MCP Server reports progress after fetching data from Blockscout
    - Response is processed and formatted before returning to the agent
 
 ### Key Architectural Decisions

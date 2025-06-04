@@ -1,10 +1,12 @@
 from typing import Annotated, Dict
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+from mcp.server.fastmcp import Context
 
 async def get_contract_abi(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    address: Annotated[str, Field(description="Smart contract address")]
+    address: Annotated[str, Field(description="Smart contract address")],
+    ctx: Context
 ) -> Dict:
     """
     Get smart contract ABI (Application Binary Interface).
@@ -12,8 +14,18 @@ async def get_contract_abi(
     """
     api_path = f"/api/v2/smart-contracts/{address}"
     
+    # Report start of operation
+    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch contract ABI for {address} on chain {chain_id}...")
+    
     base_url = await get_blockscout_base_url(chain_id)
+    
+    # Report progress after resolving Blockscout URL
+    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching contract ABI...")
+    
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    
+    # Report completion
+    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched contract ABI.")
     
     # Extract the ABI from the response as per responseTemplate: {"abi": "{{.abi}}"}
     return {"abi": response_data.get("abi")} 
