@@ -1,3 +1,6 @@
+import typer
+import uvicorn
+from typing_extensions import Annotated
 from mcp.server.fastmcp import FastMCP
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
@@ -32,10 +35,42 @@ mcp.tool()(get_transaction_logs)
 mcp.tool()(get_address_logs)
 mcp.tool()(get_chains_list)
 
+# Create a Typer application for our CLI
+cli_app = typer.Typer()
+
+@cli_app.command()
+def main_command(
+    http: Annotated[bool, typer.Option("--http", help="Run server in HTTP Streamable mode.")] = False,
+    http_host: Annotated[str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")] = "127.0.0.1",
+    http_port: Annotated[int, typer.Option("--http-port", help="Port for HTTP server if --http is used.")] = 8000,
+):
+    """
+    Blockscout MCP Server.
+    Runs in stdio mode by default. Use --http to enable HTTP Streamable mode.
+    """
+    if http:
+        print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
+
+        # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
+        # The FastMCP server has a 'settings' attribute that can be used for this.
+        mcp.settings.stateless_http = True  # Enable stateless mode
+        mcp.settings.json_response = True   # Enable JSON responses instead of SSE for tool calls
+
+        # Get the ASGI application from our FastMCP instance
+        # This app is what uvicorn will serve.
+        asgi_app = mcp.streamable_http_app()
+
+        # Run the ASGI app with uvicorn
+        uvicorn.run(asgi_app, host=http_host, port=http_port)
+    else:
+        print("Starting Blockscout MCP Server in stdio mode")
+        # This is the original behavior: run in stdio mode
+        mcp.run()
+
 def run_server_cli():
     """This function will be called by the script defined in pyproject.toml"""
-    mcp.run()
+    cli_app()
 
 if __name__ == "__main__":
     # This allows running the server directly with `python blockscout_mcp_server/server.py`
-    mcp.run() 
+    run_server_cli() 

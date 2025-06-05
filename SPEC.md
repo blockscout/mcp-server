@@ -6,6 +6,24 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 
 - The server is built using [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) and Httpx.
 
+### Operational Modes
+
+The Blockscout MCP Server supports two operational modes:
+
+1. **Stdio Mode (Default)**:
+   - Designed for integration with MCP hosts/clients (Claude Desktop, Cursor, MCP Inspector, etc.)
+   - Uses stdin/stdout communication following the MCP JSON-RPC 2.0 protocol
+   - Automatically spawned and managed by MCP clients
+   - Provides session-based interaction with progress tracking and context management
+
+2. **HTTP Streamable Mode**:
+   - Modern HTTP-based mode using the same MCP JSON-RPC 2.0 protocol over HTTP
+   - Stateless operation with JSON responses for improved scalability
+   - Convenient for testing with standard HTTP tools (curl, Postman, etc.) especially by AI agents and coding assistants
+   - Not yet universally supported by all MCP clients, but growing in adoption
+
+Both modes provide identical functionality and tool capabilities, differing only in the transport mechanism.
+
 ### Architecture and Data Flow
 
 ```mermaid

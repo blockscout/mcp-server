@@ -7,7 +7,7 @@ mcp-server/
 ├── blockscout_mcp_server/      # Main Python package for the server
 │   ├── __init__.py             # Makes the directory a Python package
 │   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
-│   ├── server.py               # Core server logic: FastMCP instance, tool registration
+│   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application
 │   └── tools/                  # Sub-package for tool implementations
@@ -24,6 +24,7 @@ mcp-server/
 ├── Dockerfile                  # For building the Docker image
 ├── README.md                   # Project overview, setup, and usage instructions
 ├── SPEC.md                     # Technical specification and architecture documentation
+├── TESTING.md                  # Testing instructions for HTTP mode with curl commands
 ├── pyproject.toml              # Project metadata and dependencies (PEP 517/518)
 └── .env.example                # Example environment variables
 ```
@@ -40,14 +41,20 @@ mcp-server/
         * Contains technical specifications and detailed architecture documentation.
         * Outlines the system design, components interaction, and data flow.
         * Describes key architectural decisions and their rationales.
+    * **`TESTING.md`**:
+        * Provides comprehensive instructions for testing the MCP server locally using HTTP mode.
+        * Contains curl command examples for testing all major tools and functionality.
+        * Serves as a practical guide for developers to understand and test the server's capabilities.
     * **`pyproject.toml`**:
         * Manages project metadata (name, version, authors, etc.).
         * Lists project dependencies, which will include:
-            * `mcp`: The Model Context Protocol SDK for Python.
+            * `mcp[cli]`: The Model Context Protocol SDK for Python with CLI support.
             * `httpx`: For making asynchronous HTTP requests to Blockscout APIs.
             * `pydantic`: For data validation and settings management (used by `mcp` and `config.py`).
             * `pydantic-settings`: For loading configuration from environment variables.
-            * `python-dotenv` (optional, for development): To load environment variables from a `.env` file.
+            * `anyio`: For async task management and progress reporting.
+            * `uvicorn`: For HTTP Streamable mode ASGI server.
+            * `typer`: For CLI argument parsing (included in `mcp[cli]`).
         * Configures the build system (e.g., Hatchling).
     * **`Dockerfile`**:
         * Defines the steps to create a Docker image for the MCP server.
@@ -55,7 +62,7 @@ mcp-server/
         * Copies the application code into the image.
         * Installs Python dependencies listed in `pyproject.toml`.
         * Sets up necessary environment variables (can be overridden at runtime).
-        * Defines the `CMD` or `ENTRYPOINT` to run the MCP server (e.g., `python -m blockscout_mcp_server`).
+        * Defines the `CMD` to run the MCP server in stdio mode by default (`python -m blockscout_mcp_server`).
     * **`.env.example`**:
         * Provides a template for users to create their own `.env` file for local development.
         * Lists all required environment variables, such as:
@@ -66,6 +73,7 @@ mcp-server/
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
             * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.
+            * `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`: Interval for periodic progress updates in long-running operations.
 
 2. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
@@ -74,13 +82,20 @@ mcp-server/
         * Imports the main execution function (e.g., `run_server()`) from `server.py` and calls it.
     * **`server.py`**:
         * The heart of the MCP server.
-        * Initializes a `FastMCP` instance (e.g., `mcp = FastMCP("blockscout-mainnet")`).
+        * Initializes a `FastMCP` instance using constants from `constants.py`.
         * Imports all tool functions from the modules in the `tools/` sub-package.
         * Registers each tool with the `FastMCP` instance using the `@mcp.tool()` decorator. This includes:
             * Tool name (if different from the function name).
             * Tool description (from the function's docstring or explicitly provided).
             * Argument type hints and descriptions (using `typing.Annotated` and `pydantic.Field` for descriptions), which `FastMCP` uses to generate the input schema.
-        * Defines a main function (e.g., `run_server()`) that starts the MCP server using `mcp.run()`, which will handle communication via stdin/stdout by default.
+        * Implements CLI argument parsing using `typer` with support for:
+            * `--http`: Enable HTTP Streamable mode
+            * `--http-host`: Host for HTTP server (default: 127.0.0.1)
+            * `--http-port`: Port for HTTP server (default: 8000)
+        * Defines `run_server_cli()` function that:
+            * Parses CLI arguments and determines the mode (stdio or HTTP)
+            * For stdio mode: calls `mcp.run()` for stdin/stdout communication
+            * For HTTP mode: configures stateless HTTP with JSON responses and runs uvicorn server
     * **`config.py`**:
         * Defines a Pydantic `BaseSettings` class to manage server configuration.
         * Loads configuration values (e.g., API keys, timeouts, cache settings) from environment variables.
@@ -107,10 +122,11 @@ mcp-server/
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.
-            * For Blockscout API tools, functions take `chain_id` as the first parameter followed by other arguments.
-            * For fixed endpoint tools (like BENS), functions take only the required operation-specific parameters.
+            * For Blockscout API tools, functions take `chain_id` as the first parameter followed by other arguments and a `ctx: Context` parameter for progress tracking.
+            * For fixed endpoint tools (like BENS), functions take only the required operation-specific parameters plus the `ctx: Context` parameter.
             * Argument descriptions are provided using `typing.Annotated[str, Field(description="...")]`.
             * The function's docstring serves as the tool's description for `FastMCP`.
+            * All tools support MCP progress notifications, reporting progress at key steps (chain resolution, API calls, etc.).
             * Inside each Blockscout API tool function:
                 1. It uses `get_blockscout_base_url(chain_id)` to dynamically resolve the appropriate Blockscout instance URL.
                 2. It calls `make_blockscout_request` with the resolved base URL, API path, and query parameters.

@@ -18,6 +18,10 @@ Refer to [SPEC.md](SPEC.md) for the technical details.
 
 Refer to [AGENTS.md](AGENTS.md) for the repository structure.
 
+## Testing
+
+Refer to [TESTING.md](TESTING.md) for instructions on how to test the server locally using HTTP mode and curl commands.
+
 ## Tool Descriptions
 
 1. `__get_instructions__()` - Provides custom instructions for the MCP host to use the server. This tool is required since the field `instructions` of the MCP server initialization response is not used by the MCP host so far (tested on Claude Desktop).
@@ -53,6 +57,34 @@ cd mcp-server
 uv pip install -e . # or `pip install -e .`
 ```
 
+### Running the Server
+
+The server runs in `stdio` mode by default:
+
+```bash
+python -m blockscout_mcp_server
+```
+
+**HTTP Streamable Mode:**
+
+To run the server in HTTP Streamable mode (stateless, JSON responses):
+
+```bash
+python -m blockscout_mcp_server --http
+```
+
+You can also specify the host and port for the HTTP server:
+
+```bash
+python -m blockscout_mcp_server --http --http-host 0.0.0.0 --http-port 8080
+```
+
+**CLI Options:**
+
+- `--http`: Enables HTTP Streamable mode.
+- `--http-host TEXT`: Host to bind the HTTP server to (default: `127.0.0.1`).
+- `--http-port INTEGER`: Port for the HTTP server (default: `8000`).
+
 ### Building Docker Image Locally
 
 Build the Docker image with the official tag:
@@ -68,6 +100,26 @@ Pull the pre-built image:
 ```bash
 docker pull ghcr.io/blockscout/mcp-server:latest
 ```
+
+### Running with Docker
+
+**HTTP Streamable Mode:**
+
+To run the Docker container in HTTP mode with port mapping:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
+```
+
+With custom port:
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0 --http-port 8080
+```
+
+**Note:** When running in HTTP mode with Docker, use `--http-host 0.0.0.0` to bind to all interfaces so the server is accessible from outside the container.
+
+**Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 
 ### Configuring Claude Desktop
 

@@ -7,6 +7,8 @@ alwaysApply: true
 
 2. The project structure is reflected in [AGENTS.md](mdc:AGENTS.md).
 
-3. You are working in VSCode devcontainer environment, so no any additional virtual environment management is required. 
+3. Local testing hints are in [TESTING.md](mdc:TESTING.md)
 
-4. If any new package needs to be installed it needs to be done with "sudo `which uv` pip install --system <package>" command. Don't forget to update [pyproject.toml](mdc:pyproject.toml) with the new package.
+4. You are working in VSCode devcontainer environment, so no any additional virtual environment management is required. 
+
+5. If any new package needs to be installed it needs to be done with 'sudo `which uv` pip install --system "<package>"' command. Don't forget to update [pyproject.toml](mdc:pyproject.toml) with the new package.
