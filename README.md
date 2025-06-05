@@ -1,5 +1,7 @@
 # Blockscout MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@blockscout/mcp-server)](https://smithery.ai/server/@blockscout/mcp-server)
+
 The Model Context Protocol (MCP) is an open protocol designed to allow AI agents, IDEs, and automation tools to consume, query, and analyze structured data through context-aware APIs.
 
 This server wraps Blockscout APIs and exposes blockchain data—balances, tokens, NFTs, contract metadata—via MCP so that AI agents and tools (like Claude, Cursor, or IDEs) can access and analyze it contextually.
@@ -44,6 +46,14 @@ Refer to [AGENTS.md](AGENTS.md) for the repository structure.
 > _Placeholder_: Practical examples of prompts for chats or IDEs to retrieve and analyze blockchain data via the MCP server will be added in this section.
 
 ## Installation & Usage
+
+### Installing via Smithery
+
+To install mcp-server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@blockscout/mcp-server):
+
+```bash
+npx -y @smithery/cli install @blockscout/mcp-server --client claude
+```
 
 ### Local Installation
 
