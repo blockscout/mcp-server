@@ -1,8 +1,10 @@
 import httpx
 import time
 import json
-from typing import Optional
+import anyio
+from typing import Optional, Callable, Awaitable, Any, Dict
 from blockscout_mcp_server.config import config
+from mcp.server.fastmcp import Context
 
 class ChainNotFoundError(ValueError):
     """Exception raised when a chain ID cannot be found or resolved to a Blockscout URL."""
@@ -149,4 +151,111 @@ async def make_chainscout_request(api_path: str, params: dict | None = None) -> 
         url = f"{config.chainscout_url}{api_path}"
         response = await client.get(url, params=params)
         response.raise_for_status()
-        return response.json() 
+        return response.json()
+
+async def make_request_with_periodic_progress(
+    ctx: Context,
+    request_function: Callable[..., Awaitable[Dict]],  # e.g., make_blockscout_request
+    request_args: Dict[str, Any],                      # Args for request_function
+    total_duration_hint: float,                        # e.g., config.bs_timeout
+    progress_interval_seconds: float = 15.0,
+    in_progress_message_template: str = "Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s)",
+    tool_overall_total_steps: float = 2.0,
+    current_step_number: float = 2.0,  # 1-indexed
+    current_step_message_prefix: str = "Fetching data"
+) -> Dict:
+    """
+    Execute a request function with periodic progress updates.
+    
+    This wrapper provides periodic progress reports while waiting for potentially long-running
+    API calls, helping clients understand that the server is still working.
+    
+    Args:
+        ctx: MCP Context for progress reporting
+        request_function: The async function to call (e.g., make_blockscout_request)
+        request_args: Dictionary of arguments to pass to request_function
+        total_duration_hint: Expected duration in seconds (for progress calculation)
+        progress_interval_seconds: How often to report progress (default 15s)
+        in_progress_message_template: Template for progress messages
+        tool_overall_total_steps: Total steps in the overall tool (for multi-step tools)
+        current_step_number: Which step this request represents (1-indexed)
+        current_step_message_prefix: Prefix for progress messages
+        
+    Returns:
+        The result from request_function
+        
+    Raises:
+        Any exception raised by request_function
+    """
+    start_time = time.monotonic()
+    api_call_done_event = anyio.Event()
+    api_result = None
+    api_exception = None
+    
+    async def _api_task():
+        """Execute the actual API call."""
+        nonlocal api_result, api_exception
+        try:
+            api_result = await request_function(**request_args)
+        except Exception as e:
+            api_exception = e
+        finally:
+            api_call_done_event.set()
+    
+    async def _progress_task():
+        """Periodically report progress while the API call is running."""
+        while not api_call_done_event.is_set():
+            elapsed_seconds = time.monotonic() - start_time
+            
+            # Calculate progress within this step (don't exceed 100% for this step)
+            progress_within_step = min(elapsed_seconds / total_duration_hint, 1.0)
+            
+            # Calculate overall progress across all tool steps
+            overall_progress = (current_step_number - 1) + progress_within_step
+            
+            # Round progress to 3 decimal places for cleaner display
+            overall_progress_rounded = round(overall_progress, 3)
+            
+            # Format the progress message
+            formatted_message = f"{current_step_message_prefix}: {in_progress_message_template.format(elapsed_seconds=elapsed_seconds, total_hint=total_duration_hint)}"
+            
+            # Report progress to client
+            await ctx.report_progress(
+                progress=overall_progress_rounded,
+                total=tool_overall_total_steps,
+                message=formatted_message
+            )
+            await ctx.info(f"Progress: {overall_progress_rounded}/{tool_overall_total_steps} {formatted_message}")
+            
+            # Wait for the next progress interval or until API call completes
+            with anyio.move_on_after(progress_interval_seconds):
+                await api_call_done_event.wait()
+    
+    # Start both tasks concurrently
+    async with anyio.create_task_group() as tg:
+        # Start the API call task
+        tg.start_soon(_api_task)
+        
+        # Start the progress reporting task
+        tg.start_soon(_progress_task)
+        
+        # Wait for the API call to complete
+        await api_call_done_event.wait()
+    
+    # Report final progress and handle results
+    if api_exception:
+        # Report failure
+        await ctx.report_progress(
+            progress=round(current_step_number, 3),  # Mark this step as complete (even if failed)
+            total=tool_overall_total_steps,
+            message=f"{current_step_message_prefix}: Failed. Error: {str(api_exception)}"
+        )
+        raise api_exception
+    else:
+        # Report success
+        await ctx.report_progress(
+            progress=round(current_step_number, 3),  # Mark this step as 100% complete
+            total=tool_overall_total_steps,
+            message=f"{current_step_message_prefix}: Completed."
+        )
+        return api_result 

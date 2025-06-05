@@ -1,10 +1,12 @@
 from typing import Annotated, Dict, Optional
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+from mcp.server.fastmcp import Context
 
 async def get_address_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    address: Annotated[str, Field(description="Address to get information about")]
+    address: Annotated[str, Field(description="Address to get information about")],
+    ctx: Context
 ) -> Dict:
     """
     Get comprehensive information about an address, including:
@@ -18,8 +20,18 @@ async def get_address_info(
     """
     api_path = f"/api/v2/addresses/{address}"
     
+    # Report start of operation
+    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch address info for {address} on chain {chain_id}...")
+    
     base_url = await get_blockscout_base_url(chain_id)
+    
+    # Report progress after resolving Blockscout URL
+    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching address data...")
+    
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    
+    # Report completion
+    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address data.")
     
     # Return the full response data as per responseTemplate: {{.}}
     return response_data 
@@ -30,7 +42,8 @@ async def get_tokens_by_address(
     fiat_value: Annotated[Optional[str], Field(description="Part of the combined next cursor to get the next page of results")] = None,
     id: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
     items_count: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    value: Annotated[Optional[str], Field(description="Part of the combined next cursor to get the next page of results")] = None
+    value: Annotated[Optional[str], Field(description="Part of the combined next cursor to get the next page of results")] = None,
+    ctx: Context = None
 ) -> str:
     """
     Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
@@ -51,8 +64,18 @@ async def get_tokens_by_address(
     if value is not None:
         params["value"] = value
     
+    # Report start of operation
+    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}...")
+    
     base_url = await get_blockscout_base_url(chain_id)
+    
+    # Report progress after resolving Blockscout URL
+    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching token data...")
+    
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    
+    # Report completion
+    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched token data.")
     
     # Process the response data and format it according to the responseTemplate
     items_data = response_data.get("items", [])
@@ -99,7 +122,8 @@ To get the next page call get_tokens_by_address({chain_id}, <same address>, "{fi
 
 async def nft_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    address: Annotated[str, Field(description="NFT owner address")]
+    address: Annotated[str, Field(description="NFT owner address")],
+    ctx: Context
 ) -> list[Dict]:
     """
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
@@ -109,8 +133,18 @@ async def nft_tokens_by_address(
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}
     
+    # Report start of operation
+    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}...")
+    
     base_url = await get_blockscout_base_url(chain_id)
+    
+    # Report progress after resolving Blockscout URL
+    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching NFT data...")
+    
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    
+    # Report completion
+    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched NFT data.")
     
     # Process the response data and format it according to the responseTemplate
     items_data = response_data.get("items", [])
@@ -163,7 +197,8 @@ async def get_address_logs(
     address: Annotated[str, Field(description="Account address")],
     block_number: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
     index: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    items_count: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None
+    items_count: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
+    ctx: Context = None
 ) -> str:
     """
     Get comprehensive logs emitted by a specific address with decoded event data.
@@ -182,8 +217,18 @@ async def get_address_logs(
     if items_count is not None:
         params["items_count"] = items_count
     
+    # Report start of operation
+    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch address logs for {address} on chain {chain_id}...")
+    
     base_url = await get_blockscout_base_url(chain_id)
+    
+    # Report progress after resolving Blockscout URL
+    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching address logs...")
+    
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    
+    # Report completion
+    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address logs.")
     
     import json
     logs_json_str = json.dumps(response_data, indent=2)  # Pretty print JSON
