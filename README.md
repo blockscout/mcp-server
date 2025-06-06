@@ -24,7 +24,7 @@ Refer to [AGENTS.md](AGENTS.md) for the repository structure.
 
 ## Testing
 
-Refer to [TESTING.md](TESTING.md) for instructions on how to test the server locally using HTTP mode and curl commands.
+Refer to [TESTING.md](TESTING.md) for comprehensive testing instructions including unit tests and end-to-end HTTP testing.
 
 ## Tool Descriptions
 

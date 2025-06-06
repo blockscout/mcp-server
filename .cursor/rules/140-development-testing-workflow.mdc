@@ -1,0 +1,62 @@
+---
+description: Development Testing Workflow applied when developing new features or modifying existing tools
+globs: 
+alwaysApply: false
+---
+# Development Testing Workflow
+
+When developing new features or modifying existing tools, follow this testing workflow:
+
+## 1. Run Unit Tests First
+
+Always run the unit test suite before and after making changes:
+
+```bash
+# Run all tests to ensure nothing is broken
+pytest
+
+# Run specific tests related to your changes
+pytest tests/tools/test_address_tools.py -v
+```
+
+## 2. Add Tests for New Features
+
+When adding new tools or modifying existing ones:
+
+1. Create or update the corresponding test file in `tests/tools/`
+2. Write tests covering success scenarios, error cases, and edge cases
+  - Progress tracking: Verify correct MCP progress reporting behavior for all tools
+  - Parameter validation: Test optional parameters, pagination, and parameter combinations
+  - Wrapper integration: Tools using periodic progress wrappers for long-running operations
+3. Ensure all external API calls are properly mocked
+  - Use `pytest-asyncio` for async tool functions and mock async API calls
+4. Verify progress tracking is tested if applicable
+
+## 3. Check Test Coverage
+
+Ensure your changes are well-tested:
+
+```bash
+pytest --cov=blockscout_mcp_server --cov-report=term-missing
+```
+
+## 4. End-to-End Validation
+
+After unit tests pass, validate the changes using HTTP mode testing:
+
+```bash
+# Start the server
+python -m blockscout_mcp_server --http
+
+# Test your specific changes using curl commands
+# (See examples in the End-to-End HTTP Testing section in [TESTING.md](mdc:TESTING.md))
+```
+
+## Continuous Integration Requirements
+
+The test suite is designed to run in CI environments with:
+
+- **No external dependencies**: All API calls are mocked
+- **File Size Limitation**: Test files must not exceed 500 LOC. If a file approaches this limit, split tests into multiple files (e.g., `test_some_tools_1.py`, `test_some_tools_2.py`) to maintain readability and focus on individual tools. This aligns with the naming pattern in `test_address_tools.py` and `test_address_tools_2.py`.
+- **Deterministic results**: Tests produce consistent results across environments
+- **Clear failure reporting**: Failed tests provide detailed error information

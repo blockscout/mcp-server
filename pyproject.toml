@@ -15,6 +15,13 @@ dependencies = [
 [project.scripts]
 blockscout-mcp-server = "blockscout_mcp_server.server:run_server_cli" # For CLI entry
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0"
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

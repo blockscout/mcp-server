@@ -5,3 +5,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/

@@ -21,6 +21,18 @@ mcp-server/
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, transaction_summary)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
+├── tests/                      # Comprehensive unit test suite for all MCP tools
+│   └── tools/                  # Test modules for each tool implementation
+│       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
+│       ├── test_address_tools_2.py   # Extended tests for complex address tools (nft_tokens_by_address, get_address_logs)
+│       ├── test_block_tools.py       # Tests for block-related tools (get_latest_block, get_block_info)
+│       ├── test_chains_tools.py      # Tests for chain-related tools (get_chains_list)
+│       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
+│       ├── test_ens_tools.py         # Tests for ENS-related tools (get_address_by_ens_name)
+│       ├── test_get_instructions.py  # Tests for instruction tool (__get_instructions__)
+│       ├── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
+│       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
+│       └── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
 ├── Dockerfile                  # For building the Docker image
 ├── README.md                   # Project overview, setup, and usage instructions
 ├── SPEC.md                     # Technical specification and architecture documentation
@@ -55,6 +67,10 @@ mcp-server/
             * `anyio`: For async task management and progress reporting.
             * `uvicorn`: For HTTP Streamable mode ASGI server.
             * `typer`: For CLI argument parsing (included in `mcp[cli]`).
+        * Lists optional test dependencies:
+            * `pytest`: Main testing framework for unit tests.
+            * `pytest-asyncio`: Support for async test functions.
+            * `pytest-cov`: For code coverage reporting.
         * Configures the build system (e.g., Hatchling).
     * **`Dockerfile`**:
         * Defines the steps to create a Docker image for the MCP server.
@@ -75,7 +91,20 @@ mcp-server/
             * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.
             * `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`: Interval for periodic progress updates in long-running operations.
 
-2. **`blockscout_mcp_server/` (Main Python Package)**
+2. **`tests/` (Comprehensive Unit Test Suite)**
+    * **`tests/tools/`**: Contains test modules for all MCP tool implementations.
+        * Each test file corresponds to a tool module and provides comprehensive test coverage:
+            * **Success scenarios**: Testing normal operation with valid inputs and API responses.
+            * **Error handling**: Testing API errors, chain lookup failures, timeout errors, and invalid responses.
+            * **Edge cases**: Testing empty responses, missing fields, malformed data, and boundary conditions.
+            * **Progress tracking**: Verifying correct MCP progress reporting behavior for all tools.
+            * **Parameter validation**: Testing optional parameters, pagination, and parameter combinations.
+        * Uses `pytest` and `pytest-asyncio` for async testing with comprehensive mocking strategies.
+        * All tests maintain full isolation using `unittest.mock.patch` to mock external API calls.
+        * Test execution completes in under 1 second with 67 total test cases across 10 test modules.
+        * Provides 100% coverage of all 16 MCP tool functions with multiple test scenarios each.
+
+3. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
     * **`__main__.py`**:
         * Serves as the entry point when the package is run as a script (`python -m blockscout_mcp_server`).

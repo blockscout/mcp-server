@@ -50,6 +50,12 @@ docs/
 .mypy_cache/
 .pytest_cache/
 
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
 # Devcontainer
 .devcontainer/
 
