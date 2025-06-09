@@ -1,6 +1,6 @@
 # tests/tools/test_get_instructions.py
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 
 from blockscout_mcp_server.tools.get_instructions import __get_instructions__
 
