@@ -12,24 +12,38 @@ The project includes a comprehensive unit test suite covering all 16 MCP tool fu
 - Test dependencies installed: `pip install -e ".[test]"`
   - This includes `pytest`, `pytest-asyncio`, and `pytest-cov` for coverage reporting
 
+### Mocking Strategy
+
+The unit tests are designed to run quickly and reliably in any environment, including CI/CD pipelines, without any network access. To achieve this, the test suite uses a technique called **mocking**.
+
+Instead of making real HTTP requests to external APIs (like Blockscout), the helper functions that make these calls are replaced with "mocks" using `unittest.mock`. These mocks are objects that can be controlled completely in tests. This approach provides several benefits:
+
+- **Tool Isolation:** The logic of each tool function is tested in isolation from external services.
+- **Scenario Simulation:** Mock APIs can be forced to return any response, including success data, empty lists, or error codes, allowing comprehensive testing of how tools handle every possibility.
+- **Speed and Reliability:** Tests run in milliseconds without being affected by network latency or API downtime.
+
 ### Running Unit Tests
 
 **Run all tests:**
+
 ```bash
 pytest
 ```
 
 **Run tests with verbose output:**
+
 ```bash
 pytest -v
 ```
 
 **Run tests for a specific module:**
+
 ```bash
 pytest tests/tools/test_address_tools.py -v
 ```
 
 **Run tests with coverage report:**
+
 ```bash
 pytest --cov=blockscout_mcp_server --cov-report=html
 ```
