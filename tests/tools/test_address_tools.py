@@ -71,8 +71,16 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
             params={"tokens": "ERC-20"}
         )
 
-        # Verify API response data is being processed (structural checks only)
-        # Remove brittle JSON content assertions - focus on data processing verification
+        # Check that the main content from mock API response is present (data flow verification)
+        assert '"name": "MyToken"' in result
+        assert '"symbol": "MTK"' in result
+        assert '"address": "0xabc123"' in result
+        assert '"balance": "1000"' in result
+
+        assert '"name": "AnotherToken"' in result
+        assert '"symbol": "ATK"' in result
+        assert '"address": "0xdef456"' in result
+        assert '"balance": "2500"' in result
 
         # Check that the pagination hint is correctly formatted and included
         expected_pagination = f'To get the next page call get_tokens_by_address({chain_id}, <same address>, "123.45", 5, 50, "1000")'
@@ -132,8 +140,11 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
             params={"tokens": "ERC-20"}
         )
 
-        # Verify API response data is being processed (structural checks only)
-        # Remove brittle JSON content assertions - focus on data processing verification
+        # Check that the main content from mock API response is present (data flow verification)
+        assert '"name": "SingleToken"' in result
+        assert '"symbol": "STK"' in result
+        assert '"address": "0x111222"' in result
+        assert '"balance": "100"' in result
         
         # Check that no pagination hint is included
         assert "To get the next page call" not in result
@@ -294,8 +305,12 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
             params={"tokens": "ERC-20"}
         )
 
-        # Verify API response data is being processed (structural checks only)
-        # Remove brittle JSON content assertions - focus on data processing verification
+        # Check that the content from mock API response is present (data flow verification)
+        # For this test, checking that the values from the mock response appear in output
+        assert '"symbol": "UNK"' in result
+        assert '"address": "0x999888"' in result  
+        assert '"balance": "123"' in result
+        assert '"balance": "456"' in result
         
         # Check JSON array structure
         assert result.startswith('[')

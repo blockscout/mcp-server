@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, Dict, Optional
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
@@ -230,7 +231,6 @@ async def get_address_logs(
     # Report completion
     await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address logs.")
     
-    import json
     logs_json_str = json.dumps(response_data, indent=2)  # Pretty print JSON
     
     prefix = """**Items Structure:**

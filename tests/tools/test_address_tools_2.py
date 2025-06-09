@@ -404,7 +404,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
     # Patch json.dumps in the address_tools module
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('json.dumps') as mock_json_dumps:
+         patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -524,7 +524,7 @@ async def test_get_address_logs_empty_logs(mock_ctx):
     # Patch json.dumps directly since it's imported locally in the function
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('json.dumps') as mock_json_dumps:
+         patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response

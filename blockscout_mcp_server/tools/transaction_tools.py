@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, Optional, Dict
 from pydantic import Field
 from blockscout_mcp_server.tools.common import (
@@ -232,7 +233,6 @@ async def get_transaction_logs(
     # Report completion
     await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
     
-    import json
     logs_json_str = json.dumps(response_data, indent=2)  # Pretty print JSON
     
     prefix = """**Items Structure:**
