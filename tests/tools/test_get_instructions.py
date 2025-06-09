@@ -5,14 +5,11 @@ from unittest.mock import patch, AsyncMock, MagicMock
 from blockscout_mcp_server.tools.get_instructions import __get_instructions__
 
 @pytest.mark.asyncio
-async def test_get_instructions_success():
+async def test_get_instructions_success(mock_ctx):
     """
     Verify __get_instructions__ returns the SERVER_INSTRUCTIONS constant.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-
     # Mock the SERVER_INSTRUCTIONS constant
     expected_instructions = """You are an AI assistant with access to Blockscout blockchain data. Use the available tools to:
 
@@ -34,14 +31,11 @@ Use descriptive responses and explain what the data means in context."""
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_instructions_no_progress_tracking():
+async def test_get_instructions_no_progress_tracking(mock_ctx):
     """
     Verify __get_instructions__ works correctly even without progress tracking.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-
     expected_instructions = "Test instructions content"
 
     with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
@@ -69,14 +63,11 @@ async def test_get_instructions_no_progress_tracking():
         assert "Server instructions ready" in end_call[1]['message']
 
 @pytest.mark.asyncio
-async def test_get_instructions_empty_instructions():
+async def test_get_instructions_empty_instructions(mock_ctx):
     """
     Verify __get_instructions__ handles empty SERVER_INSTRUCTIONS gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-    
     expected_instructions = ""
 
     with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
@@ -88,14 +79,11 @@ async def test_get_instructions_empty_instructions():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_instructions_multiline_instructions():
+async def test_get_instructions_multiline_instructions(mock_ctx):
     """
     Verify __get_instructions__ correctly handles multiline instructions.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-    
     expected_instructions = """Line 1 of instructions
 Line 2 of instructions
 Line 3 of instructions
@@ -115,14 +103,11 @@ With empty lines and formatting."""
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_instructions_special_characters():
+async def test_get_instructions_special_characters(mock_ctx):
     """
     Verify __get_instructions__ handles instructions with special characters.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-    
     expected_instructions = """Instructions with special chars: !@#$%^&*()
 Unicode: 📝 🔍 ⚡
 Quotes: "double" and 'single'

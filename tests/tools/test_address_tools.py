@@ -6,13 +6,11 @@ import httpx
 from blockscout_mcp_server.tools.address_tools import get_tokens_by_address, get_address_info
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_with_pagination():
+async def test_get_tokens_by_address_with_pagination(mock_ctx):
     """
     Verify get_tokens_by_address correctly formats response and includes pagination hint.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -96,13 +94,11 @@ async def test_get_tokens_by_address_with_pagination():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_without_pagination():
+async def test_get_tokens_by_address_without_pagination(mock_ctx):
     """
     Verify get_tokens_by_address works correctly when there are no next page parameters.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -160,13 +156,11 @@ async def test_get_tokens_by_address_without_pagination():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_with_pagination_params():
+async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
     """
     Verify get_tokens_by_address correctly passes pagination parameters to API.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     fiat_value = "999.99"
@@ -227,13 +221,11 @@ async def test_get_tokens_by_address_with_pagination_params():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_empty_response():
+async def test_get_tokens_by_address_empty_response(mock_ctx):
     """
     Verify get_tokens_by_address handles empty responses gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -267,13 +259,11 @@ async def test_get_tokens_by_address_empty_response():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_missing_token_fields():
+async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
     """
     Verify get_tokens_by_address handles missing or null token fields gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -331,13 +321,11 @@ async def test_get_tokens_by_address_missing_token_fields():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_api_error():
+async def test_get_tokens_by_address_api_error(mock_ctx):
     """
     Verify get_tokens_by_address correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -366,13 +354,11 @@ async def test_get_tokens_by_address_api_error():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_info_success():
+async def test_get_address_info_success(mock_ctx):
     """
     Verify get_address_info works correctly as a simpler tool for comparison.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"

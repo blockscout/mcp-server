@@ -7,13 +7,11 @@ import json
 from blockscout_mcp_server.tools.address_tools import nft_tokens_by_address, get_address_logs
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_success():
+async def test_nft_tokens_by_address_success(mock_ctx):
     """
     Verify nft_tokens_by_address correctly processes NFT token data with nested structure.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -88,13 +86,11 @@ async def test_nft_tokens_by_address_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_empty_response():
+async def test_nft_tokens_by_address_empty_response(mock_ctx):
     """
     Verify nft_tokens_by_address handles empty NFT collections.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -122,13 +118,11 @@ async def test_nft_tokens_by_address_empty_response():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_missing_fields():
+async def test_nft_tokens_by_address_missing_fields(mock_ctx):
     """
     Verify nft_tokens_by_address handles missing fields gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -211,13 +205,11 @@ async def test_nft_tokens_by_address_missing_fields():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_api_error():
+async def test_nft_tokens_by_address_api_error(mock_ctx):
     """
     Verify nft_tokens_by_address correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -242,13 +234,11 @@ async def test_nft_tokens_by_address_api_error():
         )
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_erc1155():
+async def test_nft_tokens_by_address_erc1155(mock_ctx):
     """
     Verify nft_tokens_by_address handles ERC-1155 tokens correctly.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -334,13 +324,11 @@ async def test_nft_tokens_by_address_erc1155():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_address_logs_success():
+async def test_get_address_logs_success(mock_ctx):
     """
     Verify get_address_logs correctly processes and formats address logs.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -387,13 +375,11 @@ async def test_get_address_logs_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_address_logs_with_pagination():
+async def test_get_address_logs_with_pagination(mock_ctx):
     """
     Verify get_address_logs includes pagination hint when next_page_params are present.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -445,13 +431,11 @@ async def test_get_address_logs_with_pagination():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_address_logs_with_optional_params():
+async def test_get_address_logs_with_optional_params(mock_ctx):
     """
     Verify get_address_logs correctly passes optional pagination parameters.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     block_number = 18999999
@@ -496,13 +480,11 @@ async def test_get_address_logs_with_optional_params():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_address_logs_api_error():
+async def test_get_address_logs_api_error(mock_ctx):
     """
     Verify get_address_logs correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -527,13 +509,11 @@ async def test_get_address_logs_api_error():
         )
 
 @pytest.mark.asyncio
-async def test_get_address_logs_empty_logs():
+async def test_get_address_logs_empty_logs(mock_ctx):
     """
     Verify get_address_logs handles addresses with no logs.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"

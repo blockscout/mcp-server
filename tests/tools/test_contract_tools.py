@@ -6,13 +6,11 @@ import httpx
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_success():
+async def test_get_contract_abi_success(mock_ctx):
     """
     Verify get_contract_abi correctly processes a successful ABI retrieval.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"
@@ -74,13 +72,11 @@ async def test_get_contract_abi_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_missing_abi_field():
+async def test_get_contract_abi_missing_abi_field(mock_ctx):
     """
     Verify get_contract_abi handles response without abi field.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"
@@ -107,13 +103,11 @@ async def test_get_contract_abi_missing_abi_field():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_empty_abi():
+async def test_get_contract_abi_empty_abi(mock_ctx):
     """
     Verify get_contract_abi handles empty abi array.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"
@@ -140,13 +134,11 @@ async def test_get_contract_abi_empty_abi():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_api_error():
+async def test_get_contract_abi_api_error(mock_ctx):
     """
     Verify get_contract_abi correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"
@@ -170,13 +162,11 @@ async def test_get_contract_abi_api_error():
         )
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_chain_not_found():
+async def test_get_contract_abi_chain_not_found(mock_ctx):
     """
     Verify get_contract_abi correctly handles chain not found errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "999999"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
 
@@ -193,13 +183,11 @@ async def test_get_contract_abi_chain_not_found():
         mock_get_url.assert_called_once_with(chain_id)
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_invalid_address_format():
+async def test_get_contract_abi_invalid_address_format(mock_ctx):
     """
     Verify get_contract_abi works with various address formats.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "invalid-address"  # Invalid format, but should still be passed through
     mock_base_url = "https://eth.blockscout.com"
@@ -224,13 +212,11 @@ async def test_get_contract_abi_invalid_address_format():
         )
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_complex_abi():
+async def test_get_contract_abi_complex_abi(mock_ctx):
     """
     Verify get_contract_abi handles complex ABI with multiple function types.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"

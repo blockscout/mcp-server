@@ -10,14 +10,12 @@ from blockscout_mcp_server.tools.transaction_tools import (
 )
 
 @pytest.mark.asyncio
-async def test_get_transactions_by_address_calls_wrapper_correctly():
+async def test_get_transactions_by_address_calls_wrapper_correctly(mock_ctx):
     """
     Verify get_transactions_by_address calls the periodic progress wrapper with correct arguments.
     This tests the integration without testing the wrapper's internal logic.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     age_from = "2023-01-01T00:00:00.00Z"
@@ -86,13 +84,11 @@ async def test_get_transactions_by_address_calls_wrapper_correctly():
         assert mock_ctx.report_progress.call_count == 2  # Start + after URL resolution
 
 @pytest.mark.asyncio
-async def test_get_transactions_by_address_minimal_params():
+async def test_get_transactions_by_address_minimal_params(mock_ctx):
     """
     Verify get_transactions_by_address works with minimal parameters (only required ones).
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -126,13 +122,11 @@ async def test_get_transactions_by_address_minimal_params():
         assert call_kwargs['request_args']['params'] == expected_params
 
 @pytest.mark.asyncio
-async def test_get_token_transfers_by_address_calls_wrapper_correctly():
+async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
     """
     Verify get_token_transfers_by_address calls the periodic progress wrapper with correct arguments.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     age_from = "2023-01-01T00:00:00.00Z"
@@ -193,13 +187,11 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_token_transfers_by_address_chain_error():
+async def test_get_token_transfers_by_address_chain_error(mock_ctx):
     """
     Verify that chain lookup errors are properly propagated without calling the wrapper.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "999999"  # Invalid chain ID
     address = "0x123abc"
 
@@ -225,13 +217,11 @@ async def test_get_token_transfers_by_address_chain_error():
         assert mock_ctx.report_progress.call_count == 1
 
 @pytest.mark.asyncio
-async def test_get_transactions_by_address_wrapper_error():
+async def test_get_transactions_by_address_wrapper_error(mock_ctx):
     """
     Verify that errors from the periodic progress wrapper are properly propagated.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -259,14 +249,12 @@ async def test_get_transactions_by_address_wrapper_error():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_transaction_summary_without_wrapper():
+async def test_transaction_summary_without_wrapper(mock_ctx):
     """
     Test a transaction tool that doesn't use the periodic progress wrapper for comparison.
     This helps verify our testing approach for wrapper vs non-wrapper tools.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     tx_hash = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
@@ -299,13 +287,11 @@ async def test_transaction_summary_without_wrapper():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_transaction_summary_no_summary_available():
+async def test_transaction_summary_no_summary_available(mock_ctx):
     """
     Test transaction_summary when no summary is available in the response.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     tx_hash = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"

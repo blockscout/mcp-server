@@ -7,13 +7,11 @@ import json
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
 
 @pytest.mark.asyncio
-async def test_get_transaction_info_success():
+async def test_get_transaction_info_success(mock_ctx):
     """
     Verify get_transaction_info correctly processes a successful transaction lookup.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -53,13 +51,11 @@ async def test_get_transaction_info_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_transaction_info_not_found():
+async def test_get_transaction_info_not_found(mock_ctx):
     """
     Verify get_transaction_info correctly handles transaction not found errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0xnonexistent1234567890abcdef1234567890abcdef1234567890abcdef123456"
     mock_base_url = "https://eth.blockscout.com"
@@ -83,13 +79,11 @@ async def test_get_transaction_info_not_found():
         )
 
 @pytest.mark.asyncio
-async def test_get_transaction_info_chain_not_found():
+async def test_get_transaction_info_chain_not_found(mock_ctx):
     """
     Verify get_transaction_info correctly handles chain not found errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "999999"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
@@ -106,13 +100,11 @@ async def test_get_transaction_info_chain_not_found():
         mock_get_url.assert_called_once_with(chain_id)
 
 @pytest.mark.asyncio
-async def test_get_transaction_info_minimal_response():
+async def test_get_transaction_info_minimal_response(mock_ctx):
     """
     Verify get_transaction_info handles minimal transaction response.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -144,13 +136,11 @@ async def test_get_transaction_info_minimal_response():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_success():
+async def test_get_transaction_logs_success(mock_ctx):
     """
     Verify get_transaction_logs correctly processes and formats transaction logs.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -216,13 +206,11 @@ async def test_get_transaction_logs_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_empty_logs():
+async def test_get_transaction_logs_empty_logs(mock_ctx):
     """
     Verify get_transaction_logs handles transactions with no logs.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -257,13 +245,11 @@ async def test_get_transaction_logs_empty_logs():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_api_error():
+async def test_get_transaction_logs_api_error(mock_ctx):
     """
     Verify get_transaction_logs correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -287,13 +273,11 @@ async def test_get_transaction_logs_api_error():
         )
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_complex_logs():
+async def test_get_transaction_logs_complex_logs(mock_ctx):
     """
     Verify get_transaction_logs handles complex log structures correctly.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"

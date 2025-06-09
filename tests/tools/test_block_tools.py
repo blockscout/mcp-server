@@ -6,13 +6,11 @@ import httpx
 from blockscout_mcp_server.tools.block_tools import get_latest_block, get_block_info
 
 @pytest.mark.asyncio
-async def test_get_latest_block_success():
+async def test_get_latest_block_success(mock_ctx):
     """
     Verify get_latest_block works correctly on a successful API call.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     mock_base_url = "https://eth.blockscout.com"
 
@@ -43,13 +41,11 @@ async def test_get_latest_block_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_latest_block_api_error():
+async def test_get_latest_block_api_error(mock_ctx):
     """
     Verify the tool correctly propagates an exception when the API call fails.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     mock_base_url = "https://eth.blockscout.com"
 
@@ -73,13 +69,11 @@ async def test_get_latest_block_api_error():
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
 
 @pytest.mark.asyncio
-async def test_get_latest_block_empty_response():
+async def test_get_latest_block_empty_response(mock_ctx):
     """
     Verify get_latest_block handles empty API responses gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     mock_base_url = "https://eth.blockscout.com"
 
@@ -106,13 +100,11 @@ async def test_get_latest_block_empty_response():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_latest_block_chain_not_found_error():
+async def test_get_latest_block_chain_not_found_error(mock_ctx):
     """
     Verify the tool correctly propagates ChainNotFoundError when chain lookup fails.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "999999"  # Invalid chain ID
 
     # Import the custom exception
@@ -133,13 +125,11 @@ async def test_get_latest_block_chain_not_found_error():
         assert mock_ctx.report_progress.call_count == 1
 
 @pytest.mark.asyncio
-async def test_get_block_info_success():
+async def test_get_block_info_success(mock_ctx):
     """
     Verify get_block_info works correctly with parameters.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     number_or_hash = "19000000"
     mock_base_url = "https://eth.blockscout.com"
@@ -169,13 +159,11 @@ async def test_get_block_info_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_block_info_with_hash():
+async def test_get_block_info_with_hash(mock_ctx):
     """
     Verify get_block_info works correctly when given a block hash instead of number.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     block_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
@@ -202,13 +190,11 @@ async def test_get_block_info_with_hash():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_get_block_info_api_error():
+async def test_get_block_info_api_error(mock_ctx):
     """
     Verify get_block_info correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     number_or_hash = "999999999"  # Probably non-existent block
     mock_base_url = "https://eth.blockscout.com"

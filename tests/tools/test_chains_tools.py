@@ -5,16 +5,11 @@ from unittest.mock import patch, AsyncMock, MagicMock
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 
 @pytest.mark.asyncio
-async def test_get_chains_list_success():
+async def test_get_chains_list_success(mock_ctx):
     """
     Verify that get_chains_list correctly processes a successful API response.
     """
     # 1. ARRANGE: Set up our mocks and test data.
-
-    # Create a mock for the MCP Context object.
-    # We need it to have an async `report_progress` method.
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
 
     # This is the fake JSON data we want our mocked API call to return.
     mock_api_response = [
@@ -50,13 +45,11 @@ async def test_get_chains_list_success():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_chains_list_empty_response():
+async def test_get_chains_list_empty_response(mock_ctx):
     """
     Verify that get_chains_list handles empty API responses gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     
     # Empty response
     mock_api_response = []
@@ -77,13 +70,11 @@ async def test_get_chains_list_empty_response():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_chains_list_invalid_response_format():
+async def test_get_chains_list_invalid_response_format(mock_ctx):
     """
     Verify that get_chains_list handles invalid response formats gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     
     # Invalid response (not a list)
     mock_api_response = {"error": "Invalid data"}
@@ -104,13 +95,11 @@ async def test_get_chains_list_invalid_response_format():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_chains_list_chains_with_missing_fields():
+async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
     """
     Verify that get_chains_list handles chains with missing name or chainid fields.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     
     # Mix of valid and invalid chain entries
     mock_api_response = [
@@ -140,14 +129,10 @@ async def test_get_chains_list_chains_with_missing_fields():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_chains_list_api_error():
+async def test_get_chains_list_api_error(mock_ctx):
     """
     Verify the tool correctly propagates an exception when the API call fails.
-    """
-    # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
-    
+    """    
     # We'll simulate a network error from the API
     import httpx
     api_error = httpx.HTTPStatusError("Service Unavailable", request=MagicMock(), response=MagicMock(status_code=503))

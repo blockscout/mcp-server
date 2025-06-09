@@ -6,13 +6,11 @@ import httpx
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_success():
+async def test_lookup_token_by_symbol_success(mock_ctx):
     """
     Verify lookup_token_by_symbol correctly processes a successful token search.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     symbol = "USDC"
     mock_base_url = "https://eth.blockscout.com"
@@ -83,13 +81,11 @@ async def test_lookup_token_by_symbol_success():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_empty_results():
+async def test_lookup_token_by_symbol_empty_results(mock_ctx):
     """
     Verify lookup_token_by_symbol handles empty search results.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     symbol = "NONEXISTENT"
     mock_base_url = "https://eth.blockscout.com"
@@ -117,13 +113,11 @@ async def test_lookup_token_by_symbol_empty_results():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_missing_fields():
+async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
     """
     Verify lookup_token_by_symbol handles tokens with missing fields gracefully.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     symbol = "PARTIAL"
     mock_base_url = "https://eth.blockscout.com"
@@ -191,13 +185,11 @@ async def test_lookup_token_by_symbol_missing_fields():
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_api_error():
+async def test_lookup_token_by_symbol_api_error(mock_ctx):
     """
     Verify lookup_token_by_symbol correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     symbol = "ERROR"
     mock_base_url = "https://eth.blockscout.com"
@@ -222,13 +214,11 @@ async def test_lookup_token_by_symbol_api_error():
         )
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_chain_not_found():
+async def test_lookup_token_by_symbol_chain_not_found(mock_ctx):
     """
     Verify lookup_token_by_symbol correctly handles chain not found errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "999999"
     symbol = "TEST"
 
@@ -245,13 +235,11 @@ async def test_lookup_token_by_symbol_chain_not_found():
         mock_get_url.assert_called_once_with(chain_id)
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_no_items_field():
+async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
     """
     Verify lookup_token_by_symbol handles response without items field.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     chain_id = "1"
     symbol = "TEST"
     mock_base_url = "https://eth.blockscout.com"

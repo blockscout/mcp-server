@@ -6,13 +6,11 @@ import httpx
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_success():
+async def test_get_address_by_ens_name_success(mock_ctx):
     """
     Verify get_address_by_ens_name correctly processes a successful ENS resolution.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "blockscout.eth"
 
     mock_api_response = {
@@ -36,13 +34,11 @@ async def test_get_address_by_ens_name_success():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_missing_resolved_address():
+async def test_get_address_by_ens_name_missing_resolved_address(mock_ctx):
     """
     Verify get_address_by_ens_name handles missing resolved_address field.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "nonexistent.eth"
 
     mock_api_response = {}  # No resolved_address field
@@ -60,13 +56,11 @@ async def test_get_address_by_ens_name_missing_resolved_address():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_missing_hash():
+async def test_get_address_by_ens_name_missing_hash(mock_ctx):
     """
     Verify get_address_by_ens_name handles missing hash field in resolved_address.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "incomplete.eth"
 
     mock_api_response = {
@@ -86,13 +80,11 @@ async def test_get_address_by_ens_name_missing_hash():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_api_error():
+async def test_get_address_by_ens_name_api_error(mock_ctx):
     """
     Verify get_address_by_ens_name correctly propagates API errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "error.eth"
 
     api_error = httpx.HTTPStatusError("Not Found", request=MagicMock(), response=MagicMock(status_code=404))
@@ -107,13 +99,11 @@ async def test_get_address_by_ens_name_api_error():
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_with_special_characters():
+async def test_get_address_by_ens_name_with_special_characters(mock_ctx):
     """
     Verify get_address_by_ens_name handles ENS names with special characters.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "test-domain_123.eth"
 
     mock_api_response = {
@@ -137,13 +127,11 @@ async def test_get_address_by_ens_name_with_special_characters():
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_timeout_error():
+async def test_get_address_by_ens_name_timeout_error(mock_ctx):
     """
     Verify get_address_by_ens_name correctly handles timeout errors.
     """
     # ARRANGE
-    mock_ctx = MagicMock()
-    mock_ctx.report_progress = AsyncMock()
     ens_name = "timeout.eth"
 
     timeout_error = httpx.TimeoutException("Request timed out")
