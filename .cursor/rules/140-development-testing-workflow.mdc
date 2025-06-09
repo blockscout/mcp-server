@@ -23,14 +23,71 @@ pytest tests/tools/test_address_tools.py -v
 
 When adding new tools or modifying existing ones:
 
-1. Create or update the corresponding test file in `tests/tools/`
-2. Write tests covering success scenarios, error cases, and edge cases
-  - Progress tracking: Verify correct MCP progress reporting behavior for all tools
-  - Parameter validation: Test optional parameters, pagination, and parameter combinations
-  - Wrapper integration: Tools using periodic progress wrappers for long-running operations
-3. Ensure all external API calls are properly mocked
-  - Use `pytest-asyncio` for async tool functions and mock async API calls
-4. Verify progress tracking is tested if applicable
+1.  Create or update the corresponding test file in `tests/tools/`.
+2.  Write tests covering success scenarios, error cases, and edge cases.
+3.  Ensure all external API calls are properly mocked using `unittest.mock.patch` and `AsyncMock`.
+4.  Follow the specific implementation patterns outlined below.
+
+### Key Testing Patterns & Guidelines
+
+#### A. Use the `mock_ctx` Fixture
+
+A reusable `pytest` fixture named `mock_ctx` is defined in `tests/conftest.py`. This fixture provides a pre-configured mock of the MCP `Context` object with an `AsyncMock` for `report_progress`.
+
+**DO NOT** create a manual `MagicMock` for the context within your test functions.
+
+**Correct Usage:**
+```python
+import pytest
+
+@pytest.mark.asyncio
+async def test_some_tool_success(mock_ctx):  # Request the fixture as an argument
+    # ARRANGE
+    # The mock_ctx object is ready to use.
+    
+    # ACT
+    result = await some_tool(..., ctx=mock_ctx)
+
+    # ASSERT
+    # You can now make assertions on the fixture
+    assert mock_ctx.report_progress.call_count > 0
+```
+
+#### B. Asserting on JSON within Formatted Strings
+
+For tools that return a formatted string containing a JSON object (e.g., `get_address_logs`, `get_transaction_logs`), **DO NOT** parse the JSON from the final string result in your test. This is brittle.
+
+Instead, **mock `json.dumps`** to verify that the correct Python dictionary was passed to it *before* it was serialized into a string.
+
+**Correct Usage:**
+```python
+# In a test for a tool like get_address_logs
+from unittest.mock import patch, AsyncMock
+
+@pytest.mark.asyncio
+async def test_get_address_logs_correctly_prepares_json(mock_ctx):
+    # ... (Arrange mocks for API calls)
+    mock_api_response = {"items": [...]}
+
+    # Patch json.dumps where it is used in the tool's module
+    with patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
+        mock_json_dumps.return_value = '{"fake_json": true}' # Return value doesn't matter
+
+        # ACT
+        result = await get_address_logs(..., ctx=mock_ctx)
+
+        # ASSERT
+        # Verify that json.dumps was called with the raw, unprocessed API response
+        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+
+        # You can still assert on other parts of the string result, like pagination hints
+        assert "To get the next page" in result
+```
+
+#### C. General Assertions
+-   **Progress Tracking:** Always verify the number of calls to `mock_ctx.report_progress` to ensure the user is kept informed.
+-   **API Calls:** Assert that the mocked API helper functions (`make_blockscout_request`, etc.) are called exactly once with the correct `api_path` and `params`.
+-   **Wrapper Integration:** For tools using `make_request_with_periodic_progress`, mock the wrapper itself and assert that it was called with the correct arguments (`request_function`, `request_args`, etc.).
 
 ## 3. Check Test Coverage
 
@@ -56,7 +113,7 @@ python -m blockscout_mcp_server --http
 
 The test suite is designed to run in CI environments with:
 
-- **No external dependencies**: All API calls are mocked
+- **No external dependencies**: All API calls are mocked.
 - **File Size Limitation**: Test files must not exceed 500 LOC. If a file approaches this limit, split tests into multiple files (e.g., `test_some_tools_1.py`, `test_some_tools_2.py`) to maintain readability and focus on individual tools. This aligns with the naming pattern in `test_address_tools.py` and `test_address_tools_2.py`.
-- **Deterministic results**: Tests produce consistent results across environments
-- **Clear failure reporting**: Failed tests provide detailed error information
+- **Deterministic results**: Tests produce consistent results across environments.
+- **Clear failure reporting**: Failed tests provide detailed error information.
