@@ -1,6 +1,11 @@
 # Testing the Blockscout MCP Server
 
-This document provides instructions for testing the Blockscout MCP server using both unit tests and end-to-end HTTP testing.
+This project employs a two-tiered testing strategy to ensure both code correctness and reliable integration with external services:
+
+1. **Unit Tests:** These are fast, offline tests that verify the internal logic of each tool. They use mocking to simulate API responses and ensure our code behaves as expected in isolation. They are meant to be run frequently during development.
+2. **Integration Tests:** These are slower, online tests that make real network calls to live Blockscout APIs. Their purpose is to verify that our integration with these external services is still valid and to catch any breaking changes in the APIs themselves.
+
+This document provides instructions for running both types of automated tests, as well as for performing manual end-to-end testing.
 
 ## Unit Testing
 
@@ -64,7 +69,27 @@ The unit tests are organized as follows:
 - **Complex Logic**: Tools with pagination, data transformation, and string formatting
 - **Wrapper Integration**: Tools using periodic progress wrappers for long-running operations
 
-## End-to-End HTTP Testing
+## Integration Testing
+
+The project also includes a suite of integration tests that verify live connectivity and API contracts with external services like Chainscout, BENS, and Blockscout instances.
+
+### How it Works
+
+- **Real Network Calls:** Unlike unit tests, these tests require an active internet connection.
+- **`@pytest.mark.integration`:** Each integration test is marked with a custom `pytest` marker, allowing them to be run separately from unit tests.
+- **Excluded by Default:** To keep the default test run fast and offline-friendly, integration tests are **excluded** by default (as configured in `pytest.ini`).
+
+### Running Integration Tests
+
+To run **only** the integration tests, use the `-m` flag to select the `integration` marker:
+
+```bash
+pytest -m integration
+```
+
+This command is useful for periodically checking the health of our external dependencies or before deploying a new version.
+
+## Manual HTTP Testing
 
 ### Prerequisites for HTTP Testing
 

@@ -46,6 +46,10 @@ wheels/
 *.md
 docs/
 
+# Testing
+tests/
+pytest.ini
+
 # Cache
 .mypy_cache/
 .pytest_cache/

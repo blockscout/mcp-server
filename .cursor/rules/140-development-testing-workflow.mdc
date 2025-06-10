@@ -135,7 +135,15 @@ Ensure your changes are well-tested:
 pytest --cov=blockscout_mcp_server --cov-report=term-missing
 ```
 
-## 4. End-to-End Validation
+## 4. Run Integration Tests (Optional but Recommended)
+
+Before final validation, run the integration test suite to ensure your changes have not broken our interaction with live APIs. This is especially important if you have modified any of the helper functions in `tools/common.py`.
+
+```bash
+pytest -m integration
+```
+
+## 5. End-to-End Validation
 
 After unit tests pass, validate the changes using HTTP mode testing:
 
@@ -155,3 +163,24 @@ The test suite is designed to run in CI environments with:
 - **File Size Limitation**: Test files must not exceed 500 LOC. If a file approaches this limit, split tests into multiple files (e.g., `test_some_tools_1.py`, `test_some_tools_2.py`) to maintain readability and focus on individual tools. This aligns with the naming pattern in `test_address_tools.py` and `test_address_tools_2.py`.
 - **Deterministic results**: Tests produce consistent results across environments.
 - **Clear failure reporting**: Failed tests provide detailed error information.
+
+---
+## Guidelines for Writing Integration Tests
+
+While the unit test guidelines focus on mocking, integration tests require a different approach focused on stability and precision.
+
+#### 1. Test the Boundary, Not the Tool Logic
+-   Integration tests should primarily target the helper functions in `tools/common.py` that make the actual network calls (`make_blockscout_request`, etc.).
+-   Avoid re-testing the complex formatting logic of a full tool. If the helper function returns the correct data from the live API, we can trust the unit-tested tool to format it correctly.
+
+#### 2. Use Stable and Non-Volatile Targets
+-   To ensure tests are reliable and deterministic, always test against stable data points that are unlikely to change.
+-   **Good examples:** A famous historical block (`19000000` on Ethereum), a well-known ENS name (`vitalik.eth`), or a genesis block.
+-   **Bad examples:** The *latest* block, a recent transaction, or a token with a fluctuating market cap.
+
+#### 3. Assert on Structure and Stable Values
+-   When checking a response from a live API, prioritize asserting the *structure* of the data (e.g., `assert "timestamp" in response_data`) and the *type* of the data (`assert isinstance(response_data["height"], int)`).
+-   Only assert on specific *values* when they are guaranteed to be stable, like the block number you requested or the known address for an ENS name.
+
+#### 4. Always Use the `integration` Marker
+-   Every integration test function **must** be decorated with `@pytest.mark.integration`. This is critical for separating the test suites and ensuring the default `pytest` run remains fast and offline.

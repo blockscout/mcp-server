@@ -24,7 +24,7 @@ Refer to [AGENTS.md](AGENTS.md) for the repository structure.
 
 ## Testing
 
-Refer to [TESTING.md](TESTING.md) for comprehensive testing instructions including unit tests and end-to-end HTTP testing.
+Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both **unit and integration tests**.
 
 ## Tool Descriptions
 

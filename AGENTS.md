@@ -21,8 +21,11 @@ mcp-server/
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, transaction_summary)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
-├── tests/                      # Comprehensive unit test suite for all MCP tools
-│   └── tools/                  # Test modules for each tool implementation
+├── tests/                      # Test suite for all MCP tools
+│   ├── integration/            # Integration tests that make real network calls
+│   │   ├── __init__.py         # Marks integration as a sub-package
+│   │   └── test_common_helpers.py # Integration tests for API helper functions
+│   └── tools/                  # Unit test modules for each tool implementation
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
 │       ├── test_address_tools_2.py   # Extended tests for complex address tools (nft_tokens_by_address, get_address_logs)
 │       ├── test_block_tools.py       # Tests for block-related tools (get_latest_block, get_block_info)
@@ -34,6 +37,7 @@ mcp-server/
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
 │       └── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
 ├── Dockerfile                  # For building the Docker image
+├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── README.md                   # Project overview, setup, and usage instructions
 ├── SPEC.md                     # Technical specification and architecture documentation
 ├── TESTING.md                  # Testing instructions for HTTP mode with curl commands
@@ -91,8 +95,9 @@ mcp-server/
             * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.
             * `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`: Interval for periodic progress updates in long-running operations.
 
-2. **`tests/` (Comprehensive Unit Test Suite)**
-    * **`tests/tools/`**: Contains test modules for all MCP tool implementations.
+2. **`tests/` (Test Suite)**
+    * This directory contains the complete test suite for the project, divided into two categories:
+    * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline.
         * Each test file corresponds to a tool module and provides comprehensive test coverage:
             * **Success scenarios**: Testing normal operation with valid inputs and API responses.
             * **Error handling**: Testing API errors, chain lookup failures, timeout errors, and invalid responses.
@@ -103,6 +108,7 @@ mcp-server/
         * All tests maintain full isolation using `unittest.mock.patch` to mock external API calls.
         * Test execution completes in under 1 second with 67 total test cases across 10 test modules.
         * Provides 100% coverage of all 16 MCP tool functions with multiple test scenarios each.
+    * **`tests/integration/`**: Contains the **integration test** suite. These tests make real network calls to live APIs to verify connectivity and API contracts. They are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
 3. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
