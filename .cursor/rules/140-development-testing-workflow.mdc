@@ -84,7 +84,45 @@ async def test_get_address_logs_correctly_prepares_json(mock_ctx):
         assert "To get the next page" in result
 ```
 
-#### C. General Assertions
+#### C. Handling Repetitive Data in Assertions (DAMP vs. DRY)
+
+When testing tools that transform a list of items (e.g., `lookup_token_by_symbol`), explicitly writing out the entire `expected_result` can lead to large, repetitive, and hard-to-maintain test code.
+
+In these cases, it is better to **programmatically generate the `expected_result`** from the `mock_api_response`. This keeps the test maintainable while still explicitly documenting the transformation logic itself.
+
+**Correct Usage:**
+```python
+import copy
+
+@pytest.mark.asyncio
+async def test_lookup_token_by_symbol_success(mock_ctx):
+    # ARRANGE
+    mock_api_response = {
+        "items": [
+            {"address_hash": "0xabc...", "name": "Token A"},
+            {"address_hash": "0xdef...", "name": "Token B"}
+        ]
+    }
+
+    # Generate the expected result programmatically
+    expected_result = []
+    for item in mock_api_response["items"]:
+        new_item = copy.deepcopy(item)
+        
+        # Explicitly document the transformation logic
+        new_item["address"] = new_item.pop("address_hash")
+        new_item["token_type"] = "" # Add default fields
+        
+        expected_result.append(new_item)
+
+    # ... (patching and ACT phase)
+
+    # ASSERT
+    # The final assertion is clean and compares the entire transformed structure.
+    assert result == expected_result
+```
+
+#### D. General Assertions
 -   **Progress Tracking:** Always verify the number of calls to `mock_ctx.report_progress` to ensure the user is kept informed.
 -   **API Calls:** Assert that the mocked API helper functions (`make_blockscout_request`, etc.) are called exactly once with the correct `api_path` and `params`.
 -   **Wrapper Integration:** For tools using `make_request_with_periodic_progress`, mock the wrapper itself and assert that it was called with the correct arguments (`request_function`, `request_args`, etc.).

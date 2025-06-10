@@ -1,5 +1,6 @@
 # tests/tools/test_search_tools.py
 import pytest
+import copy
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 
@@ -36,30 +37,25 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         ]
     }
 
-    expected_result = [
-        {
-            "address": "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0",
-            "name": "USD Coin",
-            "symbol": "USDC",
-            "token_type": "",
-            "total_supply": "1000000000",
-            "circulating_market_cap": "500000000",
-            "exchange_rate": "1.0",
-            "is_smart_contract_verified": False,
-            "is_verified_via_admin_panel": False
-        },
-        {
-            "address": "0xb0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b1",
-            "name": "USD Coin (Alternative)",
-            "symbol": "USDC",
-            "token_type": "",
-            "total_supply": "2000000000",
-            "circulating_market_cap": "600000000",
-            "exchange_rate": "0.99",
-            "is_smart_contract_verified": False,
-            "is_verified_via_admin_panel": False
-        }
-    ]
+    # **It's Still DAMP (Descriptive and Meaningful Phrases):** The logic for
+    # generating the expected result is simple, contained within the test, and
+    # explicitly documents the transformations
+    # **It's More DRY (Don't Repeat Yourself):** No need to manually copy all
+    # the values
+    expected_result = []
+    for item in mock_api_response["items"]:
+        # Start with a copy of the original item to handle pass-through data
+        new_item = copy.deepcopy(item)
+        
+        # 1. Perform the key transformation explicitly
+        new_item["address"] = new_item.pop("address_hash")
+        
+        # 2. Add the new default fields explicitly
+        new_item["token_type"] = ""
+        new_item["is_smart_contract_verified"] = False
+        new_item["is_verified_via_admin_panel"] = False
+        
+        expected_result.append(new_item)
 
     with patch('blockscout_mcp_server.tools.search_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.search_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
