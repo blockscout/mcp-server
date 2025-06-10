@@ -55,11 +55,3 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           pytest --cov=blockscout_mcp_server --cov-report=xml
-
-      # (Optional but Recommended) Step 6: Upload code coverage results to Codecov.
-      # This provides visual reports on code coverage in pull requests.
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }} # Needs to be configured in GitHub repository secrets
-          fail_ci_if_error: true
