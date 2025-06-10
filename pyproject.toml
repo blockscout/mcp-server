@@ -2,7 +2,7 @@
 name = "blockscout-mcp-server"
 version = "0.1.0"
 description = "MCP server for Blockscout"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "mcp[cli]>=1.9.2",  # Or the latest version of the SDK
     "httpx>=0.27.0",
