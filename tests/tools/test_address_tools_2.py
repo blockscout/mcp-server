@@ -3,7 +3,11 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 
-from blockscout_mcp_server.tools.address_tools import nft_tokens_by_address, get_address_logs
+from blockscout_mcp_server.tools.address_tools import (
+    nft_tokens_by_address,
+    get_address_logs,
+)
+from blockscout_mcp_server.tools.common import encode_cursor
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_success(mock_ctx):
@@ -426,7 +430,10 @@ async def test_get_address_logs_with_pagination(mock_ctx):
         )
         
         # Check pagination hint is included
-        expected_pagination = f'To get the next page call get_address_logs({chain_id}, <same address>, 18999999, 42, 50)'
+        next_cursor = encode_cursor(mock_api_response["next_page_params"])
+        expected_pagination = (
+            f'To get the next page call get_address_logs(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
+        )
         assert expected_pagination in result
         
         assert mock_ctx.report_progress.call_count == 3
@@ -453,12 +460,11 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
+        cursor = encode_cursor({"block_number": block_number, "index": index, "items_count": items_count})
         result = await get_address_logs(
             chain_id=chain_id,
             address=address,
-            block_number=block_number,
-            index=index,  # Fixed parameter name
-            items_count=items_count,
+            cursor=cursor,
             ctx=mock_ctx
         )
 
@@ -469,8 +475,8 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/logs",
             params={
                 "block_number": block_number,
-                "index": index,  # Fixed parameter name
-                "items_count": items_count
+                "index": index,
+                "items_count": items_count,
             }
         )
         
@@ -479,6 +485,17 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
         assert '"items": []' in result
         
         assert mock_ctx.report_progress.call_count == 3
+
+@pytest.mark.asyncio
+async def test_get_address_logs_invalid_cursor(mock_ctx):
+    """Verify the tool returns a user-friendly error for a bad cursor."""
+    chain_id = "1"
+    address = "0x123abc"
+    invalid_cursor = "bad-cursor"
+
+    result = await get_address_logs(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
+
+    assert "Error: Invalid or expired pagination cursor." in result
 
 @pytest.mark.asyncio
 async def test_get_address_logs_api_error(mock_ctx):
