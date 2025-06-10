@@ -2,14 +2,12 @@
 
 name: CI - Run Unit Tests
 
-# This workflow runs on every push to any branch, and on pull requests to the main branch.
+# This workflow runs on every push to any branch, and on any pull requests.
 on:
   push:
     branches:
       - '**'
   pull_request:
-    branches:
-      - main
 
 jobs:
   test:

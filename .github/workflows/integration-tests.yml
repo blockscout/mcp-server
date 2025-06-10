@@ -4,6 +4,10 @@ name: CI - Run Integration Tests
 
 # This workflow is triggered manually from the GitHub Actions UI.
 on:
+  push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
 
 jobs:

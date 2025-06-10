@@ -2,6 +2,9 @@ name: Build Blockscout MCP Server docker image
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
 
 env:
   DOCKER_REGISTRY: ghcr.io
