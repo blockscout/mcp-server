@@ -38,7 +38,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 4. `lookup_token_by_symbol(chain_id, symbol)` - Searches for token addresses by symbol or name, returning multiple potential matches.
 5. `get_contract_abi(chain_id, address)` - Retrieves the ABI (Application Binary Interface) for a smart contract.
 6. `get_address_info(chain_id, address)` - Gets comprehensive information about an address including balance, ENS association, contract status, and token details.
-7. `get_tokens_by_address(chain_id, address, ...)` - Returns detailed ERC20 token holdings for an address with enriched metadata and market data.
+7. `get_tokens_by_address(chain_id, address, cursor=None)` - Returns detailed ERC20 token holdings for an address with enriched metadata and market data.
 8. `get_latest_block(chain_id)` - Returns the latest indexed block number and timestamp.
 9. `get_transactions_by_address(chain_id, address, age_from, age_to, methods)` - Gets transactions for an address within a specific time range with optional method filtering.
 10. `get_token_transfers_by_address(chain_id, address, age_from, age_to, token)` - Returns ERC-20 token transfers for an address within a specific time range.
@@ -47,7 +47,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 13. `get_block_info(chain_id, number_or_hash)` - Returns block information including timestamp, gas used, burnt fees, and transaction count.
 14. `get_transaction_info(chain_id, hash)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
 15. `get_transaction_logs(chain_id, hash)` - Returns transaction logs with decoded event data.
-16. `get_address_logs(chain_id, address, ...)` - Gets logs emitted by a specific address with decoded event data.
+16. `get_address_logs(chain_id, address, cursor=None)` - Gets logs emitted by a specific address with decoded event data.
 
 ## Example Prompts for AI Agents (to be added)
 

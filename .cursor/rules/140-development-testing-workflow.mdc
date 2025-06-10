@@ -55,33 +55,79 @@ async def test_some_tool_success(mock_ctx):  # Request the fixture as an argumen
 
 #### B. Asserting on JSON within Formatted Strings
 
-For tools that return a formatted string containing a JSON object (e.g., `get_address_logs`, `get_transaction_logs`), **DO NOT** parse the JSON from the final string result in your test. This is brittle.
+For tools that return a formatted string containing a JSON object (e.g., `get_address_logs`), **DO NOT** parse the JSON from the final string result in your test. This is brittle. Instead, **mock the serialization function (`json.dumps`)** to verify that the correct Python dictionary was passed to it *before* it was serialized.
 
-Instead, **mock `json.dumps`** to verify that the correct Python dictionary was passed to it *before* it was serialized into a string.
+However, the approach depends on the complexity of the tool.
+
+##### The Simple Case: One Serialization Call
+
+If the tool under test is the only function calling `json.dumps`, the approach is straightforward.
 
 **Correct Usage:**
+```python
+# In a test for a tool like get_transaction_logs
+from unittest.mock import patch, AsyncMock
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_correctly_prepares_json(mock_ctx):
+    # ... (Arrange mocks for API calls)
+    mock_api_response = {"items": [...]} 
+
+    # Patch json.dumps where it is used in the tool's module
+    with patch('blockscout_mcp_server.tools.transaction_tools.json.dumps') as mock_json_dumps:
+        mock_json_dumps.return_value = '{"fake_json": true}'  # Return value doesn't matter
+
+        # ACT
+        result = await get_transaction_logs(..., ctx=mock_ctx)
+
+        # ASSERT
+        # Verify that json.dumps was called with the raw, unprocessed API response
+        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+```
+
+##### The Complex Case: Multiple Serialization Calls
+
+A more complex situation arises when the tool under test (e.g., `get_address_logs`) calls `json.dumps` for its main body, but it *also* calls a helper function (e.g., `encode_cursor`) which has its own internal call to `json.dumps`. A simple patch on `json.dumps` would incorrectly capture both calls, causing the test to fail.
+
+The solution is to **mock both the low-level primitive (`json.dumps`) and the higher-level helper (`encode_cursor`)**. This isolates the test's focus, allowing you to verify each responsibility of the tool independently.
+
+**Correct Usage (Advanced):**
 ```python
 # In a test for a tool like get_address_logs
 from unittest.mock import patch, AsyncMock
 
 @pytest.mark.asyncio
-async def test_get_address_logs_correctly_prepares_json(mock_ctx):
-    # ... (Arrange mocks for API calls)
-    mock_api_response = {"items": [...]}
+async def test_get_address_logs_with_pagination(mock_ctx):
+    # ARRANGE
+    mock_api_response = {
+        "items": [...],
+        "next_page_params": {"block_number": 123, ...}
+    }
+    fake_cursor = "ENCODED_CURSOR_FROM_TEST"
+    fake_json_body = '{"fake_json_body": true}'
 
-    # Patch json.dumps where it is used in the tool's module
-    with patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
-        mock_json_dumps.return_value = '{"fake_json": true}' # Return value doesn't matter
+    # THE FIX: Patch both `json.dumps` AND the helper `encode_cursor`
+    with patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps, \
+         patch('blockscout_mcp_server.tools.address_tools.encode_cursor') as mock_encode_cursor:
+
+        # Configure both mocks
+        mock_json_dumps.return_value = fake_json_body
+        mock_encode_cursor.return_value = fake_cursor
 
         # ACT
         result = await get_address_logs(..., ctx=mock_ctx)
 
         # ASSERT
-        # Verify that json.dumps was called with the raw, unprocessed API response
+        # 1. Verify the call to `json.dumps` for the main body.
+        #    This works because the call from `encode_cursor` is prevented by its mock.
         mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
 
-        # You can still assert on other parts of the string result, like pagination hints
-        assert "To get the next page" in result
+        # 2. Verify the call to the helper function for the pagination part.
+        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
+
+        # 3. Verify the final string was assembled correctly from the outputs of both mocks.
+        assert fake_json_body in result
+        assert f'cursor="{fake_cursor}"' in result
 ```
 
 #### C. Handling Repetitive Data in Assertions (DAMP vs. DRY)

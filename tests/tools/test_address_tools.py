@@ -3,7 +3,11 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 
-from blockscout_mcp_server.tools.address_tools import get_tokens_by_address, get_address_info
+from blockscout_mcp_server.tools.address_tools import (
+    get_tokens_by_address,
+    get_address_info,
+)
+from blockscout_mcp_server.tools.common import encode_cursor
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_with_pagination(mock_ctx):
@@ -83,7 +87,10 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         assert '"balance": "2500"' in result
 
         # Check that the pagination hint is correctly formatted and included
-        expected_pagination = f'To get the next page call get_tokens_by_address({chain_id}, <same address>, "123.45", 5, 50, "1000")'
+        next_cursor = encode_cursor(mock_api_response["next_page_params"])
+        expected_pagination = (
+            f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
+        )
         assert expected_pagination in result
         
         # Check JSON array structure
@@ -190,10 +197,7 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         result = await get_tokens_by_address(
             chain_id=chain_id,
             address=address,
-            fiat_value=fiat_value,
-            id=id_param,
-            items_count=items_count,
-            value=value,
+            cursor=encode_cursor({"fiat_value": fiat_value, "id": id_param, "items_count": items_count, "value": value}),
             ctx=mock_ctx
         )
 
@@ -206,7 +210,7 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
             "fiat_value": fiat_value,
             "id": id_param,
             "items_count": items_count,
-            "value": value
+            "value": value,
         }
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
@@ -215,11 +219,23 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         )
 
         # Check that pagination hint reflects the new parameters
-        expected_pagination = f'To get the next page call get_tokens_by_address({chain_id}, <same address>, "888.88", 99, 25, "3000")'
+        next_cursor = encode_cursor({"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"})
+        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
         assert expected_pagination in result
         
         # Check progress reporting
         assert mock_ctx.report_progress.call_count == 3
+
+@pytest.mark.asyncio
+async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
+    """Verify the tool returns a user-friendly error for a bad cursor."""
+    chain_id = "1"
+    address = "0x123abc"
+    invalid_cursor = "this-is-bad"
+
+    result = await get_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
+
+    assert "Error: Invalid or expired pagination cursor." in result
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_empty_response(mock_ctx):

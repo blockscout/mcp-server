@@ -1,7 +1,13 @@
 import json
 from typing import Annotated, Dict, Optional
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+from blockscout_mcp_server.tools.common import (
+    make_blockscout_request,
+    get_blockscout_base_url,
+    encode_cursor,
+    decode_cursor,
+    InvalidCursorError,
+)
 from mcp.server.fastmcp import Context
 
 async def get_address_info(
@@ -40,11 +46,13 @@ async def get_address_info(
 async def get_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Wallet address")],
-    fiat_value: Annotated[Optional[str], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    id: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    items_count: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    value: Annotated[Optional[str], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    ctx: Context = None
+    cursor: Annotated[
+        Optional[str],
+        Field(
+            description="The pagination cursor from a previous response to get the next page of results."
+        ),
+    ] = None,
+    ctx: Context = None,
 ) -> str:
     """
     Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
@@ -55,15 +63,15 @@ async def get_tokens_by_address(
     api_path = f"/api/v2/addresses/{address}/tokens"
     params = {"tokens": "ERC-20"}
     
-    # Add pagination parameters if provided
-    if fiat_value is not None:
-        params["fiat_value"] = fiat_value
-    if id is not None:
-        params["id"] = id
-    if items_count is not None:
-        params["items_count"] = items_count
-    if value is not None:
-        params["value"] = value
+    # Add pagination parameters if provided via cursor
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            params.update(decoded_params)
+        except InvalidCursorError:
+            return (
+                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
     
     # Report start of operation
     await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}...")
@@ -107,16 +115,11 @@ async def get_tokens_by_address(
     # Add pagination hint if next_page_params exists
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
-        # Safely access potentially missing keys with .get() and provide defaults
-        fiat_value = next_page_params.get("fiat_value", "")
-        id_val = next_page_params.get("id", "null")  # Use "null" for JSON if missing
-        items_count = next_page_params.get("items_count", "null")
-        value_param = next_page_params.get("value", "")
-        
+        next_cursor = encode_cursor(next_page_params)
         pagination_hint = f"""
 
 ----
-To get the next page call get_tokens_by_address({chain_id}, <same address>, "{fiat_value}", {id_val}, {items_count}, "{value_param}")"""
+To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
         output_parts.append(pagination_hint)
     
     return "".join(output_parts) 
@@ -196,10 +199,13 @@ async def nft_tokens_by_address(
 async def get_address_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Account address")],
-    block_number: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    index: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    items_count: Annotated[Optional[int], Field(description="Part of the combined next cursor to get the next page of results")] = None,
-    ctx: Context = None
+    cursor: Annotated[
+        Optional[str],
+        Field(
+            description="The pagination cursor from a previous response to get the next page of results."
+        ),
+    ] = None,
+    ctx: Context = None,
 ) -> str:
     """
     Get comprehensive logs emitted by a specific address with decoded event data.
@@ -210,13 +216,15 @@ async def get_address_logs(
     api_path = f"/api/v2/addresses/{address}/logs"
     params = {}
     
-    # Add pagination parameters if provided
-    if block_number is not None:
-        params["block_number"] = block_number
-    if index is not None:
-        params["index"] = index
-    if items_count is not None:
-        params["items_count"] = items_count
+    # Add pagination parameters if provided via cursor
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            params.update(decoded_params)
+        except InvalidCursorError:
+            return (
+                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
     
     # Report start of operation
     await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch address logs for {address} on chain {chain_id}...")
@@ -251,19 +259,13 @@ async def get_address_logs(
 """
     
     output = f"{prefix}{logs_json_str}"
-    
     # Add pagination hint if next_page_params exists
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
-        # Safely access potentially missing keys with .get() and provide defaults
-        block_number_val = next_page_params.get("block_number", "null")
-        index_val = next_page_params.get("index", "null")
-        items_count_val = next_page_params.get("items_count", "null")
-        
+        next_cursor = encode_cursor(next_page_params)
         pagination_hint = f"""
 
 ----
-To get the next page call get_address_logs({chain_id}, <same address>, {block_number_val}, {index_val}, {items_count_val})"""
+To get the next page call get_address_logs(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
         output += pagination_hint
-    
     return output 

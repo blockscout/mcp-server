@@ -17,7 +17,7 @@ mcp-server/
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
-│       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address)
+│       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address, get_address_logs)
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, transaction_summary)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
@@ -26,6 +26,7 @@ mcp-server/
 │   │   ├── __init__.py         # Marks integration as a sub-package
 │   │   └── test_common_helpers.py # Integration tests for API helper functions
 │   └── tools/                  # Unit test modules for each tool implementation
+│       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
 │       ├── test_address_tools_2.py   # Extended tests for complex address tools (nft_tokens_by_address, get_address_logs)
 │       ├── test_block_tools.py       # Tests for block-related tools (get_latest_block, get_block_info)
@@ -97,7 +98,7 @@ mcp-server/
 
 2. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
-    * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline.
+    * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. It includes tests for each tool module and for shared utilities in `test_common.py`.
         * Each test file corresponds to a tool module and provides comprehensive test coverage:
             * **Success scenarios**: Testing normal operation with valid inputs and API responses.
             * **Error handling**: Testing API errors, chain lookup failures, timeout errors, and invalid responses.
@@ -145,6 +146,7 @@ mcp-server/
         * **`common.py`**:
             * Contains shared utility functions for all tool modules.
             * Implements chain resolution and caching mechanism with `get_blockscout_base_url` function.
+            * Implements helper functions (`encode_cursor`, `decode_cursor`) and a custom exception (`InvalidCursorError`) for handling opaque pagination cursors.
             * Contains asynchronous HTTP client functions for different API endpoints:
                 * `make_blockscout_request`: Takes base_url (resolved from chain_id), API path, and parameters for Blockscout API calls.
                 * `make_bens_request`: For BENS API calls.
@@ -177,6 +179,6 @@ mcp-server/
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
-                * `address_tools.py`: Implements `get_address_info(chain_id, address)`, `get_tokens_by_address(chain_id, address, ...)` with pagination.
+                * `address_tools.py`: Implements `get_address_info(chain_id, address)`, `get_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
                 * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, ...)`, `transaction_summary(chain_id, hash)`, etc.

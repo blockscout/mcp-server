@@ -230,10 +230,13 @@ output_parts.append("]")  # End JSON array
 # Add pagination hints if available
 next_page_params = response_data.get("next_page_params")
 if next_page_params:
+    # Use the centralized helper to create an opaque cursor
+    from .common import encode_cursor
+    next_cursor = encode_cursor(next_page_params)
     pagination_hint = f"""
 
 ----
-To get the next page call tool_name({chain_id}, <args>, "{next_page_params.get("param")}")"""
+To get the next page call tool_name(chain_id="{chain_id}", <other_args>, cursor="{next_cursor}")"""
     output_parts.append(pagination_hint)
 
 return "".join(output_parts)
@@ -251,6 +254,61 @@ prefix = """
 This is some explanatory text that helps the user understand the data.
 """
 return f"{prefix}\n{content}"
+```
+
+### 6. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
+
+For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
+
+**A. Handling the Incoming Cursor:**
+Your tool should accept an optional `cursor` argument. If it's provided, use the `decode_cursor` helper to parse it and apply the parameters to your API call.
+
+**B. Generating the Outgoing Cursor:**
+In your response, check for `next_page_params` from the API. If they exist, use the `encode_cursor` helper to create the next cursor and include it in a user-friendly hint.
+
+**Complete Example Pattern:**
+
+```python
+from typing import Annotated, Optional
+from pydantic import Field
+from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url, encode_cursor, decode_cursor, InvalidCursorError
+
+async def paginated_tool_name(
+    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
+    address: Annotated[str, Field(description="The address to query")],
+    cursor: Annotated[Optional[str], Field(description="The pagination cursor from a previous response to get the next page of results.")] = None,
+    ctx: Context = None
+) -> str:
+    """
+    A tool that demonstrates the correct way to handle pagination.
+    """
+    api_path = f"/api/v2/some_paginated_endpoint/{address}"
+    query_params = {}
+
+    # 1. Handle incoming cursor
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            query_params.update(decoded_params)
+        except InvalidCursorError:
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+
+    base_url = await get_blockscout_base_url(chain_id)
+    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
+
+    output_string = process_items(response_data.get("items", []))
+
+    # 2. Generate outgoing cursor
+    next_page_params = response_data.get("next_page_params")
+    if next_page_params:
+        next_cursor = encode_cursor(next_page_params)
+        pagination_hint = f"""
+
+----
+To get the next page call paginated_tool_name(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
+        output_string += pagination_hint
+
+    return output_string
 ```
 
 ## Registering the Tool

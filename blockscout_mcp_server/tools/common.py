@@ -1,6 +1,7 @@
 import httpx
 import time
 import json
+import base64
 import anyio
 from typing import Optional, Callable, Awaitable, Any, Dict
 from blockscout_mcp_server.config import config
@@ -258,4 +259,31 @@ async def make_request_with_periodic_progress(
             total=tool_overall_total_steps,
             message=f"{current_step_message_prefix}: Completed."
         )
-        return api_result 
+        return api_result
+
+
+class InvalidCursorError(ValueError):
+    """Raised when a pagination cursor is malformed or invalid."""
+    pass
+
+
+def encode_cursor(params: dict) -> str:
+    """JSON-serializes and Base64URL-encodes pagination parameters."""
+    if not params:
+        return ""
+    json_string = json.dumps(params, separators=(",", ":"))
+    return base64.urlsafe_b64encode(json_string.encode("utf-8")).decode("utf-8")
+
+
+def decode_cursor(cursor: str) -> dict:
+    """Decodes and JSON-deserializes a cursor string."""
+    if not cursor:
+        raise InvalidCursorError("Cursor cannot be empty.")
+    try:
+        padded_cursor = cursor + "=" * (-len(cursor) % 4)
+        json_string = base64.urlsafe_b64decode(padded_cursor.encode("utf-8")).decode(
+            "utf-8"
+        )
+        return json.loads(json_string)
+    except (TypeError, ValueError, json.JSONDecodeError, base64.binascii.Error) as e:
+        raise InvalidCursorError("Invalid or expired cursor provided.") from e
