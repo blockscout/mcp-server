@@ -76,6 +76,104 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
 
+
+@pytest.mark.asyncio
+async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
+    """Verify only the first 7 items are returned when API provides more."""
+    chain_id = "1"
+    symbol = "TEST"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_items = [
+        {
+            "address_hash": f"0x{i:040d}",
+            "name": f"Token{i}",
+            "symbol": "TEST",
+            "total_supply": str(i),
+            "circulating_market_cap": str(i * 10),
+            "exchange_rate": "1.0",
+        }
+        for i in range(8)
+    ]
+
+    mock_api_response = {"items": mock_items}
+
+    expected_result = []
+    for item in mock_items[:7]:
+        new_item = copy.deepcopy(item)
+        new_item["address"] = new_item.pop("address_hash")
+        new_item["token_type"] = ""
+        new_item["is_smart_contract_verified"] = False
+        new_item["is_verified_via_admin_panel"] = False
+        expected_result.append(new_item)
+
+    with patch('blockscout_mcp_server.tools.search_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.search_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
+
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path="/api/v2/search",
+            params={"q": symbol}
+        )
+        assert result == expected_result
+        assert len(result) == 7
+        assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
+    """Verify all 7 items are returned when API provides exactly seven."""
+    chain_id = "1"
+    symbol = "TEST"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_items = [
+        {
+            "address_hash": f"0x{i:040d}",
+            "name": f"Token{i}",
+            "symbol": "TEST",
+            "total_supply": str(i),
+            "circulating_market_cap": str(i * 10),
+            "exchange_rate": "1.0",
+        }
+        for i in range(7)
+    ]
+
+    mock_api_response = {"items": mock_items}
+
+    expected_result = []
+    for item in mock_items:
+        new_item = copy.deepcopy(item)
+        new_item["address"] = new_item.pop("address_hash")
+        new_item["token_type"] = ""
+        new_item["is_smart_contract_verified"] = False
+        new_item["is_verified_via_admin_panel"] = False
+        expected_result.append(new_item)
+
+    with patch('blockscout_mcp_server.tools.search_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.search_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
+
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path="/api/v2/search",
+            params={"q": symbol}
+        )
+        assert result == expected_result
+        assert len(result) == 7
+        assert mock_ctx.report_progress.call_count == 3
+
 @pytest.mark.asyncio
 async def test_lookup_token_by_symbol_empty_results(mock_ctx):
     """
