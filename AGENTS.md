@@ -24,7 +24,14 @@ mcp-server/
 ├── tests/                      # Test suite for all MCP tools
 │   ├── integration/            # Integration tests that make real network calls
 │   │   ├── __init__.py         # Marks integration as a sub-package
-│   │   └── test_common_helpers.py # Integration tests for API helper functions
+│   │   ├── test_address_tools_integration.py   # Tool-level integration tests for address tools
+│   │   ├── test_block_tools_integration.py     # Tool-level integration tests for block tools
+│   │   ├── test_chains_tools_integration.py    # Tool-level integration tests for chains tools
+│   │   ├── test_common_helpers.py              # Helper-level integration tests for API helpers
+│   │   ├── test_contract_tools_integration.py  # Tool-level integration tests for contract tools
+│   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
+│   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
+│   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
@@ -109,7 +116,10 @@ mcp-server/
         * All tests maintain full isolation using `unittest.mock.patch` to mock external API calls.
         * Test execution completes in under 1 second with 67 total test cases across 10 test modules.
         * Provides 100% coverage of all 16 MCP tool functions with multiple test scenarios each.
-    * **`tests/integration/`**: Contains the **integration test** suite. These tests make real network calls to live APIs to verify connectivity and API contracts. They are marked with `@pytest.mark.integration` and are excluded from the default test run.
+    * **`tests/integration/`**: Contains the **integration test** suite. These tests make real network calls and are divided into two categories:
+        * **Helper-level tests** in `test_common_helpers.py` verify basic connectivity and API availability.
+        * **Tool-level tests** in `test_*_integration.py` validate that our tools extract and structure data correctly from live responses.
+      All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
 3. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.

@@ -213,20 +213,34 @@ The test suite is designed to run in CI environments with:
 ---
 ## Guidelines for Writing Integration Tests
 
-While the unit test guidelines focus on mocking, integration tests require a different approach focused on stability and precision.
+While unit tests focus on logic with mocked data, integration tests verify our interaction with live external APIs. We have two distinct categories of integration tests, each with a specific purpose.
 
-#### 1. Test the Boundary, Not the Tool Logic
--   Integration tests should primarily target the helper functions in `tools/common.py` that make the actual network calls (`make_blockscout_request`, etc.).
--   Avoid re-testing the complex formatting logic of a full tool. If the helper function returns the correct data from the live API, we can trust the unit-tested tool to format it correctly.
+### Category 1: Helper-Level Integration Tests (Connectivity & Basic Contract)
 
-#### 2. Use Stable and Non-Volatile Targets
--   To ensure tests are reliable and deterministic, always test against stable data points that are unlikely to change.
--   **Good examples:** A famous historical block (`19000000` on Ethereum), a well-known ENS name (`vitalik.eth`), or a genesis block.
--   **Bad examples:** The *latest* block, a recent transaction, or a token with a fluctuating market cap.
+These tests target the low-level helper functions in `tools/common.py` (e.g., `make_blockscout_request`, `get_blockscout_base_url`).
 
-#### 3. Assert on Structure and Stable Values
--   When checking a response from a live API, prioritize asserting the *structure* of the data (e.g., `assert "timestamp" in response_data`) and the *type* of the data (`assert isinstance(response_data["height"], int)`).
--   Only assert on specific *values* when they are guaranteed to be stable, like the block number you requested or the known address for an ENS name.
+*   **Purpose:** To verify basic network connectivity and ensure the fundamental HTTP request/response cycle with each external service is working.
+*   **Location:** `tests/integration/test_common_helpers.py`.
+*   **What to Assert:**
+    *   The request was successful (no HTTP errors).
+    *   The top-level structure of the response is as expected (e.g., `isinstance(response, list)`).
+    *   Presence of a few key, stable fields to confirm we're hitting the right endpoint.
 
-#### 4. Always Use the `integration` Marker
--   Every integration test function **must** be decorated with `@pytest.mark.integration`. This is critical for separating the test suites and ensuring the default `pytest` run remains fast and offline.
+### Category 2: Tool-Level Integration Tests (Data Extraction & Schema Validation)
+
+These tests target the high-level MCP tool functions themselves (e.g., `get_latest_block`, `get_tokens_by_address`).
+
+*   **Purpose:** To validate the "contract" between our tool's data processing logic and the live API's response schema. They ensure that the fields our tools *extract and transform* are still present and correctly structured in the live data. This protects against breaking changes in the API schema.
+*   **Location:** `tests/integration/test_*_integration.py` (e.g., `test_block_tools_integration.py`).
+*   **What to Call:** The actual MCP tool function (e.g., `await get_latest_block(chain_id="1", ctx=mock_ctx)`).
+*   **What to Assert:**
+    *   Focus on the **final, processed result** returned by the tool.
+    *   Verify that the extracted data has the correct type and format (e.g., `assert isinstance(result["block_number"], int)`).
+    *   For lists, check that items in the list contain the expected processed fields (e.g., `assert "address" in item`).
+    *   For tools with string formatting (like pagination hints), assert that the key substrings are present in the final output.
+*   **What to Avoid:** Do not re-test complex formatting logic already covered by unit tests. The focus is on verifying the *data extraction* was successful.
+
+### General Rules for All Integration Tests
+
+*   **Use Stable Targets:** Always test against non-volatile data points (e.g., a famous historical block, a well-known ENS name).
+*   **Use the `integration` Marker:** Every integration test function **must** be decorated with `@pytest.mark.integration`.

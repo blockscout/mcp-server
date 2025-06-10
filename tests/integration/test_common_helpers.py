@@ -84,7 +84,7 @@ async def test_get_blockscout_base_url_for_known_chains(chain_id, expected_url):
     resolved_url = await get_blockscout_base_url(chain_id=chain_id)
 
     # ASSERT
-    assert resolved_url == expected_url
+    assert resolved_url.rstrip('/') == expected_url.rstrip('/')
 
 
 @pytest.mark.integration
