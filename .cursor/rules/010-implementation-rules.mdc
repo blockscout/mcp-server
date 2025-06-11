@@ -12,3 +12,5 @@ alwaysApply: true
 4. You are working in VSCode devcontainer environment, so no any additional virtual environment management is required. 
 
 5. If any new package needs to be installed it needs to be done with 'sudo `which uv` pip install --system "<package>"' command. Don't forget to update [pyproject.toml](mdc:pyproject.toml) with the new package.
+
+6. **File Size Guidelines**: Regular Python modules should generally not exceed 500 lines of code (LOC). If a module approaches this limit, consider splitting it into multiple focused modules (e.g., `address_tools.py` and `address_tools_advanced.py`) to maintain readability and logical organization.

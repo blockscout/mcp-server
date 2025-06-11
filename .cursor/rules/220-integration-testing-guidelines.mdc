@@ -1,0 +1,166 @@
+---
+description: 
+globs: tests/integration/*
+alwaysApply: false
+---
+# Integration Testing Guidelines
+
+This document provides detailed guidelines for writing effective integration tests that verify our interaction with live external APIs. Unlike unit tests which focus on logic with mocked data, integration tests ensure the "contract" between our tools and external services remains valid.
+
+## Categories of Integration Tests
+
+### Category 1: Helper-Level Integration Tests (Connectivity & Basic Contract)
+
+These tests target the low-level helper functions in `tools/common.py` (e.g., `make_blockscout_request`, `get_blockscout_base_url`).
+
+- **Purpose:** To verify basic network connectivity and ensure the fundamental HTTP request/response cycle with each external service is working.
+- **Location:** `tests/integration/test_common_helpers.py`.
+- **What to Assert:**
+  - The request was successful (no HTTP errors).
+  - The top-level structure of the response is as expected (e.g., `isinstance(response, list)`).
+  - Presence of a few key, stable fields to confirm we're hitting the right endpoint.
+
+**Example:**
+```python
+import pytest
+from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+
+@pytest.mark.integration
+async def test_make_blockscout_request_connectivity():
+    """Test basic connectivity to Blockscout API."""
+    base_url = await get_blockscout_base_url("1")  # Ethereum mainnet
+    response = await make_blockscout_request(
+        base_url=base_url, 
+        api_path="/api/v2/blocks", 
+        params={"limit": 1}
+    )
+    
+    # Assert basic structure
+    assert isinstance(response, dict)
+    assert "items" in response
+    assert len(response["items"]) > 0
+    
+    # Assert key fields are present
+    block = response["items"][0]
+    assert "hash" in block
+    assert "number" in block
+```
+
+### Category 2: Tool-Level Integration Tests (Data Extraction & Schema Validation)
+
+These tests target the high-level MCP tool functions themselves (e.g., `get_latest_block`, `get_tokens_by_address`).
+
+- **Purpose:** To validate the "contract" between our tool's data processing logic and the live API's response schema. They ensure that the fields our tools *extract and transform* are still present and correctly structured in the live data. This protects against breaking changes in the API schema.
+- **Location:** `tests/integration/test_*_integration.py` (e.g., `test_block_tools_integration.py`).
+- **What to Call:** The actual MCP tool function (e.g., `await get_latest_block(chain_id="1", ctx=mock_ctx)`).
+- **What to Assert:**
+  - Focus on the **final, processed result** returned by the tool.
+  - Verify that the extracted data has the correct type and format (e.g., `assert isinstance(result["block_number"], int)`).
+  - For lists, check that items in the list contain the expected processed fields (e.g., `assert "address" in item`).
+  - For tools with string formatting (like pagination hints), assert that the key substrings are present in the final output.
+- **What to Avoid:** Do not re-test complex formatting logic already covered by unit tests. The focus is on verifying the *data extraction* was successful.
+
+**Example:**
+```python
+import pytest
+from blockscout_mcp_server.tools.block_tools import get_latest_block
+
+@pytest.mark.integration
+async def test_get_latest_block_data_extraction(mock_ctx):
+    """Test that get_latest_block extracts expected fields from live API."""
+    result = await get_latest_block(chain_id="1", ctx=mock_ctx)
+    
+    # Assert the tool returns expected structure
+    assert isinstance(result, dict)
+    assert "block_number" in result
+    assert "hash" in result
+    assert "timestamp" in result
+    
+    # Assert data types are correct
+    assert isinstance(result["block_number"], int)
+    assert isinstance(result["hash"], str)
+    assert result["hash"].startswith("0x")
+    
+    # Assert reasonable data ranges
+    assert result["block_number"] > 0
+    assert len(result["hash"]) == 66  # 0x + 64 hex chars
+```
+
+## General Rules for All Integration Tests
+
+### Use Stable Targets
+
+Always test against non-volatile data points to ensure tests are reliable across different runs:
+
+- **Historical blocks:** Use well-known blocks (e.g., Genesis block, specific milestone blocks)
+- **Famous addresses:** Use well-known contract addresses (e.g., USDC, prominent DeFi protocols)
+- **ENS names:** Use established ENS names that are unlikely to change
+
+**Examples:**
+```python
+# Good: Historical data that won't change
+GENESIS_BLOCK_HASH = "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"
+USDC_CONTRACT = "0xa0b86a33e6ac4454df1b3b7df6b2e55e5ef2a74f"
+VITALIK_ENS = "vitalik.eth"
+
+# Bad: Latest/current data that changes frequently
+await get_latest_block(...)  # Block data changes every ~12 seconds
+```
+
+### Integration Test Markers
+
+Every integration test function **must** be decorated with `@pytest.mark.integration`:
+
+```python
+@pytest.mark.integration
+async def test_some_integration_scenario():
+    # Test implementation
+    pass
+```
+
+This allows running integration tests separately:
+```bash
+# Run only integration tests
+pytest -m integration
+
+# Run everything except integration tests
+pytest -m "not integration"
+```
+
+### Error Handling
+
+Integration tests should be resilient to temporary network issues:
+
+```python
+import pytest
+import httpx
+
+@pytest.mark.integration
+async def test_with_retry_logic():
+    """Integration test with basic retry for network issues."""
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            result = await some_tool_function(...)
+            break  # Success, exit retry loop
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            if attempt == max_retries - 1:
+                pytest.skip(f"Network connectivity issue after {max_retries} attempts: {e}")
+            continue
+    
+    # Proceed with assertions
+    assert result is not None
+```
+
+## File Size Limitations
+
+**Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused files (e.g., `test_block_tools_integration_1.py`, `test_block_tools_integration_2.py`) to maintain readability and logical organization.
+
+## Test Organization
+
+- Group related tests using descriptive class names or clear function naming patterns.
+- Use descriptive test names that indicate what contract/schema is being validated
+- Separate helper-level tests from tool-level tests into different files when appropriate
+- Include clear comments explaining why specific test data was chosen (especially for stable targets)
+

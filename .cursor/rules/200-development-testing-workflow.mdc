@@ -1,0 +1,76 @@
+---
+description: Development Testing Workflow applied when developing new features or modifying existing tools
+globs: 
+alwaysApply: false
+---
+# Development Testing Workflow
+
+When developing new features or modifying existing tools, follow this testing workflow:
+
+## 1. Run Unit Tests First
+
+Always run the unit test suite before and after making changes:
+
+```bash
+# Run all tests to ensure nothing is broken
+pytest
+
+# Run specific tests related to your changes
+pytest tests/tools/test_address_tools.py -v
+```
+
+## 2. Add Tests for New Features
+
+When adding new functionality or modifying existing code:
+
+### Unit Tests (Always Required)
+
+**Create or update the appropriate test file:**
+- **Tool functions**: `tests/tools/test_{tool_module}.py`
+- **Server functionality**: `tests/test_server.py`
+- **Common utilities**: `tests/test_common.py`
+- **Other modules**: `tests/test_{module_name}.py`
+
+Follow the guidelines in [210-unit-testing-guidelines.mdc](mdc:.cursor/rules/210-unit-testing-guidelines.mdc)
+
+### Integration Tests (When Applicable)
+
+**Add integration tests when you:**
+- Introduce new API endpoints or external services
+- Modify helper functions in `tools/common.py`
+- Change data extraction or transformation logic
+- Add new tools that interact with live APIs
+
+**Integration test locations:**
+- **Helper functions**: `tests/integration/test_common_helpers.py`
+- **Tool functions**: `tests/integration/test_{tool_module}_integration.py`
+
+Follow the guidelines in [220-integration-testing-guidelines.mdc](mdc:.cursor/rules/220-integration-testing-guidelines.mdc)
+
+## 3. Check Test Coverage
+
+Ensure your changes are well-tested:
+
+```bash
+pytest --cov=blockscout_mcp_server --cov-report=term-missing
+```
+
+## 4. Run Integration Tests (Optional but Recommended)
+
+Before final validation, run the integration test suite to ensure your changes have not broken our interaction with live APIs. This is especially important if you have modified any of the helper functions in `tools/common.py`.
+
+```bash
+pytest -m integration
+```
+
+## 5. End-to-End Validation
+
+After unit tests pass, validate the changes using HTTP mode testing:
+
+```bash
+# Start the server
+python -m blockscout_mcp_server --http
+
+# Test your specific changes using curl commands
+# (See examples in the End-to-End HTTP Testing section in [TESTING.md](mdc:TESTING.md))
+```
