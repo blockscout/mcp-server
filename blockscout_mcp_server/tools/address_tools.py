@@ -46,13 +46,13 @@ async def get_address_info(
 async def get_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Wallet address")],
+    ctx: Context,
     cursor: Annotated[
         Optional[str],
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),
     ] = None,
-    ctx: Context = None,
 ) -> str:
     """
     Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
@@ -199,13 +199,13 @@ async def nft_tokens_by_address(
 async def get_address_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Account address")],
+    ctx: Context,
     cursor: Annotated[
         Optional[str],
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),
     ] = None,
-    ctx: Context = None,
 ) -> str:
     """
     Get comprehensive logs emitted by a specific address with decoded event data.

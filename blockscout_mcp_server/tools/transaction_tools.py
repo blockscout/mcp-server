@@ -13,10 +13,10 @@ from mcp.server.fastmcp import Context
 async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
+    ctx: Context,
     age_from: Annotated[Optional[str], Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z).")] = None,
     age_to: Annotated[Optional[str], Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z).")] = None,
     methods: Annotated[Optional[str], Field(description="A method signature to filter transactions by (e.g 0x304e6ade)")] = None,
-    ctx: Context = None
 ) -> Dict:
     """
     Get transactions for an address within a specific time range.
@@ -81,10 +81,10 @@ async def get_transactions_by_address(
 async def get_token_transfers_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either transfer initiator or transfer receiver")],
+    ctx: Context,
     age_from: Annotated[Optional[str], Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history.")] = None,
     age_to: Annotated[Optional[str], Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time.")] = None,
     token: Annotated[Optional[str], Field(description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens.")] = None,
-    ctx: Context = None
 ) -> Dict:
     """
     Get ERC-20 token transfers for an address within a specific time range.
