@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

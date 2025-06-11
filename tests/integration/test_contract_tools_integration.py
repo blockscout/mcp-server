@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

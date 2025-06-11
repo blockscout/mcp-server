@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.transaction_tools import transaction_summary
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

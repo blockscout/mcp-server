@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.block_tools import get_latest_block
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

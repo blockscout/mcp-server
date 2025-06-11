@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

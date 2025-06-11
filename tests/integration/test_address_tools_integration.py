@@ -6,7 +6,6 @@ from blockscout_mcp_server.tools.address_tools import (
     get_tokens_by_address,
     get_address_logs,
 )
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration

@@ -1,7 +1,6 @@
 import pytest
 
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from tests.conftest import mock_ctx
 
 
 @pytest.mark.integration
