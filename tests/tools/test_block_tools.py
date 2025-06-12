@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
+import json
 
 from blockscout_mcp_server.tools.block_tools import get_latest_block, get_block_info
 
@@ -155,7 +156,8 @@ async def test_get_block_info_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
-        assert result == mock_api_response
+        expected_output = f"Basic block info:\n{json.dumps(mock_api_response, indent=2)}"
+        assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
@@ -186,7 +188,8 @@ async def test_get_block_info_with_hash(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{block_hash}")
-        assert result == mock_api_response
+        expected_output = f"Basic block info:\n{json.dumps(mock_api_response, indent=2)}"
+        assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
@@ -216,4 +219,114 @@ async def test_get_block_info_api_error(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
         # Progress should have been reported twice (start + after chain URL resolution) before the error
-        assert mock_ctx.report_progress.call_count == 2 
+        assert mock_ctx.report_progress.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_block_info_with_transactions_success(mock_ctx):
+    """
+    Verify get_block_info correctly fetches and formats block info with transaction hashes.
+    """
+    # ARRANGE
+    chain_id = "1"
+    number_or_hash = "19000000"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_block_response = {"height": 19000000, "transaction_count": 2}
+    mock_txs_response = {"items": [{"hash": "0xtx1"}, {"hash": "0xtx2"}]}
+
+    async def mock_request_side_effect(base_url, api_path, params=None):
+        if "transactions" in api_path:
+            return mock_txs_response
+        else:
+            return mock_block_response
+
+    with patch('blockscout_mcp_server.tools.block_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.block_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = mock_request_side_effect
+
+        # ACT
+        result = await get_block_info(chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx)
+
+        # ASSERT
+        assert mock_get_url.call_count == 1
+        assert mock_request.call_count == 2
+
+        assert "Basic block info:" in result
+        assert json.dumps(mock_block_response, indent=2) in result
+        assert "Transactions in the block:" in result
+        assert json.dumps(["0xtx1", "0xtx2"], indent=2) in result
+        assert "No transactions in the block." not in result
+        assert mock_ctx.report_progress.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_get_block_info_with_no_transactions(mock_ctx):
+    """
+    Verify get_block_info correctly handles a block with no transactions when requested.
+    """
+    # ARRANGE
+    chain_id = "1"
+    number_or_hash = "19000001"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_block_response = {"height": 19000001, "transaction_count": 0}
+    mock_txs_response = {"items": []}
+
+    async def mock_request_side_effect(base_url, api_path, params=None):
+        if "transactions" in api_path:
+            return mock_txs_response
+        else:
+            return mock_block_response
+
+    with patch('blockscout_mcp_server.tools.block_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.block_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = mock_request_side_effect
+
+        # ACT
+        result = await get_block_info(chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx)
+
+        # ASSERT
+        assert "Basic block info:" in result
+        assert json.dumps(mock_block_response, indent=2) in result
+        assert "No transactions in the block." in result
+        assert "Transactions in the block:" not in result
+        assert mock_ctx.report_progress.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_get_block_info_with_transactions_api_error(mock_ctx):
+    """
+    Verify get_block_info handles an error when fetching transactions but not block info.
+    """
+    # ARRANGE
+    chain_id = "1"
+    number_or_hash = "19000000"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_block_response = {"height": 19000000}
+    tx_error = httpx.HTTPStatusError("Server Error", request=MagicMock(), response=MagicMock(status_code=500))
+
+    async def mock_request_side_effect(base_url, api_path, params=None):
+        if "transactions" in api_path:
+            raise tx_error
+        else:
+            return mock_block_response
+
+    with patch('blockscout_mcp_server.tools.block_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.block_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = mock_request_side_effect
+
+        # ACT
+        result = await get_block_info(chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx)
+
+        # ASSERT
+        assert "Basic block info:" in result
+        assert json.dumps(mock_block_response, indent=2) in result
+        assert "Error fetching transactions for the block:" in result
+        assert str(tx_error) in result

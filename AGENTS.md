@@ -18,7 +18,7 @@ mcp-server/
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
 │       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address, get_address_logs)
-│       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
+│       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info with optional transactions)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, transaction_summary)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
 ├── tests/                      # Test suite for all MCP tools
@@ -190,5 +190,5 @@ mcp-server/
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
                 * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
-                * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash)`, `get_latest_block(chain_id)`.
+                * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, ...)`, `transaction_summary(chain_id, hash)`, etc.

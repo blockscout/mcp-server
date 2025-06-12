@@ -44,7 +44,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 10. `get_token_transfers_by_address(chain_id, address, age_from, age_to, token)` - Returns ERC-20 token transfers for an address within a specific time range.
 11. `transaction_summary(chain_id, hash)` - Provides human-readable transaction summaries using Blockscout Transaction Interpreter.
 12. `nft_tokens_by_address(chain_id, address)` - Retrieves NFT tokens owned by an address, grouped by collection.
-13. `get_block_info(chain_id, number_or_hash)` - Returns block information including timestamp, gas used, burnt fees, and transaction count.
+13. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
 14. `get_transaction_info(chain_id, hash)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
 15. `get_transaction_logs(chain_id, hash)` - Returns transaction logs with decoded event data.
 16. `get_address_logs(chain_id, address, cursor=None)` - Gets logs emitted by a specific address with decoded event data.
