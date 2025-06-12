@@ -1,10 +1,11 @@
 # tests/integration/test_common_helpers.py
 import pytest
 from blockscout_mcp_server.tools.common import (
-    make_chainscout_request, 
-    make_bens_request, 
-    get_blockscout_base_url, 
+    make_chainscout_request,
+    make_bens_request,
+    get_blockscout_base_url,
     make_blockscout_request,
+    make_metadata_request,
     ChainNotFoundError
 )
 
@@ -129,4 +130,27 @@ async def test_make_blockscout_request_for_block_info():
     assert response_data["height"] == 19000000
     assert "timestamp" in response_data
     assert isinstance(response_data["gas_used"], str)  # Blockscout API returns this as a string
-    assert "parent_hash" in response_data 
+    assert "parent_hash" in response_data
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_make_metadata_request_for_address_tags():
+    """
+    Tests that we can successfully fetch address metadata from the live Metadata API.
+    """
+    # Using a well-known address with stable tags (USDC contract)
+    address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    chain_id = "1"  # Ethereum Mainnet
+    api_path = "/api/v1/metadata"
+    params = {"addresses": address, "chainId": chain_id}
+
+    response_data = await make_metadata_request(api_path=api_path, params=params)
+
+    assert isinstance(response_data, dict)
+    assert "addresses" in response_data
+    address_key = next(iter(response_data["addresses"].keys()))
+    assert address_key.lower() == address.lower()
+    assert "tags" in response_data["addresses"][address_key]
+    assert len(response_data["addresses"][address_key]["tags"]) > 0
+    assert "name" in response_data["addresses"][address_key]["tags"][0]

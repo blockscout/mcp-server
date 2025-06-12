@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Annotated, Dict, Optional
 from pydantic import Field
@@ -7,6 +8,7 @@ from blockscout_mcp_server.tools.common import (
     encode_cursor,
     decode_cursor,
     InvalidCursorError,
+    make_metadata_request,
 )
 from mcp.server.fastmcp import Context
 
@@ -14,7 +16,7 @@ async def get_address_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address to get information about")],
     ctx: Context
-) -> Dict:
+) -> str:
     """
     Get comprehensive information about an address, including:
     - Address existence check
@@ -25,23 +27,46 @@ async def get_address_info(
     - Token details (if the contract is a token): name, symbol, decimals, total supply, etc.
     Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
     """
-    api_path = f"/api/v2/addresses/{address}"
-    
-    # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch address info for {address} on chain {chain_id}...")
-    
+    await ctx.report_progress(progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}...")
+
     base_url = await get_blockscout_base_url(chain_id)
-    
-    # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching address data...")
-    
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
-    
-    # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address data.")
-    
-    # Return the full response data as per responseTemplate: {{.}}
-    return response_data 
+    await ctx.report_progress(progress=1.0, total=3.0, message="Resolved Blockscout instance URL. Fetching data...")
+
+    blockscout_api_path = f"/api/v2/addresses/{address}"
+    metadata_api_path = "/api/v1/metadata"
+    metadata_params = {"addresses": address, "chainId": chain_id}
+
+    address_info_result, metadata_result = await asyncio.gather(
+        make_blockscout_request(base_url=base_url, api_path=blockscout_api_path),
+        make_metadata_request(api_path=metadata_api_path, params=metadata_params),
+        return_exceptions=True
+    )
+
+    output_parts = []
+
+    if isinstance(address_info_result, Exception):
+        return f"Error fetching basic address info: {address_info_result}"
+
+    output_parts.append("Basic address info:")
+    output_parts.append(json.dumps(address_info_result, indent=2))
+    await ctx.report_progress(progress=2.0, total=3.0, message="Fetched basic address info.")
+
+    if not isinstance(metadata_result, Exception) and metadata_result.get("addresses"):
+        # Safely look up the metadata for the exact address requested,
+        # ignoring case differences in the API response keys
+        address_key = next(
+            (key for key in metadata_result["addresses"] if key.lower() == address.lower()),
+            None,
+        )
+        if address_key:
+            address_metadata = metadata_result["addresses"][address_key]
+            if address_metadata:
+                output_parts.append("\nMetadata associated with the address:")
+                output_parts.append(json.dumps(address_metadata, indent=2))
+
+    await ctx.report_progress(progress=3.0, total=3.0, message="Successfully fetched all address data.")
+
+    return "\n".join(output_parts)
 
 async def get_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],

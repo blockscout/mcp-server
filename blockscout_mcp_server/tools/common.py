@@ -154,6 +154,27 @@ async def make_chainscout_request(api_path: str, params: dict | None = None) -> 
         response.raise_for_status()
         return response.json()
 
+async def make_metadata_request(api_path: str, params: dict | None = None) -> dict:
+    """
+    Make a GET request to the Metadata API.
+
+    Args:
+        api_path: The API path to request
+        params: Optional query parameters
+
+    Returns:
+        The JSON response as a dictionary
+
+    Raises:
+        httpx.HTTPStatusError: If the HTTP request returns an error status code
+        httpx.TimeoutException: If the request times out
+    """
+    async with httpx.AsyncClient(timeout=config.metadata_timeout) as client:
+        url = f"{config.metadata_url}{api_path}"
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
+
 async def make_request_with_periodic_progress(
     ctx: Context,
     request_function: Callable[..., Awaitable[Dict]],  # e.g., make_blockscout_request

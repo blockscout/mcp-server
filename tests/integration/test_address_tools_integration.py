@@ -2,6 +2,7 @@ import json
 import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
+    get_address_info,
     nft_tokens_by_address,
     get_tokens_by_address,
     get_address_logs,
@@ -48,3 +49,31 @@ async def test_get_address_logs_integration(mock_ctx):
     assert 'cursor="' in result
     assert "**Items Structure:**" in result
     assert "\"items\": [" in result
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_info_integration(mock_ctx):
+    # Using a well-known, stable address with public tags (USDC contract)
+    address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    result_str = await get_address_info(chain_id="1", address=address, ctx=mock_ctx)
+
+    assert isinstance(result_str, str)
+
+    parts = result_str.split("\n\n")
+    assert len(parts) == 2, "Expected output to contain both a basic info and a metadata part"
+
+    assert parts[0].startswith("Basic address info:")
+    basic_info_json_str = parts[0].replace("Basic address info:\n", "")
+    basic_info = json.loads(basic_info_json_str)
+    assert basic_info["hash"].lower() == address.lower()
+    assert basic_info["is_contract"] is True
+
+    assert parts[1].startswith("Metadata associated with the address:")
+    metadata_json_str = parts[1].replace("Metadata associated with the address:\n", "")
+    metadata = json.loads(metadata_json_str)
+    assert "tags" in metadata
+    assert len(metadata["tags"]) > 0
+    usdc_tag = next((tag for tag in metadata["tags"] if tag.get("slug") == "usdc"), None)
+    assert usdc_tag is not None, "Could not find the 'usdc' tag in metadata"
+    assert usdc_tag["name"].lower() in {"usd coin", "usdc"}

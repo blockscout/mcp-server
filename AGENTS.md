@@ -189,6 +189,6 @@ mcp-server/
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
-                * `address_tools.py`: Implements `get_address_info(chain_id, address)`, `get_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
+                * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
                 * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, ...)`, `transaction_summary(chain_id, hash)`, etc.

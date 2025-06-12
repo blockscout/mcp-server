@@ -9,6 +9,10 @@ class ServerConfig(BaseSettings):
 
     chainscout_url: str = "https://chains.blockscout.com"  # Updated to https
     chainscout_timeout: float = 15.0  # Default timeout for Chainscout requests
+
+    # Metadata service configuration
+    metadata_url: str = "https://metadata.services.blockscout.com"
+    metadata_timeout: float = 30.0
     
     chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates

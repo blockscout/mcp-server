@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
+import json
 
 from blockscout_mcp_server.tools.address_tools import (
     get_tokens_by_address,
@@ -369,42 +370,74 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
         assert mock_ctx.report_progress.call_count == 2
 
 @pytest.mark.asyncio
-async def test_get_address_info_success(mock_ctx):
+async def test_get_address_info_success_with_metadata(mock_ctx):
     """
-    Verify get_address_info works correctly as a simpler tool for comparison.
+    Verify get_address_info correctly combines data from Blockscout and Metadata APIs.
     """
-    # ARRANGE
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    mock_api_response = {
+    mock_blockscout_response = {
         "hash": address,
-        "coin_balance": "1000000000000000000",
-        "exchange_rate": "2500.0",
         "is_contract": True,
-        "is_verified": True,
-        "ens_domain_name": "example.eth"
+    }
+    mock_metadata_response = {
+        "addresses": {address: {"tags": [{"name": "Test Tag"}]}}
     }
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_bs_request, \
+         patch('blockscout_mcp_server.tools.address_tools.make_metadata_request', new_callable=AsyncMock) as mock_meta_request:
 
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_bs_request.return_value = mock_blockscout_response
+        mock_meta_request.return_value = mock_metadata_response
 
-        # ACT
         result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(
+        mock_bs_request.assert_called_once_with(
             base_url=mock_base_url,
             api_path=f"/api/v2/addresses/{address}"
         )
-        
-        # For get_address_info, the entire response is returned as-is
-        assert result == mock_api_response
-        
-        # Check progress reporting
-        assert mock_ctx.report_progress.call_count == 3 
+        mock_meta_request.assert_called_once_with(
+            api_path="/api/v1/metadata",
+            params={"addresses": address, "chainId": chain_id}
+        )
+
+        assert "Basic address info:" in result
+        assert json.dumps(mock_blockscout_response, indent=2) in result
+        assert "Metadata associated with the address:" in result
+        assert json.dumps(mock_metadata_response["addresses"][address], indent=2) in result
+
+        assert mock_ctx.report_progress.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_success_without_metadata(mock_ctx):
+    """
+    Verify get_address_info correctly omits metadata section when it's not found.
+    """
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_blockscout_response = {"hash": address, "is_contract": False}
+    mock_metadata_response = {"addresses": {}}
+
+    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_bs_request, \
+         patch('blockscout_mcp_server.tools.address_tools.make_metadata_request', new_callable=AsyncMock) as mock_meta_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_bs_request.return_value = mock_blockscout_response
+        mock_meta_request.return_value = mock_metadata_response
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert "Basic address info:" in result
+        assert json.dumps(mock_blockscout_response, indent=2) in result
+        assert "Metadata associated with the address:" not in result
+
+        assert mock_ctx.report_progress.call_count == 4
