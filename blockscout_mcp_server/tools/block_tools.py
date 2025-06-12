@@ -1,4 +1,6 @@
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Optional
+import asyncio
+import json
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
 from mcp.server.fastmcp import Context
@@ -6,27 +8,71 @@ from mcp.server.fastmcp import Context
 async def get_block_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     number_or_hash: Annotated[str, Field(description="Block number or hash")],
-    ctx: Context
-) -> Dict:
+    ctx: Context,
+    include_transactions: Annotated[Optional[bool], Field(description="If true, includes a list of transaction hashes from the block.")] = False
+) -> str:
     """
     Get block information like timestamp, gas used, burnt fees, transaction count etc.
+    Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
     """
-    api_path = f"/api/v2/blocks/{number_or_hash}"
-    
+    total_steps = 3.0 if include_transactions else 2.0
+
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...")
-    
+    await ctx.report_progress(progress=0.0, total=total_steps, message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...")
+
     base_url = await get_blockscout_base_url(chain_id)
-    
+
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching block data...")
-    
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
-    
-    # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched block data.")
-    
-    return response_data
+    await ctx.report_progress(progress=1.0, total=total_steps, message="Resolved Blockscout instance URL. Fetching block data...")
+
+    if not include_transactions:
+        response_data = await make_blockscout_request(
+            base_url=base_url,
+            api_path=f"/api/v2/blocks/{number_or_hash}"
+        )
+        await ctx.report_progress(progress=2.0, total=total_steps, message="Successfully fetched block data.")
+        return f"Basic block info:\n{json.dumps(response_data, indent=2)}"
+
+    # If include_transactions is True
+    block_api_path = f"/api/v2/blocks/{number_or_hash}"
+    txs_api_path = f"/api/v2/blocks/{number_or_hash}/transactions"
+
+    # We use asyncio.gather to run both API requests concurrently.
+    # return_exceptions=True ensures that if one call fails, the other can still complete.
+    results = await asyncio.gather(
+        make_blockscout_request(base_url=base_url, api_path=block_api_path),
+        make_blockscout_request(base_url=base_url, api_path=txs_api_path),
+        return_exceptions=True
+    )
+    await ctx.report_progress(progress=2.0, total=total_steps, message="Fetched block and transaction data.")
+
+    block_info_result, txs_result = results
+    output_parts = []
+
+    # First, handle the result of the main block info call.
+    if isinstance(block_info_result, Exception):
+        return f"Error fetching basic block info: {block_info_result}"
+
+    output_parts.append("Basic block info:")
+    output_parts.append(json.dumps(block_info_result, indent=2))
+
+    # Second, handle the result of the transactions call.
+    if isinstance(txs_result, Exception):
+        output_parts.append(f"\n\nError fetching transactions for the block: {txs_result}")
+    else:
+        # The API returns transactions inside an "items" list.
+        tx_items = txs_result.get("items", [])
+        if tx_items:
+            # We only need the 'hash' from each transaction object.
+            tx_hashes = [tx.get("hash") for tx in tx_items if tx.get("hash")]
+            output_parts.append("\n\nTransactions in the block:")
+            output_parts.append(json.dumps(tx_hashes, indent=2))
+        else:
+            # Handle the case where the block has no transactions.
+            output_parts.append("\n\nNo transactions in the block.")
+
+    await ctx.report_progress(progress=3.0, total=total_steps, message="Successfully fetched all block data.")
+    return "\n".join(output_parts)
 
 async def get_latest_block(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],

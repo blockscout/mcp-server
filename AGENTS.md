@@ -179,10 +179,6 @@ mcp-server/
                 2. It calls `make_blockscout_request` with the resolved base URL, API path, and query parameters.
                 3. It processes the JSON response from Blockscout.
                 4. It transforms this response into the desired output format.
-                    * If the original `responseTemplate` was `{{.}}`, the function returns the parsed JSON (as a Python dict/list).
-                    * If the original `responseTemplate` was custom, the function constructs the corresponding Python dictionary.
-                    * If the original `responseTemplate` involved complex string formatting, the function constructs and returns the final response string.
-                    * For paginated responses, it includes the chain_id in the pagination hint.
             * Examples:
                 * `get_instructions.py`: Implements `__get_instructions__`, returning a pre-defined multi-line string with instructions and popular chain IDs.
                 * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
@@ -190,5 +186,5 @@ mcp-server/
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
                 * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
-                * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash)`, `get_latest_block(chain_id)`.
+                * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, ...)`, `transaction_summary(chain_id, hash)`, etc.
