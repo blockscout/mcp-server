@@ -407,9 +407,9 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         )
 
         assert "Basic address info:" in result
-        assert json.dumps(mock_blockscout_response, indent=2) in result
+        assert json.dumps(mock_blockscout_response) in result
         assert "Metadata associated with the address:" in result
-        assert json.dumps(mock_metadata_response["addresses"][address], indent=2) in result
+        assert json.dumps(mock_metadata_response["addresses"][address]) in result
 
         assert mock_ctx.report_progress.call_count == 4
 
@@ -437,7 +437,7 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
         result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         assert "Basic address info:" in result
-        assert json.dumps(mock_blockscout_response, indent=2) in result
+        assert json.dumps(mock_blockscout_response) in result
         assert "Metadata associated with the address:" not in result
 
         assert mock_ctx.report_progress.call_count == 4

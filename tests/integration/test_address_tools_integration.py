@@ -59,7 +59,10 @@ async def test_get_address_info_integration(mock_ctx):
 
     assert isinstance(result_str, str)
 
-    parts = result_str.split("\n\n")
+    metadata_prefix = "\nMetadata associated with the address:\n"
+    assert metadata_prefix in result_str
+
+    parts = result_str.split(metadata_prefix)
     assert len(parts) == 2, "Expected output to contain both a basic info and a metadata part"
 
     assert parts[0].startswith("Basic address info:")
@@ -68,8 +71,7 @@ async def test_get_address_info_integration(mock_ctx):
     assert basic_info["hash"].lower() == address.lower()
     assert basic_info["is_contract"] is True
 
-    assert parts[1].startswith("Metadata associated with the address:")
-    metadata_json_str = parts[1].replace("Metadata associated with the address:\n", "")
+    metadata_json_str = parts[1]
     metadata = json.loads(metadata_json_str)
     assert "tags" in metadata
     assert len(metadata["tags"]) > 0

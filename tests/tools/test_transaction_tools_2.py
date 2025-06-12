@@ -180,7 +180,7 @@ async def test_get_transaction_logs_success(mock_ctx):
 
         # ASSERT
         # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -221,7 +221,7 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
         # ASSERT
         # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -308,7 +308,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
 
         # ASSERT
         # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(

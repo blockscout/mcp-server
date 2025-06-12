@@ -475,7 +475,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
 
         result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
         mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
 
         assert result.startswith("**Items Structure:**")
@@ -605,7 +605,7 @@ async def test_get_address_logs_empty_logs(mock_ctx):
 
         # ASSERT
         # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(

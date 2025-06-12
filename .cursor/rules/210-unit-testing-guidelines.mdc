@@ -61,7 +61,7 @@ async def test_get_transaction_logs_correctly_prepares_json(mock_ctx):
 
         # ASSERT
         # Verify that json.dumps was called with the raw, unprocessed API response
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 ```
 
 #### The Complex Case: Multiple Serialization Calls
@@ -99,7 +99,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
         # ASSERT
         # 1. Verify the call to `json.dumps` for the main body.
         #    This works because the call from `encode_cursor` is prevented by its mock.
-        mock_json_dumps.assert_called_once_with(mock_api_response, indent=2)
+        mock_json_dumps.assert_called_once_with(mock_api_response)
 
         # 2. Verify the call to the helper function for the pagination part.
         mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])

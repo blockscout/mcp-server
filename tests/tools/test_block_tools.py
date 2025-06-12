@@ -156,7 +156,7 @@ async def test_get_block_info_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
-        expected_output = f"Basic block info:\n{json.dumps(mock_api_response, indent=2)}"
+        expected_output = f"Basic block info:\n{json.dumps(mock_api_response)}"
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
 
@@ -188,7 +188,7 @@ async def test_get_block_info_with_hash(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{block_hash}")
-        expected_output = f"Basic block info:\n{json.dumps(mock_api_response, indent=2)}"
+        expected_output = f"Basic block info:\n{json.dumps(mock_api_response)}"
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
 
@@ -255,9 +255,9 @@ async def test_get_block_info_with_transactions_success(mock_ctx):
         assert mock_request.call_count == 2
 
         assert "Basic block info:" in result
-        assert json.dumps(mock_block_response, indent=2) in result
+        assert json.dumps(mock_block_response) in result
         assert "Transactions in the block:" in result
-        assert json.dumps(["0xtx1", "0xtx2"], indent=2) in result
+        assert json.dumps(["0xtx1", "0xtx2"]) in result
         assert "No transactions in the block." not in result
         assert mock_ctx.report_progress.call_count == 4
 
@@ -292,7 +292,7 @@ async def test_get_block_info_with_no_transactions(mock_ctx):
 
         # ASSERT
         assert "Basic block info:" in result
-        assert json.dumps(mock_block_response, indent=2) in result
+        assert json.dumps(mock_block_response) in result
         assert "No transactions in the block." in result
         assert "Transactions in the block:" not in result
         assert mock_ctx.report_progress.call_count == 4
@@ -327,6 +327,6 @@ async def test_get_block_info_with_transactions_api_error(mock_ctx):
 
         # ASSERT
         assert "Basic block info:" in result
-        assert json.dumps(mock_block_response, indent=2) in result
+        assert json.dumps(mock_block_response) in result
         assert "Error fetching transactions for the block:" in result
         assert str(tx_error) in result

@@ -31,7 +31,7 @@ async def get_block_info(
             api_path=f"/api/v2/blocks/{number_or_hash}"
         )
         await ctx.report_progress(progress=2.0, total=total_steps, message="Successfully fetched block data.")
-        return f"Basic block info:\n{json.dumps(response_data, indent=2)}"
+        return f"Basic block info:\n{json.dumps(response_data)}"
 
     # If include_transactions is True
     block_api_path = f"/api/v2/blocks/{number_or_hash}"
@@ -54,7 +54,7 @@ async def get_block_info(
         return f"Error fetching basic block info: {block_info_result}"
 
     output_parts.append("Basic block info:")
-    output_parts.append(json.dumps(block_info_result, indent=2))
+    output_parts.append(json.dumps(block_info_result))
 
     # Second, handle the result of the transactions call.
     if isinstance(txs_result, Exception):
@@ -66,7 +66,7 @@ async def get_block_info(
             # We only need the 'hash' from each transaction object.
             tx_hashes = [tx.get("hash") for tx in tx_items if tx.get("hash")]
             output_parts.append("\n\nTransactions in the block:")
-            output_parts.append(json.dumps(tx_hashes, indent=2))
+            output_parts.append(json.dumps(tx_hashes))
         else:
             # Handle the case where the block has no transactions.
             output_parts.append("\n\nNo transactions in the block.")

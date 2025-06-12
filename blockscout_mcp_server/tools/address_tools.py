@@ -48,7 +48,7 @@ async def get_address_info(
         return f"Error fetching basic address info: {address_info_result}"
 
     output_parts.append("Basic address info:")
-    output_parts.append(json.dumps(address_info_result, indent=2))
+    output_parts.append(json.dumps(address_info_result))
     await ctx.report_progress(progress=2.0, total=3.0, message="Fetched basic address info.")
 
     if not isinstance(metadata_result, Exception) and metadata_result.get("addresses"):
@@ -62,7 +62,7 @@ async def get_address_info(
             address_metadata = metadata_result["addresses"][address_key]
             if address_metadata:
                 output_parts.append("\nMetadata associated with the address:")
-                output_parts.append(json.dumps(address_metadata, indent=2))
+                output_parts.append(json.dumps(address_metadata))
 
     await ctx.report_progress(progress=3.0, total=3.0, message="Successfully fetched all address data.")
 
@@ -233,7 +233,7 @@ async def nft_tokens_by_address(
             "token_instances": token_instances
         }
 
-        item_str = json.dumps(collection_data, indent=2)
+        item_str = json.dumps(collection_data)
         output_parts.append(item_str)
         if i < len(items_data) - 1:
             output_parts.append(",")
@@ -295,7 +295,7 @@ async def get_address_logs(
     # Report completion
     await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address logs.")
     
-    logs_json_str = json.dumps(response_data, indent=2)  # Pretty print JSON
+    logs_json_str = json.dumps(response_data)  # Compact JSON
     
     prefix = """**Items Structure:**
 - `address`: The queried address that emitted these logs (constant across all items)

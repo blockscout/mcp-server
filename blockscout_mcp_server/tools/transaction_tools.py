@@ -233,7 +233,7 @@ async def get_transaction_logs(
     # Report completion
     await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
     
-    logs_json_str = json.dumps(response_data, indent=2)  # Pretty print JSON
+    logs_json_str = json.dumps(response_data)  # Compact JSON
     
     prefix = """**Items Structure:**
 - `address`: The queried address that emitted these logs (constant across all items)

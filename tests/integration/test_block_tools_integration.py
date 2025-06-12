@@ -45,13 +45,15 @@ async def test_get_block_info_with_transactions_integration(mock_ctx):
     assert "Basic block info:" in result
     assert "Transactions in the block:" in result
 
-    parts = result.split("\n\n")
-    assert len(parts) >= 2
+    tx_prefix = "\n\nTransactions in the block:\n"
+    assert tx_prefix in result
+    parts = result.split(tx_prefix)
+    assert len(parts) == 2
 
     block_info_json_str = parts[0].replace("Basic block info:\n", "")
     block_info_json = json.loads(block_info_json_str)
 
-    tx_list_json_str = parts[1].replace("Transactions in the block:\n", "")
+    tx_list_json_str = parts[1]
     tx_list_json = json.loads(tx_list_json_str)
 
     assert block_info_json["height"] == 1000000
@@ -74,7 +76,9 @@ async def test_get_block_info_with_no_transactions_integration(mock_ctx):
     assert "No transactions in the block." in result
     assert "Transactions in the block:" not in result
 
-    block_info_json_str = result.split("\n\n")[0].replace("Basic block info:\n", "")
+    no_tx_prefix = "\n\nNo transactions in the block."
+    assert no_tx_prefix in result
+    block_info_json_str = result.split(no_tx_prefix)[0].replace("Basic block info:\n", "")
     block_info_json = json.loads(block_info_json_str)
 
     assert block_info_json["height"] == 100

@@ -217,11 +217,11 @@ Use for responses requiring significant text formatting, conditionals, or loops:
 items_data = response_data.get("items", [])
 output_parts = ["["]  # Start JSON array
 for i, item in enumerate(items_data):
-    item_str = f"""
-  {{
-    "field1": "{item.get("field1", "")}",
-    "field2": "{item.get("field2", "")}"
-  }}"""
+    item_dict = {
+        "field1": item.get("field1", ""),
+        "field2": item.get("field2", ""),
+    }
+    item_str = json.dumps(item_dict)
     output_parts.append(item_str)
     if i < len(items_data) - 1:
         output_parts.append(",")
@@ -248,13 +248,15 @@ Use when adding explanatory text to JSON output:
 
 ```python
 import json
-content = json.dumps(response_data, indent=2)  # Pretty-print JSON
+content = json.dumps(response_data)  # Compact JSON
 prefix = """
 # Explanatory Title
 This is some explanatory text that helps the user understand the data.
 """
 return f"{prefix}\n{content}"
 ```
+
+**Note:** We use compact JSON (without indentation) to minimize the data payload size. The output is consumed by machines, not humans, so readability of the raw JSON string is not a priority.
 
 ### 6. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
 
