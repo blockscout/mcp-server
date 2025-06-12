@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
+import json
 
 from blockscout_mcp_server.tools.address_tools import (
     nft_tokens_by_address,
@@ -85,7 +86,8 @@ async def test_nft_tokens_by_address_success(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"}
         )
-        assert result == expected_result
+        result_json = json.loads(result)
+        assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
@@ -117,7 +119,8 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"}
         )
-        assert result == expected_result
+        result_json = json.loads(result)
+        assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
@@ -204,7 +207,8 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"}
         )
-        assert result == expected_result
+        result_json = json.loads(result)
+        assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
 
 @pytest.mark.asyncio
@@ -323,8 +327,62 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"}
         )
-        assert result == expected_result
+        result_json = json.loads(result)
+        assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
+
+@pytest.mark.asyncio
+async def test_nft_tokens_by_address_with_pagination(mock_ctx):
+    """Verify pagination hint is included when next_page_params present."""
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "items": [],
+        "next_page_params": {"block_number": 123, "cursor": "foo"}
+    }
+    fake_cursor = "ENCODED_CURSOR"
+
+    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools.encode_cursor') as mock_encode_cursor:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+        mock_encode_cursor.return_value = fake_cursor
+
+        result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
+        assert f'cursor="{fake_cursor}"' in result
+        assert "To get the next page call" in result
+
+@pytest.mark.asyncio
+async def test_nft_tokens_by_address_with_cursor(mock_ctx):
+    """Verify decoded cursor parameters are passed to the API call."""
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+    decoded_params = {"block_number": 100, "cursor": "bar"}
+    cursor = encode_cursor(decoded_params)
+
+    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools.decode_cursor') as mock_decode_cursor:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = {"items": []}
+        mock_decode_cursor.return_value = decoded_params
+
+        await nft_tokens_by_address(chain_id=chain_id, address=address, cursor=cursor, ctx=mock_ctx)
+
+        mock_decode_cursor.assert_called_once_with(cursor)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/addresses/{address}/nft/collections",
+            params={"type": "ERC-721,ERC-404,ERC-1155", **decoded_params}
+        )
 
 @pytest.mark.asyncio
 async def test_get_address_logs_success(mock_ctx):

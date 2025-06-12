@@ -152,8 +152,14 @@ To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="
 async def nft_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="NFT owner address")],
-    ctx: Context
-) -> list[Dict]:
+    ctx: Context,
+    cursor: Annotated[
+        Optional[str],
+        Field(
+            description="The pagination cursor from a previous response to get the next page of results."
+        ),
+    ] = None,
+) -> str:
     """
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
     Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).
@@ -161,6 +167,16 @@ async def nft_tokens_by_address(
     """
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}
+
+    # Add pagination parameters if provided via cursor
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            params.update(decoded_params)
+        except InvalidCursorError:
+            return (
+                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
     
     # Report start of operation
     await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}...")
@@ -175,20 +191,20 @@ async def nft_tokens_by_address(
     # Report completion
     await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched NFT data.")
     
-    # Process the response data and format it according to the responseTemplate
+    # Process the response data and format it
     items_data = response_data.get("items", [])
-    formatted_collections = []
-    
-    for item in items_data:
+    output_parts = ["["]  # Start of JSON array
+
+    for i, item in enumerate(items_data):
         token = item.get("token", {})
-        
+
         # Format token instances
         token_instances = []
         for instance in item.get("token_instances", []):
             instance_data = {
                 "id": instance.get("id", "")
             }
-            
+
             # Add metadata if available
             metadata = instance.get("metadata", {})
             if metadata:
@@ -200,9 +216,9 @@ async def nft_tokens_by_address(
                     instance_data["external_app_url"] = metadata.get("external_url")
                 if metadata.get("attributes"):
                     instance_data["metadata_attributes"] = metadata.get("attributes")
-            
+
             token_instances.append(instance_data)
-        
+
         # Format collection with its tokens
         collection_data = {
             "collection": {
@@ -216,10 +232,25 @@ async def nft_tokens_by_address(
             "amount": item.get("amount", ""),
             "token_instances": token_instances
         }
-        
-        formatted_collections.append(collection_data)
-    
-    return formatted_collections 
+
+        item_str = json.dumps(collection_data, indent=2)
+        output_parts.append(item_str)
+        if i < len(items_data) - 1:
+            output_parts.append(",")
+
+    output_parts.append("]")  # End of JSON array
+
+    # Add pagination hint if next_page_params exists
+    next_page_params = response_data.get("next_page_params")
+    if next_page_params:
+        next_cursor = encode_cursor(next_page_params)
+        pagination_hint = f"""
+
+----
+To get the next page call nft_tokens_by_address(chain_id=\"{chain_id}\", address=\"{address}\", cursor=\"{next_cursor}\")"""
+        output_parts.append(pagination_hint)
+
+    return "".join(output_parts)
 
 async def get_address_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],

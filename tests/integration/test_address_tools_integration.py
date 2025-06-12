@@ -12,16 +12,15 @@ from blockscout_mcp_server.tools.address_tools import (
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_integration(mock_ctx):
-    address = "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8"  # Pudgy Penguins contract
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"  # Vitalik Buterin
     result = await nft_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
 
-    assert isinstance(result, list) and len(result) > 0
-    first_collection = result[0]
-    assert "collection" in first_collection and "token_instances" in first_collection
-    assert "name" in first_collection["collection"]
-    assert "address" in first_collection["collection"]
-    if first_collection["token_instances"]:
-        assert "id" in first_collection["token_instances"][0]
+    assert isinstance(result, str)
+    assert "To get the next page call" in result
+    assert 'cursor="' in result
+
+    main_json = json.loads(result.split("----")[0])
+    assert isinstance(main_json, list) and len(main_json) > 0
 
 
 @pytest.mark.integration
