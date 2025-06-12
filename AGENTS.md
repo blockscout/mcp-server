@@ -18,7 +18,7 @@ mcp-server/
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
 │       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address, get_address_logs)
-│       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info with optional transactions)
+│       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, transaction_summary)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
 ├── tests/                      # Test suite for all MCP tools

@@ -9,11 +9,11 @@ async def get_block_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     number_or_hash: Annotated[str, Field(description="Block number or hash")],
     ctx: Context,
-    include_transactions: Annotated[Optional[bool], Field(description="If true, includes a list of transaction hashes from the block. Use this option sparingly as it requires an extra API call.")] = False
+    include_transactions: Annotated[Optional[bool], Field(description="If true, includes a list of transaction hashes from the block.")] = False
 ) -> str:
     """
     Get block information like timestamp, gas used, burnt fees, transaction count etc.
-    Can optionally include the list of transaction hashes contained in the block. This must be requested only when getting block transactions is really needed.
+    Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
     """
     total_steps = 3.0 if include_transactions else 2.0
 
