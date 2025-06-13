@@ -268,7 +268,6 @@ async def get_transaction_logs(
 
     transformed_response = {
         "items": transformed_items,
-        "next_page_params": response_data.get("next_page_params"),
     }
 
     # Report completion

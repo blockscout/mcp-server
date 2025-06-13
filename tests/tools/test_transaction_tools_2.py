@@ -174,7 +174,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "index": 1,
             }
         ],
-        "next_page_params": None,
     }
 
     expected_transformed_response = {
@@ -198,7 +197,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "topics": ["0xtopic3..."],
             },
         ],
-        "next_page_params": None,
     }
 
     # Patch json.dumps in the transaction_tools module
@@ -246,7 +244,6 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
     expected_transformed_response = {
         "items": [],
-        "next_page_params": None,
     }
 
     # Patch json.dumps directly since it's imported locally in the function
@@ -339,7 +336,6 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "index": 42,
             }
         ],
-        "next_page_params": None
     }
 
     expected_transformed_response = {
@@ -358,7 +354,6 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 ],
             }
         ],
-        "next_page_params": None
     }
 
     # Patch json.dumps directly since it's imported locally in the function
@@ -429,7 +424,6 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
                 "topics": [],
             }
         ],
-        "next_page_params": mock_api_response["next_page_params"],
     }
 
     fake_cursor = "ENCODED_CURSOR"
@@ -505,7 +499,7 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
             api_path=f"/api/v2/transactions/{hash}/logs",
             params=decoded_params,
         )
-        mock_json_dumps.assert_called_once_with({"items": [], "next_page_params": None})
+        mock_json_dumps.assert_called_once_with({"items": []})
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
