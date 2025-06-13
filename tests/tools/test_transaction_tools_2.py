@@ -149,22 +149,55 @@ async def test_get_transaction_logs_success(mock_ctx):
     mock_api_response = {
         "items": [
             {
-                "address": "0xcontract1...",
+                "address": {"hash": "0xcontract1..."},
                 "topics": ["0xtopic1...", "0xtopic2..."],
                 "data": "0xdata123...",
                 "log_index": "0",
                 "transaction_hash": hash,
-                "block_number": 19000000
+                "block_number": 19000000,
+                "block_hash": "0xblockhash1...",
+                "decoded": {"name": "EventA"},
+                "smart_contract": None,
+                "index": 0,
             },
             {
-                "address": "0xcontract2...",
+                "address": {"hash": "0xcontract2..."},
                 "topics": ["0xtopic3..."],
                 "data": "0xdata456...",
                 "log_index": "1",
                 "transaction_hash": hash,
-                "block_number": 19000000
+                "block_number": 19000000,
+                "block_hash": "0xblockhash2...",
+                "decoded": {"name": "EventB"},
+                "smart_contract": None,
+                "index": 1,
             }
-        ]
+        ],
+        "next_page_params": None,
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "address": "0xcontract1...",
+                "block_number": 19000000,
+                "data": "0xdata123...",
+                "decoded": {"name": "EventA"},
+                "index": 0,
+                "smart_contract": None,
+                "topics": ["0xtopic1...", "0xtopic2..."],
+            },
+            {
+                "address": "0xcontract2...",
+                "block_number": 19000000,
+                "data": "0xdata456...",
+                "decoded": {"name": "EventB"},
+                "index": 1,
+                "smart_contract": None,
+                "topics": ["0xtopic3..."],
+            },
+        ],
+        "next_page_params": None,
     }
 
     # Patch json.dumps in the transaction_tools module
@@ -181,8 +214,8 @@ async def test_get_transaction_logs_success(mock_ctx):
         result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
 
         # ASSERT
-        # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        # Assert that json.dumps was called with the transformed data
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -209,6 +242,11 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
     mock_api_response = {"items": []}
 
+    expected_transformed_response = {
+        "items": [],
+        "next_page_params": None,
+    }
+
     # Patch json.dumps directly since it's imported locally in the function
     with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
@@ -223,8 +261,8 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
         result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
 
         # ASSERT
-        # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        # Assert that json.dumps was called with the transformed data
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -279,7 +317,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
     mock_api_response = {
         "items": [
             {
-                "address": "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0",
+                "address": {"hash": "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"},
                 "topics": [
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
                     "0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -291,7 +329,29 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "block_number": 19000000,
                 "block_hash": "0xblock123...",
                 "transaction_index": 10,
-                "removed": False
+                "removed": False,
+                "decoded": {"name": "Transfer"},
+                "smart_contract": None,
+                "index": 42,
+            }
+        ],
+        "next_page_params": None
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "address": "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0",
+                "block_number": 19000000,
+                "data": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+                "decoded": {"name": "Transfer"},
+                "index": 42,
+                "smart_contract": None,
+                "topics": [
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                    "0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
+                    "0x000000000000000000000000f81c1a7e8d3c1a1d3c1a1d3c1a1d3c1a1d3c1a1d"
+                ],
             }
         ],
         "next_page_params": None
@@ -311,8 +371,8 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
         result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
 
         # ASSERT
-        # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        # Assert that json.dumps was called with the transformed data
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(

@@ -215,8 +215,8 @@ async def get_transaction_logs(
 ) -> str:
     """
     Get comprehensive transaction logs with decoded event data.
-    Unlike standard eth_getLogs, this tool returns enriched logs including decoded event parameters with types and values, detailed contract information (ENS names, verification status, public tags, proxy details, token metadata), block context, and categorized event signatures.
-    Each log entry includes raw data, decoded method calls, parameter extraction, and contract classifications.
+    Unlike standard eth_getLogs, this tool returns enriched logs including decoded event parameters with types and values, detailed contract information (which can be queried with other tools), block context, and categorized event signatures.
+    Each log entry is simplified to include the emitting contract address (as a string), block number, data, topics, and decoded event information.
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
     """
     api_path = f"/api/v2/transactions/{hash}/logs"
@@ -230,20 +230,41 @@ async def get_transaction_logs(
     await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction logs...")
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
-    
+
+    original_items = response_data.get("items", [])
+
+    transformed_items = [
+        {
+            "address": item.get("address", {}).get("hash"),
+            "block_number": item.get("block_number"),
+            "data": item.get("data"),
+            "decoded": item.get("decoded"),
+            "index": item.get("index"),
+            "smart_contract": item.get("smart_contract"),
+            "topics": item.get("topics"),
+        }
+        for item in original_items
+    ]
+
+    transformed_response = {
+        "items": transformed_items,
+        "next_page_params": response_data.get("next_page_params"),
+    }
+
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
-    
-    logs_json_str = json.dumps(response_data)  # Compact JSON
+
+    logs_json_str = json.dumps(transformed_response)  # Compact JSON
     
     prefix = """**Items Structure:**
-- `address`: The queried address that emitted these logs (constant across all items)
-- `block_hash/block_number`: Block where the event was emitted
+- `address`: The contract address that emitted the log (string)
+- `block_number`: Block where the event was emitted
 - `index`: Log position within the block
 - `topics`: Raw indexed event parameters (first topic is event signature hash)
 - `data`: Raw non-indexed event parameters (hex encoded)
+- `decoded`: If available, the decoded event with its name and parameters
 
-**Event Decoding (misleadingly named fields):**
+**Event Decoding in `decoded` field:**
 - `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
 - `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)
 - `parameters`: Decoded event parameters with names, types, values, and indexing status
