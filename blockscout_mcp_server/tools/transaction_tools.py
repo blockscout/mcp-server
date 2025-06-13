@@ -214,9 +214,8 @@ async def get_transaction_logs(
     ctx: Context
 ) -> str:
     """
-    Get comprehensive transaction logs with decoded event data.
-    Unlike standard eth_getLogs, this tool returns enriched logs including decoded event parameters with types and values, detailed contract information (which can be queried with other tools), block context, and categorized event signatures.
-    Each log entry is simplified to include the emitting contract address (as a string), block number, data, topics, and decoded event information.
+    Get comprehensive transaction logs.
+    Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
     """
     api_path = f"/api/v2/transactions/{hash}/logs"
