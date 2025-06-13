@@ -231,6 +231,84 @@ async def test_get_transaction_logs_success(mock_ctx):
         assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
+async def test_get_transaction_info_removes_raw_input_by_default(mock_ctx):
+    """Verify raw_input is removed by default when decoded_input is present."""
+    # ARRANGE
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": {"method_call": "transfer(...)"},
+        "raw_input": "0xverylongstring"
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        # ACT
+        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+
+        # ASSERT
+        assert "raw_input" not in result
+        assert "decoded_input" in result
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_keeps_raw_input_when_flagged(mock_ctx):
+    """Verify raw_input is kept when include_raw_input is True."""
+    # ARRANGE
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": {"method_call": "transfer(...)"},
+        "raw_input": "0xverylongstring"
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        # ACT
+        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
+
+        # ASSERT
+        assert "raw_input" in result
+        assert result["raw_input"] == "0xverylongstring"
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_keeps_raw_input_if_no_decoded(mock_ctx):
+    """Verify raw_input is kept by default if decoded_input is null."""
+    # ARRANGE
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": None,
+        "raw_input": "0xverylongstring"
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        # ACT
+        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+
+        # ASSERT
+        assert "raw_input" in result
+        assert result["raw_input"] == "0xverylongstring"
+
+@pytest.mark.asyncio
 async def test_get_transaction_logs_empty_logs(mock_ctx):
     """
     Verify get_transaction_logs handles transactions with no logs.

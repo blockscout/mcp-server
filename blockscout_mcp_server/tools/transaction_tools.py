@@ -187,11 +187,13 @@ async def transaction_summary(
 async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     hash: Annotated[str, Field(description="Transaction hash")],
-    ctx: Context
+    ctx: Context,
+    include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data.")] = False
 ) -> Dict:
     """
     Get comprehensive transaction information. 
     Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, address information (ENS names, contract verification status, public tags, proxy details), transaction fee breakdown (priority fees, burnt fees) and categorized transaction types. 
+    By default, the raw transaction input is omitted if a decoded version is available to save context; request it with `include_raw_input=True` only when you truly need the raw hex data.
     Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
     """
     api_path = f"/api/v2/transactions/{hash}"
@@ -205,10 +207,14 @@ async def get_transaction_info(
     await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction data...")
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
-    
+
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction data.")
-    
+
+    # Conditionally remove raw_input to save context if decoded_input is present
+    if not include_raw_input and response_data.get("decoded_input"):
+        response_data.pop("raw_input", None)
+
     return response_data
 
 async def get_transaction_logs(
