@@ -258,7 +258,7 @@ return f"{prefix}\n{content}"
 
 **Note:** We use compact JSON (without indentation) to minimize the data payload size. The output is consumed by machines, not humans, so readability of the raw JSON string is not a priority.
 
-### 7. Reporting Progress (Best Practice)
+### 6. Reporting Progress (Best Practice)
 
 To ensure good observability and debuggability, all progress updates should be reported to the client and simultaneously logged as an `info` message. This provides immediate feedback for developers via logs, while also supporting clients that can render progress UIs.
 
@@ -300,7 +300,7 @@ async def some_tool_with_progress(
 
 This centralized helper ensures that every progress update is visible, regardless of the MCP client's capabilities.
 
-### 6. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
+### 7. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
 
 For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
 
