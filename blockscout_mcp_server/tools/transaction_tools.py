@@ -185,7 +185,7 @@ async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
-    include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data. Use only if you specifically need the raw hex data, as it can be very large.")] = False
+    include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data.")] = False
 ) -> Dict:
     """
     Get comprehensive transaction information. 
