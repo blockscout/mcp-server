@@ -242,12 +242,12 @@ async def make_request_with_periodic_progress(
             formatted_message = f"{current_step_message_prefix}: {in_progress_message_template.format(elapsed_seconds=elapsed_seconds, total_hint=total_duration_hint)}"
             
             # Report progress to client
-            await ctx.report_progress(
+            await report_and_log_progress(
+                ctx,
                 progress=overall_progress_rounded,
                 total=tool_overall_total_steps,
-                message=formatted_message
+                message=formatted_message,
             )
-            await ctx.info(f"Progress: {overall_progress_rounded}/{tool_overall_total_steps} {formatted_message}")
             
             # Wait for the next progress interval or until API call completes
             with anyio.move_on_after(progress_interval_seconds):
@@ -308,3 +308,15 @@ def decode_cursor(cursor: str) -> dict:
         return json.loads(json_string)
     except (TypeError, ValueError, json.JSONDecodeError, base64.binascii.Error) as e:
         raise InvalidCursorError("Invalid or expired cursor provided.") from e
+
+
+async def report_and_log_progress(
+    ctx: Context,
+    progress: float,
+    total: float | None,
+    message: str | None,
+) -> None:
+    """Reports progress to the client and logs it as an info message."""
+    await ctx.report_progress(progress=progress, total=total, message=message)
+    log_message = f"Progress: {progress}/{total} - {message}"
+    await ctx.info(log_message)

@@ -70,6 +70,7 @@ async def test_get_contract_abi_success(mock_ctx):
         )
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_contract_abi_missing_abi_field(mock_ctx):
@@ -101,6 +102,7 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
         )
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_contract_abi_empty_abi(mock_ctx):

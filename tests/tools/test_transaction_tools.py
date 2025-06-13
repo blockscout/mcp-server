@@ -215,6 +215,7 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
         
         # Progress should have been reported once (at start) before the error
         assert mock_ctx.report_progress.call_count == 1
+        assert mock_ctx.info.call_count == 1
 
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_wrapper_error(mock_ctx):
@@ -247,6 +248,7 @@ async def test_get_transactions_by_address_wrapper_error(mock_ctx):
         
         # Progress should have been reported twice (start + after URL resolution) before the wrapper error
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_transaction_summary_without_wrapper(mock_ctx):
@@ -285,6 +287,7 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
         
         # This tool should have 3 progress reports (start, after URL, completion)
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_transaction_summary_no_summary_available(mock_ctx):
@@ -315,7 +318,8 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
         assert result == expected_result
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, 
+            base_url=mock_base_url,
             api_path=f"/api/v2/transactions/{tx_hash}/summary"
         )
-        assert mock_ctx.report_progress.call_count == 3 
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3

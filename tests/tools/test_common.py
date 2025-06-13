@@ -1,4 +1,5 @@
 import pytest
+from mcp.server.fastmcp import Context
 from blockscout_mcp_server.tools.common import encode_cursor, decode_cursor, InvalidCursorError
 
 
@@ -32,3 +33,19 @@ def test_decode_valid_base64_invalid_json():
     invalid_json_cursor = "bm90IGpzb24="  # base64 for 'not json'
     with pytest.raises(InvalidCursorError, match="Invalid or expired cursor provided."):
         decode_cursor(invalid_json_cursor)
+
+
+@pytest.mark.asyncio
+async def test_report_and_log_progress(mock_ctx: Context):
+    """Verify the helper calls both report_progress and info with correct args."""
+    progress, total, message = 1.0, 2.0, "Step 1 Complete"
+
+    from blockscout_mcp_server.tools.common import report_and_log_progress
+
+    await report_and_log_progress(mock_ctx, progress, total, message)
+
+    mock_ctx.report_progress.assert_called_once_with(
+        progress=progress, total=total, message=message
+    )
+    expected_log_message = f"Progress: {progress}/{total} - {message}"
+    mock_ctx.info.assert_called_once_with(expected_log_message)

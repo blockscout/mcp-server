@@ -2,7 +2,11 @@ from typing import Annotated, Dict, Optional
 import asyncio
 import json
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url
+from blockscout_mcp_server.tools.common import (
+    make_blockscout_request,
+    get_blockscout_base_url,
+    report_and_log_progress,
+)
 from mcp.server.fastmcp import Context
 
 async def get_block_info(
@@ -18,19 +22,34 @@ async def get_block_info(
     total_steps = 3.0 if include_transactions else 2.0
 
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=total_steps, message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx,
+        progress=0.0,
+        total=total_steps,
+        message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...",
+    )
 
     base_url = await get_blockscout_base_url(chain_id)
 
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=total_steps, message="Resolved Blockscout instance URL. Fetching block data...")
+    await report_and_log_progress(
+        ctx,
+        progress=1.0,
+        total=total_steps,
+        message="Resolved Blockscout instance URL. Fetching block data...",
+    )
 
     if not include_transactions:
         response_data = await make_blockscout_request(
             base_url=base_url,
             api_path=f"/api/v2/blocks/{number_or_hash}"
         )
-        await ctx.report_progress(progress=2.0, total=total_steps, message="Successfully fetched block data.")
+        await report_and_log_progress(
+            ctx,
+            progress=2.0,
+            total=total_steps,
+            message="Successfully fetched block data.",
+        )
         return f"Basic block info:\n{json.dumps(response_data)}"
 
     # If include_transactions is True
@@ -44,7 +63,12 @@ async def get_block_info(
         make_blockscout_request(base_url=base_url, api_path=txs_api_path),
         return_exceptions=True
     )
-    await ctx.report_progress(progress=2.0, total=total_steps, message="Fetched block and transaction data.")
+    await report_and_log_progress(
+        ctx,
+        progress=2.0,
+        total=total_steps,
+        message="Fetched block and transaction data.",
+    )
 
     block_info_result, txs_result = results
     output_parts = []
@@ -71,7 +95,12 @@ async def get_block_info(
             # Handle the case where the block has no transactions.
             output_parts.append("\n\nNo transactions in the block.")
 
-    await ctx.report_progress(progress=3.0, total=total_steps, message="Successfully fetched all block data.")
+    await report_and_log_progress(
+        ctx,
+        progress=3.0,
+        total=total_steps,
+        message="Successfully fetched all block data.",
+    )
     return "\n".join(output_parts)
 
 async def get_latest_block(
@@ -85,17 +114,32 @@ async def get_latest_block(
     api_path = "/api/v2/main-page/blocks"
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch latest block info on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx,
+        progress=0.0,
+        total=2.0,
+        message=f"Starting to fetch latest block info on chain {chain_id}...",
+    )
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching latest block data...")
+    await report_and_log_progress(
+        ctx,
+        progress=1.0,
+        total=2.0,
+        message="Resolved Blockscout instance URL. Fetching latest block data...",
+    )
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched latest block data.")
+    await report_and_log_progress(
+        ctx,
+        progress=2.0,
+        total=2.0,
+        message="Successfully fetched latest block data.",
+    )
     
     # The API returns a list. Extract data from the first item as per responseTemplate
     if response_data and isinstance(response_data, list) and len(response_data) > 0:

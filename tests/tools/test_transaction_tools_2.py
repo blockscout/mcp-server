@@ -48,6 +48,7 @@ async def test_get_transaction_info_success(mock_ctx):
         )
         assert result == mock_api_response
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_transaction_info_not_found(mock_ctx):
@@ -133,6 +134,7 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         assert result["hash"] == hash
         assert result["status"] == "pending"
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_success(mock_ctx):
@@ -191,8 +193,9 @@ async def test_get_transaction_logs_success(mock_ctx):
         # Verify the result starts with the expected prefix
         expected_prefix = "**Items Structure:**"
         assert result.startswith(expected_prefix)
-        
+
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_empty_logs(mock_ctx):
@@ -231,8 +234,9 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
         
         # Verify the result structure
         assert result.startswith("**Items Structure:**")
-        
+
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_api_error(mock_ctx):

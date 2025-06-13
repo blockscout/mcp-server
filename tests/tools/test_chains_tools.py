@@ -43,6 +43,7 @@ async def test_get_chains_list_success(mock_ctx):
 
         # Was progress reported correctly? (Check the number of calls)
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_chains_list_empty_response(mock_ctx):
@@ -68,6 +69,7 @@ async def test_get_chains_list_empty_response(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains/list")
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_chains_list_invalid_response_format(mock_ctx):
@@ -93,6 +95,7 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains/list")
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
@@ -127,6 +130,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains/list")
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_chains_list_api_error(mock_ctx):
@@ -149,4 +153,5 @@ async def test_get_chains_list_api_error(mock_ctx):
         # Verify mock was called as expected before the exception
         mock_request.assert_called_once_with(api_path="/api/chains/list")
         # Progress should have been reported once (at start) before the error
-        assert mock_ctx.report_progress.call_count == 1 
+        assert mock_ctx.report_progress.call_count == 1
+        assert mock_ctx.info.call_count == 1

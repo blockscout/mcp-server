@@ -32,6 +32,7 @@ async def test_get_address_by_ens_name_success(mock_ctx):
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_address_by_ens_name_missing_resolved_address(mock_ctx):
@@ -54,6 +55,7 @@ async def test_get_address_by_ens_name_missing_resolved_address(mock_ctx):
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_address_by_ens_name_missing_hash(mock_ctx):
@@ -78,6 +80,7 @@ async def test_get_address_by_ens_name_missing_hash(mock_ctx):
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_address_by_ens_name_api_error(mock_ctx):
@@ -143,4 +146,6 @@ async def test_get_address_by_ens_name_timeout_error(mock_ctx):
         with pytest.raises(httpx.TimeoutException):
             await get_address_by_ens_name(name=ens_name, ctx=mock_ctx)
 
-        mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}") 
+        mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
+        assert mock_ctx.report_progress.call_count == 1
+        assert mock_ctx.info.call_count == 1

@@ -75,6 +75,7 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         )
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -124,6 +125,8 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
         assert result == expected_result
         assert len(result) == 7
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 
 @pytest.mark.asyncio

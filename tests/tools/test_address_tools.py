@@ -98,8 +98,9 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         assert result.startswith('[')
         assert ']' in result
         
-        # Check progress reporting
+        # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_without_pagination(mock_ctx):
@@ -161,8 +162,9 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         assert result.startswith('[')
         assert result.endswith(']')
         
-        # Check progress reporting
+        # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
@@ -224,8 +226,9 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
         assert expected_pagination in result
         
-        # Check progress reporting
+        # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
@@ -273,8 +276,9 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         # Check that we get an empty JSON array
         assert result == "[]"
         
-        # Check progress reporting
+        # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
@@ -333,8 +337,9 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
         assert result.startswith('[')
         assert result.endswith(']')
         
-        # Check progress reporting
+        # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_api_error(mock_ctx):
@@ -368,6 +373,7 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
         )
         # Progress should have been reported twice (start + after chain URL resolution) before the error
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_address_info_success_with_metadata(mock_ctx):
@@ -412,6 +418,7 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         assert json.dumps(mock_metadata_response["addresses"][address]) in result
 
         assert mock_ctx.report_progress.call_count == 4
+        assert mock_ctx.info.call_count == 4
 
 
 @pytest.mark.asyncio
@@ -441,3 +448,4 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
         assert "Metadata associated with the address:" not in result
 
         assert mock_ctx.report_progress.call_count == 4
+        assert mock_ctx.info.call_count == 4

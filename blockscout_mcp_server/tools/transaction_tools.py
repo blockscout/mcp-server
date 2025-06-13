@@ -2,9 +2,10 @@ import json
 from typing import Annotated, Optional, Dict
 from pydantic import Field
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request, 
-    get_blockscout_base_url, 
-    make_request_with_periodic_progress
+    make_blockscout_request,
+    get_blockscout_base_url,
+    make_request_with_periodic_progress,
+    report_and_log_progress,
 )
 from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
@@ -41,7 +42,7 @@ async def get_transactions_by_address(
     tool_overall_total_steps = 2.0
 
     # Report start of operation
-    await ctx.report_progress(
+    await report_and_log_progress(ctx, 
         progress=0.0, 
         total=tool_overall_total_steps, 
         message=f"Starting to fetch transactions for {address} on chain {chain_id}..."
@@ -50,7 +51,7 @@ async def get_transactions_by_address(
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(
+    await report_and_log_progress(ctx, 
         progress=1.0, 
         total=tool_overall_total_steps, 
         message="Resolved Blockscout instance URL. Now fetching transactions..."
@@ -111,7 +112,7 @@ async def get_token_transfers_by_address(
     tool_overall_total_steps = 2.0
 
     # Report start of operation
-    await ctx.report_progress(
+    await report_and_log_progress(ctx, 
         progress=0.0,
         total=tool_overall_total_steps,
         message=f"Starting to fetch token transfers for {address} on chain {chain_id}..."
@@ -120,7 +121,7 @@ async def get_token_transfers_by_address(
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(
+    await report_and_log_progress(ctx, 
         progress=1.0,
         total=tool_overall_total_steps,
         message="Resolved Blockscout instance URL. Now fetching token transfers..."
@@ -162,17 +163,17 @@ async def transaction_summary(
     api_path = f"/api/v2/transactions/{hash}/summary"
 
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch transaction summary for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction summary for {hash} on chain {chain_id}...")
 
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction summary...")
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction summary...")
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
     
     summary = response_data.get("data", {}).get("summaries")
     if summary:
@@ -193,17 +194,17 @@ async def get_transaction_info(
     api_path = f"/api/v2/transactions/{hash}"
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch transaction info for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction info for {hash} on chain {chain_id}...")
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction data...")
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction data...")
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transaction data.")
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction data.")
     
     return response_data
 
@@ -221,17 +222,17 @@ async def get_transaction_logs(
     api_path = f"/api/v2/transactions/{hash}/logs"
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch transaction logs for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction logs for {hash} on chain {chain_id}...")
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction logs...")
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction logs...")
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
     
     logs_json_str = json.dumps(response_data)  # Compact JSON
     

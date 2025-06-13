@@ -12,7 +12,7 @@ mcp-server/
 │   ├── constants.py            # Centralized constants used throughout the application
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
-│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution)
+│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting)
 │       ├── get_instructions.py # Implements the __get_instructions__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
@@ -173,7 +173,7 @@ mcp-server/
             * For fixed endpoint tools (like BENS), functions take only the required operation-specific parameters plus the `ctx: Context` parameter.
             * Argument descriptions are provided using `typing.Annotated[str, Field(description="...")]`.
             * The function's docstring serves as the tool's description for `FastMCP`.
-            * All tools support MCP progress notifications, reporting progress at key steps (chain resolution, API calls, etc.).
+            * All tools support MCP progress notifications and generate corresponding log messages, reporting progress at key steps (chain resolution, API calls, etc.).
             * Inside each Blockscout API tool function:
                 1. It uses `get_blockscout_base_url(chain_id)` to dynamically resolve the appropriate Blockscout instance URL.
                 2. It calls `make_blockscout_request` with the resolved base URL, API path, and query parameters.

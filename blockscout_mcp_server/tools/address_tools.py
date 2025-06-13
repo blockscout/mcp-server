@@ -9,6 +9,7 @@ from blockscout_mcp_server.tools.common import (
     decode_cursor,
     InvalidCursorError,
     make_metadata_request,
+    report_and_log_progress,
 )
 from mcp.server.fastmcp import Context
 
@@ -27,10 +28,16 @@ async def get_address_info(
     - Token details (if the contract is a token): name, symbol, decimals, total supply, etc.
     Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
     """
-    await ctx.report_progress(progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx, progress=0.0, total=3.0,
+        message=f"Starting to fetch address info for {address} on chain {chain_id}..."
+    )
 
     base_url = await get_blockscout_base_url(chain_id)
-    await ctx.report_progress(progress=1.0, total=3.0, message="Resolved Blockscout instance URL. Fetching data...")
+    await report_and_log_progress(
+        ctx, progress=1.0, total=3.0,
+        message="Resolved Blockscout instance URL. Fetching data..."
+    )
 
     blockscout_api_path = f"/api/v2/addresses/{address}"
     metadata_api_path = "/api/v1/metadata"
@@ -49,7 +56,9 @@ async def get_address_info(
 
     output_parts.append("Basic address info:")
     output_parts.append(json.dumps(address_info_result))
-    await ctx.report_progress(progress=2.0, total=3.0, message="Fetched basic address info.")
+    await report_and_log_progress(
+        ctx, progress=2.0, total=3.0, message="Fetched basic address info."
+    )
 
     if not isinstance(metadata_result, Exception) and metadata_result.get("addresses"):
         # Safely look up the metadata for the exact address requested,
@@ -64,7 +73,10 @@ async def get_address_info(
                 output_parts.append("\nMetadata associated with the address:")
                 output_parts.append(json.dumps(address_metadata))
 
-    await ctx.report_progress(progress=3.0, total=3.0, message="Successfully fetched all address data.")
+    await report_and_log_progress(
+        ctx, progress=3.0, total=3.0,
+        message="Successfully fetched all address data."
+    )
 
     return "\n".join(output_parts)
 
@@ -99,17 +111,25 @@ async def get_tokens_by_address(
             )
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx, progress=0.0, total=2.0,
+        message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
+    )
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching token data...")
+    await report_and_log_progress(
+        ctx, progress=1.0, total=2.0,
+        message="Resolved Blockscout instance URL. Fetching token data..."
+    )
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched token data.")
+    await report_and_log_progress(
+        ctx, progress=2.0, total=2.0, message="Successfully fetched token data."
+    )
     
     # Process the response data and format it according to the responseTemplate
     items_data = response_data.get("items", [])
@@ -179,17 +199,25 @@ async def nft_tokens_by_address(
             )
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx, progress=0.0, total=2.0,
+        message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
+    )
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching NFT data...")
+    await report_and_log_progress(
+        ctx, progress=1.0, total=2.0,
+        message="Resolved Blockscout instance URL. Fetching NFT data..."
+    )
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched NFT data.")
+    await report_and_log_progress(
+        ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data."
+    )
     
     # Process the response data and format it
     items_data = response_data.get("items", [])
@@ -283,17 +311,26 @@ async def get_address_logs(
             )
     
     # Report start of operation
-    await ctx.report_progress(progress=0.0, total=2.0, message=f"Starting to fetch address logs for {address} on chain {chain_id}...")
+    await report_and_log_progress(
+        ctx, progress=0.0, total=2.0,
+        message=f"Starting to fetch address logs for {address} on chain {chain_id}..."
+    )
     
     base_url = await get_blockscout_base_url(chain_id)
     
     # Report progress after resolving Blockscout URL
-    await ctx.report_progress(progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching address logs...")
+    await report_and_log_progress(
+        ctx, progress=1.0, total=2.0,
+        message="Resolved Blockscout instance URL. Fetching address logs..."
+    )
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
     
     # Report completion
-    await ctx.report_progress(progress=2.0, total=2.0, message="Successfully fetched address logs.")
+    await report_and_log_progress(
+        ctx, progress=2.0, total=2.0,
+        message="Successfully fetched address logs."
+    )
     
     logs_json_str = json.dumps(response_data)  # Compact JSON
     

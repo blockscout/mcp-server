@@ -40,6 +40,7 @@ async def test_get_latest_block_success(mock_ctx):
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
         assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_latest_block_api_error(mock_ctx):
@@ -124,6 +125,7 @@ async def test_get_latest_block_chain_not_found_error(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         # Progress should have been reported once (at start) before the error
         assert mock_ctx.report_progress.call_count == 1
+        assert mock_ctx.info.call_count == 1
 
 @pytest.mark.asyncio
 async def test_get_block_info_success(mock_ctx):
@@ -159,6 +161,7 @@ async def test_get_block_info_success(mock_ctx):
         expected_output = f"Basic block info:\n{json.dumps(mock_api_response)}"
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_block_info_with_hash(mock_ctx):
@@ -191,6 +194,7 @@ async def test_get_block_info_with_hash(mock_ctx):
         expected_output = f"Basic block info:\n{json.dumps(mock_api_response)}"
         assert result == expected_output
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_block_info_api_error(mock_ctx):
@@ -220,6 +224,7 @@ async def test_get_block_info_api_error(mock_ctx):
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
         # Progress should have been reported twice (start + after chain URL resolution) before the error
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -260,6 +265,7 @@ async def test_get_block_info_with_transactions_success(mock_ctx):
         assert json.dumps(["0xtx1", "0xtx2"]) in result
         assert "No transactions in the block." not in result
         assert mock_ctx.report_progress.call_count == 4
+        assert mock_ctx.info.call_count == 4
 
 
 @pytest.mark.asyncio

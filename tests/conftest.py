@@ -7,4 +7,5 @@ def mock_ctx():
     """Provides a mock MCP Context object for tests."""
     ctx = MagicMock()
     ctx.report_progress = AsyncMock()
-    return ctx 
+    ctx.info = AsyncMock()
+    return ctx

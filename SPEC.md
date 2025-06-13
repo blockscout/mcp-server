@@ -136,7 +136,7 @@ sequenceDiagram
         loop Every N seconds (configurable)
             ProgressTask->>ProgressTask: Calculate elapsed time
             ProgressTask->>ProgressTask: Calculate progress percentage
-            ProgressTask->>Client: report_progress(elapsed/total, message)
+            ProgressTask->>Client: report_progress & info log
             ProgressTask->>ProgressTask: Sleep until next interval or completion
         end
     end
@@ -157,3 +157,11 @@ sequenceDiagram
 4. **Multi-Step Integration**: The wrapper integrates seamlessly with the overall tool progress tracking by accepting `tool_overall_total_steps` and `current_step_number` parameters
 5. **Configurable Intervals**: Progress reporting frequency is configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS` (default: 15 seconds)
 6. **Error Handling**: Exceptions from the API call are properly propagated while ensuring progress task cleanup
+
+#### Enhanced Observability with Logging
+
+While `report_progress` is the standard for UI feedback, many MCP clients do not yet render progress notifications but do capture log messages. To provide essential real-time feedback for development and debugging, the server now systematically pairs every progress notification with a corresponding `info` log message.
+
+This is achieved via a centralized `report_and_log_progress` helper function. This dual-reporting mechanism ensures that:
+1.  **Compliant clients** can use the structured `progress` notifications to build rich UIs.
+2.  **All other clients** receive human-readable log entries (e.g., `Progress: 1.0/2.0 - Step complete`), eliminating the "black box" effect during long-running operations and improving debuggability.

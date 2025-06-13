@@ -29,6 +29,7 @@ Use descriptive responses and explain what the data means in context."""
         # ASSERT
         assert result == expected_instructions
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_instructions_no_progress_tracking(mock_ctx):
@@ -46,6 +47,7 @@ async def test_get_instructions_no_progress_tracking(mock_ctx):
         assert result == expected_instructions
         # Verify progress was reported
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
         
         # Verify the specific progress calls
         progress_calls = mock_ctx.report_progress.call_args_list
@@ -77,6 +79,7 @@ async def test_get_instructions_empty_instructions(mock_ctx):
         # ASSERT
         assert result == expected_instructions
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_instructions_multiline_instructions(mock_ctx):
@@ -101,6 +104,7 @@ With empty lines and formatting."""
         assert "Line 3 of instructions" in result
         assert "With empty lines and formatting." in result
         assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 @pytest.mark.asyncio
 async def test_get_instructions_special_characters(mock_ctx):
@@ -123,4 +127,5 @@ Escapes: \n \t \\"""
         assert "📝 🔍 ⚡" in result
         assert '"double"' in result
         assert "'single'" in result
-        assert mock_ctx.report_progress.call_count == 2 
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2

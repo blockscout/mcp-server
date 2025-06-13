@@ -89,6 +89,7 @@ async def test_nft_tokens_by_address_success(mock_ctx):
         result_json = json.loads(result)
         assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_empty_response(mock_ctx):
@@ -122,6 +123,7 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
         result_json = json.loads(result)
         assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_missing_fields(mock_ctx):
@@ -210,6 +212,7 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
         result_json = json.loads(result)
         assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_api_error(mock_ctx):
@@ -330,6 +333,7 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
         result_json = json.loads(result)
         assert result_json == expected_result
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_with_pagination(mock_ctx):
@@ -434,6 +438,7 @@ async def test_get_address_logs_success(mock_ctx):
         assert '"0xtopic2..."' in result
         
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_address_logs_with_pagination(mock_ctx):
@@ -489,6 +494,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
             params={}
         )
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_address_logs_with_optional_params(mock_ctx):
@@ -537,6 +543,7 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
         assert '"items": []' in result
         
         assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 @pytest.mark.asyncio
 async def test_get_address_logs_invalid_cursor(mock_ctx):
@@ -620,4 +627,5 @@ async def test_get_address_logs_empty_logs(mock_ctx):
         # Verify no pagination hint is included
         assert "To get the next page call" not in result
         
-        assert mock_ctx.report_progress.call_count == 3 
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
