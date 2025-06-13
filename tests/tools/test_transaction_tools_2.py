@@ -4,6 +4,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
+from blockscout_mcp_server.tools.common import encode_cursor
 
 @pytest.mark.asyncio
 async def test_get_transaction_info_success(mock_ctx):
@@ -220,7 +221,8 @@ async def test_get_transaction_logs_success(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs"
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params={}
         )
         
         # Verify the result starts with the expected prefix
@@ -267,7 +269,8 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs"
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params={}
         )
         
         # Verify the result structure
@@ -301,7 +304,8 @@ async def test_get_transaction_logs_api_error(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs"
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params={}
         )
 
 @pytest.mark.asyncio
@@ -377,11 +381,152 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs"
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params={}
         )
         
         # Verify the result starts with the expected prefix
         expected_prefix = "**Items Structure:**"
         assert result.startswith(expected_prefix)
         
-        assert mock_ctx.report_progress.call_count == 3 
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_with_pagination(mock_ctx):
+    """Verify pagination hint is included when next_page_params present."""
+    chain_id = "1"
+    hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "items": [
+            {
+                "address": {"hash": "0xcontract1"},
+                "topics": [],
+                "data": "0x",
+                "log_index": "0",
+                "transaction_hash": hash,
+                "block_number": 1,
+                "decoded": None,
+                "smart_contract": None,
+                "index": 0,
+            }
+        ],
+        "next_page_params": {"block_number": 0, "index": "0", "items_count": 50},
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "address": "0xcontract1",
+                "block_number": 1,
+                "data": "0x",
+                "decoded": None,
+                "index": 0,
+                "smart_contract": None,
+                "topics": [],
+            }
+        ],
+        "next_page_params": mock_api_response["next_page_params"],
+    }
+
+    fake_cursor = "ENCODED_CURSOR"
+    fake_json_body = "{...}"
+
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+        new_callable=AsyncMock,
+    ) as mock_get_url, patch(
+        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request, patch(
+        "blockscout_mcp_server.tools.transaction_tools.json.dumps"
+    ) as mock_json_dumps, patch(
+        "blockscout_mcp_server.tools.transaction_tools.encode_cursor"
+    ) as mock_encode_cursor:
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+        mock_json_dumps.return_value = fake_json_body
+        mock_encode_cursor.return_value = fake_cursor
+
+        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
+        mock_encode_cursor.assert_called_once_with(
+            mock_api_response["next_page_params"]
+        )
+
+        assert result.startswith("**Items Structure:**")
+        assert fake_json_body in result
+        assert f'cursor="{fake_cursor}"' in result
+
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params={},
+        )
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_with_cursor(mock_ctx):
+    """Verify provided cursor is decoded and used in request."""
+    chain_id = "1"
+    hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    decoded_params = {"block_number": 42, "index": 1, "items_count": 25}
+    cursor = encode_cursor(decoded_params)
+
+    mock_api_response = {"items": [], "next_page_params": None}
+
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+        new_callable=AsyncMock,
+    ) as mock_get_url, patch(
+        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request, patch(
+        "blockscout_mcp_server.tools.transaction_tools.json.dumps"
+    ) as mock_json_dumps:
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+        mock_json_dumps.return_value = "{...}"
+
+        await get_transaction_logs(chain_id=chain_id, hash=hash, cursor=cursor, ctx=mock_ctx)
+
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/transactions/{hash}/logs",
+            params=decoded_params,
+        )
+        mock_json_dumps.assert_called_once_with({"items": [], "next_page_params": None})
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_invalid_cursor(mock_ctx):
+    """Verify the tool returns a user-friendly error for a bad cursor."""
+    chain_id = "1"
+    hash = "0xabc123"
+    invalid_cursor = "bad-cursor"
+
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request:
+        result = await get_transaction_logs(
+            chain_id=chain_id, hash=hash, cursor=invalid_cursor, ctx=mock_ctx
+        )
+
+        assert (
+            "Error: Invalid or expired pagination cursor" in result
+        )
+        mock_request.assert_not_called()
+

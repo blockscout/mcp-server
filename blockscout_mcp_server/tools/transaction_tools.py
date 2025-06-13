@@ -6,6 +6,9 @@ from blockscout_mcp_server.tools.common import (
     get_blockscout_base_url,
     make_request_with_periodic_progress,
     report_and_log_progress,
+    decode_cursor,
+    encode_cursor,
+    InvalidCursorError,
 )
 from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
@@ -211,7 +214,13 @@ async def get_transaction_info(
 async def get_transaction_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     hash: Annotated[str, Field(description="Transaction hash")],
-    ctx: Context
+    ctx: Context,
+    cursor: Annotated[
+        Optional[str],
+        Field(
+            description="The pagination cursor from a previous response to get the next page of results."
+        ),
+    ] = None,
 ) -> str:
     """
     Get comprehensive transaction logs.
@@ -219,6 +228,16 @@ async def get_transaction_logs(
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
     """
     api_path = f"/api/v2/transactions/{hash}/logs"
+    params = {}
+
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            params.update(decoded_params)
+        except InvalidCursorError:
+            return (
+                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
     
     # Report start of operation
     await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction logs for {hash} on chain {chain_id}...")
@@ -228,7 +247,9 @@ async def get_transaction_logs(
     # Report progress after resolving Blockscout URL
     await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction logs...")
     
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    response_data = await make_blockscout_request(
+        base_url=base_url, api_path=api_path, params=params
+    )
 
     original_items = response_data.get("items", [])
 
@@ -254,7 +275,7 @@ async def get_transaction_logs(
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
 
     logs_json_str = json.dumps(transformed_response)  # Compact JSON
-    
+
     prefix = """**Items Structure:**
 - `address`: The contract address that emitted the log (string)
 - `block_number`: Block where the event was emitted
@@ -270,5 +291,16 @@ async def get_transaction_logs(
 
 **Transaction logs JSON:**
 """
-    
-    return f"{prefix}{logs_json_str}"
+
+    output = f"{prefix}{logs_json_str}"
+
+    next_page_params = response_data.get("next_page_params")
+    if next_page_params:
+        next_cursor = encode_cursor(next_page_params)
+        pagination_hint = f"""
+
+----
+To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", hash=\"{hash}\", cursor=\"{next_cursor}\")"""
+        output += pagination_hint
+
+    return output
