@@ -27,21 +27,36 @@ async def test_transaction_summary_integration(mock_ctx):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_transaction_logs_integration(mock_ctx):
-    """Tests that get_transaction_logs returns a pagination hint for a multi-page response."""
+    """Tests that get_transaction_logs returns a paginated response and validates the schema."""
+    # This transaction on Ethereum Mainnet is known to have many logs, ensuring a paginated response.
     tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
     try:
         result_str = await get_transaction_logs(chain_id="1", hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
-        pytest.skip(f"Transaction unavailable: {e}")
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
+    # 1. Verify that pagination is working correctly
     assert isinstance(result_str, str)
-    assert "**Transaction logs JSON:**" in result_str
     assert "To get the next page call" in result_str
     assert 'cursor="' in result_str
+    assert "**Transaction logs JSON:**" in result_str
 
+    # 2. Parse the JSON and verify the basic structure
     json_part = result_str.split("----")[0]
     data = json.loads(json_part.split("**Transaction logs JSON:**\n")[-1])
-
     assert "items" in data
+    assert isinstance(data["items"], list)
     assert len(data["items"]) > 0
+
+    # 3. Validate the schema of the first transformed log item.
+    first_log = data["items"][0]
+    expected_keys = {"address", "block_number", "data", "decoded", "index", "smart_contract", "topics"}
+    assert set(first_log.keys()) == expected_keys
+
+    # 4. Validate the data types of key fields.
+    assert isinstance(first_log["address"], str)
+    assert first_log["address"].startswith("0x")
+    assert isinstance(first_log["block_number"], int)
+    assert isinstance(first_log["index"], int)
+    assert isinstance(first_log["topics"], list)
 
