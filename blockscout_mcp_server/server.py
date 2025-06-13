@@ -49,7 +49,6 @@ def main_command(
     Runs in stdio mode by default. Use --http to enable HTTP Streamable mode.
     """
     if http:
-        print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         # The FastMCP server has a 'settings' attribute that can be used for this.
@@ -63,7 +62,6 @@ def main_command(
         # Run the ASGI app with uvicorn
         uvicorn.run(asgi_app, host=http_host, port=http_port)
     else:
-        print("Starting Blockscout MCP Server in stdio mode")
         # This is the original behavior: run in stdio mode
         mcp.run()
 
