@@ -292,8 +292,8 @@ async def get_address_logs(
     ] = None,
 ) -> str:
     """
-    Get comprehensive logs emitted by a specific address with decoded event data.
-    Returns a lean JSON response containing only essential log data: block number, transaction hash, log index, topics, and decoded event parameters.
+    Get comprehensive logs emitted by a specific address.
+    Returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows.
     """
     api_path = f"/api/v2/addresses/{address}/logs"
@@ -359,12 +359,12 @@ async def get_address_logs(
     - `topics`: Raw indexed event parameters (first topic is event signature hash)
     - `data`: Raw non-indexed event parameters (hex encoded)
 
-**Event Decoding (in `decoded` field):**
+**Event Decoding in `decoded` field:**
 - `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
 - `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)
 - `parameters`: Decoded event parameters with names, types, values, and indexing status
 
-**Address logs JSON (from queried address):**
+**Address logs JSON:**
 """
     
     output = f"{prefix}{logs_json_str}"
