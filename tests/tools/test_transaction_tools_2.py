@@ -20,6 +20,21 @@ async def test_get_transaction_info_success(mock_ctx):
         "hash": hash,
         "block_number": 19000000,
         "block_hash": "0xblock123...",
+        "from": {"hash": "0xfrom123..."},
+        "to": {"hash": "0xto123..."},
+        "value": "1000000000000000000",
+        "gas_limit": "21000",
+        "gas_used": "21000",
+        "gas_price": "20000000000",
+        "status": "ok",
+        "timestamp": "2024-01-01T12:00:00.000000Z",
+        "transaction_index": 42,
+        "nonce": 123
+    }
+
+    expected_transformed_result = {
+        "block_number": 19000000,
+        "block_hash": "0xblock123...",
         "from": "0xfrom123...",
         "to": "0xto123...",
         "value": "1000000000000000000",
@@ -29,7 +44,7 @@ async def test_get_transaction_info_success(mock_ctx):
         "status": "ok",
         "timestamp": "2024-01-01T12:00:00.000000Z",
         "transaction_index": 42,
-        "nonce": 123
+        "nonce": 123,
     }
 
     with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
@@ -47,7 +62,7 @@ async def test_get_transaction_info_success(mock_ctx):
             base_url=mock_base_url,
             api_path=f"/api/v2/transactions/{hash}"
         )
-        assert result == mock_api_response
+        assert result == expected_transformed_result
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -131,11 +146,68 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
             base_url=mock_base_url,
             api_path=f"/api/v2/transactions/{hash}"
         )
-        assert result == mock_api_response
-        assert result["hash"] == hash
-        assert result["status"] == "pending"
+        expected_result = {"status": "pending"}
+        assert result == expected_result
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx):
+    """
+    Verify get_transaction_info correctly transforms the token_transfers list.
+    """
+    # ARRANGE
+    chain_id = "1"
+    tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "hash": tx_hash,
+        "from": {"hash": "0xe725..."},
+        "to": {"hash": "0x3328..."},
+        "token_transfers": [
+            {
+                "block_hash": "0x841ad...",
+                "block_number": 22697200,
+                "from": {"hash": "0x000..."},
+                "to": {"hash": "0x3328..."},
+                "token": {"name": "WETH", "symbol": "WETH"},
+                "total": {"value": "2046..."},
+                "transaction_hash": tx_hash,
+                "timestamp": "2025-06-13T17:42:23.000000Z",
+                "type": "token_minting",
+                "log_index": 13,
+            }
+        ],
+    }
+
+    expected_transformed_result = {
+        "from": "0xe725...",
+        "to": "0x3328...",
+        "token_transfers": [
+            {
+                "from": "0x000...",
+                "to": "0x3328...",
+                "token": {"name": "WETH", "symbol": "WETH"},
+                "total": {"value": "2046..."},
+                "type": "token_minting",
+                "log_index": 13,
+            }
+        ],
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        # ACT
+        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+
+        # ASSERT
+        assert result == expected_transformed_result
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_success(mock_ctx):

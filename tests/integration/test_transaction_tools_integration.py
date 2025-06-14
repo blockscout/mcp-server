@@ -69,14 +69,26 @@ async def test_get_transaction_info_integration(mock_ctx):
     tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
     result = await get_transaction_info(chain_id="1", hash=tx_hash, ctx=mock_ctx)
 
-    # Assert that the main data is present
+    # Assert that the main data is present and transformed
     assert isinstance(result, dict)
-    assert result["hash"].lower() == tx_hash.lower()
+    assert "hash" not in result
     assert result["status"] == "ok"
     assert "decoded_input" in result and result["decoded_input"] is not None
-
-    # Assert that the raw_input is NOT present by default
     assert "raw_input" not in result
+    assert isinstance(result.get("from"), str)
+    assert result["from"].startswith("0x")
+    assert isinstance(result.get("to"), str)
+    assert result["to"].startswith("0x")
+
+    # Assert token_transfers optimized
+    assert "token_transfers" in result and isinstance(result["token_transfers"], list)
+    for transfer in result["token_transfers"]:
+        assert "block_hash" not in transfer
+        assert "block_number" not in transfer
+        assert "transaction_hash" not in transfer
+        assert "timestamp" not in transfer
+        assert isinstance(transfer.get("from"), str)
+        assert isinstance(transfer.get("to"), str)
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -86,11 +98,19 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     tx_hash = "0x12341be874149efc8c714f4ef431db0ce29f64532e5c70d3882257705e2b1ad2"
     result = await get_transaction_info(chain_id="1", hash=tx_hash, ctx=mock_ctx)
 
-    # Assert that the main data is present
+    # Assert that the main data is present and transformed
     assert isinstance(result, dict)
-    assert result["hash"].lower() == tx_hash.lower()
+    assert "hash" not in result
     assert result["decoded_input"] is None
+    assert isinstance(result.get("from"), str)
+    assert result.get("to") is None
 
-    # Assert that the raw_input IS present because decoded_input was null
+    # raw_input should still be present
     assert "raw_input" in result
     assert isinstance(result["raw_input"], str) and len(result["raw_input"]) > 2
+
+    assert "token_transfers" in result and len(result["token_transfers"]) > 0
+    first_transfer = result["token_transfers"][0]
+    assert isinstance(first_transfer.get("from"), str)
+    assert isinstance(first_transfer.get("to"), str)
+    assert first_transfer.get("type") == "token_minting"

@@ -14,6 +14,45 @@ from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
 
 
+def _transform_transaction_info(data: dict) -> dict:
+    """Transforms the raw transaction info response from Blockscout API
+    into a more concise format for the MCP tool.
+    """
+    # Work on a copy to avoid modifying the original data
+    transformed_data = data.copy()
+
+    # 1. Remove redundant top-level hash
+    transformed_data.pop("hash", None)
+
+    # 2. Simplify top-level 'from' and 'to' objects
+    if isinstance(transformed_data.get("from"), dict):
+        transformed_data["from"] = transformed_data["from"].get("hash")
+    if isinstance(transformed_data.get("to"), dict):
+        transformed_data["to"] = transformed_data["to"].get("hash")
+
+    # 3. Optimize the 'token_transfers' list
+    if "token_transfers" in transformed_data and isinstance(
+        transformed_data["token_transfers"], list
+    ):
+        optimized_transfers = []
+        for transfer in transformed_data["token_transfers"]:
+            if isinstance(transfer.get("from"), dict):
+                transfer["from"] = transfer["from"].get("hash")
+            if isinstance(transfer.get("to"), dict):
+                transfer["to"] = transfer["to"].get("hash")
+
+            transfer.pop("block_hash", None)
+            transfer.pop("block_number", None)
+            transfer.pop("transaction_hash", None)
+            transfer.pop("timestamp", None)
+
+            optimized_transfers.append(transfer)
+
+        transformed_data["token_transfers"] = optimized_transfers
+
+    return transformed_data
+
+
 async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
@@ -192,7 +231,7 @@ async def get_transaction_info(
 ) -> Dict:
     """
     Get comprehensive transaction information. 
-    Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, address information (ENS names, contract verification status, public tags, proxy details), transaction fee breakdown (priority fees, burnt fees) and categorized transaction types. 
+    Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
     By default, the raw transaction input is omitted if a decoded version is available to save context; request it with `include_raw_input=True` only when you truly need the raw hex data.
     Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
     """
@@ -215,7 +254,10 @@ async def get_transaction_info(
     if not include_raw_input and response_data.get("decoded_input"):
         response_data.pop("raw_input", None)
 
-    return response_data
+    # Apply our new transformation logic before returning
+    transformed_data = _transform_transaction_info(response_data)
+
+    return transformed_data
 
 async def get_transaction_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
