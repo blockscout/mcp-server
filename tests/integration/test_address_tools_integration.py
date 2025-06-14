@@ -46,10 +46,10 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(result, str)
     assert "To get the next page call" in result
     assert 'cursor="' in result
-    assert "**Address logs JSON (from queried address):**" in result
+    assert "**Address logs JSON:**" in result
 
     json_part = result.split("----")[0]
-    data = json.loads(json_part.split("**Address logs JSON (from queried address):**\n")[-1])
+    data = json.loads(json_part.split("**Address logs JSON:**\n")[-1])
 
     assert "items" in data
     assert isinstance(data["items"], list)
