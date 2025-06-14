@@ -266,7 +266,6 @@ async def get_transaction_logs(
             "data": item.get("data"),
             "decoded": item.get("decoded"),
             "index": item.get("index"),
-            "smart_contract": item.get("smart_contract"),
             "topics": item.get("topics"),
         }
         for item in original_items

@@ -158,7 +158,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "block_number": 19000000,
                 "block_hash": "0xblockhash1...",
                 "decoded": {"name": "EventA"},
-                "smart_contract": None,
                 "index": 0,
             },
             {
@@ -170,7 +169,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "block_number": 19000000,
                 "block_hash": "0xblockhash2...",
                 "decoded": {"name": "EventB"},
-                "smart_contract": None,
                 "index": 1,
             }
         ],
@@ -184,7 +182,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "data": "0xdata123...",
                 "decoded": {"name": "EventA"},
                 "index": 0,
-                "smart_contract": None,
                 "topics": ["0xtopic1...", "0xtopic2..."],
             },
             {
@@ -193,7 +190,6 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "data": "0xdata456...",
                 "decoded": {"name": "EventB"},
                 "index": 1,
-                "smart_contract": None,
                 "topics": ["0xtopic3..."],
             },
         ],
@@ -410,7 +406,6 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "transaction_index": 10,
                 "removed": False,
                 "decoded": {"name": "Transfer"},
-                "smart_contract": None,
                 "index": 42,
             }
         ],
@@ -424,7 +419,6 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "data": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
                 "decoded": {"name": "Transfer"},
                 "index": 42,
-                "smart_contract": None,
                 "topics": [
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
                     "0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
@@ -483,7 +477,6 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
                 "transaction_hash": hash,
                 "block_number": 1,
                 "decoded": None,
-                "smart_contract": None,
                 "index": 0,
             }
         ],
@@ -498,7 +491,6 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
                 "data": "0x",
                 "decoded": None,
                 "index": 0,
-                "smart_contract": None,
                 "topics": [],
             }
         ],

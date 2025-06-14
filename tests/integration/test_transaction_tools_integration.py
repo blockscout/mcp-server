@@ -50,7 +50,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
     # 3. Validate the schema of the first transformed log item.
     first_log = data["items"][0]
-    expected_keys = {"address", "block_number", "data", "decoded", "index", "smart_contract", "topics"}
+    expected_keys = {"address", "block_number", "data", "decoded", "index", "topics"}
     assert set(first_log.keys()) == expected_keys
 
     # 4. Validate the data types of key fields.

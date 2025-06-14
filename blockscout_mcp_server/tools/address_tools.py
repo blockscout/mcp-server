@@ -293,8 +293,7 @@ async def get_address_logs(
 ) -> str:
     """
     Get comprehensive logs emitted by a specific address with decoded event data.
-    Returns enriched log entries including decoded event parameters with types and values, detailed contract information (ENS names, verification status, public tags, proxy details, token metadata), block context, transaction hashes, and event signatures.
-    Each log entry includes raw data, decoded event names, parameter extraction with indexed/non-indexed classification, and contract classifications.
+    Returns a lean JSON response containing only essential log data: block number, transaction hash, log index, topics, and decoded event parameters.
     Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows.
     """
     api_path = f"/api/v2/addresses/{address}/logs"
@@ -325,30 +324,47 @@ async def get_address_logs(
     )
     
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
-    
+
     # Report completion
     await report_and_log_progress(
         ctx, progress=2.0, total=2.0,
         message="Successfully fetched address logs."
     )
-    
-    logs_json_str = json.dumps(response_data)  # Compact JSON
+
+    original_items = response_data.get("items", [])
+
+    transformed_items = [
+        {
+            "block_number": item.get("block_number"),
+            "data": item.get("data"),
+            "decoded": item.get("decoded"),
+            "index": item.get("index"),
+            "topics": item.get("topics"),
+            "transaction_hash": item.get("transaction_hash"),
+        }
+        for item in original_items
+    ]
+
+    # Create a dictionary containing ONLY the transformed items.
+    transformed_response = {
+        "items": transformed_items,
+    }
+
+    logs_json_str = json.dumps(transformed_response)  # Compact JSON
     
     prefix = """**Items Structure:**
-- `address`: The queried address that emitted these logs (constant across all items)
-- `smart_contract`: The actual contract that generated the specific log event (varies per item)
-- `block_hash/block_number`: Block where the event was emitted
-- `transaction_hash`: Transaction that triggered the event
-- `index`: Log position within the block
-- `topics`: Raw indexed event parameters (first topic is event signature hash)
-- `data`: Raw non-indexed event parameters (hex encoded)
+    - `block_number`: Block where the event was emitted
+    - `transaction_hash`: Transaction that triggered the event
+    - `index`: Log position within the block
+    - `topics`: Raw indexed event parameters (first topic is event signature hash)
+    - `data`: Raw non-indexed event parameters (hex encoded)
 
-**Event Decoding (misleadingly named fields):**
+**Event Decoding (in `decoded` field):**
 - `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
 - `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)
 - `parameters`: Decoded event parameters with names, types, values, and indexing status
 
-**Address logs JSON:**
+**Address logs JSON (from queried address):**
 """
     
     output = f"{prefix}{logs_json_str}"

@@ -20,21 +20,40 @@ async def test_get_address_logs_success(mock_ctx):
     mock_api_response = {
         "items": [
             {
-                "address": address,
+                "address": {"hash": "0xcontract1..."},
                 "topics": ["0xtopic1...", "0xtopic2..."],
                 "data": "0xdata123...",
                 "log_index": "0",
                 "transaction_hash": "0xtx123...",
-                "block_number": 19000000
+                "block_number": 19000000,
+                "block_hash": "0x...",
+                "smart_contract": {},
+                "decoded": None,
+                "index": 0,
+            }
+        ]
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "block_number": 19000000,
+                "data": "0xdata123...",
+                "decoded": None,
+                "index": 0,
+                "topics": ["0xtopic1...", "0xtopic2..."],
+                "transaction_hash": "0xtx123...",
             }
         ]
     }
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_json_dumps.return_value = '{"fake_json": true}'
 
         # ACT
         result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
@@ -46,16 +65,12 @@ async def test_get_address_logs_success(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/logs",
             params={}
         )
-        
-        # Verify the result starts with the expected prefix
-        expected_prefix = "**Items Structure:**"
-        assert result.startswith(expected_prefix)
-        
-        # Verify the JSON content is included
-        assert f'"address": "{address}"' in result
-        assert '"0xtopic1..."' in result
-        assert '"0xtopic2..."' in result
-        
+
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
+
+        assert result.startswith("**Items Structure:**")
+        assert "fake_json" in result
+
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -69,12 +84,16 @@ async def test_get_address_logs_with_pagination(mock_ctx):
     mock_api_response = {
         "items": [
             {
-                "address": address,
+                "address": {"hash": "0xcontract1"},
                 "topics": ["0xtopic1..."],
                 "data": "0xdata123...",
                 "log_index": "0",
                 "transaction_hash": "0xtx123...",
-                "block_number": 19000000
+                "block_number": 19000000,
+                "decoded": None,
+                "block_hash": "0x...",
+                "smart_contract": {},
+                "index": 0,
             }
         ],
         "next_page_params": {
@@ -84,8 +103,21 @@ async def test_get_address_logs_with_pagination(mock_ctx):
         }
     }
 
+    expected_transformed_response = {
+        "items": [
+            {
+                "block_number": 19000000,
+                "data": "0xdata123...",
+                "decoded": None,
+                "index": 0,
+                "topics": ["0xtopic1..."],
+                "transaction_hash": "0xtx123...",
+            }
+        ]
+    }
+
     fake_cursor = "ENCODED_CURSOR_STRING_FROM_TEST"
-    fake_json_body = '{"items": [...], "next_page_params": {...}}'
+    fake_json_body = '{"fake_json": true}'
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
@@ -99,7 +131,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
 
         result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
         mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
 
         assert result.startswith("**Items Structure:**")
@@ -129,15 +161,19 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
+    expected_transformed_response = {"items": []}
+
+    cursor = encode_cursor({"block_number": block_number, "index": index, "items_count": items_count})
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_json_dumps.return_value = '{"empty": true}'
 
         # ACT
-        cursor = encode_cursor({"block_number": block_number, "index": index, "items_count": items_count})
         result = await get_address_logs(
             chain_id=chain_id,
             address=address,
@@ -156,11 +192,13 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
                 "items_count": items_count,
             }
         )
-        
+
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
+
         # Verify result structure
         assert result.startswith("**Items Structure:**")
-        assert '"items": []' in result
-        
+        assert 'empty' in result
+
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -215,6 +253,7 @@ async def test_get_address_logs_empty_logs(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
+    expected_transformed_response = {"items": []}
 
     # Patch json.dumps directly since it's imported locally in the function
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
@@ -230,8 +269,8 @@ async def test_get_address_logs_empty_logs(mock_ctx):
         result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        # Assert that json.dumps was called with the exact API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        # Assert that json.dumps was called with the transformed data
+        mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(

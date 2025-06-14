@@ -46,8 +46,30 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(result, str)
     assert "To get the next page call" in result
     assert 'cursor="' in result
-    assert "**Items Structure:**" in result
-    assert "\"items\": [" in result
+    assert "**Address logs JSON (from queried address):**" in result
+
+    json_part = result.split("----")[0]
+    data = json.loads(json_part.split("**Address logs JSON (from queried address):**\n")[-1])
+
+    assert "items" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) > 0
+
+    first_log = data["items"][0]
+    expected_keys = {
+        "block_number",
+        "data",
+        "decoded",
+        "index",
+        "topics",
+        "transaction_hash",
+    }
+    assert set(first_log.keys()) == expected_keys
+    assert isinstance(first_log["transaction_hash"], str)
+    assert first_log["transaction_hash"].startswith("0x")
+    assert isinstance(first_log["block_number"], int)
+    assert isinstance(first_log["index"], int)
+    assert isinstance(first_log["topics"], list)
 
 
 @pytest.mark.integration
