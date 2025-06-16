@@ -93,11 +93,48 @@ sequenceDiagram
    - Multiple MCP servers might be configured in a client application, with each server providing its own tool descriptions
    - Tool descriptions are limited to 1024 characters to minimize context consumption
 
-2. **Response Processing and Optimization**:
-   - Raw Blockscout API responses are not forwarded directly to the MCP Host
-   - Responses are processed to extract only tool-relevant data before returning to the MCP Host
-   - This approach prevents overwhelming the LLM context window with excessive blockchain data
-   - For example, token list responses that could contain hundreds of entries are filtered and formatted to include only essential information
+2. **Response Processing and Context Optimization**:
+
+   The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
+
+   **Core Approach:**
+   - Raw Blockscout API responses are never forwarded directly to the MCP Host
+   - All responses are processed to extract only tool-relevant data
+   - Large datasets (e.g., token lists with hundreds of entries) are filtered and formatted to include only essential information
+
+   **Specific Optimizations:**
+
+     **a) Address Object Simplification:**
+     Many Blockscout API endpoints return addresses as complex JSON objects containing hash, name, contract flags, public tags, and other metadata. To conserve LLM context, the server systematically simplifies these objects into single address strings (e.g., `"0x123..."`) before returning responses. This approach:
+     - **Reduces Context Consumption**: A single address string uses significantly less context than a full address object with multiple fields
+     - **Encourages Compositional Tool Use**: When detailed address information is needed, the AI is guided to use dedicated tools like `get_address_info`
+     - **Maintains Essential Functionality**: The core address hash is preserved, which is sufficient for most blockchain operations
+
+     **b) Opaque Cursor Strategy for Pagination:**
+     For handling large, paginated datasets, the server uses an **opaque cursor** strategy that avoids exposing multiple, complex pagination parameters (e.g., `page`, `offset`, `items_count`) in tool signatures and responses. This approach provides several key benefits:
+     - **Context Conservation**: A single cursor string consumes significantly less LLM context than a list of individual parameters.
+     - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
+     - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
+
+     **Mechanism:**
+     When the Blockscout API returns a `next_page_params` dictionary, the server serializes this dictionary into a compact JSON string, which is then Base64URL-encoded. This creates a single, opaque, and URL-safe string that serves as the cursor for the next page.
+
+     **Example:**
+
+     - **Blockscout API `next_page_params`:**
+
+       ```json
+       { "block_number": 18999999, "index": 42, "items_count": 50 }
+       ```
+
+     - **Generated Opaque Cursor:**
+       `eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0`
+
+     - **Final Tool Output Hint:**
+
+       ```plaintext
+       To get the next page call get_address_logs(..., cursor="eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0")
+       ```
 
 3. **Instructions Delivery Workaround**:
    - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
@@ -163,5 +200,6 @@ sequenceDiagram
 While `report_progress` is the standard for UI feedback, many MCP clients do not yet render progress notifications but do capture log messages. To provide essential real-time feedback for development and debugging, the server now systematically pairs every progress notification with a corresponding `info` log message.
 
 This is achieved via a centralized `report_and_log_progress` helper function. This dual-reporting mechanism ensures that:
-1.  **Compliant clients** can use the structured `progress` notifications to build rich UIs.
-2.  **All other clients** receive human-readable log entries (e.g., `Progress: 1.0/2.0 - Step complete`), eliminating the "black box" effect during long-running operations and improving debuggability.
+
+1. **Compliant clients** can use the structured `progress` notifications to build rich UIs.
+2. **All other clients** receive human-readable log entries (e.g., `Progress: 1.0/2.0 - Step complete`), eliminating the "black box" effect during long-running operations and improving debuggability.
