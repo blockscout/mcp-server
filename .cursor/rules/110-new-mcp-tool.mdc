@@ -355,6 +355,65 @@ To get the next page call paginated_tool_name(chain_id="{chain_id}", address="{a
     return output_string
 ```
 
+### 8. Simplifying Address Objects to Save Context (`return_type: dict` or `list[dict]`)
+
+**Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
+
+**Example: Transforming a Transaction Response**
+
+**Before (Raw API Response):**
+This is the verbose data we get from the Blockscout API.
+
+```json
+{
+  "from": {
+    "hash": "0xAbC123...",
+    "name": "SenderContract",
+    "is_contract": true
+  },
+  "to": {
+    "hash": "0xDeF456...",
+    "name": "ReceiverContract",
+    "is_contract": true
+  },
+  "value": "1000000000000000000"
+}
+```
+
+**After (Optimized Tool Output):**
+This is the clean, concise data our tool should return.
+
+```json
+{
+  "from": "0xAbC123...",
+  "to": "0xDeF456...",
+  "value": "1000000000000000000"
+}
+```
+
+**Implementation Pattern:**
+Here is how you would implement this transformation inside a tool function.
+
+```python
+async def some_tool_that_returns_addresses(chain_id: str, ...) -> dict:
+    # 1. Get the raw response from the API helper
+    raw_response = await make_blockscout_request(...)
+
+    # 2. Create a copy to modify
+    transformed_response = raw_response.copy()
+
+    # 3. Simplify the 'from' address object into a string
+    if isinstance(transformed_response.get("from"), dict):
+        transformed_response["from"] = transformed_response["from"].get("hash")
+
+    # 4. Simplify the 'to' address object into a string
+    if isinstance(transformed_response.get("to"), dict):
+        transformed_response["to"] = transformed_response["to"].get("hash")
+
+    # 5. Return the optimized dictionary
+    return transformed_response
+```
+
 ## Registering the Tool
 
 After implementing your tool function, register it in `blockscout_mcp_server/server.py`:
