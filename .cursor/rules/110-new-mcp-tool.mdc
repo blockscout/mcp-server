@@ -132,10 +132,11 @@ async def tool_name(
     base_url = await get_blockscout_base_url(chain_id)
     
     # Make API request with the dynamic base URL
+    # For multiple data sources, consider Performance Optimization patterns (concurrent API calls)
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
     
-    # Process response based on response template needs
-    # (See response handling approaches below)
+    # Process response based on implementation patterns below
+    # (See Response Handling and Progress Reporting patterns)
     
     return processed_result
 ```
@@ -163,20 +164,23 @@ async def tool_name(
     if optional_arg:
         query_params["optional_param"] = optional_arg
     
-    # Make API request
+    # Make API request  
+    # For multiple data sources, consider Performance Optimization patterns (concurrent API calls)
     response_data = await make_bens_request(api_path=api_path, params=query_params)
     
-    # Process response based on response template needs
-    # (See response handling approaches below)
+    # Process response based on implementation patterns below
+    # (See Response Handling and Progress Reporting patterns)
     
     return processed_result
 ```
 
-## Response Handling Approaches
+## Implementation Patterns
+
+### Response Handling
 
 Choose one of these approaches based on the complexity of your response formatting needs:
 
-### 1. Return Full JSON Response (`return_type: dict`)
+#### 1. Return Full JSON Response (`return_type: dict`)
 
 Use to return entire response:
 
@@ -184,7 +188,7 @@ Use to return entire response:
 return response_data  # Simply return the full JSON response
 ```
 
-### 2. Extract Specific Fields (`return_type: dict`)
+#### 2. Extract Specific Fields (`return_type: dict`)
 
 Use for simple field extraction:
 
@@ -195,7 +199,7 @@ return {
 }
 ```
 
-### 3. Process JSON Arrays (`return_type: list[dict]`)
+#### 3. Process JSON Arrays (`return_type: list[dict]`)
 
 Use when iterating through items and formatting each one:
 
@@ -211,7 +215,7 @@ for item in items:
 return formatted_items
 ```
 
-### 4. Complex String Formatting (`return_type: str`)
+#### 4. Complex String Formatting (`return_type: str`)
 
 Use for responses requiring significant text formatting, conditionals, or loops:
 
@@ -245,7 +249,7 @@ To get the next page call tool_name(chain_id="{chain_id}", <other_args>, cursor=
 return "".join(output_parts)
 ```
 
-### 5. Prefixed/Suffixed Content (`return_type: str`)
+#### 5. Prefixed/Suffixed Content (`return_type: str`)
 
 Use when adding explanatory text to JSON output:
 
@@ -261,49 +265,7 @@ return f"{prefix}\n{content}"
 
 **Note:** We use compact JSON (without indentation) to minimize the data payload size. The output is consumed by machines, not humans, so readability of the raw JSON string is not a priority.
 
-### 6. Reporting Progress (Best Practice)
-
-To ensure good observability and debuggability, all progress updates should be reported to the client and simultaneously logged as an `info` message. This provides immediate feedback for developers via logs, while also supporting clients that can render progress UIs.
-
-Instead of calling `ctx.report_progress` directly, **always use the `report_and_log_progress` helper function** from `tools/common.py`.
-
-**Correct Usage:**
-
-```python
-from blockscout_mcp_server.tools.common import report_and_log_progress
-
-async def some_tool_with_progress(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    ctx: Context
-):
-    """A tool demonstrating correct progress reporting."""
-    # Report start
-    await report_and_log_progress(
-        ctx, progress=0.0, total=2.0, message="Starting operation..."
-    )
-
-    # ... perform some work ...
-    base_url = await get_blockscout_base_url(chain_id)
-
-    # Report intermediate step
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout URL. Fetching data..."
-    )
-
-    # ... perform the final step ...
-    response_data = await make_blockscout_request(base_url, "/api/v2/some_endpoint")
-
-    # Report completion
-    await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched data."
-    )
-
-    return response_data
-```
-
-This centralized helper ensures that every progress update is visible, regardless of the MCP client's capabilities.
-
-### 7. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
+#### 6. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
 
 For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
 
@@ -358,7 +320,7 @@ To get the next page call paginated_tool_name(chain_id="{chain_id}", address="{a
     return output_string
 ```
 
-### 8. Simplifying Address Objects to Save Context (`return_type: dict` or `list[dict]`)
+#### 7. Simplifying Address Objects to Save Context (`return_type: dict` or `list[dict]`)
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
 
@@ -417,19 +379,79 @@ async def some_tool_that_returns_addresses(chain_id: str, ...) -> dict:
     return transformed_response
 ```
 
-## Registering the Tool
+### Progress Reporting
 
-After implementing your tool function, register it in `blockscout_mcp_server/server.py`:
+To ensure good observability and debuggability, all progress updates should be reported to the client and simultaneously logged as an `info` message. This provides immediate feedback for developers via logs, while also supporting clients that can render progress UIs.
+
+Instead of calling `ctx.report_progress` directly, **always use the `report_and_log_progress` helper function** from `tools/common.py`.
+
+**Implementation Pattern:**
 
 ```python
-from blockscout_mcp_server.tools.your_module import your_tool_function
+from blockscout_mcp_server.tools.common import report_and_log_progress
 
-# Add to existing tool registrations
-mcp.tool()(your_tool_function)
+async def some_tool_with_progress(
+    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
+    ctx: Context
+):
+    """A tool demonstrating correct progress reporting."""
+    # Report start
+    await report_and_log_progress(
+        ctx, progress=0.0, total=2.0, message="Starting operation..."
+    )
+
+    # ... perform some work ...
+    base_url = await get_blockscout_base_url(chain_id)
+
+    # Report intermediate step
+    await report_and_log_progress(
+        ctx, progress=1.0, total=2.0, message="Resolved Blockscout URL. Fetching data..."
+    )
+
+    # ... perform the final step ...
+    response_data = await make_blockscout_request(base_url, "/api/v2/some_endpoint")
+
+    # Report completion
+    await report_and_log_progress(
+        ctx, progress=2.0, total=2.0, message="Successfully fetched data."
+    )
+
+    return response_data
 ```
 
-The MCP server will automatically use:
+This centralized helper ensures that every progress update is visible, regardless of the MCP client's capabilities.
 
-- Function name as the tool name
-- Function docstring as the tool description
-- Type hints and Field annotations for argument details
+### Performance Optimization
+
+#### Concurrent API Calls
+
+**When to Use:** When your tool needs data from multiple independent API sources (e.g., Blockscout + Metadata, block + transactions).
+
+**Implementation Pattern:**
+
+```python
+import asyncio
+
+# Execute multiple API calls concurrently
+result1, result2 = await asyncio.gather(
+    make_blockscout_request(base_url=base_url, api_path="/api/v2/addresses/{address}"),
+    make_metadata_request(api_path="/api/v1/metadata", params={"addresses": address}),
+    return_exceptions=True  # Critical: prevents one failure from breaking the entire operation
+)
+
+# Handle results with proper exception checking
+if isinstance(result1, Exception):
+    return f"Error fetching primary data: {result1}"
+
+output_parts = ["Primary data:", json.dumps(result1)]
+
+# Handle secondary data gracefully
+if not isinstance(result2, Exception) and result2:
+    output_parts.append("\nSecondary data:")
+    output_parts.append(json.dumps(result2))
+
+return "\n".join(output_parts)
+```
+
+**Key Points:**
+- Always use `return_exceptions=True`

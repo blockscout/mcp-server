@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Annotated, Dict, Optional
+from typing import Annotated, Optional
 from pydantic import Field
 from blockscout_mcp_server.tools.common import (
     make_blockscout_request,
