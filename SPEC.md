@@ -30,9 +30,10 @@ Both modes provide identical functionality and tool capabilities, differing only
 sequenceDiagram
     participant AI as MCP Host
     participant MCP as MCP Server
-    participant BENS as Blockscout ENS Service
+    participant BENS as ENS Service
     participant CS as Chainscout
     participant BS as Blockscout Instance
+    participant Metadata as Metadata Service
 
     AI->>MCP: __get_instructions__
     MCP-->>AI: Custom instructions
@@ -49,12 +50,17 @@ sequenceDiagram
 
     Note over AI: Host selects chain_id as per the user's initial prompt
 
-    AI->>MCP: get_latest_block with chain_id
+    AI->>MCP: Tool request with chain_id
     MCP->>CS: GET /api/chains/:id
     CS-->>MCP: Chain metadata (includes Blockscout URL)
-    MCP->>BS: Request to Blockscout API
-    BS-->>MCP: Block data
-    MCP-->>AI: Formatted block information
+    par Concurrent API Calls (when applicable)
+        MCP->>BS: Request to Blockscout API
+        BS-->>MCP: Primary data response
+    and
+        MCP->>Metadata: Request to Metadata API (for enriched data)
+        Metadata-->>MCP: Secondary data response
+    end
+    MCP-->>AI: Formatted & combined information
 ```
 
 ### Workflow Description
@@ -73,7 +79,13 @@ sequenceDiagram
    - MCP Server retrieves chain data from Chainscout
    - MCP Host selects appropriate chain based on user needs
 
-4. **Blockchain Data Retrieval**:
+4. **Optimized Data Retrieval with Concurrent API Calls**:
+   - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
+     - `get_address_info`: Concurrent requests to Blockscout API (for on-chain data) and Metadata API (for public tags)
+     - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
+   - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
+
+5. **Blockchain Data Retrieval**:
    - MCP Host requests blockchain data (e.g., `get_latest_block`) with specific chain_id, optionally requesting progress updates
    - MCP Server, if progress is requested, reports starting the operation
    - MCP Server queries Chainscout for chain metadata including Blockscout instance URL

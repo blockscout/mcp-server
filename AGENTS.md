@@ -99,6 +99,8 @@ mcp-server/
             * `BLOCKSCOUT_BS_TIMEOUT`: Timeout for Blockscout API requests.
             * `BLOCKSCOUT_BENS_URL`: Base URL for the BENS (Blockscout ENS) API.
             * `BLOCKSCOUT_BENS_TIMEOUT`: Timeout for BENS API requests.
+            * `BLOCKSCOUT_METADATA_URL`: Base URL for the Blockscout Metadata API.
+            * `BLOCKSCOUT_METADATA_TIMEOUT`: Timeout for Metadata API requests.
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
             * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.
@@ -162,6 +164,7 @@ mcp-server/
                 * `make_blockscout_request`: Takes base_url (resolved from chain_id), API path, and parameters for Blockscout API calls.
                 * `make_bens_request`: For BENS API calls.
                 * `make_chainscout_request`: For Chainscout API calls.
+                * `make_metadata_request`: For Blockscout Metadata API calls.
             * These functions handle:
                 * API key inclusion
                 * Common HTTP error patterns
