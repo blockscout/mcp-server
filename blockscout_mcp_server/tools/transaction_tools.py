@@ -304,8 +304,9 @@ async def get_transaction_logs(
         response_data.get("items", [])
     )
 
-    transformed_items = [
-        {
+    transformed_items = []
+    for item in original_items:
+        new_item = {
             "address": item.get("address", {}).get("hash"),
             "block_number": item.get("block_number"),
             "data": item.get("data"),
@@ -313,8 +314,9 @@ async def get_transaction_logs(
             "index": item.get("index"),
             "topics": item.get("topics"),
         }
-        for item in original_items
-    ]
+        if item.get("data_truncated"):
+            new_item["data_truncated"] = True
+        transformed_items.append(new_item)
 
     transformed_response = {
         "items": transformed_items,

@@ -308,21 +308,39 @@ async def test_get_address_logs_with_truncation_note(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
-    mock_api_response = {"items": [{"data": "0xlong..."}]}
+    truncated_item = {"data": "0xlong...", "data_truncated": True}
+    mock_api_response = {"items": [truncated_item]}
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs:
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs, \
+         patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         # Simulate truncated data
-        mock_process_logs.return_value = (mock_api_response["items"], True)
+        mock_process_logs.return_value = ([truncated_item], True)
+        mock_json_dumps.return_value = '{"fake":true}'
 
         # ACT
         result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
+        expected_transformed = {
+            "items": [
+                {
+                    "block_number": None,
+                    "data": truncated_item["data"],
+                    "decoded": None,
+                    "index": None,
+                    "topics": None,
+                    "transaction_hash": None,
+                    "data_truncated": True,
+                }
+            ]
+        }
+
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
+        mock_json_dumps.assert_called_once_with(expected_transformed)
         assert "**Note on Truncated Data:**" in result
         assert f"`curl \"{mock_base_url}/api/v2/addresses/{address}/logs\"`" in result

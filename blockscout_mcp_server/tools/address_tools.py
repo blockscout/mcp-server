@@ -337,8 +337,9 @@ async def get_address_logs(
         response_data.get("items", [])
     )
 
-    transformed_items = [
-        {
+    transformed_items = []
+    for item in original_items:
+        new_item = {
             "block_number": item.get("block_number"),
             "data": item.get("data"),
             "decoded": item.get("decoded"),
@@ -346,8 +347,9 @@ async def get_address_logs(
             "topics": item.get("topics"),
             "transaction_hash": item.get("transaction_hash"),
         }
-        for item in original_items
-    ]
+        if item.get("data_truncated"):
+            new_item["data_truncated"] = True
+        transformed_items.append(new_item)
 
     # Create a dictionary containing ONLY the transformed items.
     transformed_response = {

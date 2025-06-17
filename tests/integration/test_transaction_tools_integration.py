@@ -2,6 +2,7 @@ import pytest
 
 import json
 import httpx
+from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.tools.transaction_tools import transaction_summary, get_transaction_logs, get_transaction_info
 
 
@@ -61,6 +62,33 @@ async def test_get_transaction_logs_integration(mock_ctx):
     assert isinstance(first_log["block_number"], int)
     assert isinstance(first_log["index"], int)
     assert isinstance(first_log["topics"], list)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
+    """
+    Tests that get_transaction_logs correctly truncates oversized `data` fields
+    from a live API response and includes the instructional note.
+    """
+    tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
+    try:
+        result_str = await get_transaction_logs(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
+
+    assert "**Note on Truncated Data:**" in result_str
+    assert f"`curl \"https://eth.blockscout.com/api/v2/transactions/{tx_hash}/logs\"`" in result_str
+
+    json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
+    data = json.loads(json_part)
+    assert "items" in data and isinstance(data["items"], list) and len(data["items"]) > 0
+
+    truncated_item = next((item for item in data["items"] if item.get("data_truncated")), None)
+    assert truncated_item is not None
+    assert truncated_item["data_truncated"] is True
+    assert "data" in truncated_item
+    assert len(truncated_item["data"]) == LOG_DATA_TRUNCATION_LIMIT
 
 
 @pytest.mark.integration

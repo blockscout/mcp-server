@@ -1,5 +1,6 @@
 import json
 import pytest
+from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
@@ -72,6 +73,30 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(first_log["block_number"], int)
     assert isinstance(first_log["index"], int)
     assert isinstance(first_log["topics"], list)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_logs_with_truncation_integration(mock_ctx):
+    """
+    Tests that get_address_logs correctly truncates oversized `data` fields
+    from a live API response and includes the instructional note.
+    """
+    address = "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7"
+    result_str = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
+
+    assert "**Note on Truncated Data:**" in result_str
+    assert f"`curl \"https://eth.blockscout.com/api/v2/addresses/{address}/logs\"`" in result_str
+
+    json_part = result_str.split("**Address logs JSON:**\n")[1].split("----")[0]
+    data = json.loads(json_part)
+    assert "items" in data and isinstance(data["items"], list) and len(data["items"]) > 0
+
+    truncated_item = next((item for item in data["items"] if item.get("data_truncated")), None)
+    assert truncated_item is not None
+    assert truncated_item["data_truncated"] is True
+    assert "data" in truncated_item
+    assert len(truncated_item["data"]) == LOG_DATA_TRUNCATION_LIMIT
 
 
 @pytest.mark.integration
