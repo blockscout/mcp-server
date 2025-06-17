@@ -3,7 +3,7 @@ Constants used throughout the Blockscout MCP Server.
 """
 
 SERVER_INSTRUCTIONS = """
-Blockscout MCP server version: 0.3.0
+Blockscout MCP server version: 0.3.1
 
 If you receive an error "500 Internal Server Error" for any tool, retry calling this tool up to 3 times until successful.
 
