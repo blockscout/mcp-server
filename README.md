@@ -56,7 +56,9 @@ On which popular networks is `ens.eth` deployed as a contract?
 ```
 
 ```plaintext
-What are the usual activities performed by `ens.eth` on the Ethereum Mainnet? Since it is a contract, what is the most used functionality of this contract? Which address interacts with the contract the most?
+What are the usual activities performed by `ens.eth` on the Ethereum Mainnet?
+Since it is a contract, what is the most used functionality of this contract?
+Which address interacts with the contract the most?
 ```
 
 ```plaintext
