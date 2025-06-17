@@ -49,9 +49,19 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 15. `get_transaction_logs(chain_id, hash, cursor=None)` - Returns transaction logs with decoded event data.
 16. `get_address_logs(chain_id, address, cursor=None)` - Gets logs emitted by a specific address with decoded event data.
 
-## Example Prompts for AI Agents (to be added)
+## Example Prompts for AI Agents
 
-> _Placeholder_: Practical examples of prompts for chats or IDEs to retrieve and analyze blockchain data via the MCP server will be added in this section.
+```plaintext
+On which popular networks is `ens.eth` deployed as a contract?
+```
+
+```plaintext
+What are the usual activities performed by `ens.eth` on the Ethereum Mainnet? Since it is a contract, what is the most used functionality of this contract? Which address interacts with the contract the most?
+```
+
+```plaintext
+Calculate the total gas fees paid on Ethereum by address `0xcafe...cafe` in May 2025.
+```
 
 ## Installation & Usage
 
