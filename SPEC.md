@@ -148,6 +148,16 @@ sequenceDiagram
        To get the next page call get_address_logs(..., cursor="eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0")
        ```
 
+    c) Log Data Field Truncation
+
+    To prevent LLM context overflow from excessively large `data` fields in transaction logs, the server implements a smart truncation strategy.
+
+    - **Mechanism**: If a log's `data` field exceeds a predefined limit (512 bytes), it is truncated.
+    - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
+    - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
+
+    This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
+
 3. **Instructions Delivery Workaround**:
    - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
    - The `__get_instructions__` tool serves as a workaround for this limitation

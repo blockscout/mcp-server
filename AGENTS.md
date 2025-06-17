@@ -12,7 +12,7 @@ mcp-server/
 │   ├── constants.py            # Centralized constants used throughout the application
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
-│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting)
+│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing helpers)
 │       ├── get_instructions.py # Implements the __get_instructions__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)

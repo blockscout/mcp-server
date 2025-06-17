@@ -1,6 +1,12 @@
 import pytest
 from mcp.server.fastmcp import Context
-from blockscout_mcp_server.tools.common import encode_cursor, decode_cursor, InvalidCursorError
+from blockscout_mcp_server.tools.common import (
+    encode_cursor,
+    decode_cursor,
+    InvalidCursorError,
+    _process_and_truncate_log_items,
+)
+from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 
 
 def test_encode_decode_roundtrip():
@@ -49,3 +55,43 @@ async def test_report_and_log_progress(mock_ctx: Context):
     )
     expected_log_message = f"Progress: {progress}/{total} - {message}"
     mock_ctx.info.assert_called_once_with(expected_log_message)
+
+
+def test_process_and_truncate_log_items_no_truncation():
+    """Verify items with data under the limit are untouched."""
+    items = [{"data": "0x" + "a" * 10}]
+    processed, truncated = _process_and_truncate_log_items(items)
+    assert not truncated
+    assert processed == items
+    assert "data_truncated" not in processed[0]
+
+
+def test_process_and_truncate_log_items_with_truncation():
+    """Verify items with data over the limit are truncated."""
+    long_data = "0x" + "a" * (LOG_DATA_TRUNCATION_LIMIT)
+    items = [{"data": long_data}]
+    processed, truncated = _process_and_truncate_log_items(items)
+    assert truncated
+    assert len(processed[0]["data"]) == LOG_DATA_TRUNCATION_LIMIT
+    assert processed[0]["data_truncated"] is True
+
+
+def test_process_and_truncate_log_items_mixed():
+    """Verify a mix of items is handled correctly."""
+    items = [
+        {"data": "0xshort"},
+        {"data": "0x" + "a" * (LOG_DATA_TRUNCATION_LIMIT)},
+    ]
+    processed, truncated = _process_and_truncate_log_items(items)
+    assert truncated
+    assert len(processed[1]["data"]) == LOG_DATA_TRUNCATION_LIMIT
+    assert processed[1]["data_truncated"] is True
+    assert "data_truncated" not in processed[0]
+
+
+def test_process_and_truncate_log_items_no_data_field():
+    """Verify items without a 'data' field are handled gracefully."""
+    items = [{"topics": ["0x123"]}]
+    processed, truncated = _process_and_truncate_log_items(items)
+    assert not truncated
+    assert processed == items

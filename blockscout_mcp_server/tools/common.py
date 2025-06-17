@@ -310,6 +310,24 @@ def decode_cursor(cursor: str) -> dict:
         raise InvalidCursorError("Invalid or expired cursor provided.") from e
 
 
+from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
+
+
+def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:
+    """Processes log items, truncating the 'data' field if it exceeds a limit."""
+    processed_items = []
+    was_truncated = False
+    for item in items:
+        item_copy = item.copy()
+        data = item_copy.get("data")
+        if data and len(data) > LOG_DATA_TRUNCATION_LIMIT:
+            item_copy["data"] = data[:LOG_DATA_TRUNCATION_LIMIT]
+            item_copy["data_truncated"] = True
+            was_truncated = True
+        processed_items.append(item_copy)
+    return processed_items, was_truncated
+
+
 async def report_and_log_progress(
     ctx: Context,
     progress: float,

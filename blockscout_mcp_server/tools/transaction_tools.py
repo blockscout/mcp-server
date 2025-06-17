@@ -9,6 +9,7 @@ from blockscout_mcp_server.tools.common import (
     decode_cursor,
     encode_cursor,
     InvalidCursorError,
+    _process_and_truncate_log_items,
 )
 from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
@@ -273,7 +274,7 @@ async def get_transaction_logs(
     """
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
-    Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
+    Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows. The `data` field may be truncated if it is excessively large.
     """
     api_path = f"/api/v2/transactions/{hash}/logs"
     params = {}
@@ -299,7 +300,9 @@ async def get_transaction_logs(
         base_url=base_url, api_path=api_path, params=params
     )
 
-    original_items = response_data.get("items", [])
+    original_items, was_truncated = _process_and_truncate_log_items(
+        response_data.get("items", [])
+    )
 
     transformed_items = [
         {
@@ -327,8 +330,9 @@ async def get_transaction_logs(
 - `block_number`: Block where the event was emitted
 - `index`: Log position within the block
 - `topics`: Raw indexed event parameters (first topic is event signature hash)
-- `data`: Raw non-indexed event parameters (hex encoded)
+- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**
 - `decoded`: If available, the decoded event with its name and parameters
+- `data_truncated`: (Optional) `true` if the `data` field was shortened.
 
 **Event Decoding in `decoded` field:**
 - `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
@@ -348,5 +352,17 @@ async def get_transaction_logs(
 ----
 To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", hash=\"{hash}\", cursor=\"{next_cursor}\")"""
         output += pagination_hint
+
+    # Add a note about truncated data if it happened
+    if was_truncated:
+        note_on_truncation = f"""
+----
+**Note on Truncated Data:**
+One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).
+If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this transaction programmatically. For example, using curl:
+`curl "{base_url}/api/v2/transactions/{hash}/logs"`
+You would then need to parse the JSON response and find the specific log by its index.
+"""
+        output += note_on_truncation
 
     return output

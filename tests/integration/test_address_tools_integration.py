@@ -64,7 +64,9 @@ async def test_get_address_logs_integration(mock_ctx):
         "topics",
         "transaction_hash",
     }
-    assert set(first_log.keys()) == expected_keys
+    assert expected_keys.issubset(first_log.keys())
+    if "data_truncated" in first_log:
+        assert isinstance(first_log["data_truncated"], bool)
     assert isinstance(first_log["transaction_hash"], str)
     assert first_log["transaction_hash"].startswith("0x")
     assert isinstance(first_log["block_number"], int)

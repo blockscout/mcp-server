@@ -10,6 +10,7 @@ from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     make_metadata_request,
     report_and_log_progress,
+    _process_and_truncate_log_items,
 )
 from mcp.server.fastmcp import Context
 
@@ -124,7 +125,9 @@ async def get_tokens_by_address(
         message="Resolved Blockscout instance URL. Fetching token data..."
     )
     
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    response_data = await make_blockscout_request(
+        base_url=base_url, api_path=api_path, params=params
+    )
     
     # Report completion
     await report_and_log_progress(
@@ -294,7 +297,7 @@ async def get_address_logs(
     """
     Get comprehensive logs emitted by a specific address.
     Returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
-    Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows.
+    Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows. The `data` field may be truncated if it is excessively large.
     """
     api_path = f"/api/v2/addresses/{address}/logs"
     params = {}
@@ -327,11 +330,12 @@ async def get_address_logs(
 
     # Report completion
     await report_and_log_progress(
-        ctx, progress=2.0, total=2.0,
-        message="Successfully fetched address logs."
+        ctx, progress=2.0, total=2.0, message="Successfully fetched address logs."
     )
 
-    original_items = response_data.get("items", [])
+    original_items, was_truncated = _process_and_truncate_log_items(
+        response_data.get("items", [])
+    )
 
     transformed_items = [
         {
@@ -353,11 +357,12 @@ async def get_address_logs(
     logs_json_str = json.dumps(transformed_response)  # Compact JSON
     
     prefix = """**Items Structure:**
-    - `block_number`: Block where the event was emitted
-    - `transaction_hash`: Transaction that triggered the event
-    - `index`: Log position within the block
-    - `topics`: Raw indexed event parameters (first topic is event signature hash)
-    - `data`: Raw non-indexed event parameters (hex encoded)
+- `block_number`: Block where the event was emitted
+- `transaction_hash`: Transaction that triggered the event
+- `index`: Log position within the block
+- `topics`: Raw indexed event parameters (first topic is event signature hash)
+- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**
+- `data_truncated`: (Optional) `true` if the `data` field was shortened.
 
 **Event Decoding in `decoded` field:**
 - `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
@@ -377,4 +382,15 @@ async def get_address_logs(
 ----
 To get the next page call get_address_logs(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
         output += pagination_hint
-    return output 
+    # Add a note about truncated data if it happened
+    if was_truncated:
+        note_on_truncation = f"""
+----
+**Note on Truncated Data:**
+One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).
+If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this address programmatically. For example, using curl:
+`curl "{base_url}/api/v2/addresses/{address}/logs"`
+You would then need to parse the JSON response and find the specific log by its index.
+"""
+        output += note_on_truncation
+    return output

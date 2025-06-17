@@ -51,7 +51,9 @@ async def test_get_transaction_logs_integration(mock_ctx):
     # 3. Validate the schema of the first transformed log item.
     first_log = data["items"][0]
     expected_keys = {"address", "block_number", "data", "decoded", "index", "topics"}
-    assert set(first_log.keys()) == expected_keys
+    assert expected_keys.issubset(first_log.keys())
+    if "data_truncated" in first_log:
+        assert isinstance(first_log["data_truncated"], bool)
 
     # 4. Validate the data types of key fields.
     assert isinstance(first_log["address"], str)

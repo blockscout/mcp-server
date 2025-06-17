@@ -49,10 +49,12 @@ async def test_get_address_logs_success(mock_ctx):
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs, \
          patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_process_logs.return_value = (mock_api_response.get("items", []), False)
         mock_json_dumps.return_value = '{"fake_json": true}'
 
         # ACT
@@ -65,6 +67,7 @@ async def test_get_address_logs_success(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/logs",
             params={}
         )
+        mock_process_logs.assert_called_once_with(mock_api_response.get("items", []))
 
         mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
@@ -121,11 +124,13 @@ async def test_get_address_logs_with_pagination(mock_ctx):
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs, \
          patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps, \
          patch('blockscout_mcp_server.tools.address_tools.encode_cursor') as mock_encode_cursor:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_process_logs.return_value = (mock_api_response["items"], False)
         mock_json_dumps.return_value = fake_json_body
         mock_encode_cursor.return_value = fake_cursor
 
@@ -144,6 +149,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/logs",
             params={}
         )
+        mock_process_logs.assert_called_once_with(mock_api_response["items"])
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -167,10 +173,12 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
 
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs, \
          patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_process_logs.return_value = (mock_api_response["items"], False)
         mock_json_dumps.return_value = '{"empty": true}'
 
         # ACT
@@ -192,6 +200,7 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
                 "items_count": items_count,
             }
         )
+        mock_process_logs.assert_called_once_with(mock_api_response["items"])
 
         mock_json_dumps.assert_called_once_with(expected_transformed_response)
 
@@ -258,10 +267,12 @@ async def test_get_address_logs_empty_logs(mock_ctx):
     # Patch json.dumps directly since it's imported locally in the function
     with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs, \
          patch('blockscout_mcp_server.tools.address_tools.json.dumps') as mock_json_dumps:
 
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
+        mock_process_logs.return_value = (mock_api_response["items"], False)
         # We don't care what json.dumps returns, only that it's called correctly
         mock_json_dumps.return_value = "{...}"
 
@@ -278,6 +289,7 @@ async def test_get_address_logs_empty_logs(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/logs",
             params={}
         )
+        mock_process_logs.assert_called_once_with(mock_api_response["items"])
         
         # Verify the result structure
         assert result.startswith("**Items Structure:**")
@@ -287,3 +299,30 @@ async def test_get_address_logs_empty_logs(mock_ctx):
         
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_address_logs_with_truncation_note(mock_ctx):
+    """Verify the truncation note is added when the helper indicates truncation."""
+    # ARRANGE
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {"items": [{"data": "0xlong..."}]}
+
+    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
+         patch('blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items') as mock_process_logs:
+
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+        # Simulate truncated data
+        mock_process_logs.return_value = (mock_api_response["items"], True)
+
+        # ACT
+        result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        # ASSERT
+        mock_process_logs.assert_called_once_with(mock_api_response["items"])
+        assert "**Note on Truncated Data:**" in result
+        assert f"`curl \"{mock_base_url}/api/v2/addresses/{address}/logs\"`" in result

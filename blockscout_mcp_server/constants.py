@@ -24,3 +24,7 @@ All Blockscout API tools require a chain_id parameter:
 """
 
 SERVER_NAME = "blockscout-mcp-server"
+
+# The maximum length for a log's `data` field before it's truncated.
+# 1026 = '0x' prefix + 1024 hex characters (512 bytes).
+LOG_DATA_TRUNCATION_LIMIT = 1026
