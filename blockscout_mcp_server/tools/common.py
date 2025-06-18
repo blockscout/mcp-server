@@ -318,7 +318,7 @@ def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:
     for item in items:
         item_copy = item.copy()
         data = item_copy.get("data")
-        if data and len(data) > LOG_DATA_TRUNCATION_LIMIT:
+        if isinstance(data, str) and len(data) > LOG_DATA_TRUNCATION_LIMIT:
             item_copy["data"] = data[:LOG_DATA_TRUNCATION_LIMIT]
             item_copy["data_truncated"] = True
             was_truncated = True
