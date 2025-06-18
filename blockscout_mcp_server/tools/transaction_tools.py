@@ -14,6 +14,21 @@ from blockscout_mcp_server.config import config
 from mcp.server.fastmcp import Context
 
 
+def _transform_advanced_filter_item(item: dict, fields_to_remove: list[str]) -> dict:
+    """Transforms a single item from the advanced filter API response."""
+    transformed_item = item.copy()
+
+    if isinstance(transformed_item.get("from"), dict):
+        transformed_item["from"] = transformed_item["from"].get("hash")
+    if isinstance(transformed_item.get("to"), dict):
+        transformed_item["to"] = transformed_item["to"].get("hash")
+
+    for field in fields_to_remove:
+        transformed_item.pop(field, None)
+
+    return transformed_item
+
+
 def _transform_transaction_info(data: dict) -> dict:
     """Transforms the raw transaction info response from Blockscout API
     into a more concise format for the MCP tool.
@@ -118,7 +133,20 @@ async def get_transactions_by_address(
     
     # The wrapper make_request_with_periodic_progress handles the final progress report for this step.
     # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
-    
+
+    original_items = response_data.get("items", [])
+    fields_to_remove = [
+        "total",
+        "token",
+        "token_transfer_batch_index",
+        "token_transfer_index",
+    ]
+
+    transformed_items = [
+        _transform_advanced_filter_item(item, fields_to_remove) for item in original_items
+    ]
+
+    response_data["items"] = transformed_items
     return response_data
 
 async def get_token_transfers_by_address(
@@ -188,7 +216,15 @@ async def get_token_transfers_by_address(
     
     # The wrapper make_request_with_periodic_progress handles the final progress report for this step.
     # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
-    
+
+    original_items = response_data.get("items", [])
+    fields_to_remove = ["value", "internal_transaction_index", "created_contract"]
+
+    transformed_items = [
+        _transform_advanced_filter_item(item, fields_to_remove) for item in original_items
+    ]
+
+    response_data["items"] = transformed_items
     return response_data
 
 async def transaction_summary(

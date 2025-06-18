@@ -2,7 +2,13 @@ import pytest
 
 import json
 import httpx
-from blockscout_mcp_server.tools.transaction_tools import transaction_summary, get_transaction_logs, get_transaction_info
+from blockscout_mcp_server.tools.transaction_tools import (
+    transaction_summary,
+    get_transaction_logs,
+    get_transaction_info,
+    get_transactions_by_address,
+    get_token_transfers_by_address,
+)
 
 
 @pytest.mark.integration
@@ -114,3 +120,59 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     assert isinstance(first_transfer.get("from"), str)
     assert isinstance(first_transfer.get("to"), str)
     assert first_transfer.get("type") == "token_minting"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_integration(mock_ctx):
+    """Tests that get_transactions_by_address returns a transformed list of transactions."""
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+
+    result = await get_transactions_by_address(
+        chain_id="1",
+        address=address,
+        age_to="2016-01-01T00:00:00.00Z",
+        ctx=mock_ctx,
+    )
+
+    assert isinstance(result, dict)
+    assert "items" in result
+    items = result["items"]
+    assert isinstance(items, list)
+
+    if not items:
+        pytest.skip("No transactions found for the given address and time range.")
+
+    for item in items:
+        assert isinstance(item.get("from"), str)
+        assert isinstance(item.get("to"), str)
+        assert "token" not in item
+        assert "total" not in item
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_integration(mock_ctx):
+    """Tests that get_token_transfers_by_address returns a transformed list of transfers."""
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+
+    result = await get_token_transfers_by_address(
+        chain_id="1",
+        address=address,
+        age_to="2017-01-01T00:00:00.00Z",
+        ctx=mock_ctx,
+    )
+
+    assert isinstance(result, dict)
+    assert "items" in result
+    items = result["items"]
+    assert isinstance(items, list)
+
+    if not items:
+        pytest.skip("No token transfers found for the given address and time range.")
+
+    for item in items:
+        assert isinstance(item.get("from"), str)
+        assert isinstance(item.get("to"), str)
+        assert "value" not in item
+        assert "internal_transaction_index" not in item

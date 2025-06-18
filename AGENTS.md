@@ -44,7 +44,8 @@ mcp-server/
 │       ├── test_get_instructions.py  # Tests for instruction tool (__get_instructions__)
 │       ├── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
-│       └── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
+│       ├── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
+│       └── test_transaction_tools_helpers.py # Tests for transaction helper functions
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── README.md                   # Project overview, setup, and usage instructions

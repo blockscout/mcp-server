@@ -121,6 +121,49 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
         }
         assert call_kwargs['request_args']['params'] == expected_params
 
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_transforms_response(mock_ctx):
+    """Verify that get_transactions_by_address correctly transforms its response."""
+    chain_id = "1"
+    address = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "items": [
+            {
+                "from": {"hash": "0xfrom_hash"},
+                "to": {"hash": "0xto_hash"},
+                "token": "should be removed",
+                "total": "should be removed",
+                "value": "kept",
+                "token_transfer_batch_index": 1,
+                "token_transfer_index": 1,
+            }
+        ],
+        "next_page_params": None,
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "from": "0xfrom_hash",
+                "to": "0xto_hash",
+                "value": "kept",
+            }
+        ],
+        "next_page_params": None,
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress', new_callable=AsyncMock) as mock_wrapper:
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+
+        result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert result == expected_transformed_response
+
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
     """
@@ -216,6 +259,50 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
         # Progress should have been reported once (at start) before the error
         assert mock_ctx.report_progress.call_count == 1
         assert mock_ctx.info.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
+    """Verify that get_token_transfers_by_address correctly transforms its response."""
+    chain_id = "1"
+    address = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "items": [
+            {
+                "from": {"hash": "0xfrom_hash"},
+                "to": {"hash": "0xto_hash"},
+                "token": "kept",
+                "total": "kept",
+                "value": "should be removed",
+                "internal_transaction_index": 1,
+                "created_contract": "should be removed",
+            }
+        ],
+        "next_page_params": None,
+    }
+
+    expected_transformed_response = {
+        "items": [
+            {
+                "from": "0xfrom_hash",
+                "to": "0xto_hash",
+                "token": "kept",
+                "total": "kept",
+            }
+        ],
+        "next_page_params": None,
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress', new_callable=AsyncMock) as mock_wrapper:
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+
+        result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert result == expected_transformed_response
 
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_wrapper_error(mock_ctx):
