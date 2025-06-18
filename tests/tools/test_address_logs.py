@@ -343,4 +343,4 @@ async def test_get_address_logs_with_truncation_note(mock_ctx):
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
         mock_json_dumps.assert_called_once_with(expected_transformed)
         assert "**Note on Truncated Data:**" in result
-        assert f"`curl \"{mock_base_url}/api/v2/addresses/{address}/logs\"`" in result
+        assert f"`curl \"{mock_base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs\"`" in result

@@ -390,8 +390,8 @@ To get the next page call get_address_logs(chain_id="{chain_id}", address="{addr
 ----
 **Note on Truncated Data:**
 One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).
-If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this address programmatically. For example, using curl:
-`curl "{base_url}/api/v2/addresses/{address}/logs"`
+If the full log data is crucial for your analysis, you must first get the `transaction_hash` from the specific log item in the JSON response above. Then, you can retrieve all logs for that single transaction programmatically. For example, using curl:
+`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`
 You would then need to parse the JSON response and find the specific log by its index.
 """
         output += note_on_truncation
