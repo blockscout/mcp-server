@@ -153,6 +153,35 @@ async def test_with_retry_logic():
     assert result is not None
 ```
 
+### Avoid Hardcoding Environment-Specific URLs
+
+When asserting on output that contains a URL resolved by the server, **DO NOT** hardcode the URL in your test. The server dynamically resolves URLs (e.g., using `get_blockscout_base_url`), and these resolved values can change.
+
+Instead, the test itself should call the same helper to get the expected URL and use that variable in the assertion. This makes the test resilient to changes in the underlying service infrastructure.
+
+**Incorrect (Brittle):**
+```python
+@pytest.mark.integration
+async def test_tool_with_hardcoded_url(mock_ctx):
+    result = await some_tool_that_generates_a_url(chain_id="1", ...)
+    
+    # This will break if the resolved URL for chain 1 changes.
+    assert "https://eth.blockscout.com/some/path" in result
+```
+
+**Correct (Robust):**
+```python
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
+
+@pytest.mark.integration
+async def test_tool_with_dynamic_url(mock_ctx):
+    base_url = await get_blockscout_base_url("1")
+    result = await some_tool_that_generates_a_url(chain_id="1", ...)
+    
+    # This test is resilient to changes in the resolved URL.
+    assert f"{base_url}/some/path" in result
+```
+
 ## File Size Limitations
 
 **Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused files (e.g., `test_block_tools_integration_1.py`, `test_block_tools_integration_2.py`) to maintain readability and logical organization.
