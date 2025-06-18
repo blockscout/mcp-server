@@ -5,6 +5,7 @@ import base64
 import anyio
 from typing import Optional, Callable, Awaitable, Any, Dict
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 from mcp.server.fastmcp import Context
 
 class ChainNotFoundError(ValueError):
@@ -308,9 +309,6 @@ def decode_cursor(cursor: str) -> dict:
         return json.loads(json_string)
     except (TypeError, ValueError, json.JSONDecodeError, base64.binascii.Error) as e:
         raise InvalidCursorError("Invalid or expired cursor provided.") from e
-
-
-from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 
 
 def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:

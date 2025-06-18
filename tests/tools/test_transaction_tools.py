@@ -275,7 +275,7 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await transaction_summary(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         assert result == expected_result
@@ -312,7 +312,7 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await transaction_summary(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         assert result == expected_result

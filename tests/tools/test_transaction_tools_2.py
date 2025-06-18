@@ -54,7 +54,7 @@ async def test_get_transaction_info_success(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
@@ -86,7 +86,7 @@ async def test_get_transaction_info_not_found(mock_ctx):
 
         # ACT & ASSERT
         with pytest.raises(httpx.HTTPStatusError):
-            await get_transaction_info(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+            await get_transaction_info(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -111,7 +111,7 @@ async def test_get_transaction_info_chain_not_found(mock_ctx):
 
         # ACT & ASSERT
         with pytest.raises(ChainNotFoundError):
-            await get_transaction_info(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+            await get_transaction_info(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
 
@@ -138,7 +138,7 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
@@ -204,7 +204,7 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         assert result == expected_transformed_result
@@ -278,7 +278,7 @@ async def test_get_transaction_logs_success(mock_ctx):
         mock_json_dumps.return_value = "{...}"
 
         # ACT
-        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         # Assert that json.dumps was called with the transformed data
@@ -318,7 +318,7 @@ async def test_get_transaction_info_removes_raw_input_by_default(mock_ctx):
         mock_request.return_value = mock_api_response.copy()
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         assert "raw_input" not in result
@@ -344,7 +344,7 @@ async def test_get_transaction_info_keeps_raw_input_when_flagged(mock_ctx):
         mock_request.return_value = mock_api_response.copy()
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
 
         # ASSERT
         assert "raw_input" in result
@@ -370,7 +370,7 @@ async def test_get_transaction_info_keeps_raw_input_if_no_decoded(mock_ctx):
         mock_request.return_value = mock_api_response.copy()
 
         # ACT
-        result = await get_transaction_info(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         assert "raw_input" in result

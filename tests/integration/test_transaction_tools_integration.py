@@ -13,7 +13,7 @@ async def test_transaction_summary_integration(mock_ctx):
     the 'summaries' field is correctly extracted from the 'data' object."""
     # A stable, historical transaction (e.g., an early Uniswap V2 router transaction)
     tx_hash = "0x5c7f2f244d91ec281c738393da0be6a38bc9045e29c0566da8c11e7a2f7cbc64"
-    result = await transaction_summary(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+    result = await transaction_summary(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
 
     # Assert that the result is a non-empty string
     assert isinstance(result, str)
@@ -32,7 +32,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
     # This transaction on Ethereum Mainnet is known to have many logs, ensuring a paginated response.
     tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
     try:
-        result_str = await get_transaction_logs(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+        result_str = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
@@ -80,7 +80,7 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
     # Resolve the base URL the same way the tool does
     base_url = await get_blockscout_base_url(chain_id)
     try:
-        result_str = await get_transaction_logs(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
+        result_str = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
@@ -104,7 +104,7 @@ async def test_get_transaction_info_integration(mock_ctx):
     """Tests that get_transaction_info returns full data and omits raw_input by default."""
     # This is a stable transaction with a known decoded input (a swap).
     tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
-    result = await get_transaction_info(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+    result = await get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
 
     # Assert that the main data is present and transformed
     assert isinstance(result, dict)
@@ -133,7 +133,7 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     """Tests that get_transaction_info keeps raw_input by default when decoded_input is null."""
     # This is a stable contract creation transaction, which has no decoded_input.
     tx_hash = "0x12341be874149efc8c714f4ef431db0ce29f64532e5c70d3882257705e2b1ad2"
-    result = await get_transaction_info(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+    result = await get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
 
     # Assert that the main data is present and transformed
     assert isinstance(result, dict)

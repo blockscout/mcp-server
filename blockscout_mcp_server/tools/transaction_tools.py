@@ -194,7 +194,7 @@ async def get_token_transfers_by_address(
 
 async def transaction_summary(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    hash: Annotated[str, Field(description="Transaction hash")],
+    transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context
 ) -> str:
     """
@@ -203,10 +203,10 @@ async def transaction_summary(
     Essential for rapid transaction comprehension, dashboard displays, and initial analysis.
     Note: Not all transactions can be summarized and accuracy is not guaranteed for complex patterns.
     """
-    api_path = f"/api/v2/transactions/{hash}/summary"
+    api_path = f"/api/v2/transactions/{transaction_hash}/summary"
 
     # Report start of operation
-    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction summary for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction summary for {transaction_hash} on chain {chain_id}...")
 
     base_url = await get_blockscout_base_url(chain_id)
     
@@ -226,7 +226,7 @@ async def transaction_summary(
 
 async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    hash: Annotated[str, Field(description="Transaction hash")],
+    transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
     include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data.")] = False
 ) -> Dict:
@@ -236,10 +236,10 @@ async def get_transaction_info(
     By default, the raw transaction input is omitted if a decoded version is available to save context; request it with `include_raw_input=True` only when you truly need the raw hex data.
     Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
     """
-    api_path = f"/api/v2/transactions/{hash}"
+    api_path = f"/api/v2/transactions/{transaction_hash}"
     
     # Report start of operation
-    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction info for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction info for {transaction_hash} on chain {chain_id}...")
     
     base_url = await get_blockscout_base_url(chain_id)
     
@@ -262,7 +262,7 @@ async def get_transaction_info(
 
 async def get_transaction_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    hash: Annotated[str, Field(description="Transaction hash")],
+    transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
     cursor: Annotated[
         Optional[str],
@@ -276,7 +276,7 @@ async def get_transaction_logs(
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows. The `data` field may be truncated if it is excessively large.
     """
-    api_path = f"/api/v2/transactions/{hash}/logs"
+    api_path = f"/api/v2/transactions/{transaction_hash}/logs"
     params = {}
 
     if cursor:
@@ -289,7 +289,7 @@ async def get_transaction_logs(
             )
     
     # Report start of operation
-    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction logs for {hash} on chain {chain_id}...")
+    await report_and_log_progress(ctx, progress=0.0, total=2.0, message=f"Starting to fetch transaction logs for {transaction_hash} on chain {chain_id}...")
     
     base_url = await get_blockscout_base_url(chain_id)
     
@@ -352,7 +352,7 @@ async def get_transaction_logs(
         pagination_hint = f"""
 
 ----
-To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", hash=\"{hash}\", cursor=\"{next_cursor}\")"""
+To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", transaction_hash=\"{transaction_hash}\", cursor=\"{next_cursor}\")"""
         output += pagination_hint
 
     # Add a note about truncated data if it happened
@@ -362,7 +362,7 @@ To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", hash=\"{
 **Note on Truncated Data:**
 One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).
 If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this transaction programmatically. For example, using curl:
-`curl "{base_url}/api/v2/transactions/{hash}/logs"`
+`curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`
 You would then need to parse the JSON response and find the specific log by its index.
 """
         output += note_on_truncation

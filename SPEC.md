@@ -152,7 +152,7 @@ sequenceDiagram
 
     To prevent LLM context overflow from excessively large `data` fields in transaction logs, the server implements a smart truncation strategy.
 
-    - **Mechanism**: If a log's `data` field exceeds a predefined limit (512 bytes), it is truncated.
+    - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 1026 characters (representing 512 bytes of data plus the '0x' prefix), it is truncated.
     - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
     - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
 

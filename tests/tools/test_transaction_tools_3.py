@@ -35,7 +35,7 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
         mock_json_dumps.return_value = "{...}"
 
         # ACT
-        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         # Assert that json.dumps was called with the transformed data
@@ -75,7 +75,7 @@ async def test_get_transaction_logs_api_error(mock_ctx):
 
         # ACT & ASSERT
         with pytest.raises(httpx.HTTPStatusError):
-            await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+            await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -144,7 +144,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
         mock_json_dumps.return_value = "{...}"
 
         # ACT
-        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         # Assert that json.dumps was called with the transformed data
@@ -223,7 +223,7 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
         mock_json_dumps.return_value = fake_json_body
         mock_encode_cursor.return_value = fake_cursor
 
-        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         mock_json_dumps.assert_called_once_with(expected_transformed_response)
         mock_encode_cursor.assert_called_once_with(
@@ -273,7 +273,7 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
         mock_process_logs.return_value = (mock_api_response["items"], False)
         mock_json_dumps.return_value = "{...}"
 
-        await get_transaction_logs(chain_id=chain_id, hash=hash, cursor=cursor, ctx=mock_ctx)
+        await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, cursor=cursor, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
@@ -299,7 +299,7 @@ async def test_get_transaction_logs_invalid_cursor(mock_ctx):
         new_callable=AsyncMock,
     ) as mock_request:
         result = await get_transaction_logs(
-            chain_id=chain_id, hash=hash, cursor=invalid_cursor, ctx=mock_ctx
+            chain_id=chain_id, transaction_hash=hash, cursor=invalid_cursor, ctx=mock_ctx
         )
 
         assert (
@@ -329,7 +329,7 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
         mock_json_dumps.return_value = '{"fake":true}'
 
         # ACT
-        result = await get_transaction_logs(chain_id=chain_id, hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         # ASSERT
         expected_transformed = {
