@@ -75,6 +75,8 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(first_log["topics"], list)
 
 
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_address_logs_with_truncation_integration(mock_ctx):
@@ -82,11 +84,16 @@ async def test_get_address_logs_with_truncation_integration(mock_ctx):
     Tests that get_address_logs correctly truncates oversized `data` fields
     from a live API response and includes the instructional note.
     """
+    # This address is known to emit logs with very large data fields.
     address = "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7"
-    result_str = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
+    chain_id = "1"
+
+    # Resolve the base URL the same way the tool does
+    base_url = await get_blockscout_base_url(chain_id)
+    result_str = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
 
     assert "**Note on Truncated Data:**" in result_str
-    assert f"`curl \"https://eth.blockscout.com/api/v2/addresses/{address}/logs\"`" in result_str
+    assert f"`curl \"{base_url}/api/v2/addresses/{address}/logs\"`" in result_str
 
     json_part = result_str.split("**Address logs JSON:**\n")[1].split("----")[0]
     data = json.loads(json_part)

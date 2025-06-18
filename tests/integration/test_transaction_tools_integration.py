@@ -64,6 +64,8 @@ async def test_get_transaction_logs_integration(mock_ctx):
     assert isinstance(first_log["topics"], list)
 
 
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
@@ -71,14 +73,19 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
     Tests that get_transaction_logs correctly truncates oversized `data` fields
     from a live API response and includes the instructional note.
     """
+    # This transaction on Ethereum Mainnet is known to contain logs with very large data fields.
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
+    chain_id = "1"
+
+    # Resolve the base URL the same way the tool does
+    base_url = await get_blockscout_base_url(chain_id)
     try:
-        result_str = await get_transaction_logs(chain_id="1", hash=tx_hash, ctx=mock_ctx)
+        result_str = await get_transaction_logs(chain_id=chain_id, hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
     assert "**Note on Truncated Data:**" in result_str
-    assert f"`curl \"https://eth.blockscout.com/api/v2/transactions/{tx_hash}/logs\"`" in result_str
+    assert f"`curl \"{base_url}/api/v2/transactions/{tx_hash}/logs\"`" in result_str
 
     json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
     data = json.loads(json_part)
