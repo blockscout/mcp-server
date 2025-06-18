@@ -1,5 +1,5 @@
 ---
-description: This rule applies to add a new MCP tool functions
+description: Folow these instructions whenever creating new MCP tool functions or modifying existing ones
 globs: 
 alwaysApply: false
 ---

@@ -1,0 +1,27 @@
+---
+description: Apply these rules to the tool's description field whenever you are creating a new MCP tool or updating an existing one.
+globs: 
+alwaysApply: false
+---
+## MCP Tool-Description Rules
+
+**Context:** These rules apply to the function docstring of MCP tool implementations. The docstring serves as the tool's description that AI agents see when deciding which tool to use.
+
+1. **Length** – Hard cap = 1 000 chars; target ≤ 500 chars (≈ 120 tokens). Every character must justify its existence in the context budget.
+2. **Verb-first summary** – Open with a clear action (“Retrieves current weather”).  
+3. **Primary trigger ± guardrail** – State when to call and, if vital, one “don’t-call if …”.  
+4. **Key differentiator** – Explain why to choose this tool over near-duplicates.  
+5. **Domain & limits** – Name the data/system touched and any hard constraints (auth, size, date).  
+6. **Optional micro-example** – If still under the limit, add ultra-short call sample to clarify intent. A concise usage example can clarify intent better than verbose description.
+7. **No internals** – Omit schemas, parameter lists, versions, or implementation details.
+
+---
+
+### Good vs. Bad Description Gallery
+
+| Tool | **Good (≤ 120 chars)** | Why good | **Bad** | Why bad |
+|------|------------------------|----------|---------|---------|
+| Weather lookup | “Retrieves temperature & condition for a city. Use when user asks *current* weather.” | Verb, trigger, domain, limit implicit | “Uses OpenWeatherMap API to query weather and parse JSON.” | Implementation noise, no trigger |
+| File reader | “Reads text file (≤ 5 MB UTF-8) and returns full content string.” | Scope & limit explicit | “Tool for files.” | Too vague; model can’t map intent |
+
+> Keep this gallery in internal docs as onboarding/QA material; don’t embed it inside individual tool descriptions.

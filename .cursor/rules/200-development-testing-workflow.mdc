@@ -1,11 +1,9 @@
 ---
-description: Development Testing Workflow applied when developing new features or modifying existing tools
+description: Follow this testing workflow whenenver making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)
 globs: 
 alwaysApply: false
 ---
 # Development Testing Workflow
-
-When developing new features or modifying existing tools, follow this testing workflow:
 
 ## 1. Run Unit Tests First
 
@@ -55,9 +53,15 @@ Ensure your changes are well-tested:
 pytest --cov=blockscout_mcp_server --cov-report=term-missing
 ```
 
-## 4. Run Integration Tests (Optional but Recommended)
+## 4. Run Integration Tests (Required in These Cases)
 
-Before final validation, run the integration test suite to ensure your changes have not broken our interaction with live APIs. This is especially important if you have modified any of the helper functions in `tools/common.py`.
+**MANDATORY** when you have:
+- Added or modified any existing MCP tool function
+- Modified helper functions in `tools/common.py`
+- Added or changed any integration test
+- Changed data extraction or transformation logic
+
+**Optional** for minor documentation or configuration changes.
 
 ```bash
 pytest -m integration

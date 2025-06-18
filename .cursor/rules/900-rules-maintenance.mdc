@@ -1,0 +1,17 @@
+---
+description: Whenever you create, modify, or delete any rule file (`.mdc` files) in the `.cursor/rules/` directory
+globs: 
+alwaysApply: false
+---
+# Rules Maintenance
+
+**MANDATORY:** When you create, modify, or delete any `.mdc` file in `.cursor/rules/`, update `.cursor/AGENTS.md` accordingly.
+
+## Categorization by Number:
+- `000-099`: Core Rules
+- `100-199`: MCP Tool Development  
+- `200-299`: Testing & Development
+- `900-999`: Meta Rules
+
+Keep descriptions brief (1-2 lines) and focused on the rule's primary purpose.
+
