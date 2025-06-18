@@ -310,7 +310,7 @@ async def get_transaction_logs(
     """
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
-    Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows. The `data` field may be truncated if it is excessively large.
+    Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
     """
     api_path = f"/api/v2/transactions/{transaction_hash}/logs"
     params = {}
