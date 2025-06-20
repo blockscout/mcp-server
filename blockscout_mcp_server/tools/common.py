@@ -374,7 +374,12 @@ def _recursively_truncate_and_flag_long_strings(data: Any) -> tuple[Any, bool]:
 
 
 def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:
-    """Processes log items, truncating the 'data' field if it exceeds a limit."""
+    """Truncate large log values.
+
+    Shortens the raw ``data`` field and recursively trims long strings within
+    the ``decoded`` dictionary of each item. Returns the processed list and a
+    flag indicating whether any truncation occurred.
+    """
     processed_items = []
     was_truncated = False
     for item in items:
