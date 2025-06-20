@@ -105,6 +105,60 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_get_transaction_logs_with_decoded_truncation_integration(mock_ctx):
+    """Ensure truncated decoded parameters trigger the instructional note."""
+    tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
+    chain_id = "1"
+
+    base_url = await get_blockscout_base_url(chain_id)
+    try:
+        result_str = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
+
+    assert "**Note on Truncated Data:**" in result_str
+    assert f"`curl \"{base_url}/api/v2/transactions/{tx_hash}/logs\"`" in result_str
+
+    json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
+    data = json.loads(json_part)
+
+    scope_function_log = next(
+        (
+            item
+            for item in data.get("items", [])
+            if isinstance(item.get("decoded"), dict)
+            and item["decoded"].get("method_call", "").startswith("ScopeFunction")
+        ),
+        None,
+    )
+
+    if not scope_function_log:
+        pytest.skip("Could not find a 'ScopeFunction' event log in the live data.")
+
+    conditions_param = next(
+        (
+            p
+            for p in scope_function_log["decoded"].get("parameters", [])
+            if p.get("name") == "conditions"
+        ),
+        None,
+    )
+
+    if not conditions_param:
+        pytest.skip("Could not find 'conditions' parameter in the 'ScopeFunction' event.")
+
+    found_truncation = False
+    for condition_tuple in conditions_param.get("value", []):
+        if isinstance(condition_tuple[-1], dict) and condition_tuple[-1].get("value_truncated"):
+            found_truncation = True
+            break
+
+    if not found_truncation:
+        pytest.skip("Could not find a truncated 'bytes' value in the 'conditions' parameter.")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_transaction_info_integration(mock_ctx):
     """Tests that get_transaction_info returns full data and omits raw_input by default."""
     # This is a stable transaction with a known decoded input (a swap).

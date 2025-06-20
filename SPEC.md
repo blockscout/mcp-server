@@ -154,6 +154,7 @@ sequenceDiagram
 
     - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 1026 characters (representing 512 bytes of data plus the '0x' prefix), it is truncated.
     - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
+    - **Decoded Truncation**: Oversized string values inside the `decoded` dictionary are recursively replaced with `{"value_sample": "...", "value_truncated": true}`.
     - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
 
     This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.

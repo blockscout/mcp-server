@@ -7,6 +7,7 @@ from blockscout_mcp_server.tools.address_tools import (
     get_tokens_by_address,
     get_address_logs,
 )
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
 
 
 @pytest.mark.integration
@@ -73,6 +74,59 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(first_log["index"], int)
     assert isinstance(first_log["topics"], list)
 
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_logs_with_decoded_truncation_integration(mock_ctx):
+    """Ensure decoded parameter truncation is detected."""
+    address = "0x703806E61847984346d2D7DDd853049627e50A40"
+    chain_id = "1"
+
+    base_url = await get_blockscout_base_url(chain_id)
+    try:
+        result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"Address logs unavailable from the API: {e}")
+
+    assert "**Note on Truncated Data:**" in result
+    assert f"`curl \"{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs\"`" in result
+
+    json_part = result.split("**Address logs JSON:**\n")[1].split("----")[0]
+    data = json.loads(json_part)
+
+    scope_function_log = next(
+        (
+            item
+            for item in data.get("items", [])
+            if isinstance(item.get("decoded"), dict)
+            and item["decoded"].get("method_call", "").startswith("ScopeFunction")
+        ),
+        None,
+    )
+
+    if not scope_function_log:
+        pytest.skip("Could not find a 'ScopeFunction' event log in the live data.")
+
+    conditions_param = next(
+        (
+            p
+            for p in scope_function_log["decoded"].get("parameters", [])
+            if p.get("name") == "conditions"
+        ),
+        None,
+    )
+
+    if not conditions_param:
+        pytest.skip("Could not find 'conditions' parameter in the 'ScopeFunction' event.")
+
+    found_truncation = False
+    for condition_tuple in conditions_param.get("value", []):
+        if isinstance(condition_tuple[-1], dict) and condition_tuple[-1].get("value_truncated"):
+            found_truncation = True
+            break
+
+    if not found_truncation:
+        pytest.skip("Could not find a truncated 'bytes' value in the 'conditions' parameter.")
 
 
 

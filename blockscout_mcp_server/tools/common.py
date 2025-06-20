@@ -384,6 +384,13 @@ def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:
             item_copy["data"] = data[:LOG_DATA_TRUNCATION_LIMIT]
             item_copy["data_truncated"] = True
             was_truncated = True
+
+        decoded = item_copy.get("decoded")
+        if isinstance(decoded, dict):
+            processed_decoded, decoded_was_truncated = _recursively_truncate_and_flag_long_strings(decoded)
+            item_copy["decoded"] = processed_decoded
+            if decoded_was_truncated:
+                was_truncated = True
         processed_items.append(item_copy)
     return processed_items, was_truncated
 

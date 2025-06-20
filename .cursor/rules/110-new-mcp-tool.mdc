@@ -456,22 +456,24 @@ return "\n".join(output_parts)
 **Key Points:**
 - Always use `return_exceptions=True`
 
-#### 8. Truncating Large Data Fields to Save Context (`return_type: str`)
+#### 8. Truncating Large and Nested Data Fields to Save Context (`return_type: str`)
 
-**Rationale:** Some API fields, like the `data` field in transaction logs, can be extremely large and consume excessive LLM context. To handle this, we truncate the data and explicitly flag the truncation to the agent, guiding it on how to retrieve the full data if needed.
+**Rationale:** Some API fields, like the raw `data` field or deeply nested values inside a log's `decoded` object, can be extremely large and consume excessive LLM context. We shorten these values and explicitly flag the truncation, guiding the agent on how to retrieve the full data if needed.
 
 **Implementation Pattern:**
 This pattern uses a shared helper to centralize the truncation logic and conditionally adds an instructional note to the output.
 
 ```python
-from .common import _process_and_truncate_log_items # Fictional helper for this example
+from .common import _process_and_truncate_log_items # Shared helper handles both raw and decoded truncation
 
 async def tool_with_large_data_fields(chain_id: str, hash: str, ctx: Context) -> str:
     # 1. Get raw response from API
     base_url = await get_blockscout_base_url(chain_id)
     raw_response = await make_blockscout_request(...)
 
-    # 2. Use the helper to process items and check for truncation
+    # 2. Use the helper to process items and check for truncation.
+    #    It shortens the raw `data` field and any long strings inside
+    #    the nested `decoded` structure.
     processed_items, was_truncated = _process_and_truncate_log_items(
         raw_response.get("items", [])
     )

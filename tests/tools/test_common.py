@@ -101,6 +101,67 @@ def test_process_and_truncate_log_items_no_data_field():
     assert processed == items
 
 
+def test_process_and_truncate_log_items_decoded_truncation_only():
+    """Verify truncation occurs within the decoded field even without data."""
+    long_value = "a" * (INPUT_DATA_TRUNCATION_LIMIT + 1)
+    items = [
+        {"decoded": {"parameters": [{"name": "foo", "value": long_value}]}}
+    ]
+
+    processed, truncated = _process_and_truncate_log_items(items)
+
+    assert truncated is True
+    processed_value = processed[0]["decoded"]["parameters"][0]["value"]
+    assert processed_value["value_truncated"] is True
+    assert len(processed_value["value_sample"]) == INPUT_DATA_TRUNCATION_LIMIT
+
+
+def test_process_and_truncate_log_items_short_data_long_decoded():
+    """Verify long decoded value triggers truncation when data is short."""
+    long_value = "b" * (INPUT_DATA_TRUNCATION_LIMIT + 1)
+    items = [
+        {
+            "data": "0xdeadbeef",
+            "decoded": {"parameters": [{"name": "bar", "value": long_value}]},
+        }
+    ]
+
+    processed, truncated = _process_and_truncate_log_items(items)
+
+    assert truncated is True
+    processed_value = processed[0]["decoded"]["parameters"][0]["value"]
+    assert processed_value["value_truncated"] is True
+    assert processed[0].get("data_truncated") is None
+
+
+def test_process_and_truncate_log_items_data_and_decoded_truncated():
+    """Verify truncation occurs on both data and decoded fields."""
+    long_data = "0x" + "f" * LOG_DATA_TRUNCATION_LIMIT
+    long_value = "c" * (INPUT_DATA_TRUNCATION_LIMIT + 1)
+    items = [
+        {
+            "data": long_data,
+            "decoded": {"parameters": [{"name": "baz", "value": long_value}]},
+        }
+    ]
+
+    processed, truncated = _process_and_truncate_log_items(items)
+
+    assert truncated is True
+    assert processed[0]["data_truncated"] is True
+    processed_value = processed[0]["decoded"]["parameters"][0]["value"]
+    assert processed_value["value_truncated"] is True
+
+
+def test_process_and_truncate_log_items_no_decoded_field():
+    """Verify items without a 'decoded' field are handled gracefully."""
+    items = [{"data": "0x1234"}]
+    processed, truncated = _process_and_truncate_log_items(items)
+
+    assert truncated is False
+    assert processed == items
+
+
 def test_recursively_truncate_handles_simple_string():
     """Verify truncation of a simple long string."""
     long_string = "a" * (INPUT_DATA_TRUNCATION_LIMIT + 1)
