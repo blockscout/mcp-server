@@ -170,7 +170,7 @@ async def test_get_transaction_info_keeps_and_truncates_raw_input_when_flagged(m
 
     with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
          patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-        mock_get_url.return_value = mock_api_response.copy()
+        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response.copy()
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
