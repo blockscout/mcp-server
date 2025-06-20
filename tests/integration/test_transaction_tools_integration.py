@@ -3,6 +3,7 @@ import pytest
 import json
 import httpx
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT, INPUT_DATA_TRUNCATION_LIMIT
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction_tools import (
     transaction_summary,
     get_transaction_logs,
@@ -69,8 +70,6 @@ async def test_get_transaction_logs_integration(mock_ctx):
     assert isinstance(first_log["index"], int)
     assert isinstance(first_log["topics"], list)
 
-
-from blockscout_mcp_server.tools.common import get_blockscout_base_url
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -139,10 +138,16 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     """Tests that get_transaction_info keeps raw_input by default when decoded_input is null."""
     # This is a stable contract creation transaction, which has no decoded_input.
     tx_hash = "0x12341be874149efc8c714f4ef431db0ce29f64532e5c70d3882257705e2b1ad2"
-    result = await get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+    chain_id = "1"
+    
+    # Dynamically resolve the base URL
+    base_url = await get_blockscout_base_url(chain_id)
+    result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
     assert isinstance(result, str)
     assert "**Note on Truncated Data:**" in result
+    # Add assertion for the curl command (strip trailing slash like the tool does)
+    assert f"`curl \"{base_url.rstrip('/')}/api/v2/transactions/{tx_hash}\"`" in result
 
     json_part = result.split("----")[0]
     data = json.loads(json_part)
@@ -172,6 +177,8 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     chain_id = "1"
 
+    # Dynamically resolve the base URL
+    base_url = await get_blockscout_base_url(chain_id)
     try:
         result_str = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
@@ -179,7 +186,8 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
 
     assert isinstance(result_str, str)
     assert "**Note on Truncated Data:**" in result_str
-    assert f"`curl \"https://eth.blockscout.com/api/v2/transactions/{tx_hash}\"`" in result_str
+    # Use the resolved base_url in the assertion (strip trailing slash like the tool does)
+    assert f"`curl \"{base_url.rstrip('/')}/api/v2/transactions/{tx_hash}\"`" in result_str
 
     json_part = result_str.split("----")[0]
     data = json.loads(json_part)
