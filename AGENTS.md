@@ -9,10 +9,10 @@ mcp-server/
 │   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
-│   ├── constants.py            # Centralized constants used throughout the application
+│   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
-│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing helpers)
+│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing and truncation helpers)
 │       ├── get_instructions.py # Implements the __get_instructions__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
@@ -151,14 +151,14 @@ mcp-server/
         * Loads configuration values (e.g., API keys, timeouts, cache settings) from environment variables.
         * Provides a singleton configuration object that can be imported and used by other modules, especially by `tools/common.py` for API calls.
     * **`constants.py`**:
-        * Defines centralized constants used throughout the application.
+        * Defines centralized constants used throughout the application, including data truncation limits.
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:
-            * Contains shared utility functions for all tool modules.
+            * Contains shared utility functions for all tool modules, including data processing and truncation helpers.
             * Implements chain resolution and caching mechanism with `get_blockscout_base_url` function.
             * Implements helper functions (`encode_cursor`, `decode_cursor`) and a custom exception (`InvalidCursorError`) for handling opaque pagination cursors.
             * Contains asynchronous HTTP client functions for different API endpoints:

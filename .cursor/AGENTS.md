@@ -11,7 +11,7 @@ This directory `.cursor/rules` contains rule files that govern the behavior and 
 
 ### MCP Tool Development (100-199)
 
-- **`110-new-mcp-tool.mdc`** - Comprehensive guide for adding new MCP tool functions including API endpoints, file modifications, and implementation patterns
+- **`110-new-mcp-tool.mdc`** - Comprehensive guide for adding new MCP tool functions and patterns, including data truncation techniques
 - **`120-mcp-tool-arguments.mdc`** - Rules for modifying existing MCP tool functions, emphasizing context conservation and purpose clarity
 - **`130-version-management.mdc`** - Version update procedures requiring synchronization across pyproject.toml, __init__.py, and constants.py
 - **`140-tool-description.mdc`** - Guidelines for writing effective tool descriptions with character limits and formatting rules

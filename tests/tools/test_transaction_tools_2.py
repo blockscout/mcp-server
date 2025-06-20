@@ -5,6 +5,8 @@ import httpx
 
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
 from blockscout_mcp_server.tools.common import encode_cursor
+import json
+from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 
 @pytest.mark.asyncio
 async def test_get_transaction_info_success(mock_ctx):
@@ -66,6 +68,122 @@ async def test_get_transaction_info_success(mock_ctx):
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_no_truncation(mock_ctx):
+    """Verify behavior when no data is large enough to be truncated."""
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": {"parameters": ["short_string"]},
+        "raw_input": "0xshort"
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert isinstance(result, dict)
+        assert "raw_input" not in result
+        assert "raw_input_truncated" not in result
+        assert result["decoded_input"]["parameters"][0] == "short_string"
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_truncates_raw_input(mock_ctx):
+    """Verify raw_input is truncated when it's too long and there's no decoded_input."""
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    long_raw_input = "0x" + "a" * INPUT_DATA_TRUNCATION_LIMIT
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": None,
+        "raw_input": long_raw_input
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert isinstance(result, str)
+        assert "**Note on Truncated Data:**" in result
+
+        json_part = result.split("----")[0]
+        data = json.loads(json_part)
+
+        assert data["raw_input_truncated"] is True
+        assert len(data["raw_input"]) == INPUT_DATA_TRUNCATION_LIMIT
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_truncates_decoded_input(mock_ctx):
+    """Verify a parameter in decoded_input is truncated."""
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    long_param = "0x" + "a" * INPUT_DATA_TRUNCATION_LIMIT
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": {"parameters": [long_param]},
+        "raw_input": "0xshort"
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response.copy()
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert isinstance(result, str)
+        assert "**Note on Truncated Data:**" in result
+
+        json_part = result.split("----")[0]
+        data = json.loads(json_part)
+
+        param = data["decoded_input"]["parameters"][0]
+        assert param["value_truncated"] is True
+        assert len(param["value_sample"]) == INPUT_DATA_TRUNCATION_LIMIT
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_keeps_and_truncates_raw_input_when_flagged(mock_ctx):
+    """Verify raw_input is kept but truncated when include_raw_input is True."""
+    chain_id = "1"
+    tx_hash = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+    long_raw_input = "0x" + "a" * INPUT_DATA_TRUNCATION_LIMIT
+    mock_api_response = {
+        "hash": tx_hash,
+        "decoded_input": {"parameters": ["short"]},
+        "raw_input": long_raw_input
+    }
+
+    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
+         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
+        mock_get_url.return_value = mock_api_response.copy()
+        mock_request.return_value = mock_api_response.copy()
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
+
+        assert isinstance(result, str)
+        assert "**Note on Truncated Data:**" in result
+
+        json_part = result.split("----")[0]
+        data = json.loads(json_part)
+
+        assert "raw_input" in data
+        assert data["raw_input_truncated"] is True
+        assert len(data["raw_input"]) == INPUT_DATA_TRUNCATION_LIMIT
 @pytest.mark.asyncio
 async def test_get_transaction_info_not_found(mock_ctx):
     """
@@ -298,81 +416,4 @@ async def test_get_transaction_logs_success(mock_ctx):
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
-@pytest.mark.asyncio
-async def test_get_transaction_info_removes_raw_input_by_default(mock_ctx):
-    """Verify raw_input is removed by default when decoded_input is present."""
-    # ARRANGE
-    chain_id = "1"
-    tx_hash = "0x123"
-    mock_base_url = "https://eth.blockscout.com"
-    mock_api_response = {
-        "hash": tx_hash,
-        "decoded_input": {"method_call": "transfer(...)"},
-        "raw_input": "0xverylongstring"
-    }
-
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
-        mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response.copy()
-
-        # ACT
-        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
-
-        # ASSERT
-        assert "raw_input" not in result
-        assert "decoded_input" in result
-
-@pytest.mark.asyncio
-async def test_get_transaction_info_keeps_raw_input_when_flagged(mock_ctx):
-    """Verify raw_input is kept when include_raw_input is True."""
-    # ARRANGE
-    chain_id = "1"
-    tx_hash = "0x123"
-    mock_base_url = "https://eth.blockscout.com"
-    mock_api_response = {
-        "hash": tx_hash,
-        "decoded_input": {"method_call": "transfer(...)"},
-        "raw_input": "0xverylongstring"
-    }
-
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
-        mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response.copy()
-
-        # ACT
-        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx, include_raw_input=True)
-
-        # ASSERT
-        assert "raw_input" in result
-        assert result["raw_input"] == "0xverylongstring"
-
-@pytest.mark.asyncio
-async def test_get_transaction_info_keeps_raw_input_if_no_decoded(mock_ctx):
-    """Verify raw_input is kept by default if decoded_input is null."""
-    # ARRANGE
-    chain_id = "1"
-    tx_hash = "0x123"
-    mock_base_url = "https://eth.blockscout.com"
-    mock_api_response = {
-        "hash": tx_hash,
-        "decoded_input": None,
-        "raw_input": "0xverylongstring"
-    }
-
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
-        mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response.copy()
-
-        # ACT
-        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
-
-        # ASSERT
-        assert "raw_input" in result
-        assert result["raw_input"] == "0xverylongstring"
 

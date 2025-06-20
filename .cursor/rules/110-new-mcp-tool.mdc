@@ -492,3 +492,40 @@ Some data was truncated. To get the full data, use:
 
     return output_string
 ```
+
+#### 9. Recursively Truncating Nested Data Structures (`return_type: str` or `dict`)
+
+**Rationale:** Some API fields, like `decoded_input` in a transaction, can contain deeply nested lists and tuples with large data blobs. A simple check is not enough. To handle this, we use a recursive helper to traverse the structure and truncate any long strings found within, replacing them with a structured object to signal the truncation.
+
+**Implementation Pattern:**
+This pattern uses a shared recursive helper to centralize the logic and conditionally adds an instructional note to the output.
+
+```python
+from .common import _recursively_truncate_and_flag_long_strings # Fictional helper for this example
+
+async def tool_with_nested_data(chain_id: str, hash: str, ctx: Context) -> str | dict:
+    # 1. Get raw response from API
+    raw_response = await make_blockscout_request(...)
+
+    # 2. Use the recursive helper on the part of the response with nested data
+    processed_params, params_truncated = _recursively_truncate_and_flag_long_strings(
+        raw_response.get("decoded_input", {}).get("parameters", [])
+    )
+    if params_truncated:
+        raw_response["decoded_input"]["parameters"] = processed_params
+
+    # 3. Check if any truncation occurred and prepare final output
+    if params_truncated:
+        # Return as a string with a note
+        output_json = json.dumps(raw_response)
+        note = f"""
+----
+**Note on Truncated Data:**
+Some nested data was truncated. To get the full data, use:
+`curl "{base_url}/api/v2/some_endpoint/{hash}"`
+"""
+        return f"{output_json}{note}"
+    else:
+        # Return the dictionary directly
+        return raw_response
+```

@@ -5,7 +5,10 @@ import base64
 import anyio
 from typing import Optional, Callable, Awaitable, Any, Dict
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
+from blockscout_mcp_server.constants import (
+    LOG_DATA_TRUNCATION_LIMIT,
+    INPUT_DATA_TRUNCATION_LIMIT,
+)
 from mcp.server.fastmcp import Context
 
 class ChainNotFoundError(ValueError):
@@ -309,6 +312,65 @@ def decode_cursor(cursor: str) -> dict:
         return json.loads(json_string)
     except (TypeError, ValueError, json.JSONDecodeError, base64.binascii.Error) as e:
         raise InvalidCursorError("Invalid or expired cursor provided.") from e
+
+
+def _recursively_truncate_and_flag_long_strings(data: Any) -> tuple[Any, bool]:
+    """
+    Recursively traverses a data structure to find and truncate long strings.
+
+    This function handles nested lists, tuples, and dictionaries. When a string
+    exceeds INPUT_DATA_TRUNCATION_LIMIT, it's replaced with a dictionary
+    indicating that truncation occurred.
+
+    Args:
+        data: The data to process (can be any type).
+
+    Returns:
+        A tuple containing:
+        - The processed data with long strings replaced.
+        - A boolean flag `was_truncated`, which is True if any string was truncated.
+    """
+    was_truncated = False
+    if isinstance(data, str):
+        if len(data) > INPUT_DATA_TRUNCATION_LIMIT:
+            return {
+                "value_sample": data[:INPUT_DATA_TRUNCATION_LIMIT],
+                "value_truncated": True,
+            }, True
+        return data, False
+
+    if isinstance(data, list):
+        processed_list = []
+        list_truncated = False
+        for item in data:
+            processed_item, item_truncated = _recursively_truncate_and_flag_long_strings(item)
+            processed_list.append(processed_item)
+            if item_truncated:
+                list_truncated = True
+        return processed_list, list_truncated
+
+    if isinstance(data, tuple):
+        processed_list = []
+        tuple_truncated = False
+        for item in data:
+            processed_item, item_truncated = _recursively_truncate_and_flag_long_strings(item)
+            processed_list.append(processed_item)
+            if item_truncated:
+                tuple_truncated = True
+        return tuple(processed_list), tuple_truncated
+
+    if isinstance(data, dict):
+        processed_dict = {}
+        dict_truncated = False
+        for key, value in data.items():
+            processed_value, value_truncated = _recursively_truncate_and_flag_long_strings(value)
+            processed_dict[key] = processed_value
+            if value_truncated:
+                dict_truncated = True
+        return processed_dict, dict_truncated
+
+    # For any other data type (int, bool, None, etc.), return it as is.
+    return data, False
 
 
 def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:

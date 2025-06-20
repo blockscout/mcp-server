@@ -10,8 +10,10 @@ from blockscout_mcp_server.tools.common import (
     encode_cursor,
     InvalidCursorError,
     _process_and_truncate_log_items,
+    _recursively_truncate_and_flag_long_strings,
 )
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from mcp.server.fastmcp import Context
 
 
@@ -28,6 +30,40 @@ def _transform_advanced_filter_item(item: dict, fields_to_remove: list[str]) -> 
         transformed_item.pop(field, None)
 
     return transformed_item
+
+
+def _process_and_truncate_tx_info_data(data: dict, include_raw_input: bool) -> tuple[dict, bool]:
+    """
+    Processes transaction data, applying truncation to large fields.
+
+    Returns:
+        A tuple containing the processed data and a boolean indicating if truncation occurred.
+    """
+    transformed_data = data.copy()
+    was_truncated = False
+
+    # 1. Handle `raw_input` based on `include_raw_input` flag and presence of `decoded_input`
+    raw_input = transformed_data.pop("raw_input", None)
+    if include_raw_input or not transformed_data.get("decoded_input"):
+        if raw_input and len(raw_input) > INPUT_DATA_TRUNCATION_LIMIT:
+            transformed_data["raw_input"] = raw_input[:INPUT_DATA_TRUNCATION_LIMIT]
+            transformed_data["raw_input_truncated"] = True
+            was_truncated = True
+        elif raw_input:
+            transformed_data["raw_input"] = raw_input
+
+    # 2. Handle `decoded_input`
+    if "decoded_input" in transformed_data and isinstance(transformed_data["decoded_input"], dict):
+        decoded_input = transformed_data["decoded_input"]
+        if "parameters" in decoded_input:
+            processed_params, params_truncated = _recursively_truncate_and_flag_long_strings(
+                decoded_input["parameters"]
+            )
+            decoded_input["parameters"] = processed_params
+            if params_truncated:
+                was_truncated = True
+
+    return transformed_data, was_truncated
 
 
 def _transform_transaction_info(data: dict) -> dict:
@@ -265,7 +301,7 @@ async def get_transaction_info(
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
     include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data.")] = False
-) -> Dict:
+) -> Dict | str:
     """
     Get comprehensive transaction information. 
     Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
@@ -287,14 +323,26 @@ async def get_transaction_info(
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction data.")
 
-    # Conditionally remove raw_input to save context if decoded_input is present
-    if not include_raw_input and response_data.get("decoded_input"):
-        response_data.pop("raw_input", None)
+    # Process data for truncation
+    processed_data, was_truncated = _process_and_truncate_tx_info_data(response_data, include_raw_input)
 
-    # Apply our new transformation logic before returning
-    transformed_data = _transform_transaction_info(response_data)
+    # Apply standard transformations
+    final_data = _transform_transaction_info(processed_data)
 
-    return transformed_data
+    if not was_truncated:
+        return final_data
+
+    # If truncated, return a string with the JSON and the instructional note
+    output_json = json.dumps(final_data)
+    note = f"""
+----
+**Note on Truncated Data:**
+One or more large data fields in this response have been truncated (indicated by "value_truncated": true or "raw_input_truncated": true).
+
+To get the full, untruncated data, you can retrieve it programmatically. For example, using curl:
+`curl "{str(base_url).rstrip('/')}/api/v2/transactions/{transaction_hash}"`
+"""
+    return f"{output_json}{note}"
 
 async def get_transaction_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
