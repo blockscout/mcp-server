@@ -118,7 +118,7 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
 
     # ASSERT 1: Check for and extract the cursor.
     assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^\"]+)"', first_page_result)
+    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
     assert cursor_match is not None, "Could not find cursor in the first page response."
     cursor = cursor_match.group(1)
 
@@ -128,7 +128,9 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     # ASSERT 2: Verify the second page.
     assert "Error" not in second_page_result
     first_page_data = json.loads(first_page_result.split("----")[0])
-    second_page_data = json.loads(second_page_result) # Second page may not have a hint.
+    # Second page may or may not have a hint, so splitting is the safest way to parse.
+    second_page_json_str = second_page_result.split("----")[0]
+    second_page_data = json.loads(second_page_json_str)
     
     assert len(second_page_data) > 0
     assert first_page_data[0] != second_page_data[0]

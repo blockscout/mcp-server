@@ -1,5 +1,6 @@
 import json
 import re
+import httpx
 import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
@@ -168,7 +169,10 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"
     chain_id = "1"
 
-    first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    try:
+        first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"API request failed, skipping pagination test: {e}")
 
     assert "To get the next page call" in first_page_result
     cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
@@ -176,7 +180,10 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     cursor = cursor_match.group(1)
     assert len(cursor) > 0
 
-    second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    try:
+        second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    except httpx.HTTPStatusError as e:
+        pytest.fail(f"API request for the second page failed with cursor: {e}")
 
     assert "Error: Invalid or expired pagination cursor" not in second_page_result
 
@@ -198,7 +205,10 @@ async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
     chain_id = "1"
 
-    first_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    try:
+        first_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"API request failed, skipping pagination test: {e}")
 
     assert "To get the next page call" in first_page_result
     cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
@@ -206,7 +216,10 @@ async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     cursor = cursor_match.group(1)
     assert len(cursor) > 0
 
-    second_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    try:
+        second_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    except httpx.HTTPStatusError as e:
+        pytest.fail(f"API request for the second page failed with cursor: {e}")
 
     assert "Error: Invalid or expired pagination cursor" not in second_page_result
 
@@ -228,7 +241,10 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     chain_id = "1"
 
-    first_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+    try:
+        first_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"API request failed, skipping pagination test: {e}")
 
     assert "To get the next page call" in first_page_result
     cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
@@ -236,7 +252,10 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     cursor = cursor_match.group(1)
     assert len(cursor) > 0
 
-    second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    try:
+        second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    except httpx.HTTPStatusError as e:
+        pytest.fail(f"API request for the second page failed with cursor: {e}")
 
     assert "Error: Invalid or expired pagination cursor" not in second_page_result
 
