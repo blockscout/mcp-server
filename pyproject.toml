@@ -4,7 +4,7 @@ version = "0.3.1"
 description = "MCP server for Blockscout"
 requires-python = ">=3.11"
 dependencies = [
-    "mcp[cli]>=1.9.2",  # Or the latest version of the SDK
+    "mcp[cli]>=1.9.4",  # Or the latest version of the SDK
     "httpx>=0.27.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
@@ -21,6 +21,9 @@ test = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.0.0"
 ]
+dev = [
+    "ruff>=0.8.5"
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -28,3 +31,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["blockscout_mcp_server"]
+
+[tool.ruff.lint]
+select = ["C4", "E", "F", "I", "PERF", "UP"]
+ignore = ["PERF203"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
