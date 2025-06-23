@@ -1,17 +1,20 @@
-from typing import Annotated, Dict
+from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request,
     get_blockscout_base_url,
+    make_blockscout_request,
     report_and_log_progress,
 )
-from mcp.server.fastmcp import Context
+
 
 async def get_contract_abi(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Smart contract address")],
     ctx: Context
-) -> Dict:
+) -> dict:
     """
     Get smart contract ABI (Application Binary Interface).
     An ABI defines all functions, events, their parameters, and return types. The ABI is required to format function calls or interpret contract data.

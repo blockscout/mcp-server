@@ -1,11 +1,12 @@
 # tests/tools/test_address_logs.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
-import json
+import pytest
 
 from blockscout_mcp_server.tools.address_tools import get_address_logs
 from blockscout_mcp_server.tools.common import encode_cursor
+
 
 @pytest.mark.asyncio
 async def test_get_address_logs_success(mock_ctx):

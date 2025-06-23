@@ -1,6 +1,7 @@
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
+
 class ServerConfig(BaseSettings):
     model_config = ConfigDict(env_prefix="BLOCKSCOUT_")  # e.g., BLOCKSCOUT_BS_URL
     

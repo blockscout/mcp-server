@@ -1,15 +1,19 @@
-import httpx
-import time
-import json
 import base64
+import json
+import time
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 import anyio
-from typing import Optional, Callable, Awaitable, Any, Dict
+import httpx
+from mcp.server.fastmcp import Context
+
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
-    LOG_DATA_TRUNCATION_LIMIT,
     INPUT_DATA_TRUNCATION_LIMIT,
+    LOG_DATA_TRUNCATION_LIMIT,
 )
-from mcp.server.fastmcp import Context
+
 
 class ChainNotFoundError(ValueError):
     """Exception raised when a chain ID cannot be found or resolved to a Blockscout URL."""
@@ -18,7 +22,7 @@ class ChainNotFoundError(ValueError):
 # Cache: chain_id -> (blockscout_url_or_none, expiry_timestamp)
 # Note: This cache is simple and not thread-safe for concurrent writes for the same new key.
 # This is acceptable for the typical MCP server use case (local, one server per client).
-_chain_cache: dict[str, tuple[Optional[str], float]] = {}
+_chain_cache: dict[str, tuple[str | None, float]] = {}
 
 async def get_blockscout_base_url(chain_id: str) -> str:
     """
@@ -181,15 +185,15 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
 
 async def make_request_with_periodic_progress(
     ctx: Context,
-    request_function: Callable[..., Awaitable[Dict]],  # e.g., make_blockscout_request
-    request_args: Dict[str, Any],                      # Args for request_function
+    request_function: Callable[..., Awaitable[dict]],  # e.g., make_blockscout_request
+    request_args: dict[str, Any],                      # Args for request_function
     total_duration_hint: float,                        # e.g., config.bs_timeout
     progress_interval_seconds: float = 15.0,
     in_progress_message_template: str = "Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s)",
     tool_overall_total_steps: float = 2.0,
     current_step_number: float = 2.0,  # 1-indexed
     current_step_message_prefix: str = "Fetching data"
-) -> Dict:
+) -> dict:
     """
     Execute a request function with periodic progress updates.
     

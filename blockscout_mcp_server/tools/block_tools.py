@@ -1,19 +1,22 @@
-from typing import Annotated, Dict, Optional
 import asyncio
 import json
+from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request,
     get_blockscout_base_url,
+    make_blockscout_request,
     report_and_log_progress,
 )
-from mcp.server.fastmcp import Context
+
 
 async def get_block_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     number_or_hash: Annotated[str, Field(description="Block number or hash")],
     ctx: Context,
-    include_transactions: Annotated[Optional[bool], Field(description="If true, includes a list of transaction hashes from the block.")] = False
+    include_transactions: Annotated[bool | None, Field(description="If true, includes a list of transaction hashes from the block.")] = False
 ) -> str:
     """
     Get block information like timestamp, gas used, burnt fees, transaction count etc.
@@ -106,7 +109,7 @@ async def get_block_info(
 async def get_latest_block(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     ctx: Context
-) -> Dict:
+) -> dict:
     """
     Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain. 
     No transactions or token transfers can exist beyond this point, making it useful as a reference timestamp for other API calls.

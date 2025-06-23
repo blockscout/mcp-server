@@ -1,18 +1,21 @@
 import asyncio
 import json
-from typing import Annotated, Optional
+from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request,
-    get_blockscout_base_url,
-    encode_cursor,
-    decode_cursor,
     InvalidCursorError,
+    _process_and_truncate_log_items,
+    decode_cursor,
+    encode_cursor,
+    get_blockscout_base_url,
+    make_blockscout_request,
     make_metadata_request,
     report_and_log_progress,
-    _process_and_truncate_log_items,
 )
-from mcp.server.fastmcp import Context
+
 
 async def get_address_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -86,7 +89,7 @@ async def get_tokens_by_address(
     address: Annotated[str, Field(description="Wallet address")],
     ctx: Context,
     cursor: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),
@@ -177,7 +180,7 @@ async def nft_tokens_by_address(
     address: Annotated[str, Field(description="NFT owner address")],
     ctx: Context,
     cursor: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),
@@ -288,7 +291,7 @@ async def get_address_logs(
     address: Annotated[str, Field(description="Account address")],
     ctx: Context,
     cursor: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),

@@ -1,13 +1,14 @@
 import json
 import re
+
 import httpx
 import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
-    nft_tokens_by_address,
-    get_tokens_by_address,
     get_address_logs,
+    get_tokens_by_address,
+    nft_tokens_by_address,
 )
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 

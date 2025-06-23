@@ -1,9 +1,11 @@
 # tests/tools/test_contract_tools.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
+
 
 @pytest.mark.asyncio
 async def test_get_contract_abi_success(mock_ctx):

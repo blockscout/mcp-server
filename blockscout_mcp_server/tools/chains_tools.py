@@ -1,8 +1,10 @@
+from mcp.server.fastmcp import Context
+
 from blockscout_mcp_server.tools.common import (
     make_chainscout_request,
     report_and_log_progress,
 )
-from mcp.server.fastmcp import Context
+
 
 async def get_chains_list(ctx: Context) -> str:
     """

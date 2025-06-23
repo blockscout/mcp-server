@@ -1,8 +1,10 @@
 # tests/tools/test_chains_tools.py
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
 
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
+
 
 @pytest.mark.asyncio
 async def test_get_chains_list_success(mock_ctx):

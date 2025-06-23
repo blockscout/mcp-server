@@ -1,20 +1,22 @@
 import json
-from typing import Annotated, Optional, Dict
+from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
+from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request,
-    get_blockscout_base_url,
-    make_request_with_periodic_progress,
-    report_and_log_progress,
-    decode_cursor,
-    encode_cursor,
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    decode_cursor,
+    encode_cursor,
+    get_blockscout_base_url,
+    make_blockscout_request,
+    make_request_with_periodic_progress,
+    report_and_log_progress,
 )
-from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
-from mcp.server.fastmcp import Context
 
 
 def _transform_advanced_filter_item(item: dict, fields_to_remove: list[str]) -> dict:
@@ -109,10 +111,10 @@ async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
     ctx: Context,
-    age_from: Annotated[Optional[str], Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z).")] = None,
-    age_to: Annotated[Optional[str], Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z).")] = None,
-    methods: Annotated[Optional[str], Field(description="A method signature to filter transactions by (e.g 0x304e6ade)")] = None,
-) -> Dict:
+    age_from: Annotated[str | None, Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z).")] = None,
+    age_to: Annotated[str | None, Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z).")] = None,
+    methods: Annotated[str | None, Field(description="A method signature to filter transactions by (e.g 0x304e6ade)")] = None,
+) -> dict:
     """
     Get transactions for an address within a specific time range.
     Use cases:
@@ -190,10 +192,10 @@ async def get_token_transfers_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either transfer initiator or transfer receiver")],
     ctx: Context,
-    age_from: Annotated[Optional[str], Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history.")] = None,
-    age_to: Annotated[Optional[str], Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time.")] = None,
-    token: Annotated[Optional[str], Field(description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens.")] = None,
-) -> Dict:
+    age_from: Annotated[str | None, Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history.")] = None,
+    age_to: Annotated[str | None, Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time.")] = None,
+    token: Annotated[str | None, Field(description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens.")] = None,
+) -> dict:
     """
     Get ERC-20 token transfers for an address within a specific time range.
     Use cases:
@@ -300,8 +302,8 @@ async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
-    include_raw_input: Annotated[Optional[bool], Field(description="If true, includes the raw transaction input data.")] = False
-) -> Dict | str:
+    include_raw_input: Annotated[bool | None, Field(description="If true, includes the raw transaction input data.")] = False
+) -> dict | str:
     """
     Get comprehensive transaction information. 
     Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
@@ -349,7 +351,7 @@ async def get_transaction_logs(
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
     cursor: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="The pagination cursor from a previous response to get the next page of results."
         ),

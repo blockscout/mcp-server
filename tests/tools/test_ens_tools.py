@@ -1,9 +1,11 @@
 # tests/tools/test_ens_tools.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
+
 
 @pytest.mark.asyncio
 async def test_get_address_by_ens_name_success(mock_ctx):

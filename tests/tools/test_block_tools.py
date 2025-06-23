@@ -1,10 +1,12 @@
 # tests/tools/test_block_tools.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-import httpx
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from blockscout_mcp_server.tools.block_tools import get_latest_block, get_block_info
+import httpx
+import pytest
+
+from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
+
 
 @pytest.mark.asyncio
 async def test_get_latest_block_success(mock_ctx):

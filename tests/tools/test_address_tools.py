@@ -1,14 +1,16 @@
 # tests/tools/test_address_tools.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-import httpx
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
+import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
-    get_tokens_by_address,
     get_address_info,
+    get_tokens_by_address,
 )
 from blockscout_mcp_server.tools.common import encode_cursor
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_with_pagination(mock_ctx):

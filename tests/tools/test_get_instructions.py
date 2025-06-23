@@ -1,8 +1,10 @@
 # tests/tools/test_get_instructions.py
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from blockscout_mcp_server.tools.get_instructions import __get_instructions__
+
 
 @pytest.mark.asyncio
 async def test_get_instructions_success(mock_ctx):

@@ -1,8 +1,7 @@
-import pytest
 
 from blockscout_mcp_server.tools.transaction_tools import (
-    _transform_transaction_info,
     _transform_advanced_filter_item,
+    _transform_transaction_info,
 )
 
 

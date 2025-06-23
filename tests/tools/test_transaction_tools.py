@@ -1,13 +1,15 @@
 # tests/tools/test_transaction_tools.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 from blockscout_mcp_server.tools.transaction_tools import (
-    get_transactions_by_address, 
     get_token_transfers_by_address,
-    transaction_summary
+    get_transactions_by_address,
+    transaction_summary,
 )
+
 
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_calls_wrapper_correctly(mock_ctx):

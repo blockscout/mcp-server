@@ -1,10 +1,12 @@
 from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
 from blockscout_mcp_server.tools.common import (
     make_bens_request,
     report_and_log_progress,
 )
-from mcp.server.fastmcp import Context
 
 
 async def get_address_by_ens_name(

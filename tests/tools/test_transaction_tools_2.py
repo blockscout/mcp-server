@@ -1,12 +1,13 @@
 # tests/tools/test_transaction_tools_2.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-import httpx
-
-from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
-from blockscout_mcp_server.tools.common import encode_cursor
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
+import pytest
+
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
+from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
+
 
 @pytest.mark.asyncio
 async def test_get_transaction_info_success(mock_ctx):

@@ -1,13 +1,15 @@
 # tests/integration/test_common_helpers.py
 import pytest
+
 from blockscout_mcp_server.tools.common import (
-    make_chainscout_request,
-    make_bens_request,
+    ChainNotFoundError,
     get_blockscout_base_url,
+    make_bens_request,
     make_blockscout_request,
+    make_chainscout_request,
     make_metadata_request,
-    ChainNotFoundError
 )
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio

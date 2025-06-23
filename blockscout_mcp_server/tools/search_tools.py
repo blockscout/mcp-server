@@ -1,11 +1,13 @@
-from typing import Annotated, List, Dict
+from typing import Annotated
+
+from mcp.server.fastmcp import Context
 from pydantic import Field
+
 from blockscout_mcp_server.tools.common import (
-    make_blockscout_request,
     get_blockscout_base_url,
+    make_blockscout_request,
     report_and_log_progress,
 )
-from mcp.server.fastmcp import Context
 
 # Maximum number of token results returned by lookup_token_by_symbol
 TOKEN_RESULTS_LIMIT = 7
@@ -14,7 +16,7 @@ async def lookup_token_by_symbol(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     symbol: Annotated[str, Field(description="Token symbol or name to search for")],
     ctx: Context
-) -> List[Dict]:
+) -> list[dict]:
     """
     Search for token addresses by symbol or name. Returns multiple potential
     matches based on symbol or token name similarity. Only the first

@@ -1,6 +1,8 @@
-from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS
 from mcp.server.fastmcp import Context
+
+from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS
 from blockscout_mcp_server.tools.common import report_and_log_progress
+
 
 async def __get_instructions__(ctx: Context) -> str:
     """

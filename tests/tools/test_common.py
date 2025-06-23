@@ -1,15 +1,16 @@
 import pytest
 from mcp.server.fastmcp import Context
+
+from blockscout_mcp_server.constants import (
+    INPUT_DATA_TRUNCATION_LIMIT,
+    LOG_DATA_TRUNCATION_LIMIT,
+)
 from blockscout_mcp_server.tools.common import (
-    encode_cursor,
-    decode_cursor,
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
-)
-from blockscout_mcp_server.constants import (
-    LOG_DATA_TRUNCATION_LIMIT,
-    INPUT_DATA_TRUNCATION_LIMIT,
+    decode_cursor,
+    encode_cursor,
 )
 
 

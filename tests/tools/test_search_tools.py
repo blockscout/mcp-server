@@ -1,10 +1,12 @@
 # tests/tools/test_search_tools.py
-import pytest
 import copy
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
+
 
 @pytest.mark.asyncio
 async def test_lookup_token_by_symbol_success(mock_ctx):

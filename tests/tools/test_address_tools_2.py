@@ -1,14 +1,15 @@
 # tests/tools/test_address_tools_2.py
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
-import httpx
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
+import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
     nft_tokens_by_address,
-    get_address_logs,
 )
 from blockscout_mcp_server.tools.common import encode_cursor
+
 
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_success(mock_ctx):

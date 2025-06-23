@@ -1,16 +1,29 @@
+from typing import Annotated
+
 import typer
 import uvicorn
-from typing_extensions import Annotated
 from mcp.server.fastmcp import FastMCP
+
+from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS, SERVER_NAME
+from blockscout_mcp_server.tools.address_tools import (
+    get_address_info,
+    get_address_logs,
+    get_tokens_by_address,
+    nft_tokens_by_address,
+)
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
+from blockscout_mcp_server.tools.chains_tools import get_chains_list
+from blockscout_mcp_server.tools.contract_tools import get_contract_abi
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
-from blockscout_mcp_server.tools.transaction_tools import get_transactions_by_address, get_token_transfers_by_address, transaction_summary, get_transaction_info, get_transaction_logs
 from blockscout_mcp_server.tools.get_instructions import __get_instructions__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi
-from blockscout_mcp_server.tools.address_tools import get_address_info, get_tokens_by_address, nft_tokens_by_address, get_address_logs
-from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.constants import SERVER_NAME, SERVER_INSTRUCTIONS
+from blockscout_mcp_server.tools.transaction_tools import (
+    get_token_transfers_by_address,
+    get_transaction_info,
+    get_transaction_logs,
+    get_transactions_by_address,
+    transaction_summary,
+)
 
 mcp = FastMCP(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
 
