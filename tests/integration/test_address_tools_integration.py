@@ -3,6 +3,8 @@ import re
 import httpx
 import pytest
 
+from .utils import _find_truncated_scope_function_in_logs, _extract_next_cursor
+
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     nft_tokens_by_address,
@@ -239,36 +241,13 @@ async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
         json_part = result_str.split("**Address logs JSON:**\n")[1].split("----")[0]
         data = json.loads(json_part)
 
-        scope_function_log = next(
-            (
-                item
-                for item in data.get("items", [])
-                if isinstance(item.get("decoded"), dict)
-                and item["decoded"].get("method_call", "").startswith("ScopeFunction")
-            ),
-            None,
-        )
-
-        if scope_function_log:
-            conditions_param = next(
-                (
-                    p
-                    for p in scope_function_log["decoded"].get("parameters", [])
-                    if p.get("name") == "conditions"
-                ),
-                None,
-            )
-            if conditions_param:
-                for condition_tuple in conditions_param.get("value", []):
-                    if isinstance(condition_tuple[-1], dict) and condition_tuple[-1].get("value_truncated"):
-                        found_truncated_log = True
-                        break
-
-        if found_truncated_log:
+        if _find_truncated_scope_function_in_logs(data):
+            found_truncated_log = True
             break
 
-        if "To get the next page call" in result_str:
-            cursor = result_str.split('cursor="')[1].split('"')[0]
+        next_cursor = _extract_next_cursor(result_str)
+        if next_cursor:
+            cursor = next_cursor
         else:
             break
 
