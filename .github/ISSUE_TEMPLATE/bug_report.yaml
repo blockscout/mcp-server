@@ -1,0 +1,88 @@
+name: Bug Report
+description: "Report a problem or unexpected behavior in the MCP server"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the issue. What's not working as expected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Describe what should be true to consider this issue resolved.
+      placeholder: |
+        - [ ] ...
+      render: markdown
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Examples / Reproduction Steps
+      description: |
+        If applicable, include one or more specific examples, such as transaction hashes, tool names, or reproduction steps.
+      placeholder: |
+        - **Example Tool Call / Endpoint**:
+        - **Example Transaction / Address / Input**:
+        - **Observed Behavior**:
+        - **Expected Behavior**:
+      render: markdown
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: If you have a proposed fix or design suggestion, describe it here. Otherwise, leave this blank.
+
+  - type: checkboxes
+    id: affected_components
+    attributes:
+      label: Affected Components
+      description: List relevant modules or files that may be affected
+      options:
+        - label: "`blockscout_mcp_server/tools/...`"
+        - label: "`blockscout_mcp_server/constants.py`"
+        - label: "`tests/tools/...`"
+        - label: "Documentation (`README.md`, `SPEC.md`, etc.)"
+        - label: "Other (please specify in description)"
+
+  - type: checkboxes
+    id: testing_requirements
+    attributes:
+      label: Testing Requirements
+      description: What tests should be created or updated to validate the fix?
+      options:
+        - label: "Unit tests needed"
+        - label: "Integration tests needed"
+        - label: "Manual test plan needed"
+
+  - type: textarea
+    id: testing_details
+    attributes:
+      label: Testing Details
+      description: Provide specific details about the testing requirements if any boxes above were checked.
+      placeholder: |
+        - Unit tests: ...
+        - Integration tests: ...
+        - Manual test plan: ...
+
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: Related Issues / References
+      description: Link to any related issues, pull requests, or transactions
+      placeholder: |
+        - Issue #
+        - Related PR #
+        - [Example Transaction](https://eth.blockscout.com/tx/...)
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Any other context, logs, error messages, or notes that may help triage the bug
+

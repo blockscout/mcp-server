@@ -1,0 +1,102 @@
+name: 🚀 Feature Request
+description: "Suggest an improvement, enhancement, or new functionality for the MCP server"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the new feature or enhancement you are proposing. Why is it needed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: List specific goals or desired outcomes of the feature. What problems does it solve?
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+      render: markdown
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you propose to implement the feature. Be specific about logic, code structure, or affected components.
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_details
+    attributes:
+      label: Technical Details
+      description: |
+        Optional: Provide additional implementation details, such as module names, helper functions, constants, or patterns.
+      placeholder: |
+        - New constants (e.g., `NEW_CONSTANT` in `constants.py`)
+        - New or updated helpers in `tools/common.py`
+        - Changes to tool: `blockscout_mcp_server/tools/...`
+
+  - type: checkboxes
+    id: affected_components
+    attributes:
+      label: Affected Components
+      description: Mark all modules that may be affected or involved
+      options:
+        - label: "`blockscout_mcp_server/tools/...`"
+        - label: "`blockscout_mcp_server/constants.py`"
+        - label: "`tests/tools/...`"
+        - label: "Documentation (`README.md`, `SPEC.md`, `AGENTS.md`, etc.)"
+        - label: "Other (please specify in technical details)"
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what must be true for this feature to be considered complete
+      placeholder: |
+        - [ ] Feature implemented as described
+        - [ ] Relevant tools updated
+        - [ ] Unit tests added
+        - [ ] Integration tests added
+        - [ ] Documentation updated
+      render: markdown
+
+  - type: checkboxes
+    id: testing_requirements
+    attributes:
+      label: Testing Requirements
+      description: Describe how the feature should be tested
+      options:
+        - label: "Unit tests needed"
+        - label: "Integration tests needed"
+        - label: "Manual verification steps needed"
+
+  - type: textarea
+    id: testing_details
+    attributes:
+      label: Testing Details
+      description: Provide specific details about the testing requirements if any boxes above were checked.
+      placeholder: |
+        - Unit Tests: ...
+        - Integration Tests: ...
+        - Manual Verification Steps: ...
+
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: Related Issues / References
+      description: Link to any related issues, PRs, specs, or design documents
+      placeholder: |
+        - Issue #
+        - Related PR #
+        - Design Doc: [Link]()
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Any additional context, examples, rationale, or alternatives considered
+

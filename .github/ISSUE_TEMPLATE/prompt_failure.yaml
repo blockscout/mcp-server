@@ -1,0 +1,74 @@
+name: 🤖 Report a Prompt Handling Failure
+description: "File a report for a user prompt that the AI agent did not handle as expected"
+labels: ["prompt-failure"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report an issue! This template will help us understand and reproduce the problem you're facing with the AI agent's interaction with the Blockscout MCP server.
+
+        > **⚠️ IMPORTANT: DO NOT INCLUDE SENSITIVE INFORMATION!**
+        >
+        > Please do not paste any private keys, API keys, or other confidential data. If you need to include addresses, transaction hashes, or other on-chain data from a private context, please replace them with placeholder values.
+        >
+        > **If you replace any part of your prompt or the agent's response, please clearly mark it.** For example, use `[REDACTED_ADDRESS]` or `[REPLACED_VALUE]`. This helps us understand that the provided data is not the literal original, and we will adjust our investigation accordingly.
+
+  - type: input
+    id: llm_client
+    attributes:
+      label: LLM Client
+      description: Which client are you using?
+      placeholder: "e.g., Claude Desktop, Cursor, MCP Inspector"
+    validations:
+      required: true
+
+  - type: input
+    id: llm_model
+    attributes:
+      label: LLM Model
+      description: Which model are you using?
+      placeholder: "e.g., Claude 3.5 Sonnet, GPT-4o, Llama 3"
+    validations:
+      required: true
+
+  - type: input
+    id: mcp_version
+    attributes:
+      label: MCP Server Version
+      description: Which version of the Blockscout MCP server are you using? (optional)
+      placeholder: "e.g., 0.3.1, latest Docker image"
+
+  - type: textarea
+    id: user_prompt
+    attributes:
+      label: User Prompt
+      description: Please paste the exact prompt you gave to the AI agent below
+      placeholder: |
+        <Your prompt here>
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: agent_response
+    attributes:
+      label: Agent's Response / Behavior
+      description: |
+        Please describe the agent's full response or behavior (optional). 
+        Include the final text answer, the sequence of tool calls made (if visible), and any error messages.
+      placeholder: |
+        <Paste the agent's response or describe its behavior here>
+      render: markdown
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect the agent to do? What would a correct response or sequence of tool calls look like? (optional)
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context about the problem here. You can include screenshots, logs, or further comments.
