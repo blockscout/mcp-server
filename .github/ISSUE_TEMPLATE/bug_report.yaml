@@ -1,4 +1,4 @@
-name: Bug Report
+name: 🐛 Bug Report
 description: "Report a problem or unexpected behavior in the MCP server"
 labels: ["bug"]
 body:
@@ -44,10 +44,10 @@ body:
       label: Affected Components
       description: List relevant modules or files that may be affected
       options:
-        - label: "`blockscout_mcp_server/tools/...`"
-        - label: "`blockscout_mcp_server/constants.py`"
-        - label: "`tests/tools/...`"
-        - label: "Documentation (`README.md`, `SPEC.md`, etc.)"
+        - label: "blockscout_mcp_server/tools/..."
+        - label: "blockscout_mcp_server/constants.py"
+        - label: "tests/tools/..."
+        - label: "Documentation (README.md, SPEC.md, etc.)"
         - label: "Other (please specify in description)"
 
   - type: checkboxes

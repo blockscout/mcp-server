@@ -45,10 +45,10 @@ body:
       label: Affected Components
       description: Mark all modules that may be affected or involved
       options:
-        - label: "`blockscout_mcp_server/tools/...`"
-        - label: "`blockscout_mcp_server/constants.py`"
-        - label: "`tests/tools/...`"
-        - label: "Documentation (`README.md`, `SPEC.md`, `AGENTS.md`, etc.)"
+        - label: "blockscout_mcp_server/tools/..."
+        - label: "blockscout_mcp_server/constants.py"
+        - label: "tests/tools/..."
+        - label: "Documentation (README.md, SPEC.md, AGENTS.md, etc.)"
         - label: "Other (please specify in technical details)"
 
   - type: textarea
