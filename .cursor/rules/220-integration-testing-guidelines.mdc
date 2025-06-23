@@ -86,6 +86,54 @@ async def test_get_latest_block_data_extraction(mock_ctx):
     assert len(result["hash"]) == 66  # 0x + 64 hex chars
 ```
 
+- **What to Avoid:** Do not re-test complex formatting logic already covered by unit tests. The focus is on verifying the *data extraction* was successful.
+
+**Testing Pagination and Cursors:**
+
+For tools that support cursor-based pagination, a specific two-step test is required to validate the full lifecycle of the feature.
+
+- **Purpose:** To verify that a cursor generated from a first call can be successfully used in a second call to retrieve the next page of data.
+- **Process:**
+  1.  Make an initial call to the tool without a cursor.
+  2.  Extract the cursor string from the response's pagination hint.
+  3.  Make a second call to the same tool, passing the extracted cursor.
+  4.  Assert that the second call succeeds and that its data is different from the first call's data.
+
+**Example:**
+```python
+import re
+import json
+import pytest
+from blockscout_mcp_server.tools.address_tools import get_tokens_by_address
+
+@pytest.mark.integration
+async def test_get_tokens_by_address_pagination_integration(mock_ctx):
+    """Tests that get_tokens_by_address can use a cursor to fetch a second page."""
+    # ARRANGE: Use a stable address known to have many results.
+    address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503" # Binance Wallet
+    chain_id = "1"
+
+    # ACT 1: Get the first page and cursor.
+    first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    # ASSERT 1: Check for and extract the cursor.
+    assert "To get the next page call" in first_page_result
+    cursor_match = re.search(r'cursor="([^\"]+)"', first_page_result)
+    assert cursor_match is not None, "Could not find cursor in the first page response."
+    cursor = cursor_match.group(1)
+
+    # ACT 2: Use the cursor to get the next page.
+    second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+
+    # ASSERT 2: Verify the second page.
+    assert "Error" not in second_page_result
+    first_page_data = json.loads(first_page_result.split("----")[0])
+    second_page_data = json.loads(second_page_result) # Second page may not have a hint.
+    
+    assert len(second_page_data) > 0
+    assert first_page_data[0] != second_page_data[0]
+```
+
 ## General Rules for All Integration Tests
 
 ### Use Stable Targets

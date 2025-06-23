@@ -1,6 +1,7 @@
 import pytest
 
 import json
+import re
 import httpx
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT, INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
@@ -69,6 +70,41 @@ async def test_get_transaction_logs_integration(mock_ctx):
     assert isinstance(first_log["block_number"], int)
     assert isinstance(first_log["index"], int)
     assert isinstance(first_log["topics"], list)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transaction_logs_pagination_integration(mock_ctx):
+    """Tests that get_transaction_logs can successfully use a cursor to fetch a second page."""
+    tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
+
+    try:
+        first_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
+
+    assert "To get the next page call" in first_page_result
+    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
+    assert cursor_match is not None, "Could not find cursor in the first page response."
+    cursor = cursor_match.group(1)
+    assert len(cursor) > 0
+
+    try:
+        second_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
+
+    assert "Error: Invalid or expired pagination cursor" not in second_page_result
+
+    first_page_json_str = first_page_result.split("----")[0].split("**Transaction logs JSON:**\n")[-1]
+    second_page_json_str = second_page_result.split("----")[0].split("**Transaction logs JSON:**\n")[-1]
+
+    first_page_data = json.loads(first_page_json_str)
+    second_page_data = json.loads(second_page_json_str)
+
+    assert isinstance(second_page_data.get("items"), list)
+    assert len(second_page_data["items"]) > 0
+    assert first_page_data["items"][0] != second_page_data["items"][0]
 
 
 @pytest.mark.integration

@@ -1,4 +1,5 @@
 import json
+import re
 import pytest
 
 from blockscout_mcp_server.tools.address_tools import (
@@ -158,3 +159,93 @@ async def test_get_address_info_integration(mock_ctx):
     usdc_tag = next((tag for tag in metadata["tags"] if tag.get("slug") == "usdc"), None)
     assert usdc_tag is not None, "Could not find the 'usdc' tag in metadata"
     assert usdc_tag["name"].lower() in {"usd coin", "usdc"}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_tokens_by_address_pagination_integration(mock_ctx):
+    """Tests that get_tokens_by_address can successfully use a cursor to fetch a second page."""
+    address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"
+    chain_id = "1"
+
+    first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    assert "To get the next page call" in first_page_result
+    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
+    assert cursor_match is not None, "Could not find cursor in the first page response."
+    cursor = cursor_match.group(1)
+    assert len(cursor) > 0
+
+    second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+
+    assert "Error: Invalid or expired pagination cursor" not in second_page_result
+
+    first_page_json_str = first_page_result.split("----")[0]
+    second_page_json_str = second_page_result.split("----")[0]
+
+    first_page_data = json.loads(first_page_json_str)
+    second_page_data = json.loads(second_page_json_str)
+
+    assert isinstance(second_page_data, list)
+    assert len(second_page_data) > 0
+    assert first_page_data[0] != second_page_data[0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
+    """Tests that nft_tokens_by_address can successfully use a cursor to fetch a second page."""
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    chain_id = "1"
+
+    first_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    assert "To get the next page call" in first_page_result
+    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
+    assert cursor_match is not None, "Could not find cursor in the first page response."
+    cursor = cursor_match.group(1)
+    assert len(cursor) > 0
+
+    second_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+
+    assert "Error: Invalid or expired pagination cursor" not in second_page_result
+
+    first_page_json_str = first_page_result.split("----")[0]
+    second_page_json_str = second_page_result.split("----")[0]
+
+    first_page_data = json.loads(first_page_json_str)
+    second_page_data = json.loads(second_page_json_str)
+
+    assert isinstance(second_page_data, list)
+    assert len(second_page_data) > 0
+    assert first_page_data[0] != second_page_data[0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_logs_pagination_integration(mock_ctx):
+    """Tests that get_address_logs can successfully use a cursor to fetch a second page."""
+    address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    chain_id = "1"
+
+    first_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    assert "To get the next page call" in first_page_result
+    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
+    assert cursor_match is not None, "Could not find cursor in the first page response."
+    cursor = cursor_match.group(1)
+    assert len(cursor) > 0
+
+    second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+
+    assert "Error: Invalid or expired pagination cursor" not in second_page_result
+
+    first_page_json_str = first_page_result.split("----")[0].split("**Address logs JSON:**\n")[-1]
+    second_page_json_str = second_page_result.split("----")[0].split("**Address logs JSON:**\n")[-1]
+
+    first_page_data = json.loads(first_page_json_str)
+    second_page_data = json.loads(second_page_json_str)
+
+    assert isinstance(second_page_data.get("items"), list)
+    assert len(second_page_data["items"]) > 0
+    assert first_page_data["items"][0] != second_page_data["items"][0]
