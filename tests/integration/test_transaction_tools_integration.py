@@ -92,7 +92,7 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
     try:
         second_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor)
     except httpx.HTTPStatusError as e:
-        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
+        pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {e}")
 
     assert "Error: Invalid or expired pagination cursor" not in second_page_result
 
