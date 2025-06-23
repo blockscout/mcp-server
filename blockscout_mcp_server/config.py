@@ -1,6 +1,9 @@
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 class ServerConfig(BaseSettings):
+    model_config = ConfigDict(env_prefix="BLOCKSCOUT_")  # e.g., BLOCKSCOUT_BS_URL
+    
     bs_api_key: str = ""  # Default to empty, can be set via env
     bs_timeout: float = 120.0  # Default timeout in seconds
 
@@ -16,8 +19,5 @@ class ServerConfig(BaseSettings):
     
     chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates
-
-    class Config:
-        env_prefix = "BLOCKSCOUT_"  # e.g., BLOCKSCOUT_BS_URL
 
 config = ServerConfig() 
