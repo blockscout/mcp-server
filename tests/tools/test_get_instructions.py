@@ -24,7 +24,7 @@ async def test_get_instructions_success(mock_ctx):
 Always provide chain_id as the first parameter for blockchain-specific queries.
 Use descriptive responses and explain what the data means in context."""
 
-    with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
+    with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT
         result = await __get_instructions__(ctx=mock_ctx)
 
@@ -32,6 +32,7 @@ Use descriptive responses and explain what the data means in context."""
         assert result == expected_instructions
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
+
 
 @pytest.mark.asyncio
 async def test_get_instructions_no_progress_tracking(mock_ctx):
@@ -41,7 +42,7 @@ async def test_get_instructions_no_progress_tracking(mock_ctx):
     # ARRANGE
     expected_instructions = "Test instructions content"
 
-    with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
+    with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT
         result = await __get_instructions__(ctx=mock_ctx)
 
@@ -50,21 +51,22 @@ async def test_get_instructions_no_progress_tracking(mock_ctx):
         # Verify progress was reported
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
-        
+
         # Verify the specific progress calls
         progress_calls = mock_ctx.report_progress.call_args_list
-        
+
         # First call should be starting
         start_call = progress_calls[0]
-        assert start_call[1]['progress'] == 0.0
-        assert start_call[1]['total'] == 1.0
-        assert "Fetching server instructions" in start_call[1]['message']
-        
+        assert start_call[1]["progress"] == 0.0
+        assert start_call[1]["total"] == 1.0
+        assert "Fetching server instructions" in start_call[1]["message"]
+
         # Second call should be completion
         end_call = progress_calls[1]
-        assert end_call[1]['progress'] == 1.0
-        assert end_call[1]['total'] == 1.0
-        assert "Server instructions ready" in end_call[1]['message']
+        assert end_call[1]["progress"] == 1.0
+        assert end_call[1]["total"] == 1.0
+        assert "Server instructions ready" in end_call[1]["message"]
+
 
 @pytest.mark.asyncio
 async def test_get_instructions_empty_instructions(mock_ctx):
@@ -74,7 +76,7 @@ async def test_get_instructions_empty_instructions(mock_ctx):
     # ARRANGE
     expected_instructions = ""
 
-    with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
+    with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT
         result = await __get_instructions__(ctx=mock_ctx)
 
@@ -82,6 +84,7 @@ async def test_get_instructions_empty_instructions(mock_ctx):
         assert result == expected_instructions
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
+
 
 @pytest.mark.asyncio
 async def test_get_instructions_multiline_instructions(mock_ctx):
@@ -95,7 +98,7 @@ Line 3 of instructions
 
 With empty lines and formatting."""
 
-    with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
+    with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT
         result = await __get_instructions__(ctx=mock_ctx)
 
@@ -108,6 +111,7 @@ With empty lines and formatting."""
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
+
 @pytest.mark.asyncio
 async def test_get_instructions_special_characters(mock_ctx):
     """
@@ -119,7 +123,7 @@ Unicode: 📝 🔍 ⚡
 Quotes: "double" and 'single'
 Escapes: \n \t \\"""
 
-    with patch('blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS', expected_instructions):
+    with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT
         result = await __get_instructions__(ctx=mock_ctx)
 

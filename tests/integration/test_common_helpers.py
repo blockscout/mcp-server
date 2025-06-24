@@ -59,12 +59,12 @@ async def test_make_bens_request_for_ens_lookup():
     assert isinstance(response_data, dict)
     assert "resolved_address" in response_data
     assert "hash" in response_data["resolved_address"]
-    
+
     # Verify the resolved address matches Vitalik's well-known address
     resolved_hash = response_data["resolved_address"]["hash"]
     assert isinstance(resolved_hash, str)
     assert resolved_hash.lower() == expected_address.lower()
-    
+
     # Additional format validation for robustness
     assert resolved_hash.startswith("0x")
     assert len(resolved_hash) == 42  # Standard Ethereum address length
@@ -72,12 +72,15 @@ async def test_make_bens_request_for_ens_lookup():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-@pytest.mark.parametrize("chain_id, expected_url", [
-    ("1", "https://eth.blockscout.com"),
-    ("137", "https://polygon.blockscout.com"),
-    ("10", "https://optimism.blockscout.com"),
-    ("8453", "https://base.blockscout.com"),
-])
+@pytest.mark.parametrize(
+    "chain_id, expected_url",
+    [
+        ("1", "https://eth.blockscout.com"),
+        ("137", "https://polygon.blockscout.com"),
+        ("10", "https://optimism.blockscout.com"),
+        ("8453", "https://base.blockscout.com"),
+    ],
+)
 async def test_get_blockscout_base_url_for_known_chains(chain_id, expected_url):
     """
     Tests that we can resolve the Blockscout instance URL for several known chain IDs.
@@ -87,7 +90,7 @@ async def test_get_blockscout_base_url_for_known_chains(chain_id, expected_url):
     resolved_url = await get_blockscout_base_url(chain_id=chain_id)
 
     # ASSERT
-    assert resolved_url.rstrip('/') == expected_url.rstrip('/')
+    assert resolved_url.rstrip("/") == expected_url.rstrip("/")
 
 
 @pytest.mark.integration

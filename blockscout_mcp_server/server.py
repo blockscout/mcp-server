@@ -51,10 +51,13 @@ mcp.tool()(get_chains_list)
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
 
+
 @cli_app.command()
 def main_command(
     http: Annotated[bool, typer.Option("--http", help="Run server in HTTP Streamable mode.")] = False,
-    http_host: Annotated[str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")] = "127.0.0.1",
+    http_host: Annotated[
+        str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")
+    ] = "127.0.0.1",
     http_port: Annotated[int, typer.Option("--http-port", help="Port for HTTP server if --http is used.")] = 8000,
 ):
     """
@@ -67,7 +70,7 @@ def main_command(
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         # The FastMCP server has a 'settings' attribute that can be used for this.
         mcp.settings.stateless_http = True  # Enable stateless mode
-        mcp.settings.json_response = True   # Enable JSON responses instead of SSE for tool calls
+        mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
 
         # Get the ASGI application from our FastMCP instance
         # This app is what uvicorn will serve.
@@ -79,10 +82,12 @@ def main_command(
         # This is the original behavior: run in stdio mode
         mcp.run()
 
+
 def run_server_cli():
     """This function will be called by the script defined in pyproject.toml"""
     cli_app()
 
+
 if __name__ == "__main__":
     # This allows running the server directly with `python blockscout_mcp_server/server.py`
-    run_server_cli() 
+    run_server_cli()

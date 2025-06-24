@@ -18,16 +18,12 @@ def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
         return False
 
     data_param = next(
-        (
-            p
-            for p in call_executed_log["decoded"].get("parameters", [])
-            if p.get("name") == "data"
-        ),
+        (p for p in call_executed_log["decoded"].get("parameters", []) if p.get("name") == "data"),
         None,
     )
     if not data_param:
         return False
-    
+
     # Check if value is a dict with truncation info
     value = data_param.get("value")
     if isinstance(value, dict) and value.get("value_truncated"):

@@ -12,7 +12,7 @@ async def get_chains_list(ctx: Context) -> str:
     Useful for getting a chain ID when the chain name is known. This information can be used in other tools that require a chain ID to request information.
     """
     api_path = "/api/chains/list"
-    
+
     # Report start of operation
     await report_and_log_progress(
         ctx,
@@ -20,9 +20,9 @@ async def get_chains_list(ctx: Context) -> str:
         total=1.0,
         message="Fetching chains list from Chainscout...",
     )
-    
+
     response_data = await make_chainscout_request(api_path=api_path)
-    
+
     # Report completion
     await report_and_log_progress(
         ctx,
@@ -30,15 +30,15 @@ async def get_chains_list(ctx: Context) -> str:
         total=1.0,
         message="Successfully fetched chains list.",
     )
-    
+
     # Format the response as a text output
     output_lines = ["The list of known chains with their ids:"]
-    
+
     # Check if response_data is a list and has entries
     if isinstance(response_data, list) and response_data:
         # Sort chains by name for better readability
         sorted_chains = sorted(response_data, key=lambda x: x.get("name", ""))
-        
+
         for chain in sorted_chains:
             name = chain.get("name")
             chain_id = chain.get("chainid")
@@ -46,6 +46,6 @@ async def get_chains_list(ctx: Context) -> str:
                 output_lines.append(f"{name}: {chain_id}")
     else:
         output_lines.append("No chains found or invalid response format.")
-    
+
     # Join all lines with newlines
-    return "\n".join(output_lines) 
+    return "\n".join(output_lines)

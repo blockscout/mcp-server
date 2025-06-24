@@ -96,7 +96,9 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
     assert len(cursor) > 0
 
     try:
-        second_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor)
+        second_page_result = await get_transaction_logs(
+            chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor
+        )
     except httpx.HTTPStatusError as e:
         pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {e}")
 
@@ -132,7 +134,7 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
     assert "**Note on Truncated Data:**" in result_str
-    assert f"`curl \"{base_url}/api/v2/transactions/{tx_hash}/logs\"`" in result_str
+    assert f'`curl "{base_url}/api/v2/transactions/{tx_hash}/logs"`' in result_str
 
     json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
     data = json.loads(json_part)
@@ -143,7 +145,6 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
     assert truncated_item["data_truncated"] is True
     assert "data" in truncated_item
     assert len(truncated_item["data"]) == LOG_DATA_TRUNCATION_LIMIT
-
 
 
 @pytest.mark.integration
@@ -175,6 +176,7 @@ async def test_get_transaction_info_integration(mock_ctx):
         assert isinstance(transfer.get("from"), str)
         assert isinstance(transfer.get("to"), str)
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
@@ -182,7 +184,7 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     # This is a stable contract creation transaction, which has no decoded_input.
     tx_hash = "0x12341be874149efc8c714f4ef431db0ce29f64532e5c70d3882257705e2b1ad2"
     chain_id = "1"
-    
+
     # Dynamically resolve the base URL
     base_url = await get_blockscout_base_url(chain_id)
     result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
@@ -190,7 +192,7 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     assert isinstance(result, str)
     assert "**Note on Truncated Data:**" in result
     # Add assertion for the curl command (strip trailing slash like the tool does)
-    assert f"`curl \"{base_url.rstrip('/')}/api/v2/transactions/{tx_hash}\"`" in result
+    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result
 
     json_part = result.split("----")[0]
     data = json.loads(json_part)
@@ -230,7 +232,7 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     assert isinstance(result_str, str)
     assert "**Note on Truncated Data:**" in result_str
     # Use the resolved base_url in the assertion (strip trailing slash like the tool does)
-    assert f"`curl \"{base_url.rstrip('/')}/api/v2/transactions/{tx_hash}\"`" in result_str
+    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result_str
 
     json_part = result_str.split("----")[0]
     data = json.loads(json_part)
@@ -300,6 +302,7 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
         assert "value" not in item
         assert "internal_transaction_index" not in item
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
@@ -337,6 +340,4 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
             break
 
     if not found_truncated_log:
-        pytest.skip(
-            f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages."
-        )
+        pytest.skip(f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages.")

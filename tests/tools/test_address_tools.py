@@ -34,9 +34,9 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
                     "circulating_market_cap": "500000",
                     "exchange_rate": "1.5",
                     "volume_24h": "10000",
-                    "holders_count": "150"
+                    "holders_count": "150",
                 },
-                "value": "1000"
+                "value": "1000",
             },
             {
                 "token": {
@@ -48,22 +48,22 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
                     "circulating_market_cap": "800000",
                     "exchange_rate": "2.1",
                     "volume_24h": "15000",
-                    "holders_count": "300"
+                    "holders_count": "300",
                 },
-                "value": "2500"
-            }
+                "value": "2500",
+            },
         ],
-        "next_page_params": {
-            "fiat_value": "123.45",
-            "id": 5,
-            "items_count": 50,
-            "value": "1000"
-        }
+        "next_page_params": {"fiat_value": "123.45", "id": 5, "items_count": 50, "value": "1000"},
     }
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
@@ -73,9 +73,7 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
         # Check that the main content from mock API response is present (data flow verification)
@@ -91,18 +89,17 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
 
         # Check that the pagination hint is correctly formatted and included
         next_cursor = encode_cursor(mock_api_response["next_page_params"])
-        expected_pagination = (
-            f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
-        )
+        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
         assert expected_pagination in result
-        
+
         # Check JSON array structure
-        assert result.startswith('[')
-        assert ']' in result
-        
+        assert result.startswith("[")
+        assert "]" in result
+
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_without_pagination(mock_ctx):
@@ -126,17 +123,22 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
                     "circulating_market_cap": "",
                     "exchange_rate": "",
                     "volume_24h": "",
-                    "holders_count": "75"
+                    "holders_count": "75",
                 },
-                "value": "100"
+                "value": "100",
             }
         ]
         # No next_page_params
     }
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
@@ -146,9 +148,7 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
         # Check that the main content from mock API response is present (data flow verification)
@@ -156,17 +156,18 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         assert '"symbol": "STK"' in result
         assert '"address": "0x111222"' in result
         assert '"balance": "100"' in result
-        
+
         # Check that no pagination hint is included
         assert "To get the next page call" not in result
-        
+
         # Check JSON array structure
-        assert result.startswith('[')
-        assert result.endswith(']')
-        
+        assert result.startswith("[")
+        assert result.endswith("]")
+
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
@@ -184,17 +185,17 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
 
     mock_api_response = {
         "items": [],
-        "next_page_params": {
-            "fiat_value": "888.88",
-            "id": 99,
-            "items_count": 25,
-            "value": "3000"
-        }
+        "next_page_params": {"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"},
     }
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
@@ -202,13 +203,15 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         result = await get_tokens_by_address(
             chain_id=chain_id,
             address=address,
-            cursor=encode_cursor({"fiat_value": fiat_value, "id": id_param, "items_count": items_count, "value": value}),
-            ctx=mock_ctx
+            cursor=encode_cursor(
+                {"fiat_value": fiat_value, "id": id_param, "items_count": items_count, "value": value}
+            ),
+            ctx=mock_ctx,
         )
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        
+
         # Verify that all pagination parameters were passed to the API
         expected_params = {
             "tokens": "ERC-20",
@@ -218,19 +221,18 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
             "value": value,
         }
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params=expected_params
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params=expected_params
         )
 
         # Check that pagination hint reflects the new parameters
         next_cursor = encode_cursor({"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"})
         expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
         assert expected_pagination in result
-        
+
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
@@ -242,6 +244,7 @@ async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
     result = await get_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
 
     assert "Error: Invalid or expired pagination cursor." in result
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_empty_response(mock_ctx):
@@ -258,9 +261,14 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         # No next_page_params
     }
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
@@ -270,17 +278,16 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
         # Check that we get an empty JSON array
         assert result == "[]"
-        
+
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
@@ -302,18 +309,23 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
                     "address_hash": "0x999888",
                     # Missing decimals, total_supply, etc.
                 },
-                "value": "123"
+                "value": "123",
             },
             {
                 "token": {},  # Completely empty token object
-                "value": "456"
-            }
+                "value": "456",
+            },
         ]
     }
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
@@ -323,25 +335,24 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
         # Check that the content from mock API response is present (data flow verification)
         # For this test, checking that the values from the mock response appear in output
         assert '"symbol": "UNK"' in result
-        assert '"address": "0x999888"' in result  
+        assert '"address": "0x999888"' in result
         assert '"balance": "123"' in result
         assert '"balance": "456"' in result
-        
+
         # Check JSON array structure
-        assert result.startswith('[')
-        assert result.endswith(']')
-        
+        assert result.startswith("[")
+        assert result.endswith("]")
+
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_api_error(mock_ctx):
@@ -356,9 +367,14 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
     # Simulate a 404 error from the API
     api_error = httpx.HTTPStatusError("Not Found", request=MagicMock(), response=MagicMock(status_code=404))
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.side_effect = api_error
 
@@ -369,13 +385,12 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
         # Verify mocks were called as expected before the exception
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}/tokens",
-            params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
         # Progress should have been reported twice (start + after chain URL resolution) before the error
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
+
 
 @pytest.mark.asyncio
 async def test_get_address_info_success_with_metadata(mock_ctx):
@@ -390,14 +405,19 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         "hash": address,
         "is_contract": True,
     }
-    mock_metadata_response = {
-        "addresses": {address: {"tags": [{"name": "Test Tag"}]}}
-    }
+    mock_metadata_response = {"addresses": {address: {"tags": [{"name": "Test Tag"}]}}}
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_bs_request, \
-         patch('blockscout_mcp_server.tools.address_tools.make_metadata_request', new_callable=AsyncMock) as mock_meta_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_metadata_request", new_callable=AsyncMock
+        ) as mock_meta_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_bs_request.return_value = mock_blockscout_response
         mock_meta_request.return_value = mock_metadata_response
@@ -405,13 +425,9 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
-        mock_bs_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/addresses/{address}"
-        )
+        mock_bs_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}")
         mock_meta_request.assert_called_once_with(
-            api_path="/api/v1/metadata",
-            params={"addresses": address, "chainId": chain_id}
+            api_path="/api/v1/metadata", params={"addresses": address, "chainId": chain_id}
         )
 
         assert "Basic address info:" in result
@@ -435,10 +451,17 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
     mock_blockscout_response = {"hash": address, "is_contract": False}
     mock_metadata_response = {"addresses": {}}
 
-    with patch('blockscout_mcp_server.tools.address_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.address_tools.make_blockscout_request', new_callable=AsyncMock) as mock_bs_request, \
-         patch('blockscout_mcp_server.tools.address_tools.make_metadata_request', new_callable=AsyncMock) as mock_meta_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address_tools.make_metadata_request", new_callable=AsyncMock
+        ) as mock_meta_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_bs_request.return_value = mock_blockscout_response
         mock_meta_request.return_value = mock_metadata_response

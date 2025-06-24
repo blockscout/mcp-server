@@ -10,15 +10,14 @@ from blockscout_mcp_server.tools.common import (
 
 
 async def get_address_by_ens_name(
-    name: Annotated[str, Field(description="ENS domain name to resolve")],
-    ctx: Context
+    name: Annotated[str, Field(description="ENS domain name to resolve")], ctx: Context
 ) -> dict:
     """
     Useful for when you need to convert an ENS domain name (e.g. "blockscout.eth")
     to its corresponding Ethereum address.
     """
     api_path = f"/api/v1/1/domains/{name}"
-    
+
     # Report start of operation
     await report_and_log_progress(
         ctx,
@@ -26,9 +25,9 @@ async def get_address_by_ens_name(
         total=1.0,
         message=f"Resolving ENS name {name}...",
     )
-    
+
     response_data = await make_bens_request(api_path=api_path)
-    
+
     # Report completion
     await report_and_log_progress(
         ctx,
@@ -41,4 +40,4 @@ async def get_address_by_ens_name(
     resolved_address_info = response_data.get("resolved_address", {})
     address_hash = resolved_address_info.get("hash")
 
-    return {"resolved_address": address_hash} 
+    return {"resolved_address": address_hash}

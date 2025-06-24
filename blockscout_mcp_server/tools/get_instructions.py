@@ -17,7 +17,7 @@ async def __get_instructions__(ctx: Context) -> str:
         total=1.0,
         message="Fetching server instructions...",
     )
-    
+
     # SERVER_INSTRUCTIONS is a constant, so this is immediate
     await report_and_log_progress(
         ctx,
@@ -25,5 +25,5 @@ async def __get_instructions__(ctx: Context) -> str:
         total=1.0,
         message="Server instructions ready.",
     )
-    
+
     return SERVER_INSTRUCTIONS

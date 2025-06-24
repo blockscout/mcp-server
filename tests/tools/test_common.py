@@ -55,9 +55,7 @@ async def test_report_and_log_progress(mock_ctx: Context):
 
     await report_and_log_progress(mock_ctx, progress, total, message)
 
-    mock_ctx.report_progress.assert_called_once_with(
-        progress=progress, total=total, message=message
-    )
+    mock_ctx.report_progress.assert_called_once_with(progress=progress, total=total, message=message)
     expected_log_message = f"Progress: {progress}/{total} - {message}"
     mock_ctx.info.assert_called_once_with(expected_log_message)
 
@@ -105,9 +103,7 @@ def test_process_and_truncate_log_items_no_data_field():
 def test_process_and_truncate_log_items_decoded_truncation_only():
     """Verify truncation occurs within the decoded field even without data."""
     long_value = "a" * (INPUT_DATA_TRUNCATION_LIMIT + 1)
-    items = [
-        {"decoded": {"parameters": [{"name": "foo", "value": long_value}]}}
-    ]
+    items = [{"decoded": {"parameters": [{"name": "foo", "value": long_value}]}}]
 
     processed, truncated = _process_and_truncate_log_items(items)
 

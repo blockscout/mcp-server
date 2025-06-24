@@ -20,7 +20,7 @@ from blockscout_mcp_server.tools.common import (
 async def get_address_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address to get information about")],
-    ctx: Context
+    ctx: Context,
 ) -> str:
     """
     Get comprehensive information about an address, including:
@@ -33,14 +33,12 @@ async def get_address_info(
     Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
     """
     await report_and_log_progress(
-        ctx, progress=0.0, total=3.0,
-        message=f"Starting to fetch address info for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
 
     base_url = await get_blockscout_base_url(chain_id)
     await report_and_log_progress(
-        ctx, progress=1.0, total=3.0,
-        message="Resolved Blockscout instance URL. Fetching data..."
+        ctx, progress=1.0, total=3.0, message="Resolved Blockscout instance URL. Fetching data..."
     )
 
     blockscout_api_path = f"/api/v2/addresses/{address}"
@@ -50,7 +48,7 @@ async def get_address_info(
     address_info_result, metadata_result = await asyncio.gather(
         make_blockscout_request(base_url=base_url, api_path=blockscout_api_path),
         make_metadata_request(api_path=metadata_api_path, params=metadata_params),
-        return_exceptions=True
+        return_exceptions=True,
     )
 
     output_parts = []
@@ -60,9 +58,7 @@ async def get_address_info(
 
     output_parts.append("Basic address info:")
     output_parts.append(json.dumps(address_info_result))
-    await report_and_log_progress(
-        ctx, progress=2.0, total=3.0, message="Fetched basic address info."
-    )
+    await report_and_log_progress(ctx, progress=2.0, total=3.0, message="Fetched basic address info.")
 
     if not isinstance(metadata_result, Exception) and metadata_result.get("addresses"):
         # Safely look up the metadata for the exact address requested,
@@ -77,12 +73,10 @@ async def get_address_info(
                 output_parts.append("\nMetadata associated with the address:")
                 output_parts.append(json.dumps(address_metadata))
 
-    await report_and_log_progress(
-        ctx, progress=3.0, total=3.0,
-        message="Successfully fetched all address data."
-    )
+    await report_and_log_progress(ctx, progress=3.0, total=3.0, message="Successfully fetched all address data.")
 
     return "\n".join(output_parts)
+
 
 async def get_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -90,9 +84,7 @@ async def get_tokens_by_address(
     ctx: Context,
     cursor: Annotated[
         str | None,
-        Field(
-            description="The pagination cursor from a previous response to get the next page of results."
-        ),
+        Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
 ) -> str:
     """
@@ -103,44 +95,36 @@ async def get_tokens_by_address(
     """
     api_path = f"/api/v2/addresses/{address}/tokens"
     params = {"tokens": "ERC-20"}
-    
+
     # Add pagination parameters if provided via cursor
     if cursor:
         try:
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return (
-                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
-    
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+
     # Report start of operation
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0,
-        message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
     )
-    
+
     base_url = await get_blockscout_base_url(chain_id)
-    
+
     # Report progress after resolving Blockscout URL
     await report_and_log_progress(
-        ctx, progress=1.0, total=2.0,
-        message="Resolved Blockscout instance URL. Fetching token data..."
+        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching token data..."
     )
-    
-    response_data = await make_blockscout_request(
-        base_url=base_url, api_path=api_path, params=params
-    )
-    
+
+    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+
     # Report completion
-    await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched token data."
-    )
-    
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched token data.")
+
     # Process the response data and format it according to the responseTemplate
     items_data = response_data.get("items", [])
     output_parts = ["["]  # Start of JSON array
-    
+
     for i, item in enumerate(items_data):
         token = item.get("token", {})
         # Format each item as a JSON-like string block
@@ -160,9 +144,9 @@ async def get_tokens_by_address(
         output_parts.append(item_str)
         if i < len(items_data) - 1:
             output_parts.append(",")
-    
+
     output_parts.append("]")  # End of JSON array
-    
+
     # Add pagination hint if next_page_params exists
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
@@ -172,8 +156,9 @@ async def get_tokens_by_address(
 ----
 To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
         output_parts.append(pagination_hint)
-    
-    return "".join(output_parts) 
+
+    return "".join(output_parts)
+
 
 async def nft_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -181,9 +166,7 @@ async def nft_tokens_by_address(
     ctx: Context,
     cursor: Annotated[
         str | None,
-        Field(
-            description="The pagination cursor from a previous response to get the next page of results."
-        ),
+        Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
 ) -> str:
     """
@@ -200,31 +183,25 @@ async def nft_tokens_by_address(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return (
-                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
-    
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+
     # Report start of operation
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0,
-        message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
     )
-    
+
     base_url = await get_blockscout_base_url(chain_id)
-    
+
     # Report progress after resolving Blockscout URL
     await report_and_log_progress(
-        ctx, progress=1.0, total=2.0,
-        message="Resolved Blockscout instance URL. Fetching NFT data..."
+        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching NFT data..."
     )
-    
+
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
-    
+
     # Report completion
-    await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data."
-    )
-    
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data.")
+
     # Process the response data and format it
     items_data = response_data.get("items", [])
     output_parts = ["["]  # Start of JSON array
@@ -235,9 +212,7 @@ async def nft_tokens_by_address(
         # Format token instances
         token_instances = []
         for instance in item.get("token_instances", []):
-            instance_data = {
-                "id": instance.get("id", "")
-            }
+            instance_data = {"id": instance.get("id", "")}
 
             # Add metadata if available
             metadata = instance.get("metadata", {})
@@ -261,10 +236,10 @@ async def nft_tokens_by_address(
                 "name": token.get("name", ""),
                 "symbol": token.get("symbol", ""),
                 "holders_count": token.get("holders_count", 0),
-                "total_supply": token.get("total_supply", 0)
+                "total_supply": token.get("total_supply", 0),
             },
             "amount": item.get("amount", ""),
-            "token_instances": token_instances
+            "token_instances": token_instances,
         }
 
         item_str = json.dumps(collection_data)
@@ -286,15 +261,14 @@ To get the next page call nft_tokens_by_address(chain_id=\"{chain_id}\", address
 
     return "".join(output_parts)
 
+
 async def get_address_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Account address")],
     ctx: Context,
     cursor: Annotated[
         str | None,
-        Field(
-            description="The pagination cursor from a previous response to get the next page of results."
-        ),
+        Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
 ) -> str:
     """
@@ -304,41 +278,33 @@ async def get_address_logs(
     """
     api_path = f"/api/v2/addresses/{address}/logs"
     params = {}
-    
+
     # Add pagination parameters if provided via cursor
     if cursor:
         try:
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return (
-                "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
-    
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+
     # Report start of operation
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0,
-        message=f"Starting to fetch address logs for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=2.0, message=f"Starting to fetch address logs for {address} on chain {chain_id}..."
     )
-    
+
     base_url = await get_blockscout_base_url(chain_id)
-    
+
     # Report progress after resolving Blockscout URL
     await report_and_log_progress(
-        ctx, progress=1.0, total=2.0,
-        message="Resolved Blockscout instance URL. Fetching address logs..."
+        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching address logs..."
     )
-    
+
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
 
     # Report completion
-    await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched address logs."
-    )
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched address logs.")
 
-    original_items, was_truncated = _process_and_truncate_log_items(
-        response_data.get("items", [])
-    )
+    original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
     transformed_items = []
     for item in original_items:
@@ -360,7 +326,7 @@ async def get_address_logs(
     }
 
     logs_json_str = json.dumps(transformed_response)  # Compact JSON
-    
+
     prefix = """**Items Structure:**
 - `block_number`: Block where the event was emitted
 - `transaction_hash`: Transaction that triggered the event
@@ -376,7 +342,7 @@ async def get_address_logs(
 
 **Address logs JSON:**
 """
-    
+
     output = f"{prefix}{logs_json_str}"
     # Add pagination hint if next_page_params exists
     next_page_params = response_data.get("next_page_params")

@@ -130,7 +130,9 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     assert len(cursor) > 0
 
     try:
-        second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+        second_page_result = await get_tokens_by_address(
+            chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor
+        )
     except httpx.HTTPStatusError as e:
         pytest.fail(f"API request for the second page failed with cursor: {e}")
 
@@ -166,7 +168,9 @@ async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     assert len(cursor) > 0
 
     try:
-        second_page_result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+        second_page_result = await nft_tokens_by_address(
+            chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor
+        )
     except httpx.HTTPStatusError as e:
         pytest.fail(f"API request for the second page failed with cursor: {e}")
 
@@ -218,6 +222,7 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     assert len(second_page_data["items"]) > 0
     assert first_page_data["items"][0] != second_page_data["items"][0]
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
@@ -255,6 +260,4 @@ async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
             break
 
     if not found_truncated_log:
-        pytest.skip(
-            f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages."
-        )
+        pytest.skip(f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages.")

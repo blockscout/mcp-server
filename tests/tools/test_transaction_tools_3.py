@@ -25,11 +25,16 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
     }
 
     # Patch json.dumps directly since it's imported locally in the function
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items') as mock_process_logs, \
-         patch('blockscout_mcp_server.tools.transaction_tools.json.dumps') as mock_json_dumps:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = (mock_api_response["items"], False)
@@ -45,17 +50,16 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs",
-            params={}
+            base_url=mock_base_url, api_path=f"/api/v2/transactions/{hash}/logs", params={}
         )
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
-        
+
         # Verify the result structure
         assert result.startswith("**Items Structure:**")
 
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_api_error(mock_ctx):
@@ -69,9 +73,14 @@ async def test_get_transaction_logs_api_error(mock_ctx):
 
     api_error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=MagicMock(status_code=500))
 
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.side_effect = api_error
 
@@ -81,10 +90,9 @@ async def test_get_transaction_logs_api_error(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs",
-            params={}
+            base_url=mock_base_url, api_path=f"/api/v2/transactions/{hash}/logs", params={}
         )
+
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_complex_logs(mock_ctx):
@@ -103,7 +111,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "topics": [
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
                     "0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
-                    "0x000000000000000000000000f81c1a7e8d3c1a1d3c1a1d3c1a1d3c1a1d3c1a1d"
+                    "0x000000000000000000000000f81c1a7e8d3c1a1d3c1a1d3c1a1d3c1a1d3c1a1d",
                 ],
                 "data": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
                 "log_index": "42",
@@ -129,17 +137,22 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
                 "topics": [
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
                     "0x000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045",
-                    "0x000000000000000000000000f81c1a7e8d3c1a1d3c1a1d3c1a1d3c1a1d3c1a1d"
+                    "0x000000000000000000000000f81c1a7e8d3c1a1d3c1a1d3c1a1d3c1a1d3c1a1d",
                 ],
             }
         ],
     }
 
     # Patch json.dumps directly since it's imported locally in the function
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('blockscout_mcp_server.tools.transaction_tools.json.dumps') as mock_json_dumps:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         # We don't care what json.dumps returns, only that it's called correctly
@@ -154,15 +167,13 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs",
-            params={}
+            base_url=mock_base_url, api_path=f"/api/v2/transactions/{hash}/logs", params={}
         )
-        
+
         # Verify the result starts with the expected prefix
         expected_prefix = "**Items Structure:**"
         assert result.startswith(expected_prefix)
-        
+
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -206,19 +217,19 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
     fake_cursor = "ENCODED_CURSOR"
     fake_json_body = "{...}"
 
-    with patch(
-        "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
-        new_callable=AsyncMock,
-    ) as mock_get_url, patch(
-        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
-        new_callable=AsyncMock,
-    ) as mock_request, patch(
-        "blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items"
-    ) as mock_process_logs, patch(
-        "blockscout_mcp_server.tools.transaction_tools.json.dumps"
-    ) as mock_json_dumps, patch(
-        "blockscout_mcp_server.tools.transaction_tools.encode_cursor"
-    ) as mock_encode_cursor:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = (mock_api_response["items"], False)
@@ -228,9 +239,7 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
         result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         mock_json_dumps.assert_called_once_with(expected_transformed_response)
-        mock_encode_cursor.assert_called_once_with(
-            mock_api_response["next_page_params"]
-        )
+        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
 
         assert result.startswith("**Items Structure:**")
         assert fake_json_body in result
@@ -259,17 +268,18 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
 
     mock_api_response = {"items": [], "next_page_params": None}
 
-    with patch(
-        "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
-        new_callable=AsyncMock,
-    ) as mock_get_url, patch(
-        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
-        new_callable=AsyncMock,
-    ) as mock_request, patch(
-        "blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items"
-    ) as mock_process_logs, patch(
-        "blockscout_mcp_server.tools.transaction_tools.json.dumps"
-    ) as mock_json_dumps:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = (mock_api_response["items"], False)
@@ -304,9 +314,7 @@ async def test_get_transaction_logs_invalid_cursor(mock_ctx):
             chain_id=chain_id, transaction_hash=hash, cursor=invalid_cursor, ctx=mock_ctx
         )
 
-        assert (
-            "Error: Invalid or expired pagination cursor" in result
-        )
+        assert "Error: Invalid or expired pagination cursor" in result
         mock_request.assert_not_called()
 
 
@@ -320,11 +328,16 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
     truncated_item = {"data": "0xlong...", "data_truncated": True}
     mock_api_response = {"items": [truncated_item]}
 
-    with patch('blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url', new_callable=AsyncMock) as mock_get_url, \
-         patch('blockscout_mcp_server.tools.transaction_tools.make_blockscout_request', new_callable=AsyncMock) as mock_request, \
-         patch('blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items') as mock_process_logs, \
-         patch('blockscout_mcp_server.tools.transaction_tools.json.dumps') as mock_json_dumps:
-
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = ([truncated_item], True)
@@ -351,7 +364,7 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
         mock_json_dumps.assert_called_once_with(expected_transformed)
         assert "**Note on Truncated Data:**" in result
-        assert f"`curl \"{mock_base_url}/api/v2/transactions/{hash}/logs\"`" in result
+        assert f'`curl "{mock_base_url}/api/v2/transactions/{hash}/logs"`' in result
 
 
 @pytest.mark.asyncio
@@ -374,21 +387,22 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
     }
     mock_api_response = {"items": [truncated_item]}
 
-    with patch(
-        "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
-        new_callable=AsyncMock,
-    ) as mock_get_url, patch(
-        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
-        new_callable=AsyncMock,
-    ) as mock_request, patch(
-        "blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items"
-    ) as mock_process_logs, patch(
-        "blockscout_mcp_server.tools.transaction_tools.json.dumps"
-    ) as mock_json_dumps:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.json.dumps") as mock_json_dumps,
+    ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = ([truncated_item], True)
-        mock_json_dumps.return_value = "{\"fake\":true}"
+        mock_json_dumps.return_value = '{"fake":true}'
 
         result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
@@ -407,5 +421,4 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
         mock_json_dumps.assert_called_once_with(expected_transformed)
         assert "**Note on Truncated Data:**" in result
-        assert f"`curl \"{mock_base_url}/api/v2/transactions/{hash}/logs\"`" in result
-
+        assert f'`curl "{mock_base_url}/api/v2/transactions/{hash}/logs"`' in result

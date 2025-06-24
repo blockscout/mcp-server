@@ -12,10 +12,11 @@ from blockscout_mcp_server.tools.common import (
 # Maximum number of token results returned by lookup_token_by_symbol
 TOKEN_RESULTS_LIMIT = 7
 
+
 async def lookup_token_by_symbol(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     symbol: Annotated[str, Field(description="Token symbol or name to search for")],
-    ctx: Context
+    ctx: Context,
 ) -> list[dict]:
     """
     Search for token addresses by symbol or name. Returns multiple potential
@@ -24,7 +25,7 @@ async def lookup_token_by_symbol(
     """
     api_path = "/api/v2/search"
     params = {"q": symbol}
-    
+
     # Report start of operation
     await report_and_log_progress(
         ctx,
@@ -32,9 +33,9 @@ async def lookup_token_by_symbol(
         total=2.0,
         message=f"Starting token search for '{symbol}' on chain {chain_id}...",
     )
-    
+
     base_url = await get_blockscout_base_url(chain_id)
-    
+
     # Report progress after resolving Blockscout URL
     await report_and_log_progress(
         ctx,
@@ -42,9 +43,9 @@ async def lookup_token_by_symbol(
         total=2.0,
         message="Resolved Blockscout instance URL. Searching for tokens...",
     )
-    
+
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
-    
+
     # Report completion
     await report_and_log_progress(
         ctx,
@@ -52,11 +53,11 @@ async def lookup_token_by_symbol(
         total=2.0,
         message="Successfully completed token search.",
     )
-    
+
     # Extract and format items from the response
     items = response_data.get("items", [])[:TOKEN_RESULTS_LIMIT]
     formatted_items = []
-    
+
     for item in items:
         formatted_item = {
             "address": item.get("address_hash", ""),
@@ -67,8 +68,8 @@ async def lookup_token_by_symbol(
             "circulating_market_cap": item.get("circulating_market_cap", ""),
             "exchange_rate": item.get("exchange_rate", ""),
             "is_smart_contract_verified": item.get("is_smart_contract_verified", False),
-            "is_verified_via_admin_panel": item.get("is_verified_via_admin_panel", False)
+            "is_verified_via_admin_panel": item.get("is_verified_via_admin_panel", False),
         }
         formatted_items.append(formatted_item)
-    
+
     return formatted_items
