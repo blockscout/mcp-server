@@ -11,6 +11,7 @@ on:
 
 jobs:
   test:
+    name: Run Unit Tests
     # The job will run on the latest version of Ubuntu
     runs-on: ubuntu-latest
 

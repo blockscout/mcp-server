@@ -1,4 +1,4 @@
-name: Build Blockscout MCP Server docker image
+name: Build - Docker Image
 
 on:
   push:
@@ -17,8 +17,8 @@ env:
   IMAGE_NAME: ghcr.io/blockscout/mcp-server
 
 jobs:
-  build-bot:
-    name: MCP Server docker image
+  build-docker-image:
+    name: Build Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read

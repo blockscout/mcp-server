@@ -1,6 +1,6 @@
 # .github/workflows/ci-lint.yml
 
-name: CI Lint & Format
+name: CI - Lint & Format
 
 # This workflow runs on every push to any branch, and on any pull requests.
 on:
