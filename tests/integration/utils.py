@@ -5,7 +5,7 @@ from __future__ import annotations
 
 def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
     """Return True if data contains a truncated 'CallExecuted' log."""
-    scope_function_log = next(
+    call_executed_log = next(
         (
             item
             for item in data.get("items", [])
@@ -14,13 +14,13 @@ def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
         ),
         None,
     )
-    if not scope_function_log:
+    if not call_executed_log:
         return False
 
     data_param = next(
         (
             p
-            for p in scope_function_log["decoded"].get("parameters", [])
+            for p in call_executed_log["decoded"].get("parameters", [])
             if p.get("name") == "data"
         ),
         None,
