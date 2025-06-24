@@ -84,8 +84,12 @@ The project also includes a suite of integration tests that verify live connecti
 To run **only** the integration tests, use the `-m` flag to select the `integration` marker:
 
 ```bash
-pytest -m integration
+pytest -m integration -v
 ```
+
+**Important:** Always use the `-v` (verbose) flag when running integration tests to see the reason for any skipped tests.
+
+This verbose output will show you why specific tests were skipped (e.g., network connectivity issues, missing API keys, or external service unavailability), which is crucial for understanding the test results.
 
 This command is useful for periodically checking the health of our external dependencies or before deploying a new version.
 

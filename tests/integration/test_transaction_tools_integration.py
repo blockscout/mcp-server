@@ -14,7 +14,10 @@ from blockscout_mcp_server.tools.transaction_tools import (
     transaction_summary,
 )
 
-from .utils import _extract_next_cursor, _find_truncated_scope_function_in_logs
+from .utils import (
+    _extract_next_cursor,
+    _find_truncated_call_executed_function_in_logs,
+)
 
 
 @pytest.mark.integration
@@ -41,7 +44,7 @@ async def test_transaction_summary_integration(mock_ctx):
 async def test_get_transaction_logs_integration(mock_ctx):
     """Tests that get_transaction_logs returns a paginated response and validates the schema."""
     # This transaction on Ethereum Mainnet is known to have many logs, ensuring a paginated response.
-    tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
+    tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     try:
         result_str = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
@@ -79,7 +82,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_transaction_logs_pagination_integration(mock_ctx):
     """Tests that get_transaction_logs can successfully use a cursor to fetch a second page."""
-    tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
+    tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
 
     try:
         first_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
@@ -323,7 +326,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
         json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
         data = json.loads(json_part)
 
-        if _find_truncated_scope_function_in_logs(data):
+        if _find_truncated_call_executed_function_in_logs(data):
             found_truncated_log = True
             break
 
@@ -335,5 +338,5 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
 
     if not found_truncated_log:
         pytest.skip(
-            f"Could not find a truncated 'ScopeFunction' log within the first {MAX_PAGES_TO_CHECK} pages."
+            f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages."
         )

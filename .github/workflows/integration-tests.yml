@@ -38,4 +38,4 @@ jobs:
       # This command uses the -m flag to run ONLY the tests marked with "integration".
       - name: Run integration tests
         run: |
-          pytest -m integration
+          pytest -m integration -v

@@ -88,6 +88,51 @@ async def test_get_latest_block_data_extraction(mock_ctx):
 
 - **What to Avoid:** Do not re-test complex formatting logic already covered by unit tests. The focus is on verifying the *data extraction* was successful.
 
+#### Handling Paginated Data
+
+For tools that return paginated data, integration tests must be robust enough to find specific data patterns that may not be on the first page. Instead of assuming data is in the initial response, tests should loop through pages.
+
+**Best Practice:**
+- Use a `while` or `for` loop with a `max_pages_to_check` limit to prevent infinite loops.
+- In each iteration, call the tool with the current `cursor`.
+- Inspect the response for the target data. If found, break the loop.
+- If not found, parse the new cursor from the response string and continue to the next page.
+- If the data is not found after checking the maximum number of pages, the test should be skipped with a clear message.
+
+**Example:**
+```python
+import pytest
+
+@pytest.mark.integration
+async def test_tool_with_pagination_search(mock_ctx):
+    """Test that we can find specific data by searching across pages."""
+    MAX_PAGES_TO_CHECK = 5
+    cursor = None
+    found_item = None
+
+    for _ in range(MAX_PAGES_TO_CHECK):
+        # Call the paginated tool
+        result_str = await some_paginated_tool(chain_id="1", cursor=cursor, ctx=mock_ctx)
+
+        # Logic to parse JSON and search for the specific item
+        # ...
+        # if item_is_found:
+        #     found_item = item
+        #     break
+
+        # Extract next cursor if more pages exist
+        if "To get the next page call" in result_str:
+            cursor = result_str.split('cursor="')[1].split('"')[0]
+        else:
+            break
+    
+    if not found_item:
+        pytest.skip(f"Could not find target item within {MAX_PAGES_TO_CHECK} pages.")
+
+    # Assertions on the found_item
+    assert found_item["some_field"] == "expected_value"
+```
+
 **Testing Pagination and Cursors:**
 
 For tools that support cursor-based pagination, a specific two-step test is required to validate the full lifecycle of the feature.
@@ -136,51 +181,6 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     assert first_page_data[0] != second_page_data[0]
 ```
 
-
-#### Handling Paginated Data
-
-For tools that return paginated data, integration tests must be robust enough to find specific data patterns that may not be on the first page. Instead of assuming data is in the initial response, tests should loop through pages.
-
-**Best Practice:**
-- Use a `while` or `for` loop with a `max_pages_to_check` limit to prevent infinite loops.
-- In each iteration, call the tool with the current `cursor`.
-- Inspect the response for the target data. If found, break the loop.
-- If not found, parse the new cursor from the response string and continue to the next page.
-- If the data is not found after checking the maximum number of pages, the test should be skipped with a clear message.
-
-**Example:**
-```python
-import pytest
-
-@pytest.mark.integration
-async def test_tool_with_pagination_search(mock_ctx):
-    """Test that we can find specific data by searching across pages."""
-    MAX_PAGES_TO_CHECK = 5
-    cursor = None
-    found_item = None
-
-    for _ in range(MAX_PAGES_TO_CHECK):
-        # Call the paginated tool
-        result_str = await some_paginated_tool(chain_id="1", cursor=cursor, ctx=mock_ctx)
-
-        # Logic to parse JSON and search for the specific item
-        # ...
-        # if item_is_found:
-        #     found_item = item
-        #     break
-
-        # Extract next cursor if more pages exist
-        if "To get the next page call" in result_str:
-            cursor = result_str.split('cursor="')[1].split('"')[0]
-        else:
-            break
-    
-    if not found_item:
-        pytest.skip(f"Could not find target item within {MAX_PAGES_TO_CHECK} pages.")
-
-    # Assertions on the found_item
-    assert found_item["some_field"] == "expected_value"
-```
 ## General Rules for All Integration Tests
 
 ### Use Stable Targets
@@ -221,6 +221,14 @@ pytest -m integration
 # Run everything except integration tests
 pytest -m "not integration"
 ```
+
+**Important:** Always use the `-v` (verbose) flag when running integration tests to see the reason for any skipped tests:
+
+```bash
+pytest -m integration -v
+```
+
+This verbose output will show you why specific tests were skipped (e.g., network connectivity issues, missing API keys, or external service unavailability), which is crucial for understanding the test results and debugging integration issues.
 
 ### Error Handling
 
