@@ -3,34 +3,35 @@
 from __future__ import annotations
 
 
-def _find_truncated_scope_function_in_logs(data: dict) -> bool:
-    """Return True if data contains a truncated 'ScopeFunction' log."""
+def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
+    """Return True if data contains a truncated 'CallExecuted' log."""
     scope_function_log = next(
         (
             item
             for item in data.get("items", [])
             if isinstance(item.get("decoded"), dict)
-            and item["decoded"].get("method_call", "").startswith("ScopeFunction")
+            and item["decoded"].get("method_call", "").startswith("CallExecuted")
         ),
         None,
     )
     if not scope_function_log:
         return False
 
-    conditions_param = next(
+    data_param = next(
         (
             p
             for p in scope_function_log["decoded"].get("parameters", [])
-            if p.get("name") == "conditions"
+            if p.get("name") == "data"
         ),
         None,
     )
-    if not conditions_param:
+    if not data_param:
         return False
-
-    for condition_tuple in conditions_param.get("value", []):
-        if isinstance(condition_tuple[-1], dict) and condition_tuple[-1].get("value_truncated"):
-            return True
+    
+    # Check if value is a dict with truncation info
+    value = data_param.get("value")
+    if isinstance(value, dict) and value.get("value_truncated"):
+        return True
 
     return False
 

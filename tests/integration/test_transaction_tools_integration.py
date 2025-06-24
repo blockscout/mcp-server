@@ -4,7 +4,7 @@ import json
 import re
 import httpx
 
-from .utils import _find_truncated_scope_function_in_logs, _extract_next_cursor
+from .utils import _find_truncated_call_executed_function_in_logs, _extract_next_cursor
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT, INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction_tools import (
@@ -322,7 +322,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
         json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
         data = json.loads(json_part)
 
-        if _find_truncated_scope_function_in_logs(data):
+        if _find_truncated_call_executed_function_in_logs(data):
             found_truncated_log = True
             break
 
@@ -334,5 +334,5 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
 
     if not found_truncated_log:
         pytest.skip(
-            f"Could not find a truncated 'ScopeFunction' log within the first {MAX_PAGES_TO_CHECK} pages."
+            f"Could not find a truncated 'CallExecuted' log within the first {MAX_PAGES_TO_CHECK} pages."
         )
