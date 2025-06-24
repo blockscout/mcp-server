@@ -8,7 +8,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
 		"safe-directory": "git config --global --add safe.directory ${containerWorkspaceFolder}",
-		"uv": "curl -LsSf https://astral.sh/uv/install.sh | sh && sudo `which uv` pip install --system -e . || exit 0",
+		"uv": "curl -LsSf https://astral.sh/uv/install.sh | sh && sudo `which uv` pip install --system -e \".[test,dev]\" || exit 0",
 		"known_hosts": "sudo chown ${USER}:${USER} ${HOME}/.ssh && ssh-keyscan github.com > ${HOME}/.ssh/known_hosts"
 	},
 	// Allows to connect to services on the host machine (e.g Ollama) from inside the container.
@@ -28,7 +28,8 @@
 				"ms-python.autopep8",
 				"charliermarsh.ruff",
                 "tamasfe.even-better-toml",
-				"davidanson.vscode-markdownlint"
+				"davidanson.vscode-markdownlint",
+				"backnotprop.prompt-tower"
 			]
 		}
 	}
