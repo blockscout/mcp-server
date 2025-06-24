@@ -89,7 +89,7 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
 
         # Check that the pagination hint is correctly formatted and included
         next_cursor = encode_cursor(mock_api_response["next_page_params"])
-        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
+        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'  # noqa: E501
         assert expected_pagination in result
 
         # Check JSON array structure
@@ -226,7 +226,7 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
 
         # Check that pagination hint reflects the new parameters
         next_cursor = encode_cursor({"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"})
-        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'
+        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'  # noqa: E501
         assert expected_pagination in result
 
         # Check progress reporting and logging

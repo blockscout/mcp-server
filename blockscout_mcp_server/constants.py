@@ -21,7 +21,7 @@ All Blockscout API tools require a chain_id parameter:
   * Gnosis: 100
   * Celo: 42220
   * Scroll: 534352
-"""
+"""  # noqa: E501
 
 SERVER_NAME = "blockscout-mcp-server"
 

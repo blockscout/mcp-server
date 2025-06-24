@@ -22,7 +22,7 @@ async def test_get_instructions_success(mock_ctx):
 5. Find NFT and token holdings for addresses
 
 Always provide chain_id as the first parameter for blockchain-specific queries.
-Use descriptive responses and explain what the data means in context."""
+Use descriptive responses and explain what the data means in context."""  # noqa: E501
 
     with patch("blockscout_mcp_server.tools.get_instructions.SERVER_INSTRUCTIONS", expected_instructions):
         # ACT

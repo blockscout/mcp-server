@@ -253,7 +253,7 @@ async def make_request_with_periodic_progress(
             overall_progress_rounded = round(overall_progress, 3)
 
             # Format the progress message
-            formatted_message = f"{current_step_message_prefix}: {in_progress_message_template.format(elapsed_seconds=elapsed_seconds, total_hint=total_duration_hint)}"
+            formatted_message = f"{current_step_message_prefix}: {in_progress_message_template.format(elapsed_seconds=elapsed_seconds, total_hint=total_duration_hint)}"  # noqa: E501
 
             # Report progress to client
             await report_and_log_progress(
@@ -338,8 +338,7 @@ def _recursively_truncate_and_flag_long_strings(data: Any) -> tuple[Any, bool]:
         A tuple containing:
         - The processed data with long strings replaced.
         - A boolean flag `was_truncated`, which is True if any string was truncated.
-    """
-    was_truncated = False
+    """  # noqa: E501
     if isinstance(data, str):
         if len(data) > INPUT_DATA_TRUNCATION_LIMIT:
             return {

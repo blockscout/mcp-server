@@ -31,7 +31,7 @@ async def get_address_info(
     - Proxy contract information (if applicable): determines if a smart contract is a proxy contract (which forwards calls to implementation contracts), including proxy type and implementation addresses
     - Token details (if the contract is a token): name, symbol, decimals, total supply, etc.
     Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
-    """
+    """  # noqa: E501
     await report_and_log_progress(
         ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
@@ -92,7 +92,7 @@ async def get_tokens_by_address(
     Returns detailed token information including contract details (name, symbol, decimals), market metrics (exchange rate, market cap, volume), holders count, and actual balance (provided as is, without adjusting by decimals).
     Supports pagination.
     Essential for portfolio analysis, wallet auditing, and DeFi position tracking.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/tokens"
     params = {"tokens": "ERC-20"}
 
@@ -102,7 +102,7 @@ async def get_tokens_by_address(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
 
     # Report start of operation
     await report_and_log_progress(
@@ -173,7 +173,7 @@ async def nft_tokens_by_address(
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
     Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).
     Essential for a detailed overview of an address's digital collectibles and their associated collection data.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}
 
@@ -183,7 +183,7 @@ async def nft_tokens_by_address(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
 
     # Report start of operation
     await report_and_log_progress(
@@ -256,7 +256,7 @@ async def nft_tokens_by_address(
         pagination_hint = f"""
 
 ----
-To get the next page call nft_tokens_by_address(chain_id=\"{chain_id}\", address=\"{address}\", cursor=\"{next_cursor}\")"""
+To get the next page call nft_tokens_by_address(chain_id=\"{chain_id}\", address=\"{address}\", cursor=\"{next_cursor}\")"""  # noqa: E501
         output_parts.append(pagination_hint)
 
     return "".join(output_parts)
@@ -275,7 +275,7 @@ async def get_address_logs(
     Get comprehensive logs emitted by a specific address.
     Returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/logs"
     params = {}
 
@@ -285,7 +285,7 @@ async def get_address_logs(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
 
     # Report start of operation
     await report_and_log_progress(
@@ -341,7 +341,7 @@ async def get_address_logs(
 - `parameters`: Decoded event parameters with names, types, values, and indexing status
 
 **Address logs JSON:**
-"""
+"""  # noqa: E501
 
     output = f"{prefix}{logs_json_str}"
     # Add pagination hint if next_page_params exists
@@ -362,6 +362,6 @@ One or more log items in this response had a `data` field that was too large and
 If the full log data is crucial for your analysis, you must first get the `transaction_hash` from the specific log item in the JSON response above. Then, you can retrieve all logs for that single transaction programmatically. For example, using curl:
 `curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`
 You would then need to parse the JSON response and find the specific log by its index.
-"""
+"""  # noqa: E501
         output += note_on_truncation
     return output

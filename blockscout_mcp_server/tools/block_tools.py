@@ -23,7 +23,7 @@ async def get_block_info(
     """
     Get block information like timestamp, gas used, burnt fees, transaction count etc.
     Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
-    """
+    """  # noqa: E501
     total_steps = 3.0 if include_transactions else 2.0
 
     # Report start of operation
@@ -112,7 +112,7 @@ async def get_latest_block(
     """
     Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain.
     No transactions or token transfers can exist beyond this point, making it useful as a reference timestamp for other API calls.
-    """
+    """  # noqa: E501
     api_path = "/api/v2/main-page/blocks"
 
     # Report start of operation

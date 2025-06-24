@@ -18,7 +18,7 @@ async def get_contract_abi(
     """
     Get smart contract ABI (Application Binary Interface).
     An ABI defines all functions, events, their parameters, and return types. The ABI is required to format function calls or interpret contract data.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/smart-contracts/{address}"
 
     # Report start of operation

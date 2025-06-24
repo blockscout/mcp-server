@@ -122,7 +122,7 @@ async def get_transactions_by_address(
       - `get_transactions_by_address(address, age_from, age_to)` - get all transactions to/from the address between the given dates
       - `get_transactions_by_address(address, age_from, age_to, methods)` - get all transactions to/from the address between the given dates and invoking the given method signature
     Manipulating `age_from` and `age_to` allows you to paginate through results by time ranges.
-    """
+    """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
     query_params = {"to_address_hashes_to_include": address, "from_address_hashes_to_include": address}
     if age_from:
@@ -193,19 +193,19 @@ async def get_token_transfers_by_address(
     age_from: Annotated[
         str | None,
         Field(
-            description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history."
+            description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history."  # noqa: E501
         ),
     ] = None,
     age_to: Annotated[
         str | None,
         Field(
-            description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time."
+            description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time."  # noqa: E501
         ),
     ] = None,
     token: Annotated[
         str | None,
         Field(
-            description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens."
+            description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens."  # noqa: E501
         ),
     ] = None,
 ) -> dict:
@@ -216,7 +216,7 @@ async def get_token_transfers_by_address(
       - `get_token_transfers_by_address(address, age_from, age_to)` - get all transfers of any ERC-20 token to/from the address between the given dates
       - `get_token_transfers_by_address(address, age_from, age_to, token)` - get all transfers of the given ERC-20 token to/from the address between the given dates
     Manipulating `age_from` and `age_to` allows you to paginate through results by time ranges. For example, after getting transfers up to a certain timestamp, you can use that timestamp as `age_to` in the next query to get the next page of older transfers.
-    """
+    """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
     query_params = {
         "transaction_types": "ERC-20",
@@ -290,7 +290,7 @@ async def transaction_summary(
     Automatically classifies transactions into natural language descriptions (transfers, swaps, NFT sales, DeFi operations)
     Essential for rapid transaction comprehension, dashboard displays, and initial analysis.
     Note: Not all transactions can be summarized and accuracy is not guaranteed for complex patterns.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/transactions/{transaction_hash}/summary"
 
     # Report start of operation
@@ -333,7 +333,7 @@ async def get_transaction_info(
     Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
     By default, the raw transaction input is omitted if a decoded version is available to save context; request it with `include_raw_input=True` only when you truly need the raw hex data.
     Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/transactions/{transaction_hash}"
 
     # Report start of operation
@@ -374,7 +374,7 @@ One or more large data fields in this response have been truncated (indicated by
 
 To get the full, untruncated data, you can retrieve it programmatically. For example, using curl:
 `curl "{str(base_url).rstrip("/")}/api/v2/transactions/{transaction_hash}"`
-"""
+"""  # noqa: E501
     return f"{output_json}{note}"
 
 
@@ -391,7 +391,7 @@ async def get_transaction_logs(
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
-    """
+    """  # noqa: E501
     api_path = f"/api/v2/transactions/{transaction_hash}/logs"
     params = {}
 
@@ -400,7 +400,7 @@ async def get_transaction_logs(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
 
     # Report start of operation
     await report_and_log_progress(
@@ -459,7 +459,7 @@ async def get_transaction_logs(
 - `parameters`: Decoded event parameters with names, types, values, and indexing status
 
 **Transaction logs JSON:**
-"""
+"""  # noqa: E501
 
     output = f"{prefix}{logs_json_str}"
 
@@ -469,7 +469,7 @@ async def get_transaction_logs(
         pagination_hint = f"""
 
 ----
-To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", transaction_hash=\"{transaction_hash}\", cursor=\"{next_cursor}\")"""
+To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", transaction_hash=\"{transaction_hash}\", cursor=\"{next_cursor}\")"""  # noqa: E501
         output += pagination_hint
 
     # Add a note about truncated data if it happened
@@ -481,7 +481,7 @@ One or more log items in this response had a `data` field that was too large and
 If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this transaction programmatically. For example, using curl:
 `curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`
 You would then need to parse the JSON response and find the specific log by its index.
-"""
+"""  # noqa: E501
         output += note_on_truncation
 
     return output
