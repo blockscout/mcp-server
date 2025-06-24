@@ -17,3 +17,4 @@ alwaysApply: true
 
 7. **Import Placement**: ALL import statements must be placed at the top of the Python module, immediately after the module docstring (if present) and before any other code. Never insert imports inline near where the functionality is used. Follow PEP 8 import order.
 
+8. **Formatting & Linting**: ALL linting and formatting issues must be resolved before committing or pushing code. Use the Ruff rules defined in [300-ruff-lint-and-format.mdc](mdc:.cursor/rules/300-ruff-lint-and-format.mdc) to identify and fix issues.

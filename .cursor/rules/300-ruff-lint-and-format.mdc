@@ -1,0 +1,44 @@
+---
+description: Applicable to identifying and fixing linting and formatting issues
+globs: 
+alwaysApply: false
+---
+# Instructions to identify and fix linting and formatting issues with Ruff
+
+### Prerequisites for Ruff usage
+
+- Python 3.11 or higher, with the project installed in development mode
+- Ruff installed: `pip install -e ".[dev]"`
+
+### Apply linting & formatting before any PR
+
+Always run these two commands on generated code before suggesting commits or opening a PR:
+
+```bash
+ruff check . --fix
+ruff format .
+```
+
+- The `--fix` flag will auto-correct all supported issues.
+- `ruff format .` rewrites code to the Black-compatible style (line-length = 120).
+
+### Handle long docstrings / string literals (E501)
+
+Ruff enforces a 120-character limit by default. If a docstring or string literal must exceed that, append:
+
+```python
+"""A very long explanation…"""  # noqa: E501
+```
+
+Avoid using `# noqa: E501` for ordinary code lines - split them instead.
+
+### Verify CI will pass
+
+Ensure that your changes also pass the CI checks by running:
+
+```bash
+ruff check .
+ruff format --check .
+```
+
+Both commands must exit with code 0 before your PR can be merged.
