@@ -44,7 +44,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
     try:
         result_str = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
-        pytest.fail(f"Transaction data is currently unavailable from the API: {e}")
+        pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
     # 1. Verify that pagination is working correctly
     assert isinstance(result_str, str)
@@ -78,7 +78,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_transaction_logs_pagination_integration(mock_ctx):
     """Tests that get_transaction_logs can successfully use a cursor to fetch a second page."""
-    tx_hash = "0x293b638403324a2244a8245e41b3b145e888a26e3a51353513030034a26a4e41"
+    tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
 
     try:
         first_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
