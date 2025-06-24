@@ -146,41 +146,38 @@ For tools that support cursor-based pagination, a specific two-step test is requ
 
 **Example:**
 ```python
-import re
 import json
 import pytest
 from blockscout_mcp_server.tools.address_tools import get_tokens_by_address
+from blockscout_mcp_server.models import ToolResponse # Assuming tools will return this
 
 @pytest.mark.integration
 async def test_get_tokens_by_address_pagination_integration(mock_ctx):
-    """Tests that get_tokens_by_address can use a cursor to fetch a second page."""
+    """Tests that get_tokens_by_address can use a structured pagination object."""
     # ARRANGE: Use a stable address known to have many results.
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503" # Binance Wallet
     chain_id = "1"
 
-    # ACT 1: Get the first page and cursor.
-    first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    # ACT 1: Get the first page. The result is a dict.
+    first_page_dict = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    
+    # Re-create the model for validation
+    first_page_response = ToolResponse[list](**first_page_dict)
 
-    # ASSERT 1: Check for and extract the cursor.
-    assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
-    assert cursor_match is not None, "Could not find cursor in the first page response."
-    cursor = cursor_match.group(1)
+    # ASSERT 1: Check for and extract the next call information.
+    assert first_page_response.pagination is not None, "Pagination info is missing."
+    next_call_info = first_page_response.pagination.next_call
+    assert next_call_info.tool_name == "get_tokens_by_address"
+    assert "cursor" in next_call_info.params
 
-    # ACT 2: Use the cursor to get the next page.
-    second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    # ACT 2: Use the structured parameters to get the next page.
+    second_page_dict = await get_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
+    second_page_response = ToolResponse[list](**second_page_dict)
 
     # ASSERT 2: Verify the second page.
-    assert "Error" not in second_page_result
-    first_page_data = json.loads(first_page_result.split("----")[0])
-    # Second page may or may not have a hint, so splitting is the safest way to parse.
-    second_page_json_str = second_page_result.split("----")[0]
-    second_page_data = json.loads(second_page_json_str)
-    
-    assert len(second_page_data) > 0
-    assert first_page_data[0] != second_page_data[0]
+    assert len(second_page_response.data) > 0
+    assert first_page_response.data[0] != second_page_response.data[0]
 ```
-
 ## General Rules for All Integration Tests
 
 ### Use Stable Targets

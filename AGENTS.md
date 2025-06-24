@@ -10,6 +10,7 @@ mcp-server/
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
+│   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing and truncation helpers)
@@ -42,6 +43,7 @@ mcp-server/
 │       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
 │       ├── test_ens_tools.py         # Tests for ENS-related tools (get_address_by_ens_name)
 │       ├── test_get_instructions.py  # Tests for instruction tool (__get_instructions__)
+│       ├── test_models.py            # Tests for Pydantic response models
 │       ├── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
 │       ├── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
@@ -155,6 +157,10 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
+    * **`models.py`**:
+        * Defines a standardized, structured `ToolResponse` model using Pydantic.
+        * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
+        * Includes specific data models for complex payloads, like the response from `__get_instructions__`.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:

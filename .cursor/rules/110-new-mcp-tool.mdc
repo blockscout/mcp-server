@@ -178,249 +178,52 @@ async def tool_name(
 
 ### Response Handling
 
-Choose one of these approaches based on the complexity of your response formatting needs:
+#### 1. Standardized Structured Responses
 
-#### 1. Return Full JSON Response (`return_type: dict`)
+**All tools MUST return a standardized `ToolResponse` object.** This ensures consistency and provides clear, machine-readable data to the AI. Do not return raw strings or simple dictionaries.
 
-Use to return entire response:
+The `ToolResponse` model separates the primary `data` from metadata like `notes`, `pagination`, and `data_description`.
 
-```python
-return response_data  # Simply return the full JSON response
-```
+**Implementation Pattern:**
 
-#### 2. Extract Specific Fields (`return_type: dict`)
-
-Use for simple field extraction:
+Use the `build_tool_response` helper from `tools/common.py` to construct the response.
 
 ```python
-return {
-    "field1": response_data.get("field1"),
-    "field2": response_data.get("nested", {}).get("field2")
-}
-```
+from blockscout_mcp_server.tools.common import build_tool_response
+from blockscout_mcp_server.models import PaginationInfo, NextCallInfo
 
-#### 3. Process JSON Arrays (`return_type: list[dict]`)
+async def some_tool(chain_id: str, address: str, ...) -> dict:  # The SDK will serialize the Pydantic model to a dict
+    """A tool demonstrating the correct response format."""
+    # 1. Get raw data from an API call
+    response_data = await make_blockscout_request(...)
 
-Use when iterating through items and formatting each one:
+    # 2. Prepare response components
+    main_data = response_data.get("items", [])
+    notes = None
+    pagination = None
 
-```python
-items = response_data.get("items", [])
-formatted_items = []
-for item in items:
-    formatted_items.append({
-        "id": item.get("id"),
-        "name": item.get("name"),
-        # Other fields to extract
-    })
-return formatted_items
-```
+    # 3. Handle notes for truncated data
+    if response_data.get("was_truncated"):
+        notes = ["Some data was truncated. To get the full data, use `...`"]
 
-#### 4. Complex String Formatting (`return_type: str`)
-
-Use for responses requiring significant text formatting, conditionals, or loops:
-
-```python
-# Example: Building a complex string with JSON formatting and pagination hints
-items_data = response_data.get("items", [])
-output_parts = ["["]  # Start JSON array
-for i, item in enumerate(items_data):
-    item_dict = {
-        "field1": item.get("field1", ""),
-        "field2": item.get("field2", ""),
-    }
-    item_str = json.dumps(item_dict)
-    output_parts.append(item_str)
-    if i < len(items_data) - 1:
-        output_parts.append(",")
-output_parts.append("]")  # End JSON array
-
-# Add pagination hints if available
-next_page_params = response_data.get("next_page_params")
-if next_page_params:
-    # Use the centralized helper to create an opaque cursor
-    from .common import encode_cursor
-    next_cursor = encode_cursor(next_page_params)
-    pagination_hint = f"""
-
-----
-To get the next page call tool_name(chain_id="{chain_id}", <other_args>, cursor="{next_cursor}")"""
-    output_parts.append(pagination_hint)
-
-return "".join(output_parts)
-```
-
-#### 5. Prefixed/Suffixed Content (`return_type: str`)
-
-Use when adding explanatory text to JSON output:
-
-```python
-import json
-content = json.dumps(response_data)  # Compact JSON
-prefix = """
-# Explanatory Title
-This is some explanatory text that helps the user understand the data.
-"""
-return f"{prefix}\n{content}"
-```
-
-**Note:** We use compact JSON (without indentation) to minimize the data payload size. The output is consumed by machines, not humans, so readability of the raw JSON string is not a priority.
-
-#### 6. Handling Pagination with Opaque Cursors (`return_type: str` or `list[dict]`)
-
-For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
-
-**A. Handling the Incoming Cursor:**
-Your tool should accept an optional `cursor` argument. If it's provided, use the `decode_cursor` helper to parse it and apply the parameters to your API call.
-
-**B. Generating the Outgoing Cursor:**
-In your response, check for `next_page_params` from the API. If they exist, use the `encode_cursor` helper to create the next cursor and include it in a user-friendly hint.
-
-**Complete Example Pattern:**
-
-```python
-from typing import Annotated, Optional
-from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url, encode_cursor, decode_cursor, InvalidCursorError
-
-async def paginated_tool_name(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    address: Annotated[str, Field(description="The address to query")],
-    cursor: Annotated[Optional[str], Field(description="The pagination cursor from a previous response to get the next page of results.")] = None,
-    ctx: Context = None
-) -> str:
-    """
-    A tool that demonstrates the correct way to handle pagination.
-    """
-    api_path = f"/api/v2/some_paginated_endpoint/{address}"
-    query_params = {}
-
-    # 1. Handle incoming cursor
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            query_params.update(decoded_params)
-        except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-
-    base_url = await get_blockscout_base_url(chain_id)
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
-
-    output_string = process_items(response_data.get("items", []))
-
-    # 2. Generate outgoing cursor
+    # 4. Handle pagination
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
         next_cursor = encode_cursor(next_page_params)
-        pagination_hint = f"""
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="some_tool",
+                params={"chain_id": chain_id, "address": address, "cursor": next_cursor},
+            )
+        )
 
-----
-To get the next page call paginated_tool_name(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
-        output_string += pagination_hint
-
-    return output_string
+    # 5. Construct and return the final response
+    return build_tool_response(
+        data=main_data,
+        notes=notes,
+        pagination=pagination,
+    ).model_dump()  # Return as a dictionary
 ```
-
-#### 7. Simplifying Address Objects to Save Context (`return_type: dict` or `list[dict]`)
-
-**Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
-
-**Example: Transforming a Transaction Response**
-
-**Before (Raw API Response):**
-This is the verbose data we get from the Blockscout API.
-
-```json
-{
-  "from": {
-    "hash": "0xAbC123...",
-    "name": "SenderContract",
-    "is_contract": true
-  },
-  "to": {
-    "hash": "0xDeF456...",
-    "name": "ReceiverContract",
-    "is_contract": true
-  },
-  "value": "1000000000000000000"
-}
-```
-
-**After (Optimized Tool Output):**
-This is the clean, concise data our tool should return.
-
-```json
-{
-  "from": "0xAbC123...",
-  "to": "0xDeF456...",
-  "value": "1000000000000000000"
-}
-```
-
-**Implementation Pattern:**
-Here is how you would implement this transformation inside a tool function.
-
-```python
-async def some_tool_that_returns_addresses(chain_id: str, ...) -> dict:
-    # 1. Get the raw response from the API helper
-    raw_response = await make_blockscout_request(...)
-
-    # 2. Create a copy to modify
-    transformed_response = raw_response.copy()
-
-    # 3. Simplify the 'from' address object into a string
-    if isinstance(transformed_response.get("from"), dict):
-        transformed_response["from"] = transformed_response["from"].get("hash")
-
-    # 4. Simplify the 'to' address object into a string
-    if isinstance(transformed_response.get("to"), dict):
-        transformed_response["to"] = transformed_response["to"].get("hash")
-
-    # 5. Return the optimized dictionary
-    return transformed_response
-```
-
-### Progress Reporting
-
-To ensure good observability and debuggability, all progress updates should be reported to the client and simultaneously logged as an `info` message. This provides immediate feedback for developers via logs, while also supporting clients that can render progress UIs.
-
-Instead of calling `ctx.report_progress` directly, **always use the `report_and_log_progress` helper function** from `tools/common.py`.
-
-**Implementation Pattern:**
-
-```python
-from blockscout_mcp_server.tools.common import report_and_log_progress
-
-async def some_tool_with_progress(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    ctx: Context
-):
-    """A tool demonstrating correct progress reporting."""
-    # Report start
-    await report_and_log_progress(
-        ctx, progress=0.0, total=2.0, message="Starting operation..."
-    )
-
-    # ... perform some work ...
-    base_url = await get_blockscout_base_url(chain_id)
-
-    # Report intermediate step
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout URL. Fetching data..."
-    )
-
-    # ... perform the final step ...
-    response_data = await make_blockscout_request(base_url, "/api/v2/some_endpoint")
-
-    # Report completion
-    await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched data."
-    )
-
-    return response_data
-```
-
-This centralized helper ensures that every progress update is visible, regardless of the MCP client's capabilities.
-
 ### Performance Optimization
 
 #### Concurrent API Calls

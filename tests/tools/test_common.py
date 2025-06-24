@@ -5,10 +5,12 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
 )
+from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    build_tool_response,
     decode_cursor,
     encode_cursor,
 )
@@ -206,3 +208,23 @@ def test_recursively_truncate_no_truncation_mixed_types():
     processed, truncated = _recursively_truncate_and_flag_long_strings(data)
     assert truncated is False
     assert processed == original_data
+
+
+def test_build_tool_response():
+    """Test the build_tool_response helper function."""
+    response1 = build_tool_response(data="test_data")
+    assert isinstance(response1, ToolResponse)
+    assert response1.data == "test_data"
+    assert response1.notes is None
+
+    pagination = PaginationInfo(next_call=NextCallInfo(tool_name="test_tool", params={"cursor": "xyz"}))
+    response2 = build_tool_response(
+        data=[1, 2, 3],
+        data_description=["A list of numbers."],
+        notes=["This is a note."],
+        instructions=["Do something else."],
+        pagination=pagination,
+    )
+    assert response2.data == [1, 2, 3]
+    assert response2.notes == ["This is a note."]
+    assert response2.pagination.next_call.params["cursor"] == "xyz"

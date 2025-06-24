@@ -105,67 +105,28 @@ sequenceDiagram
    - Multiple MCP servers might be configured in a client application, with each server providing its own tool descriptions
    - Tool descriptions are limited to 1024 characters to minimize context consumption
 
-2. **Response Processing and Context Optimization**:
+## 2. Response Processing and Context Optimization
 
-   The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
+The server employs a comprehensive strategy to **conserve LLM context** and provide **unambiguous, machine-readable responses**. This is achieved by enforcing a standardized, structured response format for all tools, moving away from less reliable string-based outputs.
 
-   **Core Approach:**
-   - Raw Blockscout API responses are never forwarded directly to the MCP Host
-   - All responses are processed to extract only tool-relevant data
-   - Large datasets (e.g., token lists with hundreds of entries) are filtered and formatted to include only essential information
+### The Standardized `ToolResponse` Model
 
-   **Specific Optimizations:**
+Instead of returning raw strings or simple dictionaries, every tool in the server returns a `ToolResponse` object. This Pydantic model serializes to a clean JSON structure, which clearly separates the primary data payload from associated metadata.
 
-     **a) Address Object Simplification:**
-     Many Blockscout API endpoints return addresses as complex JSON objects containing hash, name, contract flags, public tags, and other metadata. To conserve LLM context, the server systematically simplifies these objects into single address strings (e.g., `"0x123..."`) before returning responses. This approach:
-     - **Reduces Context Consumption**: A single address string uses significantly less context than a full address object with multiple fields
-     - **Encourages Compositional Tool Use**: When detailed address information is needed, the AI is guided to use dedicated tools like `get_address_info`
-     - **Maintains Essential Functionality**: The core address hash is preserved, which is sufficient for most blockchain operations
+The core structure is as follows:
 
-     **b) Opaque Cursor Strategy for Pagination:**
-     For handling large, paginated datasets, the server uses an **opaque cursor** strategy that avoids exposing multiple, complex pagination parameters (e.g., `page`, `offset`, `items_count`) in tool signatures and responses. This approach provides several key benefits:
-     - **Context Conservation**: A single cursor string consumes significantly less LLM context than a list of individual parameters.
-     - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
-     - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
+*   `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
+*   `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
+*   `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues. This field includes guidance on how to retrieve full data if it has been truncated.
+*   `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps.
+*   `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
-     **Mechanism:**
-     When the Blockscout API returns a `next_page_params` dictionary, the server serializes this dictionary into a compact JSON string, which is then Base64URL-encoded. This creates a single, opaque, and URL-safe string that serves as the cursor for the next page.
+### Key Benefits of This Approach
 
-     **Example:**
-
-     - **Blockscout API `next_page_params`:**
-
-       ```json
-       { "block_number": 18999999, "index": 42, "items_count": 50 }
-       ```
-
-     - **Generated Opaque Cursor:**
-       `eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0`
-
-     - **Final Tool Output Hint:**
-
-       ```plaintext
-       To get the next page call get_address_logs(..., cursor="eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0")
-       ```
-
-    c) Log Data Field Truncation
-
-    To prevent LLM context overflow from excessively large `data` fields in transaction logs, the server implements a smart truncation strategy.
-
-    - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 1026 characters (representing 512 bytes of data plus the '0x' prefix), it is truncated.
-    - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
-    - **Decoded Truncation**: Oversized string values inside the `decoded` dictionary are recursively replaced with `{"value_sample": "...", "value_truncated": true}`.
-    - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
-
-    This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
-
-    d) Transaction Input Data Truncation
-
-    To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.
-
-    - **`raw_input` Truncation**: If the raw hexadecimal input string exceeds `INPUT_DATA_TRUNCATION_LIMIT`, it is shortened. A new flag, `raw_input_truncated: true`, is added to the response to signal this.
-    - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
-    - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
+*   **Clarity and Unambiguity**: The LLM can directly access `response.data` for the core information without needing to parse or clean a string.
+*   **Robust Pagination**: The `pagination` object provides a complete, ready-to-use set of parameters for the next tool call, minimizing the risk of the LLM constructing an incorrect follow-up request.
+*   **Clear Separation of Concerns**: The primary data is cleanly separated from metadata like warnings and instructions, which is a fundamental principle of good API design.
+*   **Future-Proofing**: This structured approach using Pydantic models allows us to easily provide a formal `outputSchema` for each tool in the future, aligning with modern MCP specifications.
 
 3. **Instructions Delivery Workaround**:
    - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
