@@ -60,6 +60,9 @@ pytest.ini
 htmlcov/
 .pytest_cache/
 
+# Ruff
+.ruff_cache/
+
 # Devcontainer
 .devcontainer/
 
