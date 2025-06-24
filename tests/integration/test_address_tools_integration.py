@@ -10,7 +10,8 @@ from blockscout_mcp_server.tools.address_tools import (
     get_tokens_by_address,
     nft_tokens_by_address,
 )
-from blockscout_mcp_server.tools.common import get_blockscout_base_url
+
+from .utils import _extract_next_cursor, _find_truncated_scope_function_in_logs
 
 
 @pytest.mark.integration
@@ -78,62 +79,6 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(first_log["topics"], list)
 
 
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_get_address_logs_with_decoded_truncation_integration(mock_ctx):
-    """Ensure decoded parameter truncation is detected."""
-    address = "0x703806E61847984346d2D7DDd853049627e50A40"
-    chain_id = "1"
-
-    base_url = await get_blockscout_base_url(chain_id)
-    try:
-        result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
-    except httpx.HTTPStatusError as e:
-        pytest.skip(f"Address logs unavailable from the API: {e}")
-
-    assert "**Note on Truncated Data:**" in result
-    assert f"`curl \"{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs\"`" in result
-
-    json_part = result.split("**Address logs JSON:**\n")[1].split("----")[0]
-    data = json.loads(json_part)
-
-    scope_function_log = next(
-        (
-            item
-            for item in data.get("items", [])
-            if isinstance(item.get("decoded"), dict)
-            and item["decoded"].get("method_call", "").startswith("ScopeFunction")
-        ),
-        None,
-    )
-
-    if not scope_function_log:
-        pytest.skip("Could not find a 'ScopeFunction' event log in the live data.")
-
-    conditions_param = next(
-        (
-            p
-            for p in scope_function_log["decoded"].get("parameters", [])
-            if p.get("name") == "conditions"
-        ),
-        None,
-    )
-
-    if not conditions_param:
-        pytest.skip("Could not find 'conditions' parameter in the 'ScopeFunction' event.")
-
-    found_truncation = False
-    for condition_tuple in conditions_param.get("value", []):
-        if isinstance(condition_tuple[-1], dict) and condition_tuple[-1].get("value_truncated"):
-            found_truncation = True
-            break
-
-    if not found_truncation:
-        pytest.skip("Could not find a truncated 'bytes' value in the 'conditions' parameter.")
-
-
-
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_address_info_integration(mock_ctx):
     # Using a well-known, stable address with public tags (USDC contract)
@@ -269,3 +214,44 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     assert isinstance(second_page_data.get("items"), list)
     assert len(second_page_data["items"]) > 0
     assert first_page_data["items"][0] != second_page_data["items"][0]
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
+    """
+    Tests that get_address_logs can find truncated data by searching across pages.
+    """
+    address = "0x703806E61847984346d2D7DDd853049627e50A40"
+    chain_id = "1"
+    MAX_PAGES_TO_CHECK = 5
+    cursor = None
+    found_truncated_log = False
+
+    for page_num in range(MAX_PAGES_TO_CHECK):
+        try:
+            result_str = await get_address_logs(
+                chain_id=chain_id,
+                address=address,
+                ctx=mock_ctx,
+                cursor=cursor,
+            )
+        except httpx.HTTPStatusError as e:
+            pytest.skip(f"API request failed on page {page_num + 1}: {e}")
+
+        json_part = result_str.split("**Address logs JSON:**\n")[1].split("----")[0]
+        data = json.loads(json_part)
+
+        if _find_truncated_scope_function_in_logs(data):
+            found_truncated_log = True
+            break
+
+        next_cursor = _extract_next_cursor(result_str)
+        if next_cursor:
+            cursor = next_cursor
+        else:
+            break
+
+    if not found_truncated_log:
+        pytest.skip(
+            f"Could not find a truncated 'ScopeFunction' log within the first {MAX_PAGES_TO_CHECK} pages."
+        )

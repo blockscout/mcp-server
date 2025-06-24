@@ -20,7 +20,7 @@ This directory `.cursor/rules` contains rule files that govern the behavior and 
 
 - **`200-development-testing-workflow.mdc`** - Mandatory testing workflow for all code changes including unit tests, integration tests, and validation steps
 - **`210-unit-testing-guidelines.mdc`** - Detailed unit testing patterns including mocking strategies, assertion guidelines, and file organization
-- **`220-integration-testing-guidelines.mdc`** - Integration testing guidelines, including pagination tests for cursor-based APIs
+- **`220-integration-testing-guidelines.mdc`** - Integration testing guidelines, including pagination tests and multi-page search best practices
 
 ### Meta Rules (900-999)
 
