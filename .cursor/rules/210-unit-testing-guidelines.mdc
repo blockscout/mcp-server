@@ -32,9 +32,9 @@ async def test_some_tool_success(mock_ctx):  # Request the fixture as an argumen
     assert mock_ctx.report_progress.call_count > 0
 ```
 
-### B. Asserting on JSON within Formatted Strings
+### B. Testing Structured Tool Responses
 
-For tools that return a formatted string containing a JSON object (e.g., `get_address_logs`), **DO NOT** parse the JSON from the final string result in your test. This is brittle. Instead, **mock the serialization function (`json.dumps`)** to verify that the correct Python dictionary was passed to it *before* it was serialized.
+For tools that return a `ToolResponse` object containing structured data, **DO NOT** parse JSON from string results in your test. Instead, **mock the serialization function (`json.dumps`)** if it's used internally, and make assertions on the structured `ToolResponse` object and its attributes.
 
 However, the approach depends on the complexity of the tool.
 
@@ -60,7 +60,7 @@ async def test_get_transaction_logs_correctly_prepares_json(mock_ctx):
         result = await get_transaction_logs(..., ctx=mock_ctx)
 
         # ASSERT
-        # Verify that json.dumps was called with the raw, unprocessed API response
+        # Verify that json.dumps was called with the raw API response data
         mock_json_dumps.assert_called_once_with(mock_api_response)
 ```
 
@@ -104,9 +104,9 @@ async def test_get_address_logs_with_pagination(mock_ctx):
         # 2. Verify the call to the helper function for the pagination part.
         mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
 
-        # 3. Verify the final string was assembled correctly from the outputs of both mocks.
-        assert fake_json_body in result
-        assert f'cursor="{fake_cursor}"' in result
+        # 3. Verify the ToolResponse object was constructed correctly with structured pagination.
+        assert result.pagination.next_call.params["cursor"] == fake_cursor
+        assert result.data == mock_api_response
 ```
 
 ### C. Handling Repetitive Data in Assertions (DAMP vs. DRY)
@@ -118,6 +118,7 @@ In these cases, it is better to **programmatically generate the `expected_result
 **Correct Usage:**
 ```python
 import copy
+from blockscout_mcp_server.models import ToolResponse
 
 @pytest.mark.asyncio
 async def test_lookup_token_by_symbol_success(mock_ctx):
@@ -130,7 +131,7 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
     }
 
     # Generate the expected result programmatically
-    expected_result = []
+    expected_data = []
     for item in mock_api_response["items"]:
         new_item = copy.deepcopy(item)
         
@@ -138,12 +139,15 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         new_item["address"] = new_item.pop("address_hash")
         new_item["token_type"] = "" # Add default fields
         
-        expected_result.append(new_item)
+        expected_data.append(new_item)
+
+    # Wrap the expected data in a ToolResponse
+    expected_result = ToolResponse(data=expected_data)
 
     # ... (patching and ACT phase)
 
     # ASSERT
-    # The final assertion is clean and compares the entire transformed structure.
+    # The final assertion compares the entire ToolResponse structure.
     assert result == expected_result
 ```
 

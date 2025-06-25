@@ -70,20 +70,20 @@ async def test_get_latest_block_data_extraction(mock_ctx):
     """Test that get_latest_block extracts expected fields from live API."""
     result = await get_latest_block(chain_id="1", ctx=mock_ctx)
     
-    # Assert the tool returns expected structure
-    assert isinstance(result, dict)
-    assert "block_number" in result
-    assert "hash" in result
-    assert "timestamp" in result
+    # Assert the tool returns a ToolResponse structure
+    assert hasattr(result, 'data')
+    assert "block_number" in result.data
+    assert "hash" in result.data
+    assert "timestamp" in result.data
     
     # Assert data types are correct
-    assert isinstance(result["block_number"], int)
-    assert isinstance(result["hash"], str)
-    assert result["hash"].startswith("0x")
+    assert isinstance(result.data["block_number"], int)
+    assert isinstance(result.data["hash"], str)
+    assert result.data["hash"].startswith("0x")
     
     # Assert reasonable data ranges
-    assert result["block_number"] > 0
-    assert len(result["hash"]) == 66  # 0x + 64 hex chars
+    assert result.data["block_number"] > 0
+    assert len(result.data["hash"]) == 66  # 0x + 64 hex chars
 ```
 
 - **What to Avoid:** Do not re-test complex formatting logic already covered by unit tests. The focus is on verifying the *data extraction* was successful.
@@ -112,17 +112,21 @@ async def test_tool_with_pagination_search(mock_ctx):
 
     for _ in range(MAX_PAGES_TO_CHECK):
         # Call the paginated tool
-        result_str = await some_paginated_tool(chain_id="1", cursor=cursor, ctx=mock_ctx)
+        result = await some_paginated_tool(chain_id="1", cursor=cursor, ctx=mock_ctx)
 
-        # Logic to parse JSON and search for the specific item
-        # ...
-        # if item_is_found:
-        #     found_item = item
-        #     break
+        # Logic to search for the specific item in the ToolResponse data
+        for item in result.data:
+            # if item_matches_criteria:
+            #     found_item = item
+            #     break
+            pass
 
-        # Extract next cursor if more pages exist
-        if "To get the next page call" in result_str:
-            cursor = result_str.split('cursor="')[1].split('"')[0]
+        if found_item:
+            break
+
+        # Extract next cursor from structured pagination if more pages exist
+        if result.pagination:
+            cursor = result.pagination.next_call.params["cursor"]
         else:
             break
     
@@ -146,8 +150,6 @@ For tools that support cursor-based pagination, a specific two-step test is requ
 
 **Example:**
 ```python
-import re
-import json
 import pytest
 from blockscout_mcp_server.tools.address_tools import get_tokens_by_address
 
@@ -158,27 +160,19 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503" # Binance Wallet
     chain_id = "1"
 
-    # ACT 1: Get the first page and cursor.
-    first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    # ACT 1: Get the first page.
+    first_page_response = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-    # ASSERT 1: Check for and extract the cursor.
-    assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
-    assert cursor_match is not None, "Could not find cursor in the first page response."
-    cursor = cursor_match.group(1)
-
-    # ACT 2: Use the cursor to get the next page.
-    second_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    # ASSERT 1: Check for and extract the next call information.
+    assert first_page_response.pagination is not None, "Pagination info is missing."
+    next_call_info = first_page_response.pagination.next_call
+    
+    # ACT 2: Use the structured parameters to get the next page.
+    second_page_response = await get_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
 
     # ASSERT 2: Verify the second page.
-    assert "Error" not in second_page_result
-    first_page_data = json.loads(first_page_result.split("----")[0])
-    # Second page may or may not have a hint, so splitting is the safest way to parse.
-    second_page_json_str = second_page_result.split("----")[0]
-    second_page_data = json.loads(second_page_json_str)
-    
-    assert len(second_page_data) > 0
-    assert first_page_data[0] != second_page_data[0]
+    assert len(second_page_response.data) > 0
+    assert first_page_response.data[0] != second_page_response.data[0]
 ```
 
 ## General Rules for All Integration Tests
