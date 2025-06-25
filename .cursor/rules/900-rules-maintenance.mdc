@@ -11,6 +11,7 @@ alwaysApply: false
 - `000-099`: Core Rules
 - `100-199`: MCP Tool Development  
 - `200-299`: Testing & Development
+- `300-399`: Code Quality & Formatting
 - `900-999`: Meta Rules
 
 Keep descriptions brief (1-2 lines) and focused on the rule's primary purpose.

@@ -13,6 +13,7 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
 )
+from blockscout_mcp_server.models import PaginationInfo, ToolResponse
 
 
 class ChainNotFoundError(ValueError):
@@ -418,3 +419,32 @@ async def report_and_log_progress(
     await ctx.report_progress(progress=progress, total=total, message=message)
     log_message = f"Progress: {progress}/{total} - {message}"
     await ctx.info(log_message)
+
+
+def build_tool_response(
+    data: Any,
+    data_description: list[str] | None = None,
+    notes: list[str] | None = None,
+    instructions: list[str] | None = None,
+    pagination: PaginationInfo | None = None,
+) -> ToolResponse[Any]:
+    """
+    Construct a standardized ToolResponse object.
+
+    Args:
+        data: The main data payload for the response.
+        data_description: Optional list of strings describing the data structure.
+        notes: Optional list of strings for warnings or contextual notes.
+        instructions: Optional list of strings for follow-up actions.
+        pagination: Optional PaginationInfo object if the data is paginated.
+
+    Returns:
+        A ToolResponse instance.
+    """
+    return ToolResponse(
+        data=data,
+        data_description=data_description,
+        notes=notes,
+        instructions=instructions,
+        pagination=pagination,
+    )

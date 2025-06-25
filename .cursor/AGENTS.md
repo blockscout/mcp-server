@@ -22,6 +22,10 @@ This directory `.cursor/rules` contains rule files that govern the behavior and 
 - **`210-unit-testing-guidelines.mdc`** - Detailed unit testing patterns including mocking strategies, assertion guidelines, and file organization
 - **`220-integration-testing-guidelines.mdc`** - Integration testing guidelines, including pagination tests and multi-page search best practices
 
+### Code Quality & Formatting (300-399)
+
+- **`300-ruff-lint-and-format.mdc`** - Guidelines for identifying and fixing linting and formatting issues using Ruff
+
 ### Meta Rules (900-999)
 
 - **`900-rules-maintenance.mdc`** - Instructions for maintaining this AGENTS.md file whenever rule files are created or modified

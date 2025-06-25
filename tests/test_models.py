@@ -1,0 +1,150 @@
+"""Tests for the Pydantic response models."""
+
+import json
+
+from blockscout_mcp_server.models import (
+    InstructionsData,
+    NextCallInfo,
+    PaginationInfo,
+    RecommendedChain,
+    ToolResponse,
+)
+
+
+def test_tool_response_simple_data():
+    """Test ToolResponse with a simple string payload."""
+    response = ToolResponse[str](data="Hello, world!")
+    assert response.data == "Hello, world!"
+    assert response.notes is None
+    json_output = response.model_dump_json()
+    assert json.loads(json_output) == {
+        "data": "Hello, world!",
+        "data_description": None,
+        "notes": None,
+        "instructions": None,
+        "pagination": None,
+    }
+
+
+def test_tool_response_complex_data():
+    """Test ToolResponse with a nested Pydantic model as data."""
+    instructions_data = InstructionsData(
+        version="1.0.0",
+        general_rules=["Rule 1"],
+        recommended_chains=[RecommendedChain(name="TestChain", chain_id=123)],
+    )
+    response = ToolResponse[InstructionsData](data=instructions_data)
+    assert response.data.version == "1.0.0"
+    assert response.data.recommended_chains[0].name == "TestChain"
+
+
+def test_tool_response_with_all_fields():
+    """Test ToolResponse with all optional fields populated."""
+    pagination = PaginationInfo(next_call=NextCallInfo(tool_name="next_tool", params={"cursor": "abc"}))
+    response = ToolResponse[dict](
+        data={"key": "value"},
+        data_description=["This is a dictionary."],
+        notes=["Data might be incomplete."],
+        instructions=["Call another tool next."],
+        pagination=pagination,
+    )
+    assert response.notes == ["Data might be incomplete."]
+    assert response.pagination.next_call.tool_name == "next_tool"
+    json_output = response.model_dump_json()
+    assert json.loads(json_output)["pagination"]["next_call"]["params"]["cursor"] == "abc"
+
+
+def test_next_call_info():
+    """Test NextCallInfo model."""
+    next_call_info = NextCallInfo(
+        tool_name="get_address_info", params={"chain_id": "1", "address": "0x123", "cursor": "xyz"}
+    )
+    assert next_call_info.tool_name == "get_address_info"
+    assert next_call_info.params["chain_id"] == "1"
+    assert next_call_info.params["cursor"] == "xyz"
+
+
+def test_pagination_info():
+    """Test PaginationInfo model."""
+    next_call = NextCallInfo(tool_name="test_tool", params={"param": "value"})
+    pagination_info = PaginationInfo(next_call=next_call)
+    assert pagination_info.next_call.tool_name == "test_tool"
+    assert pagination_info.next_call.params["param"] == "value"
+
+
+def test_recommended_chain():
+    """Test RecommendedChain model."""
+    chain = RecommendedChain(name="Ethereum", chain_id=1)
+    assert chain.name == "Ethereum"
+    assert chain.chain_id == 1
+
+
+def test_instructions_data():
+    """Test InstructionsData model."""
+    chains = [RecommendedChain(name="Ethereum", chain_id=1), RecommendedChain(name="Polygon", chain_id=137)]
+    instructions = InstructionsData(version="2.0.0", general_rules=["Rule 1", "Rule 2"], recommended_chains=chains)
+    assert instructions.version == "2.0.0"
+    assert len(instructions.general_rules) == 2
+    assert len(instructions.recommended_chains) == 2
+    assert instructions.recommended_chains[0].name == "Ethereum"
+    assert instructions.recommended_chains[1].chain_id == 137
+
+
+def test_tool_response_serialization():
+    """Test that ToolResponse serializes correctly to JSON."""
+    pagination = PaginationInfo(
+        next_call=NextCallInfo(tool_name="get_blocks", params={"chain_id": "1", "cursor": "next_page_token"})
+    )
+    response = ToolResponse[list](
+        data=[{"block": 1}, {"block": 2}],
+        data_description=["List of block objects"],
+        notes=["Some blocks may be pending"],
+        instructions=["Use cursor for next page"],
+        pagination=pagination,
+    )
+
+    # Test model_dump_json
+    json_str = response.model_dump_json()
+    parsed = json.loads(json_str)
+
+    assert parsed["data"] == [{"block": 1}, {"block": 2}]
+    assert parsed["data_description"] == ["List of block objects"]
+    assert parsed["notes"] == ["Some blocks may be pending"]
+    assert parsed["instructions"] == ["Use cursor for next page"]
+    assert parsed["pagination"]["next_call"]["tool_name"] == "get_blocks"
+    assert parsed["pagination"]["next_call"]["params"]["cursor"] == "next_page_token"
+
+
+def test_tool_response_with_none_values():
+    """Test ToolResponse behavior with None values for optional fields."""
+    response = ToolResponse[str](
+        data="test_data", data_description=None, notes=None, instructions=None, pagination=None
+    )
+
+    assert response.data == "test_data"
+    assert response.data_description is None
+    assert response.notes is None
+    assert response.instructions is None
+    assert response.pagination is None
+
+    # Test serialization preserves None values
+    json_output = json.loads(response.model_dump_json())
+    assert json_output["data_description"] is None
+    assert json_output["notes"] is None
+    assert json_output["instructions"] is None
+    assert json_output["pagination"] is None
+
+
+def test_tool_response_with_empty_lists():
+    """Test ToolResponse with empty lists for optional fields."""
+    response = ToolResponse[dict](data={"test": "value"}, data_description=[], notes=[], instructions=[])
+
+    assert response.data_description == []
+    assert response.notes == []
+    assert response.instructions == []
+
+    # Empty lists should serialize properly
+    json_output = json.loads(response.model_dump_json())
+    assert json_output["data_description"] == []
+    assert json_output["notes"] == []
+    assert json_output["instructions"] == []

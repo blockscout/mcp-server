@@ -105,7 +105,23 @@ sequenceDiagram
    - Multiple MCP servers might be configured in a client application, with each server providing its own tool descriptions
    - Tool descriptions are limited to 1024 characters to minimize context consumption
 
-2. **Response Processing and Context Optimization**:
+2. **The Standardized `ToolResponse` Model**
+
+   To provide unambiguous, machine-readable responses, the server enforces a standardized, structured response format for all tools. This moves away from less reliable string-based outputs and aligns with modern API best practices.
+
+   Every tool in the server returns a `ToolResponse` object. This Pydantic model serializes to a clean JSON structure, which clearly separates the primary data payload from associated metadata.
+
+   The core structure is as follows:
+
+   - `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
+   - `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
+   - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues. This field includes guidance on how to retrieve full data if it has been truncated.
+   - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps.
+   - `pagination`: An optional object that provides structured information for retrieving the next page of results.
+
+   This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
+
+3. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
 
@@ -142,10 +158,22 @@ sequenceDiagram
      - **Generated Opaque Cursor:**
        `eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0`
 
-     - **Final Tool Output Hint:**
+     - **Final Tool Response (JSON):**
 
-       ```plaintext
-       To get the next page call get_address_logs(..., cursor="eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0")
+       ```json
+       {
+         "data": [...],
+         "pagination": {
+           "next_call": {
+             "tool_name": "get_address_logs",
+             "params": {
+               "chain_id": "1",
+               "address": "0x...",
+               "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0"
+             }
+           }
+         }
+       }
        ```
 
     c) Log Data Field Truncation
@@ -167,7 +195,7 @@ sequenceDiagram
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
 
-3. **Instructions Delivery Workaround**:
+4. **Instructions Delivery Workaround**:
    - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
    - The `__get_instructions__` tool serves as a workaround for this limitation
    - The tool's description forces the MCP Host to call it before any other tools in the session

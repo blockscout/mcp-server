@@ -5,10 +5,12 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
 )
+from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    build_tool_response,
     decode_cursor,
     encode_cursor,
 )
@@ -206,3 +208,90 @@ def test_recursively_truncate_no_truncation_mixed_types():
     processed, truncated = _recursively_truncate_and_flag_long_strings(data)
     assert truncated is False
     assert processed == original_data
+
+
+def test_build_tool_response():
+    """Test the build_tool_response helper function."""
+    # Test with only data
+    response1 = build_tool_response(data="test_data")
+    assert isinstance(response1, ToolResponse)
+    assert response1.data == "test_data"
+    assert response1.notes is None
+
+    # Test with all fields
+    pagination = PaginationInfo(next_call=NextCallInfo(tool_name="test_tool", params={"cursor": "xyz"}))
+    response2 = build_tool_response(
+        data=[1, 2, 3],
+        data_description=["A list of numbers."],
+        notes=["This is a note."],
+        instructions=["Do something else."],
+        pagination=pagination,
+    )
+    assert response2.data == [1, 2, 3]
+    assert response2.notes == ["This is a note."]
+    assert response2.pagination.next_call.params["cursor"] == "xyz"
+
+
+def test_build_tool_response_with_empty_lists():
+    """Test build_tool_response with empty lists."""
+    response = build_tool_response(
+        data={"key": "value"},
+        data_description=[],
+        notes=[],
+        instructions=[],
+    )
+    assert response.data_description == []
+    assert response.notes == []
+    assert response.instructions == []
+    assert response.pagination is None
+
+
+def test_build_tool_response_with_none_values():
+    """Test build_tool_response with explicit None values."""
+    response = build_tool_response(
+        data="test",
+        data_description=None,
+        notes=None,
+        instructions=None,
+        pagination=None,
+    )
+    assert response.data == "test"
+    assert response.data_description is None
+    assert response.notes is None
+    assert response.instructions is None
+    assert response.pagination is None
+
+
+def test_build_tool_response_complex_data():
+    """Test build_tool_response with complex data structures."""
+    complex_data = {
+        "transactions": [
+            {"hash": "0x123", "value": "1000000000000000000"},
+            {"hash": "0x456", "value": "2000000000000000000"},
+        ],
+        "total_count": 150,
+        "page_info": {"has_next": True, "cursor": "next_page"},
+    }
+
+    pagination = PaginationInfo(
+        next_call=NextCallInfo(tool_name="get_transactions", params={"address": "0xabc", "cursor": "next_page"})
+    )
+
+    response = build_tool_response(
+        data=complex_data,
+        data_description=[
+            "Array of transaction objects with hash and value fields.",
+            "Value is in wei (smallest unit of ETH).",
+        ],
+        notes=["Data may be delayed by up to 30 seconds."],
+        instructions=["Use the pagination cursor to get more results."],
+        pagination=pagination,
+    )
+
+    assert response.data["total_count"] == 150
+    assert len(response.data["transactions"]) == 2
+    assert response.data_description[0].startswith("Array of transaction")
+    assert response.notes[0] == "Data may be delayed by up to 30 seconds."
+    assert response.instructions[0] == "Use the pagination cursor to get more results."
+    assert response.pagination.next_call.tool_name == "get_transactions"
+    assert response.pagination.next_call.params["cursor"] == "next_page"
