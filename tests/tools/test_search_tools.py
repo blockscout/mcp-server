@@ -1,11 +1,15 @@
 # tests/tools/test_search_tools.py
-import copy
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
+from blockscout_mcp_server.models import TokenSearchResult
+from blockscout_mcp_server.tools.common import build_tool_response
+from blockscout_mcp_server.tools.search_tools import (
+    TOKEN_RESULTS_LIMIT,
+    lookup_token_by_symbol,
+)
 
 
 @pytest.mark.asyncio
@@ -44,20 +48,21 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
     # explicitly documents the transformations
     # **It's More DRY (Don't Repeat Yourself):** No need to manually copy all
     # the values
-    expected_result = []
-    for item in mock_api_response["items"]:
-        # Start with a copy of the original item to handle pass-through data
-        new_item = copy.deepcopy(item)
-
-        # 1. Perform the key transformation explicitly
-        new_item["address"] = new_item.pop("address_hash")
-
-        # 2. Add the new default fields explicitly
-        new_item["token_type"] = ""
-        new_item["is_smart_contract_verified"] = False
-        new_item["is_verified_via_admin_panel"] = False
-
-        expected_result.append(new_item)
+    expected_data = [
+        TokenSearchResult(
+            address=item.get("address_hash", ""),
+            name=item.get("name", ""),
+            symbol=item.get("symbol", ""),
+            token_type="",
+            total_supply=item.get("total_supply", ""),
+            circulating_market_cap=item.get("circulating_market_cap"),
+            exchange_rate=item.get("exchange_rate"),
+            is_smart_contract_verified=False,
+            is_verified_via_admin_panel=False,
+        )
+        for item in mock_api_response["items"]
+    ]
+    expected_result = build_tool_response(data=expected_data)
 
     with (
         patch(
@@ -102,14 +107,28 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
 
     mock_api_response = {"items": mock_items}
 
-    expected_result = []
-    for item in mock_items[:7]:
-        new_item = copy.deepcopy(item)
-        new_item["address"] = new_item.pop("address_hash")
-        new_item["token_type"] = ""
-        new_item["is_smart_contract_verified"] = False
-        new_item["is_verified_via_admin_panel"] = False
-        expected_result.append(new_item)
+    expected_data = [
+        TokenSearchResult(
+            address=item.get("address_hash", ""),
+            name=item.get("name", ""),
+            symbol=item.get("symbol", ""),
+            token_type="",
+            total_supply=item.get("total_supply", ""),
+            circulating_market_cap=item.get("circulating_market_cap"),
+            exchange_rate=item.get("exchange_rate"),
+            is_smart_contract_verified=False,
+            is_verified_via_admin_panel=False,
+        )
+        for item in mock_items[:TOKEN_RESULTS_LIMIT]
+    ]
+
+    expected_notes = [
+        (
+            f"The number of results exceeds the limit of {TOKEN_RESULTS_LIMIT}. "
+            f"Only the first {TOKEN_RESULTS_LIMIT} are shown."
+        )
+    ]
+    expected_result = build_tool_response(data=expected_data, notes=expected_notes)
 
     with (
         patch(
@@ -127,7 +146,7 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
         assert result == expected_result
-        assert len(result) == 7
+        assert len(result.data) == 7
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
         assert mock_ctx.info.call_count == 3
@@ -154,14 +173,21 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
 
     mock_api_response = {"items": mock_items}
 
-    expected_result = []
-    for item in mock_items:
-        new_item = copy.deepcopy(item)
-        new_item["address"] = new_item.pop("address_hash")
-        new_item["token_type"] = ""
-        new_item["is_smart_contract_verified"] = False
-        new_item["is_verified_via_admin_panel"] = False
-        expected_result.append(new_item)
+    expected_data = [
+        TokenSearchResult(
+            address=item.get("address_hash", ""),
+            name=item.get("name", ""),
+            symbol=item.get("symbol", ""),
+            token_type="",
+            total_supply=item.get("total_supply", ""),
+            circulating_market_cap=item.get("circulating_market_cap"),
+            exchange_rate=item.get("exchange_rate"),
+            is_smart_contract_verified=False,
+            is_verified_via_admin_panel=False,
+        )
+        for item in mock_items
+    ]
+    expected_result = build_tool_response(data=expected_data)
 
     with (
         patch(
@@ -179,7 +205,7 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
         assert result == expected_result
-        assert len(result) == 7
+        assert len(result.data) == 7
         assert mock_ctx.report_progress.call_count == 3
 
 
@@ -194,7 +220,7 @@ async def test_lookup_token_by_symbol_empty_results(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
-    expected_result = []
+    expected_result = build_tool_response(data=[])
 
     with (
         patch(
@@ -245,30 +271,21 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
         ]
     }
 
-    expected_result = [
-        {
-            "address": "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0",
-            "name": "Partial Token",
-            "symbol": "PARTIAL",
-            "token_type": "",
-            "total_supply": "",
-            "circulating_market_cap": "",
-            "exchange_rate": "",
-            "is_smart_contract_verified": False,
-            "is_verified_via_admin_panel": False,
-        },
-        {
-            "address": "0xb0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b1",
-            "name": "",
-            "symbol": "PARTIAL",
-            "token_type": "ERC-20",
-            "total_supply": "",
-            "circulating_market_cap": "",
-            "exchange_rate": "",
-            "is_smart_contract_verified": False,
-            "is_verified_via_admin_panel": False,
-        },
+    expected_data = [
+        TokenSearchResult(
+            address=item.get("address_hash", ""),
+            name=item.get("name", ""),
+            symbol=item.get("symbol", ""),
+            token_type=item.get("token_type", ""),
+            total_supply=item.get("total_supply", ""),
+            circulating_market_cap=item.get("circulating_market_cap"),
+            exchange_rate=item.get("exchange_rate"),
+            is_smart_contract_verified=False,
+            is_verified_via_admin_panel=False,
+        )
+        for item in mock_api_response["items"]
     ]
+    expected_result = build_tool_response(data=expected_data)
 
     with (
         patch(
@@ -358,7 +375,7 @@ async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {}  # No items field
-    expected_result = []
+    expected_result = build_tool_response(data=[])
 
     with (
         patch(
