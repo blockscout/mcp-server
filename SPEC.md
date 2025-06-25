@@ -121,24 +121,17 @@ sequenceDiagram
 
 This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
 
-**Example: Structured Response from `__get_instructions__`**
+**Example: Structured Response from `get_chains_list`**
 
-To illustrate this pattern, the `__get_instructions__` tool returns a `ToolResponse[InstructionsData]`. The `InstructionsData` model provides a structured view of the server's metadata. The final JSON response looks like this:
+To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[list[ChainInfo]]`. The `data` field holds a list of `ChainInfo` items. The final JSON response looks like this:
 
 ```json
 {
-  "data": {
-    "version": "0.3.1",
-    "general_rules": [
-      "If you receive an error...",
-      "All Blockscout API tools require a chain_id parameter:",
-      "..."
-    ],
-    "recommended_chains": [
-      { "name": "Ethereum", "chain_id": 1 },
-      { "name": "Polygon PoS", "chain_id": 137 }
-    ]
-  },
+  "data": [
+    { "name": "Arbitrum One", "chain_id": 42161 },
+    { "name": "Base", "chain_id": 8453 },
+    { "name": "Ethereum", "chain_id": 1 }
+  ],
   "data_description": null,
   "notes": null,
   "instructions": null,

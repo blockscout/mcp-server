@@ -6,8 +6,8 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
 )
 from blockscout_mcp_server.models import (
+    ChainInfo,
     InstructionsData,
-    RecommendedChain,
     ToolResponse,
 )
 from blockscout_mcp_server.tools.common import build_tool_response, report_and_log_progress
@@ -31,7 +31,7 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
         general_rules=GENERAL_RULES,
-        recommended_chains=[RecommendedChain(**chain) for chain in RECOMMENDED_CHAINS],
+        recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
     )
 
     # Report completion

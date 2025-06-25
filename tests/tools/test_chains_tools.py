@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 
 
@@ -19,8 +20,10 @@ async def test_get_chains_list_success(mock_ctx):
         {"name": "Polygon PoS", "chainid": "137"},
     ]
 
-    # This is the expected string output from the tool function.
-    expected_output = "The list of known chains with their ids:\nEthereum: 1\nPolygon PoS: 137"
+    expected_data = [
+        ChainInfo(name="Ethereum", chain_id=1),
+        ChainInfo(name="Polygon PoS", chain_id=137),
+    ]
 
     # Use `patch` to replace the real `make_chainscout_request` with our mock.
     # The string points to where the function is *used*.
@@ -38,8 +41,8 @@ async def test_get_chains_list_success(mock_ctx):
         # Was the API helper called correctly?
         mock_request.assert_called_once_with(api_path="/api/chains/list")
 
-        # Did the function return the correctly formatted string?
-        assert result == expected_output
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
 
         # Was progress reported correctly? (Check the number of calls)
         assert mock_ctx.report_progress.call_count == 2
@@ -55,7 +58,7 @@ async def test_get_chains_list_empty_response(mock_ctx):
 
     # Empty response
     mock_api_response = []
-    expected_output = "The list of known chains with their ids:\nNo chains found or invalid response format."
+    expected_data: list[ChainInfo] = []
 
     with patch(
         "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
@@ -67,7 +70,8 @@ async def test_get_chains_list_empty_response(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path="/api/chains/list")
-        assert result == expected_output
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
@@ -81,7 +85,7 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
 
     # Invalid response (not a list)
     mock_api_response = {"error": "Invalid data"}
-    expected_output = "The list of known chains with their ids:\nNo chains found or invalid response format."
+    expected_data: list[ChainInfo] = []
 
     with patch(
         "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
@@ -93,7 +97,8 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path="/api/chains/list")
-        assert result == expected_output
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
@@ -115,7 +120,10 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
     ]
 
     # Only valid entries should appear in output
-    expected_output = "The list of known chains with their ids:\nEthereum: 1\nPolygon PoS: 137"
+    expected_data = [
+        ChainInfo(name="Ethereum", chain_id=1),
+        ChainInfo(name="Polygon PoS", chain_id=137),
+    ]
 
     with patch(
         "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
@@ -127,7 +135,8 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path="/api/chains/list")
-        assert result == expected_output
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 

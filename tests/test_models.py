@@ -3,10 +3,11 @@
 import json
 
 from blockscout_mcp_server.models import (
+    AddressInfoData,
+    ChainInfo,
     InstructionsData,
     NextCallInfo,
     PaginationInfo,
-    RecommendedChain,
     ToolResponse,
 )
 
@@ -31,7 +32,7 @@ def test_tool_response_complex_data():
     instructions_data = InstructionsData(
         version="1.0.0",
         general_rules=["Rule 1"],
-        recommended_chains=[RecommendedChain(name="TestChain", chain_id=123)],
+        recommended_chains=[ChainInfo(name="TestChain", chain_id=123)],
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
@@ -72,16 +73,16 @@ def test_pagination_info():
     assert pagination_info.next_call.params["param"] == "value"
 
 
-def test_recommended_chain():
-    """Test RecommendedChain model."""
-    chain = RecommendedChain(name="Ethereum", chain_id=1)
+def test_chain_info():
+    """Test ChainInfo model."""
+    chain = ChainInfo(name="Ethereum", chain_id=1)
     assert chain.name == "Ethereum"
     assert chain.chain_id == 1
 
 
 def test_instructions_data():
     """Test InstructionsData model."""
-    chains = [RecommendedChain(name="Ethereum", chain_id=1), RecommendedChain(name="Polygon", chain_id=137)]
+    chains = [ChainInfo(name="Ethereum", chain_id=1), ChainInfo(name="Polygon", chain_id=137)]
     instructions = InstructionsData(version="2.0.0", general_rules=["Rule 1", "Rule 2"], recommended_chains=chains)
     assert instructions.version == "2.0.0"
     assert len(instructions.general_rules) == 2
@@ -148,3 +149,19 @@ def test_tool_response_with_empty_lists():
     assert json_output["data_description"] == []
     assert json_output["notes"] == []
     assert json_output["instructions"] == []
+
+
+def test_address_info_data_model():
+    """Verify AddressInfoData holds basic and metadata info."""
+    # Test with all fields populated
+    basic = {"hash": "0xabc", "is_contract": False}
+    metadata = {"tags": [{"name": "Known"}]}
+    data_full = AddressInfoData(basic_info=basic, metadata=metadata)
+
+    assert data_full.basic_info == basic
+    assert data_full.metadata == metadata
+
+    # Test with optional metadata omitted
+    data_no_meta = AddressInfoData(basic_info=basic)
+    assert data_no_meta.basic_info == basic
+    assert data_no_meta.metadata is None, "Metadata should default to None when not provided"
