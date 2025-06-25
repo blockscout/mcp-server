@@ -1,27 +1,34 @@
-"""
-Constants used throughout the Blockscout MCP Server.
-"""
+"""Constants used throughout the Blockscout MCP Server."""
 
-SERVER_INSTRUCTIONS = """
-Blockscout MCP server version: 0.3.1
+from blockscout_mcp_server import __version__
 
-If you receive an error "500 Internal Server Error" for any tool, retry calling this tool up to 3 times until successful.
+SERVER_VERSION = __version__
 
-All Blockscout API tools require a chain_id parameter:
-- If the chain ID to be used in the tools is not clear, use the tool `get_chains_list` to get chain IDs of all known chains.
-- If no chain is specified in the user's prompt, assume "Ethereum Mainnet" (chain_id: 1) as the default.
-- Here is the list of IDs of most popular chains:
-  * Ethereum: 1
-  * Polygon PoS: 137
-  * Base: 8453
-  * Arbitrum One: 42161
-  * OP Mainnet: 10
-  * ZkSync Era: 324
-  * Polygon zkEVM: 1101
-  * Gnosis: 100
-  * Celo: 42220
-  * Scroll: 534352
-"""  # noqa: E501
+GENERAL_RULES = [
+    (
+        'If you receive an error "500 Internal Server Error" for any tool, '
+        "retry calling this tool up to 3 times until successful."
+    ),
+    "All Blockscout API tools require a chain_id parameter:",
+    (
+        "If the chain ID to be used in the tools is not clear, use the tool "
+        "`get_chains_list` to get chain IDs of all known chains."
+    ),
+    'If no chain is specified in the user\'s prompt, assume "Ethereum Mainnet" (chain_id: 1) as the default.',
+]
+
+RECOMMENDED_CHAINS = [
+    {"name": "Ethereum", "chain_id": 1},
+    {"name": "Polygon PoS", "chain_id": 137},
+    {"name": "Base", "chain_id": 8453},
+    {"name": "Arbitrum One", "chain_id": 42161},
+    {"name": "OP Mainnet", "chain_id": 10},
+    {"name": "ZkSync Era", "chain_id": 324},
+    {"name": "Polygon zkEVM", "chain_id": 1101},
+    {"name": "Gnosis", "chain_id": 100},
+    {"name": "Celo", "chain_id": 42220},
+    {"name": "Scroll", "chain_id": 534352},
+]
 
 SERVER_NAME = "blockscout-mcp-server"
 

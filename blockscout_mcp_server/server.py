@@ -4,7 +4,12 @@ import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
 
-from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS, SERVER_NAME
+from blockscout_mcp_server.constants import (
+    GENERAL_RULES,
+    RECOMMENDED_CHAINS,
+    SERVER_NAME,
+    SERVER_VERSION,
+)
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     get_address_logs,
@@ -25,7 +30,21 @@ from blockscout_mcp_server.tools.transaction_tools import (
     transaction_summary,
 )
 
-mcp = FastMCP(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
+# Compose the instructions string for the MCP server constructor
+chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
+composed_instructions = f"""
+Blockscout MCP server version: {SERVER_VERSION}
+
+{GENERAL_RULES[0]}
+
+{GENERAL_RULES[1]}
+- {GENERAL_RULES[2]}
+- {GENERAL_RULES[3]}
+- Here is the list of IDs of most popular chains:
+{chains_list_str}
+"""
+
+mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
 
 # Register the tools
 # The name of each tool will be its function name
