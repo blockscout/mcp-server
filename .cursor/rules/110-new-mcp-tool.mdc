@@ -222,7 +222,35 @@ for item in items:
 return build_tool_response(data=formatted_items)
 ```
 
-#### 4. Rich Response with Multiple Optional Fields (`return_type: ToolResponse[dict]`)
+#### 4. Using a Specific Data Model for the Payload (`return_type: ToolResponse[MyDataModel]`)
+
+For tools that have a well-defined output structure, you should define a specific Pydantic model for the `data` payload. This provides the best type safety and clarity.
+
+```python
+from pydantic import BaseModel, Field
+from blockscout_mcp_server.models import ToolResponse
+
+# Define a specific model for the data
+class LatestBlockData(BaseModel):
+    block_number: int = Field(description="The block number (height) in the blockchain")
+    timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
+    hash: str = Field(description="The unique hash identifier of the block")
+
+async def get_latest_block(chain_id: str) -> ToolResponse[LatestBlockData]:
+    """Gets the latest block information."""
+    raw_data = await make_blockscout_request(...) # returns a dict
+
+    # Validate and structure the data using your specific model
+    block_data = LatestBlockData(
+        block_number=raw_data.get("number"),
+        timestamp=raw_data.get("timestamp"),
+        hash=raw_data.get("hash")
+    )
+    
+    return build_tool_response(data=block_data)
+```
+
+#### 5. Rich Response with Multiple Optional Fields (`return_type: ToolResponse[dict]`)
 
 Use when you need to provide additional context beyond just the data payload:
 
@@ -258,7 +286,7 @@ return build_tool_response(
 )
 ```
 
-#### 5. Handling Pagination with Opaque Cursors (`return_type: ToolResponse[list[dict]]`)
+#### 6. Handling Pagination with Opaque Cursors (`return_type: ToolResponse[list[dict]]`)
 
 For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
 
@@ -320,7 +348,7 @@ async def paginated_tool_name(
     return build_tool_response(data=processed_items, pagination=pagination)
 ```
 
-#### 6. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
+#### 7. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
 
@@ -379,7 +407,7 @@ async def some_tool_that_returns_addresses(chain_id: str, ...) -> ToolResponse[d
     return build_tool_response(data=transformed_response)
 ```
 
-#### 7. Truncating Large Data Fields to Save Context (`return_type: ToolResponse[dict]`)
+#### 8. Truncating Large Data Fields to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Some API fields, like the raw `data` field or deeply nested values inside a log's `decoded` object, can be extremely large and consume excessive LLM context. We shorten these values and explicitly flag the truncation, providing guidance on how to retrieve the full data if needed.
 
@@ -415,7 +443,7 @@ async def tool_with_large_data_fields(chain_id: str, hash: str, ctx: Context) ->
     )
 ```
 
-#### 8. Recursively Truncating Nested Data Structures (`return_type: ToolResponse[dict]`)
+#### 9. Recursively Truncating Nested Data Structures (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Some API fields, like `decoded_input` in a transaction, can contain deeply nested lists and tuples with large data blobs. A simple check is not enough. To handle this, we use a recursive helper to traverse the structure and truncate any long strings found within, replacing them with a structured object to signal the truncation.
 

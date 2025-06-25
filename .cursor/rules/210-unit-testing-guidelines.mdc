@@ -46,6 +46,7 @@ If the tool under test is the only function calling `json.dumps`, the approach i
 ```python
 # In a test for a tool like get_transaction_logs
 from unittest.mock import patch, AsyncMock
+from blockscout_mcp_server.models import ToolResponse
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_correctly_prepares_json(mock_ctx):
@@ -60,8 +61,9 @@ async def test_get_transaction_logs_correctly_prepares_json(mock_ctx):
         result = await get_transaction_logs(..., ctx=mock_ctx)
 
         # ASSERT
-        # Verify that json.dumps was called with the raw API response data
-        mock_json_dumps.assert_called_once_with(mock_api_response)
+        # Verify that the tool returned a ToolResponse with the correct data
+        assert isinstance(result, ToolResponse)
+        assert result.data == mock_api_response
 ```
 
 #### The Complex Case: Multiple Serialization Calls
