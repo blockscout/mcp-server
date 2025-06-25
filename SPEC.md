@@ -148,6 +148,22 @@ To illustrate this pattern, the `__get_instructions__` tool returns a `ToolRespo
 
 This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
 
+This standardized model is flexible. For tools that return simpler data structures, like a list of items, the `data` field directly holds that list. For example, the `get_chains_list` tool returns a `ToolResponse[list[ChainInfo]]`, which serializes to the following clean JSON:
+
+```json
+{
+  "data": [
+    { "name": "Arbitrum One", "chain_id": 42161 },
+    { "name": "Base", "chain_id": 8453 },
+    { "name": "Ethereum", "chain_id": 1 }
+  ],
+  "data_description": null,
+  "notes": null,
+  "instructions": null,
+  "pagination": null
+}
+```
+
 3. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.

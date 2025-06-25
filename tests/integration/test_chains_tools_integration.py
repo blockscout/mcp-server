@@ -1,19 +1,19 @@
 import pytest
 
+from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_chains_list_integration(mock_ctx):
-    """Tests that get_chains_list returns a formatted string and contains known, stable chains."""
+    """Tests that get_chains_list returns structured data with expected chains."""
     result = await get_chains_list(ctx=mock_ctx)
 
-    # Assert that the result is a string and not empty
-    assert isinstance(result, str)
-    assert len(result) > 0
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, list)
+    assert len(result.data) > 0
 
-    # Assert that the output contains a well-known, stable chain entry.
-    # This verifies that the name and chainid fields were correctly extracted and formatted.
-    assert "Ethereum: 1" in result
-    assert "Polygon PoS: 137" in result
+    eth_chain = next((chain for chain in result.data if chain.name == "Ethereum"), None)
+    assert eth_chain is not None
+    assert eth_chain.chain_id == 1
