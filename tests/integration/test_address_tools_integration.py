@@ -4,6 +4,7 @@ import re
 import httpx
 import pytest
 
+from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     get_address_logs,
@@ -90,8 +91,6 @@ async def test_get_address_info_integration(mock_ctx):
         result = await get_address_info(chain_id="1", address=address, ctx=mock_ctx)
     except httpx.RequestError as e:
         pytest.skip(f"Skipping test due to network error on primary API call: {e}")
-
-    from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, AddressInfoData)
