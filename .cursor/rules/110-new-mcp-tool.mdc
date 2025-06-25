@@ -229,7 +229,7 @@ For tools that have a well-defined output structure, you should define a specifi
 ```python
 from pydantic import BaseModel, Field
 from blockscout_mcp_server.models import ToolResponse, LatestBlockData
-from blockscout_mcp_server.tools.common import build_tool_response, make_blockscout_request
+from blockscout_mcp_server.tools.common import build_tool_response, make_blockscout_request, get_blockscout_base_url
 
 # In a real scenario, this model would be in `models.py`
 # class LatestBlockData(BaseModel):
