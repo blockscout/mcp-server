@@ -58,7 +58,7 @@ class ContractAbiData(BaseModel):
 
     abi: list | None = Field(description="The Application Binary Interface (ABI) of the smart contract.")
 
-      
+
 # --- Models for get_address_info Data Payload ---
 class AddressInfoData(BaseModel):
     """A structured representation of the combined address information."""
