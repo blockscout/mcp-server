@@ -33,8 +33,8 @@ class LatestBlockData(BaseModel):
 
 
 # --- Models for __get_instructions__ Data Payload ---
-class RecommendedChain(BaseModel):
-    """Represents a popular blockchain with its essential identifiers."""
+class ChainInfo(BaseModel):
+    """Represents a blockchain with its essential identifiers."""
 
     name: str = Field(description="The common name of the blockchain (e.g., 'Ethereum').")
     chain_id: int = Field(description="The unique numeric identifier for the chain.")
@@ -47,7 +47,7 @@ class InstructionsData(BaseModel):
     general_rules: list[str] = Field(
         description="A list of general operational rules for interacting with this server."
     )
-    recommended_chains: list[RecommendedChain] = Field(
+    recommended_chains: list[ChainInfo] = Field(
         description="A list of popular chains with their names and IDs, useful for quick lookups."
     )
 

@@ -3,10 +3,10 @@
 import json
 
 from blockscout_mcp_server.models import (
+    ChainInfo,
     InstructionsData,
     NextCallInfo,
     PaginationInfo,
-    RecommendedChain,
     ToolResponse,
 )
 
@@ -31,7 +31,7 @@ def test_tool_response_complex_data():
     instructions_data = InstructionsData(
         version="1.0.0",
         general_rules=["Rule 1"],
-        recommended_chains=[RecommendedChain(name="TestChain", chain_id=123)],
+        recommended_chains=[ChainInfo(name="TestChain", chain_id=123)],
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
@@ -72,16 +72,16 @@ def test_pagination_info():
     assert pagination_info.next_call.params["param"] == "value"
 
 
-def test_recommended_chain():
-    """Test RecommendedChain model."""
-    chain = RecommendedChain(name="Ethereum", chain_id=1)
+def test_chain_info():
+    """Test ChainInfo model."""
+    chain = ChainInfo(name="Ethereum", chain_id=1)
     assert chain.name == "Ethereum"
     assert chain.chain_id == 1
 
 
 def test_instructions_data():
     """Test InstructionsData model."""
-    chains = [RecommendedChain(name="Ethereum", chain_id=1), RecommendedChain(name="Polygon", chain_id=137)]
+    chains = [ChainInfo(name="Ethereum", chain_id=1), ChainInfo(name="Polygon", chain_id=137)]
     instructions = InstructionsData(version="2.0.0", general_rules=["Rule 1", "Rule 2"], recommended_chains=chains)
     assert instructions.version == "2.0.0"
     assert len(instructions.general_rules) == 2

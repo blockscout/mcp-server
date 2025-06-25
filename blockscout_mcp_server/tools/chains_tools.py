@@ -1,19 +1,20 @@
 from mcp.server.fastmcp import Context
 
+from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
+    build_tool_response,
     make_chainscout_request,
     report_and_log_progress,
 )
 
 
-async def get_chains_list(ctx: Context) -> str:
+async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
     """
     Get the list of known blockchain chains with their IDs.
     Useful for getting a chain ID when the chain name is known. This information can be used in other tools that require a chain ID to request information.
     """  # noqa: E501
     api_path = "/api/chains/list"
 
-    # Report start of operation
     await report_and_log_progress(
         ctx,
         progress=0.0,
@@ -23,7 +24,6 @@ async def get_chains_list(ctx: Context) -> str:
 
     response_data = await make_chainscout_request(api_path=api_path)
 
-    # Report completion
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -31,21 +31,15 @@ async def get_chains_list(ctx: Context) -> str:
         message="Successfully fetched chains list.",
     )
 
-    # Format the response as a text output
-    output_lines = ["The list of known chains with their ids:"]
-
-    # Check if response_data is a list and has entries
-    if isinstance(response_data, list) and response_data:
-        # Sort chains by name for better readability
+    chains: list[ChainInfo] = []
+    if isinstance(response_data, list):
         sorted_chains = sorted(response_data, key=lambda x: x.get("name", ""))
+        for item in sorted_chains:
+            if item.get("name") and item.get("chainid"):
+                try:
+                    chain_id = int(item["chainid"])
+                except (TypeError, ValueError):
+                    continue
+                chains.append(ChainInfo(name=item["name"], chain_id=chain_id))
 
-        for chain in sorted_chains:
-            name = chain.get("name")
-            chain_id = chain.get("chainid")
-            if name is not None and chain_id is not None:
-                output_lines.append(f"{name}: {chain_id}")
-    else:
-        output_lines.append("No chains found or invalid response format.")
-
-    # Join all lines with newlines
-    return "\n".join(output_lines)
+    return build_tool_response(data=chains)
