@@ -8,6 +8,13 @@ from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
 
 
+def assert_contract_abi_response(result: ToolResponse, expected_abi) -> None:
+    """Verify the wrapper structure and ABI data."""
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, ContractAbiData)
+    assert result.data.abi == expected_abi
+
+
 @pytest.mark.asyncio
 async def test_get_contract_abi_success(mock_ctx):
     """
@@ -55,9 +62,7 @@ async def test_get_contract_abi_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, ContractAbiData)
-        assert result.data.abi == mock_abi_list
+        assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -91,9 +96,7 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, ContractAbiData)
-        assert result.data.abi is None
+        assert_contract_abi_response(result, None)
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -127,9 +130,7 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, ContractAbiData)
-        assert result.data.abi == []
+        assert_contract_abi_response(result, [])
         assert mock_ctx.report_progress.call_count == 3
 
 
@@ -280,7 +281,5 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, ContractAbiData)
-        assert result.data.abi == mock_abi_list
+        assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.call_count == 3
