@@ -121,34 +121,9 @@ sequenceDiagram
 
 This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
 
-**Example: Structured Response from `__get_instructions__`**
+**Example: Structured Response from `get_chains_list`**
 
-To illustrate this pattern, the `__get_instructions__` tool returns a `ToolResponse[InstructionsData]`. The `InstructionsData` model provides a structured view of the server's metadata. The final JSON response looks like this:
-
-```json
-{
-  "data": {
-    "version": "0.3.1",
-    "general_rules": [
-      "If you receive an error...",
-      "All Blockscout API tools require a chain_id parameter:",
-      "..."
-    ],
-    "recommended_chains": [
-      { "name": "Ethereum", "chain_id": 1 },
-      { "name": "Polygon PoS", "chain_id": 137 }
-    ]
-  },
-  "data_description": null,
-  "notes": null,
-  "instructions": null,
-  "pagination": null
-}
-```
-
-This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
-
-This standardized model is flexible. For tools that return simpler data structures, like a list of items, the `data` field directly holds that list. For example, the `get_chains_list` tool returns a `ToolResponse[list[ChainInfo]]`, which serializes to the following clean JSON:
+To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[list[ChainInfo]]`. The `data` field holds a list of `ChainInfo` items. The final JSON response looks like this:
 
 ```json
 {
@@ -163,6 +138,8 @@ This standardized model is flexible. For tools that return simpler data structur
   "pagination": null
 }
 ```
+
+This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
 
 3. **Response Processing and Context Optimization**:
 
