@@ -24,6 +24,14 @@ class PaginationInfo(BaseModel):
     next_call: NextCallInfo
 
 
+# --- Model for get_latest_block Data Payload ---
+class LatestBlockData(BaseModel):
+    """Represents the essential data for the latest block."""
+
+    block_number: int = Field(description="The block number (height) in the blockchain")
+    timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
+
+
 # --- Models for __get_instructions__ Data Payload ---
 class RecommendedChain(BaseModel):
     """Represents a popular blockchain with its essential identifiers."""

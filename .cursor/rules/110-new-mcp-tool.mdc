@@ -228,25 +228,32 @@ For tools that have a well-defined output structure, you should define a specifi
 
 ```python
 from pydantic import BaseModel, Field
-from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.models import ToolResponse, LatestBlockData
+from blockscout_mcp_server.tools.common import build_tool_response, make_blockscout_request, get_blockscout_base_url
 
-# Define a specific model for the data
-class LatestBlockData(BaseModel):
-    block_number: int = Field(description="The block number (height) in the blockchain")
-    timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
-    hash: str = Field(description="The unique hash identifier of the block")
+# In a real scenario, this model would be in `models.py`
+# class LatestBlockData(BaseModel):
+#     block_number: int = Field(description="The block number (height) in the blockchain")
+#     timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
 
 async def get_latest_block(chain_id: str) -> ToolResponse[LatestBlockData]:
     """Gets the latest block information."""
-    raw_data = await make_blockscout_request(...) # returns a dict
+    # The actual API returns a list, we take the first item.
+    raw_data_list = await make_blockscout_request(
+        base_url=await get_blockscout_base_url(chain_id),
+        api_path="/api/v2/main-page/blocks"
+    )
+    if not raw_data_list:
+        raise ValueError("No block data returned from API.")
+
+    raw_data = raw_data_list[0]
 
     # Validate and structure the data using your specific model
     block_data = LatestBlockData(
-        block_number=raw_data.get("number"),
+        block_number=raw_data.get("height"),
         timestamp=raw_data.get("timestamp"),
-        hash=raw_data.get("hash")
     )
-    
+
     return build_tool_response(data=block_data)
 ```
 
