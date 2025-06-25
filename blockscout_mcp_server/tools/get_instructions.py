@@ -1,10 +1,19 @@
 from mcp.server.fastmcp import Context
 
-from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS
-from blockscout_mcp_server.tools.common import report_and_log_progress
+from blockscout_mcp_server.constants import (
+    GENERAL_RULES,
+    RECOMMENDED_CHAINS,
+    SERVER_VERSION,
+)
+from blockscout_mcp_server.models import (
+    InstructionsData,
+    RecommendedChain,
+    ToolResponse,
+)
+from blockscout_mcp_server.tools.common import build_tool_response, report_and_log_progress
 
 
-async def __get_instructions__(ctx: Context) -> str:
+async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
     """
     This tool MUST be called BEFORE any other tool.
     Without calling it, the MCP server will not work as expected.
@@ -18,7 +27,14 @@ async def __get_instructions__(ctx: Context) -> str:
         message="Fetching server instructions...",
     )
 
-    # SERVER_INSTRUCTIONS is a constant, so this is immediate
+    # Construct the structured data payload
+    instructions_data = InstructionsData(
+        version=SERVER_VERSION,
+        general_rules=GENERAL_RULES,
+        recommended_chains=[RecommendedChain(**chain) for chain in RECOMMENDED_CHAINS],
+    )
+
+    # Report completion
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -26,4 +42,4 @@ async def __get_instructions__(ctx: Context) -> str:
         message="Server instructions ready.",
     )
 
-    return SERVER_INSTRUCTIONS
+    return build_tool_response(data=instructions_data)

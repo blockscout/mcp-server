@@ -119,7 +119,34 @@ sequenceDiagram
    - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
-   This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
+This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
+
+**Example: Structured Response from `__get_instructions__`**
+
+To illustrate this pattern, the `__get_instructions__` tool returns a `ToolResponse[InstructionsData]`. The `InstructionsData` model provides a structured view of the server's metadata. The final JSON response looks like this:
+
+```json
+{
+  "data": {
+    "version": "0.3.1",
+    "general_rules": [
+      "If you receive an error...",
+      "All Blockscout API tools require a chain_id parameter:",
+      "..."
+    ],
+    "recommended_chains": [
+      { "name": "Ethereum", "chain_id": 1 },
+      { "name": "Polygon PoS", "chain_id": 137 }
+    ]
+  },
+  "data_description": null,
+  "notes": null,
+  "instructions": null,
+  "pagination": null
+}
+```
+
+This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
 
 3. **Response Processing and Context Optimization**:
 

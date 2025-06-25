@@ -191,7 +191,7 @@ mcp-server/
                 3. It processes the JSON response from Blockscout.
                 4. It transforms this response into the desired output format.
             * Examples:
-                * `get_instructions.py`: Implements `__get_instructions__`, returning a pre-defined multi-line string with instructions and popular chain IDs.
+                * `get_instructions.py`: Implements `__get_instructions__`, returning special server instructions and popular chain IDs.
                 * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
