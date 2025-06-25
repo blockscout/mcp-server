@@ -10,9 +10,12 @@ from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_b
 async def test_get_latest_block_integration(mock_ctx):
     result = await get_latest_block(chain_id="1", ctx=mock_ctx)
 
-    assert isinstance(result, dict)
-    assert "block_number" in result and isinstance(result["block_number"], int)
-    assert "timestamp" in result and isinstance(result["timestamp"], str)
+    assert hasattr(result, "data")
+    assert hasattr(result.data, "block_number")
+    assert hasattr(result.data, "timestamp")
+    assert isinstance(result.data.block_number, int)
+    assert isinstance(result.data.timestamp, str)
+    assert result.data.block_number > 0
 
 
 @pytest.mark.integration
