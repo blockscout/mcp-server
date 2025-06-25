@@ -3,6 +3,7 @@
 import json
 
 from blockscout_mcp_server.models import (
+    AddressInfoData,
     ChainInfo,
     InstructionsData,
     NextCallInfo,
@@ -148,3 +149,19 @@ def test_tool_response_with_empty_lists():
     assert json_output["data_description"] == []
     assert json_output["notes"] == []
     assert json_output["instructions"] == []
+
+
+def test_address_info_data_model():
+    """Verify AddressInfoData holds basic and metadata info."""
+    # Test with all fields populated
+    basic = {"hash": "0xabc", "is_contract": False}
+    metadata = {"tags": [{"name": "Known"}]}
+    data_full = AddressInfoData(basic_info=basic, metadata=metadata)
+
+    assert data_full.basic_info == basic
+    assert data_full.metadata == metadata
+
+    # Test with optional metadata omitted
+    data_no_meta = AddressInfoData(basic_info=basic)
+    assert data_no_meta.basic_info == basic
+    assert data_no_meta.metadata is None, "Metadata should default to None when not provided"

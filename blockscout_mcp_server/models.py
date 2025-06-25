@@ -52,6 +52,17 @@ class InstructionsData(BaseModel):
     )
 
 
+# --- Models for get_address_info Data Payload ---
+class AddressInfoData(BaseModel):
+    """A structured representation of the combined address information."""
+
+    basic_info: dict[str, Any] = Field(description="Core on-chain data for the address from the Blockscout API.")
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description="Optional metadata, such as public tags, from the Metadata service.",
+    )
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""
