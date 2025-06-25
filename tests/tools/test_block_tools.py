@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.models import LatestBlockData, ToolResponse
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
 
 
@@ -19,7 +20,6 @@ async def test_get_latest_block_success(mock_ctx):
 
     # Mock API response is a list of blocks
     mock_api_response = [{"height": 12345, "timestamp": "2023-01-01T00:00:00Z"}]
-    expected_result = {"block_number": 12345, "timestamp": "2023-01-01T00:00:00Z"}
 
     # Patch both helpers used by the tool
     with (
@@ -40,7 +40,10 @@ async def test_get_latest_block_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, LatestBlockData)
+        assert result.data.block_number == 12345
+        assert result.data.timestamp == "2023-01-01T00:00:00Z"
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -90,7 +93,6 @@ async def test_get_latest_block_empty_response(mock_ctx):
 
     # Empty response
     mock_api_response = []
-    expected_result = {"block_number": None, "timestamp": None}
 
     with (
         patch(
@@ -103,14 +105,12 @@ async def test_get_latest_block_empty_response(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
-        # ACT
-        result = await get_latest_block(chain_id=chain_id, ctx=mock_ctx)
+        # ACT & ASSERT
+        with pytest.raises(ValueError, match="Could not retrieve latest block data from the API."):
+            await get_latest_block(chain_id=chain_id, ctx=mock_ctx)
 
-        # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
-        assert result == expected_result
-        assert mock_ctx.report_progress.call_count == 3
 
 
 @pytest.mark.asyncio
