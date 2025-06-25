@@ -4,7 +4,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
+
+
+def assert_contract_abi_response(result: ToolResponse, expected_abi) -> None:
+    """Verify the wrapper structure and ABI data."""
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, ContractAbiData)
+    assert result.data.abi == expected_abi
 
 
 @pytest.mark.asyncio
@@ -17,50 +25,32 @@ async def test_get_contract_abi_success(mock_ctx):
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
     mock_base_url = "https://eth.blockscout.com"
 
-    mock_api_response = {
-        "abi": [
-            {
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view",
-                "type": "function",
-            },
-            {
-                "inputs": [],
-                "name": "name",
-                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view",
-                "type": "function",
-            },
-        ]
-    }
-
-    expected_result = {
-        "abi": [
-            {
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view",
-                "type": "function",
-            },
-            {
-                "inputs": [],
-                "name": "name",
-                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-                "stateMutability": "view",
-                "type": "function",
-            },
-        ]
-    }
+    mock_abi_list = [
+        {
+            "inputs": [],
+            "name": "symbol",
+            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+            "stateMutability": "view",
+            "type": "function",
+        },
+        {
+            "inputs": [],
+            "name": "name",
+            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+            "stateMutability": "view",
+            "type": "function",
+        },
+    ]
+    mock_api_response = {"abi": mock_abi_list}
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -72,7 +62,7 @@ async def test_get_contract_abi_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert result == expected_result
+        assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -88,7 +78,6 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {}  # No abi field
-    expected_result = {"abi": None}
 
     with (
         patch(
@@ -107,7 +96,7 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert result == expected_result
+        assert_contract_abi_response(result, None)
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -123,7 +112,6 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"abi": []}
-    expected_result = {"abi": []}
 
     with (
         patch(
@@ -142,7 +130,7 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert result == expected_result
+        assert_contract_abi_response(result, [])
         assert mock_ctx.report_progress.call_count == 3
 
 
@@ -274,35 +262,7 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
         ]
     }
 
-    expected_result = {
-        "abi": [
-            {
-                "inputs": [{"internalType": "string", "name": "_name", "type": "string"}],
-                "stateMutability": "nonpayable",
-                "type": "constructor",
-            },
-            {
-                "anonymous": False,
-                "inputs": [
-                    {"indexed": True, "internalType": "address", "name": "from", "type": "address"},
-                    {"indexed": True, "internalType": "address", "name": "to", "type": "address"},
-                    {"indexed": False, "internalType": "uint256", "name": "value", "type": "uint256"},
-                ],
-                "name": "Transfer",
-                "type": "event",
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "to", "type": "address"},
-                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
-                ],
-                "name": "transfer",
-                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-                "stateMutability": "nonpayable",
-                "type": "function",
-            },
-        ]
-    }
+    mock_abi_list = mock_api_response["abi"]
 
     with (
         patch(
@@ -321,5 +281,5 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
-        assert result == expected_result
+        assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.call_count == 3
