@@ -5,9 +5,11 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
+    build_tool_response,
     decode_cursor,
     encode_cursor,
     get_blockscout_base_url,
@@ -21,7 +23,7 @@ async def get_address_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address to get information about")],
     ctx: Context,
-) -> str:
+) -> ToolResponse[AddressInfoData]:
     """
     Get comprehensive information about an address, including:
     - Address existence check
@@ -51,31 +53,29 @@ async def get_address_info(
         return_exceptions=True,
     )
 
-    output_parts = []
-
     if isinstance(address_info_result, Exception):
-        return f"Error fetching basic address info: {address_info_result}"
+        raise address_info_result
 
-    output_parts.append("Basic address info:")
-    output_parts.append(json.dumps(address_info_result))
     await report_and_log_progress(ctx, progress=2.0, total=3.0, message="Fetched basic address info.")
 
-    if not isinstance(metadata_result, Exception) and metadata_result.get("addresses"):
-        # Safely look up the metadata for the exact address requested,
-        # ignoring case differences in the API response keys
+    notes = None
+    if isinstance(metadata_result, Exception):
+        notes = [f"Could not retrieve address metadata. The 'metadata' field is null. Error: {metadata_result}"]
+        metadata_data = None
+    elif metadata_result.get("addresses"):
         address_key = next(
             (key for key in metadata_result["addresses"] if key.lower() == address.lower()),
             None,
         )
-        if address_key:
-            address_metadata = metadata_result["addresses"][address_key]
-            if address_metadata:
-                output_parts.append("\nMetadata associated with the address:")
-                output_parts.append(json.dumps(address_metadata))
+        metadata_data = metadata_result["addresses"].get(address_key) if address_key else None
+    else:
+        metadata_data = None
+
+    address_data = AddressInfoData(basic_info=address_info_result, metadata=metadata_data)
 
     await report_and_log_progress(ctx, progress=3.0, total=3.0, message="Successfully fetched all address data.")
 
-    return "\n".join(output_parts)
+    return build_tool_response(data=address_data, notes=notes)
 
 
 async def get_tokens_by_address(

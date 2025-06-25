@@ -3,6 +3,7 @@
 import json
 
 from blockscout_mcp_server.models import (
+    AddressInfoData,
     InstructionsData,
     NextCallInfo,
     PaginationInfo,
@@ -148,3 +149,13 @@ def test_tool_response_with_empty_lists():
     assert json_output["data_description"] == []
     assert json_output["notes"] == []
     assert json_output["instructions"] == []
+
+
+def test_address_info_data_model():
+    """Verify AddressInfoData holds basic and metadata info."""
+    basic = {"hash": "0xabc", "is_contract": False}
+    metadata = {"tags": [{"name": "Known"}]}
+    data = AddressInfoData(basic_info=basic, metadata=metadata)
+
+    assert data.basic_info == basic
+    assert data.metadata == metadata
