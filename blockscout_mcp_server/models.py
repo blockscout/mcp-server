@@ -52,6 +52,13 @@ class InstructionsData(BaseModel):
     )
 
 
+# --- Model for get_contract_abi Data Payload ---
+class ContractAbiData(BaseModel):
+    """A structured representation of a smart contract's ABI."""
+
+    abi: list | None = Field(description="The Application Binary Interface (ABI) of the smart contract.")
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""
