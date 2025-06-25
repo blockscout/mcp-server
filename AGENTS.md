@@ -10,6 +10,7 @@ mcp-server/
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
+│   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing and truncation helpers)
@@ -32,6 +33,7 @@ mcp-server/
 │   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
+│   ├── test_models.py            # Tests for Pydantic response models
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
@@ -130,6 +132,10 @@ mcp-server/
     * **`__main__.py`**:
         * Serves as the entry point when the package is run as a script (`python -m blockscout_mcp_server`).
         * Imports the main execution function (e.g., `run_server()`) from `server.py` and calls it.
+    * **`models.py`**:
+        * Defines a standardized, structured `ToolResponse` model using Pydantic.
+        * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
+        * Includes specific data models for complex payloads, like the response from `__get_instructions__`.
     * **`server.py`**:
         * The heart of the MCP server.
         * Initializes a `FastMCP` instance using constants from `constants.py`.
