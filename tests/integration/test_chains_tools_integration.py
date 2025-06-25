@@ -17,3 +17,7 @@ async def test_get_chains_list_integration(mock_ctx):
     eth_chain = next((chain for chain in result.data if chain.name == "Ethereum"), None)
     assert eth_chain is not None
     assert eth_chain.chain_id == 1
+
+    polygon_chain = next((chain for chain in result.data if chain.name == "Polygon PoS"), None)
+    assert polygon_chain is not None
+    assert polygon_chain.chain_id == 137
