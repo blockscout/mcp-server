@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.models import EnsAddressData, ToolResponse
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 
 
@@ -26,7 +27,9 @@ async def test_get_address_by_ens_name_success(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, EnsAddressData)
+        assert result.data.resolved_address == expected_result["resolved_address"]
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
@@ -40,7 +43,6 @@ async def test_get_address_by_ens_name_missing_resolved_address(mock_ctx):
     ens_name = "nonexistent.eth"
 
     mock_api_response = {}  # No resolved_address field
-    expected_result = {"resolved_address": None}
 
     with patch("blockscout_mcp_server.tools.ens_tools.make_bens_request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = mock_api_response
@@ -50,7 +52,9 @@ async def test_get_address_by_ens_name_missing_resolved_address(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, EnsAddressData)
+        assert result.data.resolved_address is None
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
@@ -66,7 +70,6 @@ async def test_get_address_by_ens_name_missing_hash(mock_ctx):
     mock_api_response = {
         "resolved_address": {}  # No hash field
     }
-    expected_result = {"resolved_address": None}
 
     with patch("blockscout_mcp_server.tools.ens_tools.make_bens_request", new_callable=AsyncMock) as mock_request:
         mock_request.return_value = mock_api_response
@@ -76,7 +79,9 @@ async def test_get_address_by_ens_name_missing_hash(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, EnsAddressData)
+        assert result.data.resolved_address is None
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
 
@@ -120,7 +125,9 @@ async def test_get_address_by_ens_name_with_special_characters(mock_ctx):
 
         # ASSERT
         mock_request.assert_called_once_with(api_path=f"/api/v1/1/domains/{ens_name}")
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, EnsAddressData)
+        assert result.data.resolved_address == expected_result["resolved_address"]
         assert mock_ctx.report_progress.call_count == 2
 
 
