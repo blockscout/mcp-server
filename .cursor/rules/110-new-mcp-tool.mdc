@@ -206,20 +206,47 @@ extracted_data = {
 return build_tool_response(data=extracted_data)
 ```
 
-#### 3. Process JSON Arrays (`return_type: ToolResponse[list[dict]]`)
+#### 3. Process JSON Arrays with a Specific Item Model (`return_type: ToolResponse[list[MyItemModel]]`)
 
-Use when iterating through items and formatting each one:
+Use when iterating through items and formatting each one into a specific Pydantic model. This is the preferred pattern over returning a generic `list[dict]`.
+
+**Example: `lookup_token_by_symbol`**
 
 ```python
-items = response_data.get("items", [])
-formatted_items = []
-for item in items:
-    formatted_items.append({
-        "id": item.get("id"),
-        "name": item.get("name"),
-        # Other fields to extract
-    })
-return build_tool_response(data=formatted_items)
+from blockscout_mcp_server.models import ToolResponse, TokenSearchResult # Specific model
+from blockscout_mcp_server.tools.common import build_tool_response
+
+# In a real scenario, TokenSearchResult would be in `models.py`
+# class TokenSearchResult(BaseModel):
+#     address: str
+#     name: str
+#     ...
+
+async def lookup_token_by_symbol(
+    chain_id: str, symbol: str
+) -> ToolResponse[list[TokenSearchResult]]: # Note the specific return type
+    """Search for token addresses by symbol or name."""
+    response_data = await make_blockscout_request(...) # API call
+
+    items = response_data.get("items", [])
+    
+    # Create a list of strongly-typed Pydantic objects
+    search_results = []
+    for item in items:
+        search_results.append(
+            TokenSearchResult(
+                address=item.get("address_hash", ""),
+                name=item.get("name", ""),
+                # ... other fields
+            )
+        )
+    
+    # Optionally add notes, for example, about truncation
+    notes = None
+    if len(items) > SOME_LIMIT:
+        notes = ["Result list was truncated."]
+
+    return build_tool_response(data=search_results, notes=notes)
 ```
 
 #### 4. Using a Specific Data Model for the Payload (`return_type: ToolResponse[MyDataModel]`)

@@ -59,6 +59,21 @@ class ContractAbiData(BaseModel):
     abi: list | None = Field(description="The Application Binary Interface (ABI) of the smart contract.")
 
 
+# --- Model for lookup_token_by_symbol Data Payload ---
+class TokenSearchResult(BaseModel):
+    """Represents a single token found by a search query."""
+
+    address: str = Field(description="The contract address of the token.")
+    name: str = Field(description="The full name of the token (e.g., 'USD Coin').")
+    symbol: str = Field(description="The symbol of the token (e.g., 'USDC').")
+    token_type: str = Field(description="The token standard (e.g., 'ERC-20').")
+    total_supply: str = Field(description="The total supply of the token.")
+    circulating_market_cap: str | None = Field(description="The circulating market cap, if available.")
+    exchange_rate: str | None = Field(description="The current exchange rate, if available.")
+    is_smart_contract_verified: bool = Field(description="Indicates if the token's contract is verified.")
+    is_verified_via_admin_panel: bool = Field(description="Indicates if the token is verified by the Blockscout team.")
+
+
 # --- Models for get_address_info Data Payload ---
 class AddressInfoData(BaseModel):
     """A structured representation of the combined address information."""
