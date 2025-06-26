@@ -2,7 +2,7 @@
 
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # --- Generic Type Variable ---
 T = TypeVar("T")
@@ -93,6 +93,43 @@ class EnsAddressData(BaseModel):
         None,
         description=("The resolved Ethereum address corresponding to the ENS name, or null if not found."),
     )
+
+
+# --- Models for get_transaction_info Data Payload ---
+class TokenTransfer(BaseModel):
+    """Represents a single token transfer within a transaction."""
+
+    model_config = ConfigDict(extra="allow")
+
+    from_address: str | None = Field(alias="from")
+    to_address: str | None = Field(alias="to")
+    token: dict[str, Any]
+    transfer_type: str = Field(alias="type")
+
+
+class DecodedInput(BaseModel):
+    """Represents the decoded input data of a transaction."""
+
+    model_config = ConfigDict(extra="allow")
+
+    method_call: str
+    method_id: str
+    parameters: list[Any]
+
+
+class TransactionInfoData(BaseModel):
+    """Structured representation of get_transaction_info data."""
+
+    model_config = ConfigDict(extra="allow")
+
+    from_address: str | None = Field(default=None, alias="from")
+    to_address: str | None = Field(default=None, alias="to")
+
+    token_transfers: list[TokenTransfer] = Field(default_factory=list)
+    decoded_input: DecodedInput | None = None
+
+    raw_input: str | None = None
+    raw_input_truncated: bool | None = None
 
 
 # --- The Main Standardized Response Model ---

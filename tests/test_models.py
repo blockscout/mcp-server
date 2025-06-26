@@ -5,10 +5,13 @@ import json
 from blockscout_mcp_server.models import (
     AddressInfoData,
     ChainInfo,
+    DecodedInput,
     InstructionsData,
     NextCallInfo,
     PaginationInfo,
+    TokenTransfer,
     ToolResponse,
+    TransactionInfoData,
 )
 
 
@@ -165,3 +168,48 @@ def test_address_info_data_model():
     data_no_meta = AddressInfoData(basic_info=basic)
     assert data_no_meta.basic_info == basic
     assert data_no_meta.metadata is None, "Metadata should default to None when not provided"
+
+
+def test_transaction_info_data_handles_extra_fields_recursively():
+    """Verify TransactionInfoData preserves extra fields at all levels."""
+    api_data = {
+        "from": "0xfrom_address",
+        "to": "0xto_address",
+        "token_transfers": [
+            {
+                "from": "0xa",
+                "to": "0xb",
+                "token": {},
+                "type": "transfer",
+                "a_new_token_field": "token_extra_value",
+            }
+        ],
+        "decoded_input": {
+            "method_call": "test()",
+            "method_id": "0x123",
+            "parameters": [],
+            "a_new_decoded_field": "decoded_extra_value",
+        },
+        "a_new_field_from_api": "some_value",
+        "status": "ok",
+    }
+
+    model = TransactionInfoData(**api_data)
+
+    assert model.from_address == "0xfrom_address"
+    assert model.a_new_field_from_api == "some_value"
+    assert model.status == "ok"
+
+    assert isinstance(model.token_transfers[0], TokenTransfer)
+    assert model.token_transfers[0].from_address == "0xa"
+    assert model.token_transfers[0].transfer_type == "transfer"
+    assert model.token_transfers[0].a_new_token_field == "token_extra_value"
+
+    assert isinstance(model.decoded_input, DecodedInput)
+    assert model.decoded_input.method_id == "0x123"
+    assert model.decoded_input.a_new_decoded_field == "decoded_extra_value"
+
+    dumped_model = model.model_dump(by_alias=True)
+    assert dumped_model["a_new_field_from_api"] == "some_value"
+    assert dumped_model["token_transfers"][0]["a_new_token_field"] == "token_extra_value"
+    assert dumped_model["decoded_input"]["a_new_decoded_field"] == "decoded_extra_value"
