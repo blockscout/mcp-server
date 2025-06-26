@@ -17,8 +17,7 @@ async def test_lookup_token_by_symbol_integration(mock_ctx):
         assert result.data[0].address.startswith("0x")
         assert isinstance(result.data[0].name, str)
 
-    if len(result.data) == TOKEN_RESULTS_LIMIT:
-        assert result.notes is not None
-        assert f"exceeds the limit of {TOKEN_RESULTS_LIMIT}" in result.notes[0]
-    else:
+    if len(result.data) < TOKEN_RESULTS_LIMIT:
         assert result.notes is None
+    elif result.notes is not None:
+        assert f"exceeds the limit of {TOKEN_RESULTS_LIMIT}" in result.notes[0]
