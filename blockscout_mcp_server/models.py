@@ -70,6 +70,16 @@ class AddressInfoData(BaseModel):
     )
 
 
+# --- Model for get_address_by_ens_name Data Payload ---
+class EnsAddressData(BaseModel):
+    """A structured representation of an ENS name resolution."""
+
+    resolved_address: str | None = Field(
+        None,
+        description=("The resolved Ethereum address corresponding to the ENS name, or null if not found."),
+    )
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""
