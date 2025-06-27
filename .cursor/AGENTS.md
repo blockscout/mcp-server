@@ -2,34 +2,32 @@
 
 This directory `.cursor/rules` contains rule files that govern the behavior and guidelines for AI agents working on the Blockscout MCP Server project.
 
-## Rule Files
+## Rule Application Guidelines
 
-### Core Rules (000-099)
+AI agents should consult the appropriate rule files based on the context of their work. Here are the specific guidelines for when to apply each rule:
 
-- **`000-role-and-task.mdc`** - Defines the AI agent's role and the task it is performing
-- **`010-implementation-rules.mdc`** - Core implementation guidelines including project structure references, file size limits, and import placement rules
+### Always Apply First
 
-### MCP Tool Development (100-199)
+- **Always read** `.cursor/rules/000-role-and-task.mdc` since it defines the AI agent's role and the task it is performing
+- **Always read** `.cursor/rules/010-implementation-rules.mdc` and resources mentioned in it before answering questions about the project or suggesting any changes
 
-- **`110-new-mcp-tool.mdc`** - Comprehensive guide for adding new MCP tool functions and patterns, including data truncation and structured response techniques
-- **`120-mcp-tool-arguments.mdc`** - Rules for modifying existing MCP tool functions, emphasizing context conservation and purpose clarity
-- **`130-version-management.mdc`** - Version update procedures requiring synchronization across pyproject.toml, __init__.py, and constants.py
-- **`140-tool-description.mdc`** - Guidelines for writing effective tool descriptions with character limits and formatting rules
+### MCP Tool Development
 
-### Testing & Development (200-299)
+- **Follow** `.cursor/rules/110-new-mcp-tool.mdc` whenever creating new MCP tool functions or modifying existing  ones
+- **Apply** `.cursor/rules/120-mcp-tool-arguments.mdc` rules to the tool's parameters list whenever modifying existing MCP tool functions
+- **Follow** `.cursor/rules/130-version-management.mdc` when updating the version of the MCP server
+- **Apply** `.cursor/rules/140-tool-description.mdc` rules to the tool's description field whenever creating a new MCP tool or updating an existing one
 
-- **`200-development-testing-workflow.mdc`** - Mandatory testing workflow for all code changes including unit tests, integration tests, and validation steps
-- **`210-unit-testing-guidelines.mdc`** - Detailed unit testing patterns including mocking strategies, assertion guidelines, and file organization
-- **`220-integration-testing-guidelines.mdc`** - Integration testing guidelines, including pagination tests and multi-page search best practices
+### Testing & Development
 
-### Code Quality & Formatting (300-399)
+- **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)
+- **Before modifying** any unit test files within `tests/tools/` or adding new unit tests, follow guidelines from `.cursor/rules/210-unit-testing-guidelines.mdc`
+- **Before working** with integration test files within `tests/integration/`, consult `.cursor/rules/220-integration-testing-guidelines.mdc`
 
-- **`300-ruff-lint-and-format.mdc`** - Guidelines for identifying and fixing linting and formatting issues using Ruff
+### Code Quality & Formatting
 
-### Meta Rules (900-999)
+- **Apply** `.cursor/rules/300-ruff-lint-and-format.mdc` when identifying and fixing linting and formatting issues
 
-- **`900-rules-maintenance.mdc`** - Instructions for maintaining this AGENTS.md file whenever rule files are created or modified
+### Meta Operations
 
-## Usage
-
-These rules are automatically applied by the AI agent based on the context of the work being performed. Some rules are always applied (`alwaysApply: true`), while others are contextually triggered based on file patterns or specific operations.
+- **Must follow** `.cursor/rules/900-rules-maintenance.mdc` when creating, modifying, or deleting any rule files in `.cursor/rules/`

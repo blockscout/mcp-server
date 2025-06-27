@@ -89,18 +89,59 @@ If your new tool needs to access an API endpoint that is different from the exis
 
 When adding a new tool to the MCP server, you need to modify these files:
 
-1. **Create or modify a tool module file** in `blockscout_mcp_server/tools/`:
+1. **Create a data model in `blockscout_mcp_server/models.py`**:
+   - Define a specific Pydantic model for your tool's `data` payload
+   - This ensures type safety and provides clear structure for the AI
+   - See "Data Model Creation Guidelines" section below for detailed guidance
+
+2. **Create or modify a tool module file** in `blockscout_mcp_server/tools/`:
    - Choose an existing module (e.g., `block_tools.py`, `address_tools.py`) if your tool fits with existing functionality
    - Create a new module if your tool introduces a new category of functionality
 
-2. **Register the tool in `blockscout_mcp_server/server.py`**:
+3. **Register the tool in `blockscout_mcp_server/server.py`**:
    - Import the tool function
    - Register it with the MCP server using the `@mcp.tool()` decorator
 
-3. **Update documentation in `AGENTS.md`**:
+4. **Update documentation in `AGENTS.md`**:
    - If you created a new module, add it to the project structure file listing
    - Add it both in the directory tree structure AND in the "Individual Tool Modules" examples section
    - If you added a tool to an existing module, update the "Examples" section to include your new tool function
+
+## Data Model Creation Guidelines
+
+**All tools MUST return a strongly-typed `ToolResponse[YourDataModel]` instead of generic `ToolResponse[dict]`.** This ensures consistency, reliability, and better AI reasoning.
+
+### When to Use `ConfigDict(extra="allow")`
+
+#### ✅ **USE `extra="allow"`** for External API Response Models
+
+When your model represents data from external APIs, use `extra="allow"` to handle future API changes:
+
+```python
+class MyApiResponseData(BaseModel):
+    """Represents data from external API that may evolve."""
+    
+    model_config = ConfigDict(extra="allow")  # Preserves unknown fields
+    
+    # Define known fields with strong types
+    address: str
+    transaction_count: int
+```
+
+**Why:** External APIs evolve and add new fields. Without `extra="allow"`, your model will fail when APIs return unexpected data.
+
+#### ❌ **DON'T USE `extra="allow"`** for Internal Structured Data
+
+When your model represents data we control internally, don't use `extra="allow"`:
+
+```python
+class MyInternalData(BaseModel):
+    """Our own structured data with controlled schema."""
+    
+    # No extra="allow" - we control this structure
+    extracted_field: str
+    computed_value: int
+```
 
 ## Tool Function Structure
 
@@ -110,13 +151,13 @@ For tools that query Blockscout API (which now support dynamic chain resolution)
 from typing import Annotated, Optional
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url, build_tool_response
-from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.models import ToolResponse, YourDataModel
 
 async def tool_name(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     required_arg: Annotated[str, Field(description="Description of required argument")],
     optional_arg: Annotated[Optional[str], Field(description="Description of optional argument")] = None
-) -> ToolResponse[dict]:  # Return standardized ToolResponse
+) -> ToolResponse[YourDataModel]:  # Return strongly-typed ToolResponse
     """
     Descriptive docstring explaining what the tool does.
     Include use cases and examples if helpful.
@@ -136,10 +177,15 @@ async def tool_name(
     # For multiple data sources, consider Performance Optimization patterns (concurrent API calls)
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
     
-    # Process response based on implementation patterns below
+    # Create structured data using your specific model based on implementation patterns below
     # (See Response Handling and Progress Reporting patterns)
+    structured_data = YourDataModel(
+        field1=response_data.get("field1"),
+        field2=response_data.get("field2"),
+        # Additional fields preserved automatically if using extra="allow"
+    )
     
-    return build_tool_response(data=processed_result)
+    return build_tool_response(data=structured_data)
 ```
 
 For tools that use fixed API endpoints (like BENS or other services):
@@ -148,12 +194,12 @@ For tools that use fixed API endpoints (like BENS or other services):
 from typing import Annotated, Optional
 from pydantic import Field
 from blockscout_mcp_server.tools.common import make_bens_request, build_tool_response  # or other API helper
-from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.models import ToolResponse, YourDataModel
 
 async def tool_name(
     required_arg: Annotated[str, Field(description="Description of required argument")],
     optional_arg: Annotated[Optional[str], Field(description="Description of optional argument")] = None
-) -> ToolResponse[dict]:  # Return standardized ToolResponse
+) -> ToolResponse[YourDataModel]:  # Return strongly-typed ToolResponse
     """
     Descriptive docstring explaining what the tool does.
     Include use cases and examples if helpful.
@@ -170,88 +216,31 @@ async def tool_name(
     # For multiple data sources, consider Performance Optimization patterns (concurrent API calls)
     response_data = await make_bens_request(api_path=api_path, params=query_params)
     
-    # Process response based on implementation patterns below
+    # Create structured data using your specific model based on implementation patterns below
     # (See Response Handling and Progress Reporting patterns)
+    structured_data = YourDataModel(
+        field1=response_data.get("field1"),
+        field2=response_data.get("field2"),
+        # Additional fields preserved automatically if using extra="allow"
+    )
     
-    return build_tool_response(data=processed_result)
+    return build_tool_response(data=structured_data)
 ```
 
 ## Implementation Patterns
 
 ### Response Handling
 
-**All tools MUST return a standardized `ToolResponse` object.** This ensures consistency and provides clear, machine-readable data to the AI. The `ToolResponse` model is generic, allowing you to specify the type of the `data` payload for better type safety and clarity (e.g., `ToolResponse[MyDataModel]`). For tools with dynamic output, `ToolResponse[Any]` can be used.
+**All tools MUST return a standardized `ToolResponse[YourDataModel]` object.** This ensures consistency and provides clear, machine-readable data to the AI. The `ToolResponse` model is generic, allowing you to specify the exact type of the `data` payload for maximum type safety and clarity.
+
+**❌ AVOID:** Generic `ToolResponse[dict]` or `ToolResponse[Any]`  
+**✅ PREFER:** Specific `ToolResponse[YourDataModel]`
 
 Use the `build_tool_response` helper from `tools/common.py` to construct the response. The following patterns demonstrate how to process API data and package it into the appropriate fields of a `ToolResponse` object.
 
-Choose one of these approaches based on the complexity of your response formatting needs:
+#### 1. Using a Specific Data Model for the Payload (`return_type: ToolResponse[MyDataModel]`)
 
-#### 1. Return Full JSON Response (`return_type: ToolResponse[dict]`)
-
-Use to return entire response:
-
-```python
-return build_tool_response(data=response_data)
-```
-
-#### 2. Extract Specific Fields (`return_type: ToolResponse[dict]`)
-
-Use for simple field extraction:
-
-```python
-extracted_data = {
-    "field1": response_data.get("field1"),
-    "field2": response_data.get("nested", {}).get("field2")
-}
-return build_tool_response(data=extracted_data)
-```
-
-#### 3. Process JSON Arrays with a Specific Item Model (`return_type: ToolResponse[list[MyItemModel]]`)
-
-Use when iterating through items and formatting each one into a specific Pydantic model. This is the preferred pattern over returning a generic `list[dict]`.
-
-**Example: `lookup_token_by_symbol`**
-
-```python
-from blockscout_mcp_server.models import ToolResponse, TokenSearchResult # Specific model
-from blockscout_mcp_server.tools.common import build_tool_response
-
-# In a real scenario, TokenSearchResult would be in `models.py`
-# class TokenSearchResult(BaseModel):
-#     address: str
-#     name: str
-#     ...
-
-async def lookup_token_by_symbol(
-    chain_id: str, symbol: str
-) -> ToolResponse[list[TokenSearchResult]]: # Note the specific return type
-    """Search for token addresses by symbol or name."""
-    response_data = await make_blockscout_request(...) # API call
-
-    items = response_data.get("items", [])
-    
-    # Create a list of strongly-typed Pydantic objects
-    search_results = []
-    for item in items:
-        search_results.append(
-            TokenSearchResult(
-                address=item.get("address_hash", ""),
-                name=item.get("name", ""),
-                # ... other fields
-            )
-        )
-    
-    # Optionally add notes, for example, about truncation
-    notes = None
-    if len(items) > SOME_LIMIT:
-        notes = ["Result list was truncated."]
-
-    return build_tool_response(data=search_results, notes=notes)
-```
-
-#### 4. Using a Specific Data Model for the Payload (`return_type: ToolResponse[MyDataModel]`)
-
-For tools that have a well-defined output structure, you should define a specific Pydantic model for the `data` payload. This provides the best type safety and clarity.
+**This is the preferred pattern for most tools.** Define a specific Pydantic model for the `data` payload to provide the best type safety and clarity.
 
 ```python
 from pydantic import BaseModel, Field
@@ -284,7 +273,43 @@ async def get_latest_block(chain_id: str) -> ToolResponse[LatestBlockData]:
     return build_tool_response(data=block_data)
 ```
 
-#### 5. Rich Response with Multiple Optional Fields (`return_type: ToolResponse[dict]`)
+#### 2. Processing Lists with Specific Item Models (`return_type: ToolResponse[list[MyItemModel]]`)
+
+Use when returning lists of structured items:
+
+```python
+from blockscout_mcp_server.models import ToolResponse, TokenSearchResult
+
+async def lookup_tokens(chain_id: str, symbol: str) -> ToolResponse[list[TokenSearchResult]]:
+    """Search for tokens."""
+    response_data = await make_blockscout_request(...)
+    
+    items = response_data.get("items", [])
+    
+    # Convert to strongly-typed list
+    search_results = [
+        TokenSearchResult(
+            address=item.get("address_hash", ""),
+            name=item.get("name", ""),
+            symbol=item.get("symbol", ""),
+            # ... other fields
+        )
+        for item in items
+    ]
+    
+    return build_tool_response(data=search_results)
+```
+
+#### 3. Legacy Pattern: Full JSON Response (`return_type: ToolResponse[dict]`)
+
+**Use this pattern sparingly, only when you truly need dynamic/unstructured output:**
+
+```python
+# Only use this for truly dynamic responses where a specific model isn't practical
+return build_tool_response(data=response_data)
+```
+
+#### 4. Rich Response with Multiple Optional Fields (`return_type: ToolResponse[dict]`)
 
 Use when you need to provide additional context beyond just the data payload:
 
@@ -320,7 +345,7 @@ return build_tool_response(
 )
 ```
 
-#### 6. Handling Pagination with Opaque Cursors (`return_type: ToolResponse[list[dict]]`)
+#### 5. Handling Pagination with Opaque Cursors (`return_type: ToolResponse[list[dict]]`)
 
 For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
 
@@ -382,7 +407,7 @@ async def paginated_tool_name(
     return build_tool_response(data=processed_items, pagination=pagination)
 ```
 
-#### 7. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
+#### 6. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
 
@@ -441,7 +466,7 @@ async def some_tool_that_returns_addresses(chain_id: str, ...) -> ToolResponse[d
     return build_tool_response(data=transformed_response)
 ```
 
-#### 8. Truncating Large Data Fields to Save Context (`return_type: ToolResponse[dict]`)
+#### 7. Truncating Large Data Fields to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Some API fields, like the raw `data` field or deeply nested values inside a log's `decoded` object, can be extremely large and consume excessive LLM context. We shorten these values and explicitly flag the truncation, providing guidance on how to retrieve the full data if needed.
 
@@ -477,7 +502,7 @@ async def tool_with_large_data_fields(chain_id: str, hash: str, ctx: Context) ->
     )
 ```
 
-#### 9. Recursively Truncating Nested Data Structures (`return_type: ToolResponse[dict]`)
+#### 8. Recursively Truncating Nested Data Structures (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Some API fields, like `decoded_input` in a transaction, can contain deeply nested lists and tuples with large data blobs. A simple check is not enough. To handle this, we use a recursive helper to traverse the structure and truncate any long strings found within, replacing them with a structured object to signal the truncation.
 
