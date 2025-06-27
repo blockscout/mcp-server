@@ -1,11 +1,10 @@
 import asyncio
-import json
 from typing import Annotated
 
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
-from blockscout_mcp_server.models import LatestBlockData, ToolResponse
+from blockscout_mcp_server.models import BlockInfoData, LatestBlockData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
@@ -21,14 +20,10 @@ async def get_block_info(
     include_transactions: Annotated[
         bool | None, Field(description="If true, includes a list of transaction hashes from the block.")
     ] = False,
-) -> str:
-    """
-    Get block information like timestamp, gas used, burnt fees, transaction count etc.
-    Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
-    """  # noqa: E501
+) -> ToolResponse[BlockInfoData]:
+    """Get block details from Blockscout, optionally including transaction hashes."""  # noqa: E501
     total_steps = 3.0 if include_transactions else 2.0
 
-    # Report start of operation
     await report_and_log_progress(
         ctx,
         progress=0.0,
@@ -38,7 +33,6 @@ async def get_block_info(
 
     base_url = await get_blockscout_base_url(chain_id)
 
-    # Report progress after resolving Blockscout URL
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -54,14 +48,12 @@ async def get_block_info(
             total=total_steps,
             message="Successfully fetched block data.",
         )
-        return f"Basic block info:\n{json.dumps(response_data)}"
+        block_data = BlockInfoData(block_details=response_data)
+        return build_tool_response(data=block_data)
 
-    # If include_transactions is True
     block_api_path = f"/api/v2/blocks/{number_or_hash}"
     txs_api_path = f"/api/v2/blocks/{number_or_hash}/transactions"
 
-    # We use asyncio.gather to run both API requests concurrently.
-    # return_exceptions=True ensures that if one call fails, the other can still complete.
     results = await asyncio.gather(
         make_blockscout_request(base_url=base_url, api_path=block_api_path),
         make_blockscout_request(base_url=base_url, api_path=txs_api_path),
@@ -75,29 +67,17 @@ async def get_block_info(
     )
 
     block_info_result, txs_result = results
-    output_parts = []
+    notes = None
 
-    # First, handle the result of the main block info call.
     if isinstance(block_info_result, Exception):
-        return f"Error fetching basic block info: {block_info_result}"
+        raise block_info_result
 
-    output_parts.append("Basic block info:")
-    output_parts.append(json.dumps(block_info_result))
-
-    # Second, handle the result of the transactions call.
+    tx_hashes = None
     if isinstance(txs_result, Exception):
-        output_parts.append(f"\n\nError fetching transactions for the block: {txs_result}")
+        notes = [f"Could not retrieve the list of transactions for this block. Error: {txs_result}"]
     else:
-        # The API returns transactions inside an "items" list.
         tx_items = txs_result.get("items", [])
-        if tx_items:
-            # We only need the 'hash' from each transaction object.
-            tx_hashes = [tx.get("hash") for tx in tx_items if tx.get("hash")]
-            output_parts.append("\n\nTransactions in the block:")
-            output_parts.append(json.dumps(tx_hashes))
-        else:
-            # Handle the case where the block has no transactions.
-            output_parts.append("\n\nNo transactions in the block.")
+        tx_hashes = [tx.get("hash") for tx in tx_items if tx.get("hash")]
 
     await report_and_log_progress(
         ctx,
@@ -105,7 +85,9 @@ async def get_block_info(
         total=total_steps,
         message="Successfully fetched all block data.",
     )
-    return "\n".join(output_parts)
+
+    block_data = BlockInfoData(block_details=block_info_result, transaction_hashes=tx_hashes)
+    return build_tool_response(data=block_data, notes=notes)
 
 
 async def get_latest_block(

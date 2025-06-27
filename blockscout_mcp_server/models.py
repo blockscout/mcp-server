@@ -159,3 +159,15 @@ class ToolResponse(BaseModel, Generic[T]):
         None,
         description="Pagination information, present only if the 'data' is a single page of a larger result set.",
     )
+
+
+# --- Model for get_block_info Data Payload ---
+class BlockInfoData(BaseModel):
+    """A structured representation of a block's information."""
+
+    model_config = ConfigDict(extra="allow")
+
+    block_details: dict[str, Any] = Field(description="A dictionary containing the detailed properties of the block.")
+    transaction_hashes: list[str] | None = Field(
+        None, description="A list of transaction hashes included in the block."
+    )

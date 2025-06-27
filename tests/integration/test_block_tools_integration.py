@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
@@ -26,15 +24,11 @@ async def test_get_block_info_integration(mock_ctx):
     block_number = "19000000"
     result = await get_block_info(chain_id="1", number_or_hash=block_number, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "Basic block info:" in result
-    assert "Transactions in the block:" not in result
-
-    # Parse the JSON part and check some fields
-    json_part = result.replace("Basic block info:\n", "")
-    data = json.loads(json_part)
-    assert data["height"] == 19000000
-    assert "hash" in data
+    assert hasattr(result, "data")
+    assert hasattr(result.data, "block_details")
+    assert result.data.block_details["height"] == 19000000
+    assert "hash" in result.data.block_details
+    assert result.data.transaction_hashes is None
 
 
 @pytest.mark.integration
@@ -45,26 +39,15 @@ async def test_get_block_info_with_transactions_integration(mock_ctx):
     block_number = "1000000"
     result = await get_block_info(chain_id="1", number_or_hash=block_number, include_transactions=True, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "Basic block info:" in result
-    assert "Transactions in the block:" in result
+    assert hasattr(result, "data")
+    details = result.data.block_details
+    hashes = result.data.transaction_hashes
 
-    tx_prefix = "\n\nTransactions in the block:\n"
-    assert tx_prefix in result
-    parts = result.split(tx_prefix)
-    assert len(parts) == 2
-
-    block_info_json_str = parts[0].replace("Basic block info:\n", "")
-    block_info_json = json.loads(block_info_json_str)
-
-    tx_list_json_str = parts[1]
-    tx_list_json = json.loads(tx_list_json_str)
-
-    assert block_info_json["height"] == 1000000
-    assert block_info_json["transaction_count"] == 2
-    assert isinstance(tx_list_json, list)
-    assert len(tx_list_json) == 2
-    assert all(tx.startswith("0x") for tx in tx_list_json)
+    assert details["height"] == 1000000
+    assert details["transaction_count"] == 2
+    assert isinstance(hashes, list)
+    assert len(hashes) == 2
+    assert all(tx.startswith("0x") for tx in hashes)
 
 
 @pytest.mark.integration
@@ -75,15 +58,11 @@ async def test_get_block_info_with_no_transactions_integration(mock_ctx):
     block_number = "100"
     result = await get_block_info(chain_id="1", number_or_hash=block_number, include_transactions=True, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "Basic block info:" in result
-    assert "No transactions in the block." in result
-    assert "Transactions in the block:" not in result
+    assert hasattr(result, "data")
+    details = result.data.block_details
+    hashes = result.data.transaction_hashes
 
-    no_tx_prefix = "\n\nNo transactions in the block."
-    assert no_tx_prefix in result
-    block_info_json_str = result.split(no_tx_prefix)[0].replace("Basic block info:\n", "")
-    block_info_json = json.loads(block_info_json_str)
-
-    assert block_info_json["height"] == 100
-    assert block_info_json["transaction_count"] == 0
+    assert details["height"] == 100
+    assert details["transaction_count"] == 0
+    assert isinstance(hashes, list)
+    assert len(hashes) == 0
