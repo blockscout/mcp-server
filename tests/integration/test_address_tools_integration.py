@@ -135,7 +135,11 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     assert isinstance(second_page_response, ToolResponse)
     assert isinstance(second_page_response.data, list)
     assert len(second_page_response.data) > 0
-    assert first_page_response.data[0] != second_page_response.data[0]
+    first_page_addresses = {token.address for token in first_page_response.data}
+    second_page_addresses = {token.address for token in second_page_response.data}
+    assert len(first_page_addresses.intersection(second_page_addresses)) == 0, (
+        "Pagination error: Found overlapping tokens between page 1 and page 2."
+    )
 
 
 @pytest.mark.integration
