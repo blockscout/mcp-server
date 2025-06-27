@@ -4,6 +4,7 @@ import json
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
+    BlockInfoData,
     ChainInfo,
     DecodedInput,
     InstructionsData,
@@ -213,3 +214,23 @@ def test_transaction_info_data_handles_extra_fields_recursively():
     assert dumped_model["a_new_field_from_api"] == "some_value"
     assert dumped_model["token_transfers"][0]["a_new_token_field"] == "token_extra_value"
     assert dumped_model["decoded_input"]["a_new_decoded_field"] == "decoded_extra_value"
+
+
+def test_block_info_data_model():
+    """Verify BlockInfoData model structure and extra field handling."""
+    block_data = {
+        "height": 123,
+        "timestamp": "2024-01-01T00:00:00Z",
+        "a_new_field_from_api": "some_value",
+    }
+    tx_hashes = ["0x1", "0x2"]
+
+    # Test with all fields
+    model_full = BlockInfoData(block_details=block_data, transaction_hashes=tx_hashes)
+    assert model_full.block_details["height"] == 123
+    assert model_full.block_details["a_new_field_from_api"] == "some_value"
+    assert model_full.transaction_hashes == tx_hashes
+
+    # Test with optional field omitted
+    model_basic = BlockInfoData(block_details=block_data)
+    assert model_basic.transaction_hashes is None
