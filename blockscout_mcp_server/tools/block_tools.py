@@ -21,7 +21,10 @@ async def get_block_info(
         bool | None, Field(description="If true, includes a list of transaction hashes from the block.")
     ] = False,
 ) -> ToolResponse[BlockInfoData]:
-    """Get block details from Blockscout, optionally including transaction hashes."""  # noqa: E501
+    """
+    Get block information like timestamp, gas used, burnt fees, transaction count etc.
+    Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
+    """  # noqa: E501
     total_steps = 3.0 if include_transactions else 2.0
 
     await report_and_log_progress(
