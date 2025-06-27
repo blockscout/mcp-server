@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import AddressInfoData, ToolResponse
+from blockscout_mcp_server.models import AddressInfoData, TokenHoldingData, ToolResponse
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     get_tokens_by_address,
@@ -76,25 +76,24 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
-        # Check that the main content from mock API response is present (data flow verification)
-        assert '"name": "MyToken"' in result
-        assert '"symbol": "MTK"' in result
-        assert '"address": "0xabc123"' in result
-        assert '"balance": "1000"' in result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert all(isinstance(item, TokenHoldingData) for item in result.data)
 
-        assert '"name": "AnotherToken"' in result
-        assert '"symbol": "ATK"' in result
-        assert '"address": "0xdef456"' in result
-        assert '"balance": "2500"' in result
+        first, second = result.data
+        assert first.name == "MyToken"
+        assert first.symbol == "MTK"
+        assert first.address == "0xabc123"
+        assert first.balance == "1000"
 
-        # Check that the pagination hint is correctly formatted and included
+        assert second.name == "AnotherToken"
+        assert second.symbol == "ATK"
+        assert second.address == "0xdef456"
+        assert second.balance == "2500"
+
         next_cursor = encode_cursor(mock_api_response["next_page_params"])
-        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'  # noqa: E501
-        assert expected_pagination in result
-
-        # Check JSON array structure
-        assert result.startswith("[")
-        assert "]" in result
+        assert result.pagination is not None
+        assert result.pagination.next_call.params["cursor"] == next_cursor
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
@@ -151,18 +150,17 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
-        # Check that the main content from mock API response is present (data flow verification)
-        assert '"name": "SingleToken"' in result
-        assert '"symbol": "STK"' in result
-        assert '"address": "0x111222"' in result
-        assert '"balance": "100"' in result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert len(result.data) == 1
+        token = result.data[0]
+        assert isinstance(token, TokenHoldingData)
+        assert token.name == "SingleToken"
+        assert token.symbol == "STK"
+        assert token.address == "0x111222"
+        assert token.balance == "100"
 
-        # Check that no pagination hint is included
-        assert "To get the next page call" not in result
-
-        # Check JSON array structure
-        assert result.startswith("[")
-        assert result.endswith("]")
+        assert result.pagination is None
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
@@ -224,10 +222,10 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params=expected_params
         )
 
-        # Check that pagination hint reflects the new parameters
+        assert isinstance(result, ToolResponse)
         next_cursor = encode_cursor({"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"})
-        expected_pagination = f'To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")'  # noqa: E501
-        assert expected_pagination in result
+        assert result.pagination is not None
+        assert result.pagination.next_call.params["cursor"] == next_cursor
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
@@ -241,9 +239,8 @@ async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
     address = "0x123abc"
     invalid_cursor = "this-is-bad"
 
-    result = await get_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
-
-    assert "Error: Invalid or expired pagination cursor." in result
+    with pytest.raises(ValueError):
+        await get_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
 
 
 @pytest.mark.asyncio
@@ -281,8 +278,9 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
-        # Check that we get an empty JSON array
-        assert result == "[]"
+        assert isinstance(result, ToolResponse)
+        assert result.data == []
+        assert result.pagination is None
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
@@ -338,16 +336,15 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
         )
 
-        # Check that the content from mock API response is present (data flow verification)
-        # For this test, checking that the values from the mock response appear in output
-        assert '"symbol": "UNK"' in result
-        assert '"address": "0x999888"' in result
-        assert '"balance": "123"' in result
-        assert '"balance": "456"' in result
+        assert isinstance(result, ToolResponse)
+        assert len(result.data) == 2
+        assert isinstance(result.data[0], TokenHoldingData)
+        assert result.data[0].symbol == "UNK"
+        assert result.data[0].address == "0x999888"
+        assert result.data[0].balance == "123"
+        assert result.data[1].balance == "456"
 
-        # Check JSON array structure
-        assert result.startswith("[")
-        assert result.endswith("]")
+        assert result.pagination is None
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.call_count == 3
