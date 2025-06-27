@@ -139,6 +139,41 @@ To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[l
 }
 ```
 
+**Example: Structured Response from `get_tokens_by_address` with Pagination**
+
+This example shows how a tool communicates that more data is available using the structured `pagination` field. The `data` field contains the first page of results, and the `pagination` object provides all the necessary information for the AI to make the subsequent call for the next page.
+
+```json
+{
+  "data": [
+    {
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": "6",
+      "total_supply": "...",
+      "circulating_market_cap": "...",
+      "exchange_rate": "1.00",
+      "holders_count": "...",
+      "balance": "500000000"
+    }
+  ],
+  "data_description": null,
+  "notes": null,
+  "instructions": null,
+  "pagination": {
+    "next_call": {
+      "tool_name": "get_tokens_by_address",
+      "params": {
+        "chain_id": "1",
+        "address": "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503",
+        "cursor": "eyJmaWF0X3ZhbHVlIjoiNTAwLjAwIiwiaWQiOjEyMzQ1LCJpdGVtc19jb3VudCI6NTAsInZhbHVlIjoiNTAwMDAwMDAwIn0="
+      }
+    }
+  }
+}
+```
+
 This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
 
 **Example: Structured Response from `get_transaction_info` with Truncation**

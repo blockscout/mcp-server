@@ -5,7 +5,13 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
-from blockscout_mcp_server.models import AddressInfoData, ToolResponse
+from blockscout_mcp_server.models import (
+    AddressInfoData,
+    NextCallInfo,
+    PaginationInfo,
+    TokenHoldingData,
+    ToolResponse,
+)
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
@@ -86,7 +92,7 @@ async def get_tokens_by_address(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> str:
+) -> ToolResponse[list[TokenHoldingData]]:
     """
     Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
     Returns detailed token information including contract details (name, symbol, decimals), market metrics (exchange rate, market cap, volume), holders count, and actual balance (provided as is, without adjusting by decimals).
@@ -102,7 +108,9 @@ async def get_tokens_by_address(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
 
     # Report start of operation
     await report_and_log_progress(
@@ -121,43 +129,40 @@ async def get_tokens_by_address(
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched token data.")
 
-    # Process the response data and format it according to the responseTemplate
     items_data = response_data.get("items", [])
-    output_parts = ["["]  # Start of JSON array
-
-    for i, item in enumerate(items_data):
+    token_holdings = []
+    for item in items_data:
         token = item.get("token", {})
-        # Format each item as a JSON-like string block
-        item_str = f"""
-  {{
-    "address": "{token.get("address_hash", "")}",
-    "name": "{token.get("name", "")}",
-    "symbol": "{token.get("symbol", "")}",
-    "decimals": "{token.get("decimals", "")}",
-    "total_supply": "{token.get("total_supply", "")}",
-    "circulating_market_cap": "{token.get("circulating_market_cap", "")}",
-    "exchange_rate": "{token.get("exchange_rate", "")}",
-    "volume_24h": "{token.get("volume_24h", "")}",
-    "holders_count": "{token.get("holders_count", "")}",
-    "balance": "{item.get("value", "")}"
-  }}"""
-        output_parts.append(item_str)
-        if i < len(items_data) - 1:
-            output_parts.append(",")
+        token_holdings.append(
+            TokenHoldingData(
+                address=token.get("address_hash", ""),
+                name=token.get("name") or "",
+                symbol=token.get("symbol") or "",
+                decimals=token.get("decimals") or "",
+                total_supply=token.get("total_supply") or "",
+                circulating_market_cap=token.get("circulating_market_cap"),
+                exchange_rate=token.get("exchange_rate"),
+                holders_count=token.get("holders_count") or "",
+                balance=item.get("value", ""),
+            )
+        )
 
-    output_parts.append("]")  # End of JSON array
-
-    # Add pagination hint if next_page_params exists
+    pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
         next_cursor = encode_cursor(next_page_params)
-        pagination_hint = f"""
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="get_tokens_by_address",
+                params={
+                    "chain_id": chain_id,
+                    "address": address,
+                    "cursor": next_cursor,
+                },
+            )
+        )
 
-----
-To get the next page call get_tokens_by_address(chain_id="{chain_id}", address="{address}", cursor="{next_cursor}")"""
-        output_parts.append(pagination_hint)
-
-    return "".join(output_parts)
+    return build_tool_response(data=token_holdings, pagination=pagination)
 
 
 async def nft_tokens_by_address(

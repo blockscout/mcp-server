@@ -142,6 +142,21 @@ class TransactionInfoData(BaseModel):
     raw_input_truncated: bool | None = None
 
 
+# --- Model for get_tokens_by_address Data Payload ---
+class TokenHoldingData(BaseModel):
+    """Represents a single token holding with its associated metadata."""
+
+    address: str = Field(description="The contract address of the token.")
+    name: str = Field(description="The full name of the token (e.g., 'USD Coin').")
+    symbol: str = Field(description="The symbol of the token (e.g., 'USDC').")
+    decimals: str = Field(description="The number of decimals the token uses.")
+    total_supply: str = Field(description="The total supply of the token.")
+    circulating_market_cap: str | None = Field(description="The circulating market cap, if available.")
+    exchange_rate: str | None = Field(description="The current exchange rate, if available.")
+    holders_count: str = Field(description="The number of addresses holding this token.")
+    balance: str = Field(description="The token balance for the queried address (unadjusted for decimals).")
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""

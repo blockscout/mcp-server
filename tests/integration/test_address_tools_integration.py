@@ -38,12 +38,9 @@ async def test_get_tokens_by_address_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"  # Binance wallet
     result = await get_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "To get the next page call" in result
-    assert 'cursor="' in result
-
-    main_json = json.loads(result.split("----")[0])
-    assert isinstance(main_json, list) and len(main_json) > 0
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, list) and len(result.data) > 0
+    assert result.pagination is not None
 
 
 @pytest.mark.integration
@@ -120,34 +117,25 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     chain_id = "1"
 
     try:
-        first_page_result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        first_page_response = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"API request failed, skipping pagination test: {e}")
 
-    assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
-    assert cursor_match is not None, "Could not find cursor in the first page response."
-    cursor = cursor_match.group(1)
-    assert len(cursor) > 0
+    assert first_page_response.pagination is not None, "Pagination info is missing."
+    next_call_info = first_page_response.pagination.next_call
+    assert next_call_info.tool_name == "get_tokens_by_address"
+    cursor = next_call_info.params.get("cursor")
+    assert cursor is not None, "Cursor is missing from next_call params."
 
     try:
-        second_page_result = await get_tokens_by_address(
-            chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor
-        )
+        second_page_response = await get_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.fail(f"API request for the second page failed with cursor: {e}")
 
-    assert "Error: Invalid or expired pagination cursor" not in second_page_result
-
-    first_page_json_str = first_page_result.split("----")[0]
-    second_page_json_str = second_page_result.split("----")[0]
-
-    first_page_data = json.loads(first_page_json_str)
-    second_page_data = json.loads(second_page_json_str)
-
-    assert isinstance(second_page_data, list)
-    assert len(second_page_data) > 0
-    assert first_page_data[0] != second_page_data[0]
+    assert isinstance(second_page_response, ToolResponse)
+    assert isinstance(second_page_response.data, list)
+    assert len(second_page_response.data) > 0
+    assert first_page_response.data[0] != second_page_response.data[0]
 
 
 @pytest.mark.integration
