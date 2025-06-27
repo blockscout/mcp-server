@@ -13,7 +13,7 @@ This directory `.cursor/rules` contains rule files that govern the behavior and 
 
 - **`110-new-mcp-tool.mdc`** - Comprehensive guide for adding new MCP tool functions and patterns, including data truncation and structured response techniques
 - **`120-mcp-tool-arguments.mdc`** - Rules for modifying existing MCP tool functions, emphasizing context conservation and purpose clarity
-- **`130-version-management.mdc`** - Version update procedures requiring synchronization across pyproject.toml, __init__.py, and constants.py
+- **`130-version-management.mdc`** - Version update procedures requiring synchronization across `pyproject.toml` and `__init__.py`
 - **`140-tool-description.mdc`** - Guidelines for writing effective tool descriptions with character limits and formatting rules
 
 ### Testing & Development (200-299)
@@ -28,7 +28,7 @@ This directory `.cursor/rules` contains rule files that govern the behavior and 
 
 ### Meta Rules (900-999)
 
-- **`900-rules-maintenance.mdc`** - Instructions for maintaining this AGENTS.md file whenever rule files are created or modified
+- **`900-rules-maintenance.mdc`** - Critical instructions for maintaining this AGENTS.md file when using edit_file on .cursor/rules/*.mdc files or creating/modifying/deleting rule files
 
 ## Usage
 

@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 # MCP Server Version Management Rule
 
-## When updating the version of the MCP server, ALL of the following files must be updated with the new version:
+## When updating the version of the MCP server, update the following files:
 
 1. **`pyproject.toml`** - Update the `version` field in the `[project]` section:
    ```toml
@@ -21,18 +21,8 @@ alwaysApply: false
    __version__ = "X.Y.Z"  # <-- Update this line
    ```
 
-3. **`blockscout_mcp_server/constants.py`** - Update the version in the `SERVER_INSTRUCTIONS` string:
-   ```python
-   SERVER_INSTRUCTIONS = """
-   Blockscout MCP server version: X.Y.Z  <-- Update this line
-   
-   If you receive an error "500 Internal Server Error" for any tool, retry calling this tool up to 3 times until successful.
-   ...
-   ```
-
 ## Important Notes:
 
-- **All three files must be updated simultaneously** - never update the version in only one or two files
-- **Use the exact same version string** in all three locations (e.g., "1.2.3")
+- **Use the exact same version string** in both locations (e.g., "1.2.3")
 - **Follow semantic versioning** (MAJOR.MINOR.PATCH) when choosing version numbers
-- **Update all files in a single operation** to maintain consistency across the codebase
+- **Update both files simultaneously** to maintain consistency across the codebase
