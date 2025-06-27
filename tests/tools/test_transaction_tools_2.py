@@ -348,7 +348,6 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
         ],
     }
 
-
     with (
         patch(
             "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock

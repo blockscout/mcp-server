@@ -172,6 +172,7 @@ async def test_get_transaction_info_integration(mock_ctx):
     assert isinstance(data.token_transfers, list)
     for transfer in data.token_transfers:
         assert isinstance(transfer, TokenTransfer)
+        assert isinstance(transfer.transfer_type, str)
 
 
 @pytest.mark.integration
