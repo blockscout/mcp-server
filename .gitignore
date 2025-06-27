@@ -14,3 +14,6 @@ htmlcov/
 
 # Ruff
 .ruff_cache/
+
+# local documents
+temp/

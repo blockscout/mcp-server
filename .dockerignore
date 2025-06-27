@@ -68,3 +68,6 @@ htmlcov/
 
 # Cursor
 .cursor/
+
+# local documents
+temp/
