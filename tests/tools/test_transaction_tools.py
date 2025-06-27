@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.models import ToolResponse, TransactionSummaryData
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
     get_transactions_by_address,
@@ -383,10 +384,8 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
     tx_hash = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    mock_api_response = {"data": {"summaries": "This is a test transaction summary."}}
-    expected_result = (
-        "# Transaction Summary from Blockscout Transaction Interpreter\nThis is a test transaction summary."
-    )
+    summary_text = "This is a test transaction summary."
+    mock_api_response = {"data": {"summaries": summary_text}}
 
     with (
         patch(
@@ -403,7 +402,9 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
         result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, TransactionSummaryData)
+        assert result.data.summary == summary_text
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
 
@@ -424,7 +425,6 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
 
     # Response with no summary data
     mock_api_response = {"data": {}}
-    expected_result = "No summary available."
 
     with (
         patch(
@@ -441,7 +441,9 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
         result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
-        assert result == expected_result
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, TransactionSummaryData)
+        assert result.data.summary is None
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
         assert mock_ctx.report_progress.call_count == 3

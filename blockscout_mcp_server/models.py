@@ -95,6 +95,16 @@ class EnsAddressData(BaseModel):
     )
 
 
+# --- Model for transaction_summary Data Payload ---
+class TransactionSummaryData(BaseModel):
+    """A structured representation of a transaction summary."""
+
+    summary: str | None = Field(
+        None,
+        description="The human-readable summary of the transaction, or null if no summary is available.",
+    )
+
+
 # --- Models for get_transaction_info Data Payload ---
 class TokenTransfer(BaseModel):
     """Represents a single token transfer within a transaction."""
