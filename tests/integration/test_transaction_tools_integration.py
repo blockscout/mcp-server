@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT, LOG_DATA_TRUNCATION_LIMIT
+from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
@@ -156,25 +157,22 @@ async def test_get_transaction_info_integration(mock_ctx):
     result = await get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
 
     # Assert that the main data is present and transformed
-    assert isinstance(result, dict)
-    assert "hash" not in result
-    assert result["status"] == "ok"
-    assert "decoded_input" in result and result["decoded_input"] is not None
-    assert "raw_input" not in result
-    assert isinstance(result.get("from"), str)
-    assert result["from"].startswith("0x")
-    assert isinstance(result.get("to"), str)
-    assert result["to"].startswith("0x")
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    data = result.data
+    assert data.status == "ok"
+    assert data.decoded_input is not None
+    assert data.raw_input is None
+    assert isinstance(data.from_address, str)
+    assert data.from_address.startswith("0x")
+    assert isinstance(data.to_address, str)
+    assert data.to_address.startswith("0x")
 
     # Assert token_transfers optimized
-    assert "token_transfers" in result and isinstance(result["token_transfers"], list)
-    for transfer in result["token_transfers"]:
-        assert "block_hash" not in transfer
-        assert "block_number" not in transfer
-        assert "transaction_hash" not in transfer
-        assert "timestamp" not in transfer
-        assert isinstance(transfer.get("from"), str)
-        assert isinstance(transfer.get("to"), str)
+    assert isinstance(data.token_transfers, list)
+    for transfer in data.token_transfers:
+        assert isinstance(transfer, TokenTransfer)
+        assert isinstance(transfer.transfer_type, str)
 
 
 @pytest.mark.integration
@@ -189,27 +187,23 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     base_url = await get_blockscout_base_url(chain_id)
     result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "**Note on Truncated Data:**" in result
-    # Add assertion for the curl command (strip trailing slash like the tool does)
-    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    assert result.notes is not None
+    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result.notes[1]
 
-    json_part = result.split("----")[0]
-    data = json.loads(json_part)
+    data = result.data
+    assert data.decoded_input is None
+    assert isinstance(data.from_address, str)
+    assert data.to_address is None
 
-    assert "hash" not in data
-    assert data["decoded_input"] is None
-    assert isinstance(data.get("from"), str)
-    assert data.get("to") is None
+    assert data.raw_input is not None
+    assert data.raw_input_truncated is True
 
-    assert "raw_input" in data
-    assert data["raw_input_truncated"] is True
-
-    assert "token_transfers" in data and len(data["token_transfers"]) > 0
-    first_transfer = data["token_transfers"][0]
-    assert isinstance(first_transfer.get("from"), str)
-    assert isinstance(first_transfer.get("to"), str)
-    assert first_transfer.get("type") == "token_minting"
+    assert len(data.token_transfers) > 0
+    first_transfer = data.token_transfers[0]
+    assert isinstance(first_transfer, TokenTransfer)
+    assert first_transfer.transfer_type == "token_minting"
 
 
 @pytest.mark.integration
@@ -225,20 +219,18 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     # Dynamically resolve the base URL
     base_url = await get_blockscout_base_url(chain_id)
     try:
-        result_str = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
-    assert isinstance(result_str, str)
-    assert "**Note on Truncated Data:**" in result_str
-    # Use the resolved base_url in the assertion (strip trailing slash like the tool does)
-    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result_str
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    assert result.notes is not None
+    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result.notes[1]
 
-    json_part = result_str.split("----")[0]
-    data = json.loads(json_part)
-
-    assert "decoded_input" in data
-    params = data["decoded_input"]["parameters"]
+    data = result.data
+    assert data.decoded_input is not None
+    params = data.decoded_input.parameters
     calldatas_param = next((p for p in params if p["name"] == "calldatas"), None)
     assert calldatas_param is not None
 

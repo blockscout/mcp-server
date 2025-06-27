@@ -141,6 +141,39 @@ To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[l
 
 This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
 
+**Example: Structured Response from `get_transaction_info` with Truncation**
+
+This example shows how a tool communicates important metadata, like a data truncation warning, using the optional `notes` field. It also demonstrates how nested objects like `token_transfers` are now strongly typed. The primary data remains cleanly structured in the `data` field, while the contextual warning is provided separately.
+
+```json
+{
+  "data": {
+    "from_address": "0x...",
+    "to_address": "0x...",
+    "token_transfers": [
+      {
+        "from_address": "0x...",
+        "to_address": "0x...",
+        "token": { "...": "..." },
+        "transfer_type": "token_transfer"
+      }
+    ],
+    "raw_input": "0x...",
+    "raw_input_truncated": true,
+    "decoded_input": null,
+    "status": "ok",
+    "timestamp": "2024-05-20T12:00:00.000Z"
+  },
+  "data_description": null,
+  "notes": [
+    "One or more large data fields in this response have been truncated (indicated by \"value_truncated\": true or \"raw_input_truncated\": true).",
+    "To get the full, untruncated data, you can retrieve it programmatically. For example, using curl:\n`curl \"https://eth.blockscout.com/api/v2/transactions/0x...\"`"
+  ],
+  "instructions": null,
+  "pagination": null
+}
+```
+
 3. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.

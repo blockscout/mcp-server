@@ -47,7 +47,7 @@ def test_transform_contract_creation():
         "status": "pending",
     }
 
-    expected = {"from": "0xfrom", "to": None, "status": "pending"}
+    expected = {"from": "0xfrom", "to": None, "status": "pending", "token_transfers": []}
     assert _transform_transaction_info(data) == expected
 
 
@@ -59,7 +59,7 @@ def test_transform_no_token_transfers_key():
         "status": "ok",
     }
 
-    expected = {"from": "0xfrom", "to": "0xto", "status": "ok"}
+    expected = {"from": "0xfrom", "to": "0xto", "status": "ok", "token_transfers": []}
     assert _transform_transaction_info(data) == expected
 
 

@@ -6,10 +6,12 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
+from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    build_tool_response,
     decode_cursor,
     encode_cursor,
     get_blockscout_base_url,
@@ -88,19 +90,23 @@ def _transform_transaction_info(data: dict) -> dict:
     if "token_transfers" in transformed_data and isinstance(transformed_data["token_transfers"], list):
         optimized_transfers = []
         for transfer in transformed_data["token_transfers"]:
-            if isinstance(transfer.get("from"), dict):
-                transfer["from"] = transfer["from"].get("hash")
-            if isinstance(transfer.get("to"), dict):
-                transfer["to"] = transfer["to"].get("hash")
+            # Copy the nested dictionary to avoid mutating the original response data
+            new_transfer = transfer.copy()
+            if isinstance(new_transfer.get("from"), dict):
+                new_transfer["from"] = new_transfer["from"].get("hash")
+            if isinstance(new_transfer.get("to"), dict):
+                new_transfer["to"] = new_transfer["to"].get("hash")
 
-            transfer.pop("block_hash", None)
-            transfer.pop("block_number", None)
-            transfer.pop("transaction_hash", None)
-            transfer.pop("timestamp", None)
+            new_transfer.pop("block_hash", None)
+            new_transfer.pop("block_number", None)
+            new_transfer.pop("transaction_hash", None)
+            new_transfer.pop("timestamp", None)
 
-            optimized_transfers.append(transfer)
+            optimized_transfers.append(new_transfer)
 
         transformed_data["token_transfers"] = optimized_transfers
+    else:
+        transformed_data["token_transfers"] = []
 
     return transformed_data
 
@@ -327,7 +333,7 @@ async def get_transaction_info(
     include_raw_input: Annotated[
         bool | None, Field(description="If true, includes the raw transaction input data.")
     ] = False,
-) -> dict | str:
+) -> ToolResponse[TransactionInfoData]:
     """
     Get comprehensive transaction information.
     Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
@@ -360,22 +366,24 @@ async def get_transaction_info(
     processed_data, was_truncated = _process_and_truncate_tx_info_data(response_data, include_raw_input)
 
     # Apply standard transformations
-    final_data = _transform_transaction_info(processed_data)
+    final_data_dict = _transform_transaction_info(processed_data)
 
-    if not was_truncated:
-        return final_data
+    transaction_data = TransactionInfoData(**final_data_dict)
 
-    # If truncated, return a string with the JSON and the instructional note
-    output_json = json.dumps(final_data)
-    note = f"""
-----
-**Note on Truncated Data:**
-One or more large data fields in this response have been truncated (indicated by "value_truncated": true or "raw_input_truncated": true).
+    notes = None
+    if was_truncated:
+        notes = [
+            (
+                "One or more large data fields in this response have been truncated "
+                '(indicated by "value_truncated": true or "raw_input_truncated": true).'
+            ),
+            (
+                f"To get the full, untruncated data, you can retrieve it programmatically. "
+                f'For example, using curl:\n`curl "{str(base_url).rstrip("/")}/api/v2/transactions/{transaction_hash}"`'
+            ),
+        ]
 
-To get the full, untruncated data, you can retrieve it programmatically. For example, using curl:
-`curl "{str(base_url).rstrip("/")}/api/v2/transactions/{transaction_hash}"`
-"""  # noqa: E501
-    return f"{output_json}{note}"
+    return build_tool_response(data=transaction_data, notes=notes)
 
 
 async def get_transaction_logs(
