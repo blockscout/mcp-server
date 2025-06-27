@@ -6,7 +6,11 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
-from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
+from blockscout_mcp_server.models import (
+    ToolResponse,
+    TransactionInfoData,
+    TransactionSummaryData,
+)
 from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
@@ -290,7 +294,7 @@ async def transaction_summary(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
     ctx: Context,
-) -> str:
+) -> ToolResponse[TransactionSummaryData]:
     """
     Get human-readable transaction summaries from Blockscout Transaction Interpreter.
     Automatically classifies transactions into natural language descriptions (transfers, swaps, NFT sales, DeFi operations)
@@ -320,10 +324,12 @@ async def transaction_summary(
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
 
     summary = response_data.get("data", {}).get("summaries")
-    if summary:
-        return f"# Transaction Summary from Blockscout Transaction Interpreter\n{summary}"
-    else:
-        return "No summary available."
+    if summary is not None and not isinstance(summary, str):
+        summary = json.dumps(summary)
+
+    summary_data = TransactionSummaryData(summary=summary)
+
+    return build_tool_response(data=summary_data)
 
 
 async def get_transaction_info(
