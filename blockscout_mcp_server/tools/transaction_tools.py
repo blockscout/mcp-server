@@ -90,17 +90,19 @@ def _transform_transaction_info(data: dict) -> dict:
     if "token_transfers" in transformed_data and isinstance(transformed_data["token_transfers"], list):
         optimized_transfers = []
         for transfer in transformed_data["token_transfers"]:
-            if isinstance(transfer.get("from"), dict):
-                transfer["from"] = transfer["from"].get("hash")
-            if isinstance(transfer.get("to"), dict):
-                transfer["to"] = transfer["to"].get("hash")
+            # Copy the nested dictionary to avoid mutating the original response data
+            new_transfer = transfer.copy()
+            if isinstance(new_transfer.get("from"), dict):
+                new_transfer["from"] = new_transfer["from"].get("hash")
+            if isinstance(new_transfer.get("to"), dict):
+                new_transfer["to"] = new_transfer["to"].get("hash")
 
-            transfer.pop("block_hash", None)
-            transfer.pop("block_number", None)
-            transfer.pop("transaction_hash", None)
-            transfer.pop("timestamp", None)
+            new_transfer.pop("block_hash", None)
+            new_transfer.pop("block_number", None)
+            new_transfer.pop("transaction_hash", None)
+            new_transfer.pop("timestamp", None)
 
-            optimized_transfers.append(transfer)
+            optimized_transfers.append(new_transfer)
 
         transformed_data["token_transfers"] = optimized_transfers
     else:
