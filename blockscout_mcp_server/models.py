@@ -21,7 +21,7 @@ class NextCallInfo(BaseModel):
 class PaginationInfo(BaseModel):
     """Contains the structured information needed to retrieve the next page of results."""
 
-    next_call: NextCallInfo
+    next_call: NextCallInfo = Field(description="The structured tool call required to fetch the subsequent page.")
 
 
 # --- Model for get_latest_block Data Payload ---
@@ -32,7 +32,7 @@ class LatestBlockData(BaseModel):
     timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
 
 
-# --- Models for __get_instructions__ Data Payload ---
+# --- Model for __get_instructions__ Data Payload ---
 class ChainInfo(BaseModel):
     """Represents a blockchain with its essential identifiers."""
 
@@ -40,6 +40,7 @@ class ChainInfo(BaseModel):
     chain_id: int = Field(description="The unique numeric identifier for the chain.")
 
 
+# --- Model for __get_instructions__ Data Payload ---
 class InstructionsData(BaseModel):
     """A structured representation of the server's operational instructions."""
 
@@ -74,7 +75,7 @@ class TokenSearchResult(BaseModel):
     is_verified_via_admin_panel: bool = Field(description="Indicates if the token is verified by the Blockscout team.")
 
 
-# --- Models for get_address_info Data Payload ---
+# --- Model for get_address_info Data Payload ---
 class AddressInfoData(BaseModel):
     """A structured representation of the combined address information."""
 
@@ -105,41 +106,56 @@ class TransactionSummaryData(BaseModel):
     )
 
 
-# --- Models for get_transaction_info Data Payload ---
+# --- Model for get_transaction_info Data Payload ---
 class TokenTransfer(BaseModel):
     """Represents a single token transfer within a transaction."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
-    from_address: str | None = Field(alias="from")
-    to_address: str | None = Field(alias="to")
-    token: dict[str, Any]
-    transfer_type: str = Field(alias="type")
+    from_address: str | None = Field(alias="from", description="Sender address of the token transfer if available.")
+    to_address: str | None = Field(alias="to", description="Recipient address of the token transfer if available.")
+    token: dict[str, Any] = Field(description="Token metadata dictionary associated with the transfer.")
+    transfer_type: str = Field(alias="type", description="Type of transfer (e.g., 'transfer', 'mint').")
 
 
+# --- Model for get_transaction_info Data Payload ---
 class DecodedInput(BaseModel):
     """Represents the decoded input data of a transaction."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
-    method_call: str
-    method_id: str
-    parameters: list[Any]
+    method_call: str = Field(description="Name of the called method.")
+    method_id: str = Field(description="Identifier of the called method.")
+    parameters: list[Any] = Field(description="List of decoded input parameters for the method call.")
 
 
+# --- Model for get_transaction_info Data Payload ---
 class TransactionInfoData(BaseModel):
     """Structured representation of get_transaction_info data."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
-    from_address: str | None = Field(default=None, alias="from")
-    to_address: str | None = Field(default=None, alias="to")
+    from_address: str | None = Field(
+        default=None,
+        alias="from",
+        description="Sender of the transaction if available.",
+    )
+    to_address: str | None = Field(
+        default=None,
+        alias="to",
+        description="Recipient of the transaction if available.",
+    )
 
-    token_transfers: list[TokenTransfer] = Field(default_factory=list)
-    decoded_input: DecodedInput | None = None
+    token_transfers: list[TokenTransfer] = Field(
+        default_factory=list, description="List of token transfers related to the transaction."
+    )
+    decoded_input: DecodedInput | None = Field(
+        default=None,
+        description="Decoded method input if available.",
+    )
 
-    raw_input: str | None = None
-    raw_input_truncated: bool | None = None
+    raw_input: str | None = Field(default=None, description="Raw transaction input data if returned.")
+    raw_input_truncated: bool | None = Field(default=None, description="Indicates if raw_input was truncated.")
 
 
 # --- Model for get_tokens_by_address Data Payload ---
@@ -190,7 +206,7 @@ class ToolResponse(BaseModel, Generic[T]):
 class BlockInfoData(BaseModel):
     """A structured representation of a block's information."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
     block_details: dict[str, Any] = Field(description="A dictionary containing the detailed properties of the block.")
     transaction_hashes: list[str] | None = Field(
