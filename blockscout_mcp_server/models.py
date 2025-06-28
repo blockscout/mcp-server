@@ -157,6 +157,46 @@ class TokenHoldingData(BaseModel):
     balance: str = Field(description="The token balance for the queried address (unadjusted for decimals).")
 
 
+# --- Models for nft_tokens_by_address Data Payload ---
+
+
+class NftTokenInstance(BaseModel):
+    """Represents a single NFT instance with its metadata."""
+
+    id: str = Field(description="The unique identifier of the NFT token instance.")
+    name: str | None = Field(None, description="The name of the NFT, extracted from its metadata.")
+    description: str | None = Field(None, description="The description of the NFT, extracted from its metadata.")
+    image_url: str | None = Field(None, description="A URL for the NFT's image, from its metadata.")
+    external_app_url: str | None = Field(
+        None,
+        description="A URL to an external site or application related to the NFT.",  # noqa: E501
+    )
+    metadata_attributes: list | None = Field(
+        None, description="A list of metadata attributes (traits) associated with the NFT."
+    )
+
+
+class NftCollectionInfo(BaseModel):
+    """Represents the metadata for an NFT collection."""
+
+    type: str = Field(description="The token standard of the collection.")
+    address: str = Field(description="The smart contract address of the NFT collection.")
+    name: str = Field(description="The name of the collection.")
+    symbol: str = Field(description="The symbol of the collection.")
+    holders_count: int = Field(description="The number of unique addresses that hold a token from this collection.")
+    total_supply: int = Field(description="The total number of tokens in the collection.")
+
+
+class NftCollectionHolding(BaseModel):
+    """Represents an address's holding in a single NFT collection."""
+
+    collection: NftCollectionInfo = Field(description="The details of the NFT collection.")
+    amount: str = Field(description="The number of tokens from this collection owned by the address.")
+    token_instances: list[NftTokenInstance] = Field(
+        description="A list of the specific NFT instances owned by the address."
+    )
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""
