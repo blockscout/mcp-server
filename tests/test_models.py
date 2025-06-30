@@ -9,6 +9,7 @@ from blockscout_mcp_server.models import (
     DecodedInput,
     InstructionsData,
     NextCallInfo,
+    NftCollectionHolding,
     PaginationInfo,
     TokenTransfer,
     ToolResponse,
@@ -234,3 +235,39 @@ def test_block_info_data_model():
     # Test with optional field omitted
     model_basic = BlockInfoData(block_details=block_data)
     assert model_basic.transaction_hashes is None
+
+
+def test_nft_collection_holding_model():
+    """Verify NftCollectionHolding model with nested structures."""
+
+    holding_data = {
+        "collection": {
+            "type": "ERC-721",
+            "address": "0xabc",
+            "name": "Sample Collection",
+            "symbol": "SAMP",
+            "holders_count": 42,
+            "total_supply": 1000,
+        },
+        "amount": "2",
+        "token_instances": [
+            {
+                "id": "1",
+                "name": "NFT #1",
+                "description": "First token",
+                "image_url": "https://img/1.png",
+                "external_app_url": "https://example.com/1",
+                "metadata_attributes": [{"trait_type": "Color", "value": "Red"}],
+            },
+            {"id": "2", "name": "NFT #2"},
+        ],
+    }
+
+    holding = NftCollectionHolding(**holding_data)
+
+    assert holding.collection.name == "Sample Collection"
+    assert holding.collection.address == "0xabc"
+    assert holding.amount == "2"
+    assert len(holding.token_instances) == 2
+    assert holding.token_instances[0].metadata_attributes[0]["value"] == "Red"
+    assert holding.token_instances[1].name == "NFT #2"

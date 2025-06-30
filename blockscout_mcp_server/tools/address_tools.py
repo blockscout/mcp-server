@@ -8,6 +8,9 @@ from pydantic import Field
 from blockscout_mcp_server.models import (
     AddressInfoData,
     NextCallInfo,
+    NftCollectionHolding,
+    NftCollectionInfo,
+    NftTokenInstance,
     PaginationInfo,
     TokenHoldingData,
     ToolResponse,
@@ -173,98 +176,88 @@ async def nft_tokens_by_address(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> str:
+) -> ToolResponse[list[NftCollectionHolding]]:
     """
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
     Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).
     Essential for a detailed overview of an address's digital collectibles and their associated collection data.
     """  # noqa: E501
+
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}
 
-    # Add pagination parameters if provided via cursor
     if cursor:
         try:
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
 
-    # Report start of operation
     await report_and_log_progress(
         ctx, progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
     )
 
     base_url = await get_blockscout_base_url(chain_id)
 
-    # Report progress after resolving Blockscout URL
     await report_and_log_progress(
         ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching NFT data..."
     )
 
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
 
-    # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data.")
 
-    # Process the response data and format it
     items_data = response_data.get("items", [])
-    output_parts = ["["]  # Start of JSON array
+    nft_holdings: list[NftCollectionHolding] = []
 
-    for i, item in enumerate(items_data):
+    for item in items_data:
         token = item.get("token", {})
 
-        # Format token instances
-        token_instances = []
+        token_instances: list[NftTokenInstance] = []
         for instance in item.get("token_instances", []):
-            instance_data = {"id": instance.get("id", "")}
+            metadata = instance.get("metadata", {}) or {}
+            token_instances.append(
+                NftTokenInstance(
+                    id=instance.get("id", ""),
+                    name=metadata.get("name"),
+                    description=metadata.get("description"),
+                    image_url=metadata.get("image_url"),
+                    external_app_url=metadata.get("external_url"),
+                    metadata_attributes=metadata.get("attributes"),
+                )
+            )
 
-            # Add metadata if available
-            metadata = instance.get("metadata", {})
-            if metadata:
-                if metadata.get("name"):
-                    instance_data["name"] = metadata.get("name")
-                if metadata.get("description"):
-                    instance_data["description"] = metadata.get("description")
-                if metadata.get("external_url"):
-                    instance_data["external_app_url"] = metadata.get("external_url")
-                if metadata.get("attributes"):
-                    instance_data["metadata_attributes"] = metadata.get("attributes")
+        collection_info = NftCollectionInfo(
+            type=token.get("type", ""),
+            address=token.get("address_hash", ""),
+            name=token.get("name", ""),
+            symbol=token.get("symbol", ""),
+            holders_count=token.get("holders_count") or 0,
+            total_supply=token.get("total_supply") or 0,
+        )
 
-            token_instances.append(instance_data)
+        nft_holdings.append(
+            NftCollectionHolding(
+                collection=collection_info,
+                amount=item.get("amount", ""),
+                token_instances=token_instances,
+            )
+        )
 
-        # Format collection with its tokens
-        collection_data = {
-            "collection": {
-                "type": token.get("type", ""),
-                "address": token.get("address_hash", ""),
-                "name": token.get("name", ""),
-                "symbol": token.get("symbol", ""),
-                "holders_count": token.get("holders_count", 0),
-                "total_supply": token.get("total_supply", 0),
-            },
-            "amount": item.get("amount", ""),
-            "token_instances": token_instances,
-        }
-
-        item_str = json.dumps(collection_data)
-        output_parts.append(item_str)
-        if i < len(items_data) - 1:
-            output_parts.append(",")
-
-    output_parts.append("]")  # End of JSON array
-
-    # Add pagination hint if next_page_params exists
+    pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
         next_cursor = encode_cursor(next_page_params)
-        pagination_hint = f"""
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="nft_tokens_by_address",
+                params={"chain_id": chain_id, "address": address, "cursor": next_cursor},
+            )
+        )
 
-----
-To get the next page call nft_tokens_by_address(chain_id=\"{chain_id}\", address=\"{address}\", cursor=\"{next_cursor}\")"""  # noqa: E501
-        output_parts.append(pagination_hint)
-
-    return "".join(output_parts)
+    return build_tool_response(data=nft_holdings, pagination=pagination)
 
 
 async def get_address_logs(
