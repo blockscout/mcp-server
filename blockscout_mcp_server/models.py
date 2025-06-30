@@ -216,7 +216,7 @@ class NftCollectionHolding(BaseModel):
     )
 
 
-# --- Models for Log Items ---
+# --- Model for get_address_logs Data Payload ---
 class LogItemShort(BaseModel):
     """Represents a single log item, optimized for context when the address is redundant."""
 
@@ -237,6 +237,7 @@ class LogItemShort(BaseModel):
     )
 
 
+# --- Model for get_transaction_logs Data Payload ---
 class LogItem(LogItemShort):
     """Represents a single log item with its originating contract address."""
 
