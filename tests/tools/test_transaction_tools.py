@@ -385,7 +385,7 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     summary_text = "This is a test transaction summary."
-    mock_api_response = {"data": {"summaries": summary_text}}
+    mock_api_response = {"data": {"summaries": [summary_text]}}
 
     with (
         patch(
@@ -404,7 +404,7 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
         # ASSERT
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, TransactionSummaryData)
-        assert result.data.summary == summary_text
+        assert result.data.summary == [summary_text]
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
 
@@ -480,7 +480,7 @@ async def test_transaction_summary_handles_non_string_summary(mock_ctx):
         # ASSERT
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, TransactionSummaryData)
-        assert result.data.summary == '["First part of summary.", "Second part of summary."]'
+        assert result.data.summary == complex_summary  # Assert it's the original list
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
         assert mock_ctx.report_progress.call_count == 3

@@ -324,8 +324,6 @@ async def transaction_summary(
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
 
     summary = response_data.get("data", {}).get("summaries")
-    if summary is not None and not isinstance(summary, str):
-        summary = json.dumps(summary)
 
     summary_data = TransactionSummaryData(summary=summary)
 

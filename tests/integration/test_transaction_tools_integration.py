@@ -39,9 +39,9 @@ async def test_transaction_summary_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionSummaryData)
 
-    # The summary can be a string or None
-    assert isinstance(result.data.summary, str | type(None))
-    if isinstance(result.data.summary, str):
+    # The summary can be a list or None.
+    assert isinstance(result.data.summary, list | type(None))
+    if isinstance(result.data.summary, list):
         assert len(result.data.summary) > 0
 
 
