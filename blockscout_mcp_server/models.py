@@ -100,7 +100,7 @@ class EnsAddressData(BaseModel):
 class TransactionSummaryData(BaseModel):
     """A structured representation of a transaction summary."""
 
-    summary: list | None = Field(
+    summary: list[dict] | None = Field(
         None,
         description=(
             "List of summary objects for generating human-readable transaction descriptions, "
