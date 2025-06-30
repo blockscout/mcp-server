@@ -11,39 +11,82 @@ on:
     types: [published]
 
 env:
-  DOCKER_REGISTRY: ghcr.io
-  DOCKER_USERNAME: ${{ github.actor }}
-  DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-  IMAGE_NAME: ghcr.io/blockscout/mcp-server
+  REGISTRY: ghcr.io
+  IMAGE_NAME: blockscout/mcp-server
 
 jobs:
-  build-docker-image:
-    name: Build Docker Image
+  push:
+    name: Docker build and docker push
+    timeout-minutes: 30
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: regex
         with:
-          images: ${{ env.IMAGE_NAME }}
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+          text: ${{ github.ref }}
+          regex: '^(refs\/tags\/(v\d+\.\d+\.\d+))|(refs\/heads\/(main))$'
+
+      - name: Extract tag name
+        id: tags_extractor
+        run: |
+          t=${{ steps.regex.outputs.group2 }}
+          m=${{ steps.regex.outputs.group4 }}
+          (if ! [[ "$t" == "" ]]; then echo tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$t, ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest; elif ! [[ "$m" == "" ]]; then echo tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$m; else echo tags=; fi) >> $GITHUB_OUTPUT
+
+      - name: Setup repo
+        uses: blockscout/actions/.github/actions/setup-multiarch-buildx@main
+        id: setup
         with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
+          docker-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          docker-username: ${{ github.actor }}
+          docker-password: ${{ secrets.GITHUB_TOKEN }}
+          docker-remote-multi-platform: true
+          docker-arm-host: ${{ secrets.ARM_RUNNER_HOSTNAME }}
+          docker-arm-host-key: ${{ secrets.ARM_RUNNER_KEY }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
-          push: true
-          platforms: linux/amd64,linux/arm64
-          file: ./Dockerfile
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context: .
+          file: "Dockerfile"
+          push: ${{ steps.tags_extractor.outputs.tags != '' }}
           cache-from: type=gha
-          cache-to: type=gha
+          cache-to: type=gha,mode=max
+          tags: ${{ steps.tags_extractor.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: |
+            linux/amd64
+            linux/arm64/v8
+
+  deploy_stage:
+    name: Deploy stg instance
+    needs: push
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Get Vault credentials
+        id: retrieve-vault-secrets
+        uses: hashicorp/vault-action@v2.4.1
+        with:
+          url: https://vault.k8s.blockscout.com
+          role: ci-dev
+          path: github-jwt
+          method: jwt
+          tlsSkipVerify: false
+          exportToken: true
+          secrets: |
+            ci/data/dev/github token | WORKFLOW_TRIGGER_TOKEN ;
+      - name: Trigger deploy
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: blockscout
+          repo: deployment-values
+          github_token: ${{ env.WORKFLOW_TRIGGER_TOKEN }}
+          workflow_file_name: deploy_services.yaml
+          ref: main
+          wait_interval: 30
+          client_payload: '{ "instance": "mcp-server", "globalEnv": "testing"}'
