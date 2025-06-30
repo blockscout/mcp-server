@@ -157,7 +157,7 @@ class TokenHoldingData(BaseModel):
     balance: str = Field(description="The token balance for the queried address (unadjusted for decimals).")
 
 
-# --- Models for nft_tokens_by_address Data Payload ---
+# --- Model for nft_tokens_by_address Data Payload ---
 
 
 class NftTokenInstance(BaseModel):
@@ -176,6 +176,9 @@ class NftTokenInstance(BaseModel):
     )
 
 
+# --- Model for nft_tokens_by_address Data Payload ---
+
+
 class NftCollectionInfo(BaseModel):
     """Represents the metadata for an NFT collection."""
 
@@ -185,6 +188,9 @@ class NftCollectionInfo(BaseModel):
     symbol: str = Field(description="The symbol of the collection.")
     holders_count: int = Field(description="The number of unique addresses that hold a token from this collection.")
     total_supply: int = Field(description="The total number of tokens in the collection.")
+
+
+# --- Model for nft_tokens_by_address Data Payload ---
 
 
 class NftCollectionHolding(BaseModel):
