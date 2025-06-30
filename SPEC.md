@@ -139,6 +139,55 @@ To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[l
 }
 ```
 
+**Example: Structured Response from `get_address_logs` with All Features**
+
+This example shows a comprehensive response from `get_address_logs`, demonstrating the data payload, data description, a truncation note, and pagination information all in one structured object.
+
+```json
+{
+  "data": [
+    {
+      "block_number": 19000000,
+      "transaction_hash": "0xtx123...",
+      "topics": ["0xtopic1..."],
+      "data": "0x...",
+      "decoded": { "...": "..." },
+      "index": 0,
+      "data_truncated": true
+    }
+  ],
+  "data_description": [
+    "Items Structure:",
+    "- `block_number`: Block where the event was emitted",
+    "- `transaction_hash`: Transaction that triggered the event",
+    "- `index`: Log position within the block",
+    "- `topics`: Raw indexed event parameters (first topic is event signature hash)",
+    "- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**",
+    "- `data_truncated`: (Optional) `true` if the `data` or `decoded` field was shortened.",
+    "Event Decoding in `decoded` field:",
+    "- `method_call`: **Actually the event signature** (e.g., \"Transfer(address indexed from, address indexed to, uint256 value)\")",
+    "- `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)",
+    "- `parameters`: Decoded event parameters with names, types, values, and indexing status"
+  ],
+  "notes": [
+    "One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `\"data_truncated\": true`).",
+    "If the full log data is crucial for your analysis, you must first get the `transaction_hash` from the specific log item. Then, you can retrieve all logs for that single transaction programmatically. For example, using curl:",
+    "`curl \"https://eth.blockscout.com/api/v2/transactions/{THE_TRANSACTION_HASH}/logs\"`"
+  ],
+  "instructions": null,
+  "pagination": {
+    "next_call": {
+      "tool_name": "get_address_logs",
+      "params": {
+        "chain_id": "1",
+        "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0="
+      }
+    }
+  }
+}
+```
+
 **Example: Structured Response from `get_tokens_by_address` with Pagination**
 
 This example shows how a tool communicates that more data is available using the structured `pagination` field. The `data` field contains the first page of results, and the `pagination` object provides all the necessary information for the AI to make the subsequent call for the next page.

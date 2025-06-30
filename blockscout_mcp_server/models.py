@@ -213,6 +213,27 @@ class NftCollectionHolding(BaseModel):
     )
 
 
+# --- Model for get_address_logs Data Payload ---
+class LogItem(BaseModel):
+    """Represents a single log item from an address."""
+
+    model_config = ConfigDict(extra="allow")
+
+    block_number: int | None = Field(None, description="The block where the event was emitted.")
+    transaction_hash: str | None = Field(None, description="The transaction that triggered the event.")
+    topics: list[str | None] | None = Field(None, description="Raw indexed event parameters.")
+    data: str | None = Field(
+        None,
+        description="Raw non-indexed event parameters. May be truncated.",
+    )
+    decoded: dict[str, Any] | None = Field(None, description="Decoded event parameters, if available.")
+    index: int | None = Field(None, description="The log's position within the block.")
+    data_truncated: bool | None = Field(
+        None,
+        description="Flag indicating if the 'data' or 'decoded' field was shortened.",
+    )
+
+
 # --- The Main Standardized Response Model ---
 class ToolResponse(BaseModel, Generic[T]):
     """A standardized, structured response for all MCP tools, generic over the data payload type."""
