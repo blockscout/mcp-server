@@ -24,6 +24,8 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transactions_by_address,
     transaction_summary,
 )
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 mcp = FastMCP(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
 
@@ -51,6 +53,9 @@ mcp.tool()(get_chains_list)
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
 
+@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+async def health_check(_: Request) -> PlainTextResponse:
+    return PlainTextResponse("OK", status_code=200)
 
 @cli_app.command()
 def main_command(
