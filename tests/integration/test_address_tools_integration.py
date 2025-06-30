@@ -15,6 +15,25 @@ from blockscout_mcp_server.tools.address_tools import (
 )
 
 
+def _find_truncated_call_executed_in_log_item(log_item: LogItem) -> bool:
+    """Return True if the LogItem is a 'CallExecuted' event with a truncated 'data' parameter."""
+    if not isinstance(log_item.decoded, dict):
+        return False
+
+    if not log_item.decoded.get("method_call", "").startswith("CallExecuted"):
+        return False
+
+    data_param = next(
+        (p for p in log_item.decoded.get("parameters", []) if p.get("name") == "data"),
+        None,
+    )
+    if not data_param:
+        return False
+
+    value = data_param.get("value")
+    return isinstance(value, dict) and value.get("value_truncated") is True
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_integration(mock_ctx):
@@ -182,7 +201,9 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
     """
-    Tests that get_address_logs can find truncated data by searching across pages.
+    Tests that get_address_logs can find a 'CallExecuted' event with truncated
+    decoded data by searching across pages. This validates the handling of
+    complex nested truncation from the live API.
     """
     address = "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7"
     chain_id = "1"
@@ -197,7 +218,7 @@ async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
             pytest.skip(f"API request failed on page {page_num + 1}: {e}")
 
         for item in result.data:
-            if item.data_truncated:
+            if _find_truncated_call_executed_in_log_item(item):
                 found_truncated_log = True
                 break
 

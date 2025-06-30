@@ -319,7 +319,10 @@ async def get_address_logs(
         "- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**",
         "- `data_truncated`: (Optional) `true` if the `data` or `decoded` field was shortened.",
         "Event Decoding in `decoded` field:",
-        '- `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")',
+        (
+            "- `method_call`: **Actually the event signature** "
+            '(e.g., "Transfer(address indexed from, address indexed to, uint256 value)")'
+        ),
         "- `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)",
         "- `parameters`: Decoded event parameters with names, types, values, and indexing status",
     ]
@@ -327,8 +330,15 @@ async def get_address_logs(
     notes = None
     if was_truncated:
         notes = [
-            'One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).',
-            "If the full log data is crucial for your analysis, you must first get the `transaction_hash` from the specific log item. Then, you can retrieve all logs for that single transaction programmatically. For example, using curl:",
+            (
+                "One or more log items in this response had a `data` field that was "
+                'too large and has been truncated (indicated by `"data_truncated": true`).'
+            ),
+            (
+                "If the full log data is crucial for your analysis, you must first get "
+                "the `transaction_hash` from the specific log item. Then, you can retrieve "
+                "all logs for that single transaction programmatically. For example, using curl:"
+            ),
             f'`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`',
         ]
 
