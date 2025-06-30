@@ -1,11 +1,9 @@
-import json
-import re
-
 import httpx
 import pytest
 
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT, LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
+    LogItem,
     TokenTransfer,
     ToolResponse,
     TransactionInfoData,
@@ -19,36 +17,7 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transactions_by_address,
     transaction_summary,
 )
-
-
-def _extract_next_cursor(result_str: str) -> str | None:
-    if "cursor" not in result_str:
-        return None
-    return result_str.split('cursor="')[1].split('"')[0]
-
-
-def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
-    call_executed_log = next(
-        (
-            item
-            for item in data.get("items", [])
-            if isinstance(item.get("decoded"), dict)
-            and item["decoded"].get("method_call", "").startswith("CallExecuted")
-        ),
-        None,
-    )
-    if not call_executed_log:
-        return False
-
-    data_param = next(
-        (p for p in call_executed_log["decoded"].get("parameters", []) if p.get("name") == "data"),
-        None,
-    )
-    if not data_param:
-        return False
-
-    value = data_param.get("value")
-    return isinstance(value, dict) and value.get("value_truncated")
+from tests.integration.helpers import is_log_a_truncated_call_executed
 
 
 @pytest.mark.integration
@@ -77,36 +46,30 @@ async def test_get_transaction_logs_integration(mock_ctx):
     # This transaction on Ethereum Mainnet is known to have many logs, ensuring a paginated response.
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     try:
-        result_str = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
     # 1. Verify that pagination is working correctly
-    assert isinstance(result_str, str)
-    assert "To get the next page call" in result_str
-    assert 'cursor="' in result_str
-    assert "**Transaction logs JSON:**" in result_str
+    assert isinstance(result, ToolResponse)
+    assert result.pagination is not None
 
-    # 2. Parse the JSON and verify the basic structure
-    json_part = result_str.split("----")[0]
-    data = json.loads(json_part.split("**Transaction logs JSON:**\n")[-1])
-    assert "items" in data
-    assert isinstance(data["items"], list)
-    assert len(data["items"]) > 0
+    # 2. Verify the basic structure
+    assert isinstance(result.data, list)
+    assert len(result.data) > 0
 
     # 3. Validate the schema of the first transformed log item.
-    first_log = data["items"][0]
-    expected_keys = {"address", "block_number", "data", "decoded", "index", "topics"}
-    assert expected_keys.issubset(first_log.keys())
-    if "data_truncated" in first_log:
-        assert isinstance(first_log["data_truncated"], bool)
+    first_log = result.data[0]
+    assert isinstance(first_log, LogItem)
+    if first_log.data_truncated is not None:
+        assert isinstance(first_log.data_truncated, bool)
 
     # 4. Validate the data types of key fields.
-    assert isinstance(first_log["address"], str)
-    assert first_log["address"].startswith("0x")
-    assert isinstance(first_log["block_number"], int)
-    assert isinstance(first_log["index"], int)
-    assert isinstance(first_log["topics"], list)
+    assert isinstance(first_log.address, str)
+    assert first_log.address.startswith("0x")
+    assert isinstance(first_log.block_number, int)
+    assert isinstance(first_log.index, int)
+    assert isinstance(first_log.topics, list)
 
 
 @pytest.mark.integration
@@ -116,34 +79,23 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
 
     try:
-        first_page_result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+        first_page_response = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
-    assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
-    assert cursor_match is not None, "Could not find cursor in the first page response."
-    cursor = cursor_match.group(1)
-    assert len(cursor) > 0
+    assert first_page_response.pagination is not None
+    cursor = first_page_response.pagination.next_call.params["cursor"]
 
     try:
-        second_page_result = await get_transaction_logs(
+        second_page_response = await get_transaction_logs(
             chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor
         )
     except httpx.HTTPStatusError as e:
         pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {e}")
 
-    assert "Error: Invalid or expired pagination cursor" not in second_page_result
-
-    first_page_json_str = first_page_result.split("----")[0].split("**Transaction logs JSON:**\n")[-1]
-    second_page_json_str = second_page_result.split("----")[0].split("**Transaction logs JSON:**\n")[-1]
-
-    first_page_data = json.loads(first_page_json_str)
-    second_page_data = json.loads(second_page_json_str)
-
-    assert isinstance(second_page_data.get("items"), list)
-    assert len(second_page_data["items"]) > 0
-    assert first_page_data["items"][0] != second_page_data["items"][0]
+    assert isinstance(second_page_response, ToolResponse)
+    assert second_page_response.data
+    assert first_page_response.data[0] != second_page_response.data[0]
 
 
 @pytest.mark.integration
@@ -158,24 +110,21 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
     chain_id = "1"
 
     # Resolve the base URL the same way the tool does
-    base_url = await get_blockscout_base_url(chain_id)
+    await get_blockscout_base_url(chain_id)
     try:
-        result_str = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
     except httpx.HTTPStatusError as e:
         pytest.skip(f"Transaction data is currently unavailable from the API: {e}")
 
-    assert "**Note on Truncated Data:**" in result_str
-    assert f'`curl "{base_url}/api/v2/transactions/{tx_hash}/logs"`' in result_str
+    assert result.notes is not None
+    assert "One or more log items" in result.notes[0]
 
-    json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
-    data = json.loads(json_part)
-    assert "items" in data and isinstance(data["items"], list) and len(data["items"]) > 0
-
-    truncated_item = next((item for item in data["items"] if item.get("data_truncated")), None)
+    assert isinstance(result.data, list) and result.data
+    truncated_item = next((item for item in result.data if item.data_truncated), None)
     assert truncated_item is not None
-    assert truncated_item["data_truncated"] is True
-    assert "data" in truncated_item
-    assert len(truncated_item["data"]) == LOG_DATA_TRUNCATION_LIMIT
+    assert truncated_item.data_truncated is True
+    assert truncated_item.data is not None
+    assert len(truncated_item.data) == LOG_DATA_TRUNCATION_LIMIT
 
 
 @pytest.mark.integration
@@ -339,7 +288,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
 
     for page_num in range(MAX_PAGES_TO_CHECK):
         try:
-            result_str = await get_transaction_logs(
+            result = await get_transaction_logs(
                 chain_id=chain_id,
                 transaction_hash=tx_hash,
                 ctx=mock_ctx,
@@ -348,14 +297,11 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
         except httpx.HTTPStatusError as e:
             pytest.skip(f"API request failed on page {page_num + 1}: {e}")
 
-        json_part = result_str.split("**Transaction logs JSON:**\n")[1].split("----")[0]
-        data = json.loads(json_part)
-
-        if _find_truncated_call_executed_function_in_logs(data):
+        if any(is_log_a_truncated_call_executed(log) for log in result.data):
             found_truncated_log = True
             break
 
-        next_cursor = _extract_next_cursor(result_str)
+        next_cursor = result.pagination.next_call.params["cursor"] if result.pagination else None
         if next_cursor:
             cursor = next_cursor
         else:
