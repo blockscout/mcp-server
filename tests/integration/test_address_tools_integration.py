@@ -1,11 +1,9 @@
-import json
-import re
-
 import httpx
 import pytest
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
+    LogItem,
     NftCollectionHolding,
     ToolResponse,
 )
@@ -14,11 +12,6 @@ from blockscout_mcp_server.tools.address_tools import (
     get_address_logs,
     get_tokens_by_address,
     nft_tokens_by_address,
-)
-
-from .utils import (
-    _extract_next_cursor,
-    _find_truncated_call_executed_function_in_logs,
 )
 
 
@@ -57,35 +50,16 @@ async def test_get_address_logs_integration(mock_ctx):
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
     result = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
 
-    assert isinstance(result, str)
-    assert "To get the next page call" in result
-    assert 'cursor="' in result
-    assert "**Address logs JSON:**" in result
+    assert isinstance(result, ToolResponse)
+    assert result.pagination is not None
+    assert isinstance(result.data, list)
+    assert len(result.data) > 0
 
-    json_part = result.split("----")[0]
-    data = json.loads(json_part.split("**Address logs JSON:**\n")[-1])
-
-    assert "items" in data
-    assert isinstance(data["items"], list)
-    assert len(data["items"]) > 0
-
-    first_log = data["items"][0]
-    expected_keys = {
-        "block_number",
-        "data",
-        "decoded",
-        "index",
-        "topics",
-        "transaction_hash",
-    }
-    assert expected_keys.issubset(first_log.keys())
-    if "data_truncated" in first_log:
-        assert isinstance(first_log["data_truncated"], bool)
-    assert isinstance(first_log["transaction_hash"], str)
-    assert first_log["transaction_hash"].startswith("0x")
-    assert isinstance(first_log["block_number"], int)
-    assert isinstance(first_log["index"], int)
-    assert isinstance(first_log["topics"], list)
+    first_log = result.data[0]
+    assert isinstance(first_log, LogItem)
+    assert isinstance(first_log.transaction_hash, str)
+    assert first_log.transaction_hash.startswith("0x")
+    assert isinstance(first_log.block_number, int)
 
 
 @pytest.mark.asyncio
@@ -190,28 +164,18 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     except httpx.HTTPStatusError as e:
         pytest.skip(f"API request failed, skipping pagination test: {e}")
 
-    assert "To get the next page call" in first_page_result
-    cursor_match = re.search(r'cursor="([^"]+)"', first_page_result)
-    assert cursor_match is not None, "Could not find cursor in the first page response."
-    cursor = cursor_match.group(1)
-    assert len(cursor) > 0
+    assert first_page_result.pagination is not None
+    cursor = first_page_result.pagination.next_call.params.get("cursor")
+    assert cursor
 
     try:
         second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
     except httpx.HTTPStatusError as e:
         pytest.fail(f"API request for the second page failed with cursor: {e}")
 
-    assert "Error: Invalid or expired pagination cursor" not in second_page_result
-
-    first_page_json_str = first_page_result.split("----")[0].split("**Address logs JSON:**\n")[-1]
-    second_page_json_str = second_page_result.split("----")[0].split("**Address logs JSON:**\n")[-1]
-
-    first_page_data = json.loads(first_page_json_str)
-    second_page_data = json.loads(second_page_json_str)
-
-    assert isinstance(second_page_data.get("items"), list)
-    assert len(second_page_data["items"]) > 0
-    assert first_page_data["items"][0] != second_page_data["items"][0]
+    assert isinstance(second_page_result.data, list)
+    assert len(second_page_result.data) > 0
+    assert first_page_result.data[0].transaction_hash != second_page_result.data[0].transaction_hash
 
 
 @pytest.mark.integration
@@ -228,25 +192,20 @@ async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
 
     for page_num in range(MAX_PAGES_TO_CHECK):
         try:
-            result_str = await get_address_logs(
-                chain_id=chain_id,
-                address=address,
-                ctx=mock_ctx,
-                cursor=cursor,
-            )
+            result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
         except httpx.HTTPStatusError as e:
             pytest.skip(f"API request failed on page {page_num + 1}: {e}")
 
-        json_part = result_str.split("**Address logs JSON:**\n")[1].split("----")[0]
-        data = json.loads(json_part)
+        for item in result.data:
+            if item.data_truncated:
+                found_truncated_log = True
+                break
 
-        if _find_truncated_call_executed_function_in_logs(data):
-            found_truncated_log = True
+        if found_truncated_log:
             break
 
-        next_cursor = _extract_next_cursor(result_str)
-        if next_cursor:
-            cursor = next_cursor
+        if result.pagination:
+            cursor = result.pagination.next_call.params.get("cursor")
         else:
             break
 

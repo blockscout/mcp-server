@@ -20,10 +20,35 @@ from blockscout_mcp_server.tools.transaction_tools import (
     transaction_summary,
 )
 
-from .utils import (
-    _extract_next_cursor,
-    _find_truncated_call_executed_function_in_logs,
-)
+
+def _extract_next_cursor(result_str: str) -> str | None:
+    if "cursor" not in result_str:
+        return None
+    return result_str.split('cursor="')[1].split('"')[0]
+
+
+def _find_truncated_call_executed_function_in_logs(data: dict) -> bool:
+    call_executed_log = next(
+        (
+            item
+            for item in data.get("items", [])
+            if isinstance(item.get("decoded"), dict)
+            and item["decoded"].get("method_call", "").startswith("CallExecuted")
+        ),
+        None,
+    )
+    if not call_executed_log:
+        return False
+
+    data_param = next(
+        (p for p in call_executed_log["decoded"].get("parameters", []) if p.get("name") == "data"),
+        None,
+    )
+    if not data_param:
+        return False
+
+    value = data_param.get("value")
+    return isinstance(value, dict) and value.get("value_truncated")
 
 
 @pytest.mark.integration
