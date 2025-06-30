@@ -177,7 +177,11 @@ async def nft_tokens_by_address(
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
 ) -> ToolResponse[list[NftCollectionHolding]]:
-    """Retrieve NFT tokens owned by an address grouped by collection."""
+    """
+    Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
+    Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).
+    Essential for a detailed overview of an address's digital collectibles and their associated collection data.
+    """  # noqa: E501
 
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}

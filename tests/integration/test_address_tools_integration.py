@@ -6,6 +6,7 @@ import pytest
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
+    NftCollectionHolding,
     ToolResponse,
 )
 from blockscout_mcp_server.tools.address_tools import (
@@ -28,8 +29,15 @@ async def test_nft_tokens_by_address_integration(mock_ctx):
     result = await nft_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
 
     assert isinstance(result, ToolResponse)
-    assert isinstance(result.data, list) and len(result.data) > 0
+    assert isinstance(result.data, list)
+    assert len(result.data) > 0
     assert result.pagination is not None
+
+    first_holding = result.data[0]
+    assert isinstance(first_holding, NftCollectionHolding)
+    assert isinstance(first_holding.collection.address, str)
+    assert first_holding.collection.address.startswith("0x")
+    assert isinstance(first_holding.collection.name, str)
 
 
 @pytest.mark.integration
