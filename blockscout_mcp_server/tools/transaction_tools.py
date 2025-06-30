@@ -1,4 +1,3 @@
-import json
 from typing import Annotated
 
 from mcp.server.fastmcp import Context
@@ -7,6 +6,9 @@ from pydantic import Field
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
+    LogItem,
+    NextCallInfo,
+    PaginationInfo,
     ToolResponse,
     TransactionInfoData,
     TransactionSummaryData,
@@ -401,7 +403,7 @@ async def get_transaction_logs(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> str:
+) -> ToolResponse[list[LogItem]]:
     """
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
@@ -415,7 +417,9 @@ async def get_transaction_logs(
             decoded_params = decode_cursor(cursor)
             params.update(decoded_params)
         except InvalidCursorError:
-            return "Error: Invalid or expired pagination cursor. Please make a new request without the cursor to start over."  # noqa: E501
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
 
     # Report start of operation
     await report_and_log_progress(
@@ -436,67 +440,54 @@ async def get_transaction_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
-    transformed_items = []
+    log_items: list[LogItem] = []
     for item in original_items:
-        new_item = {
-            "address": item.get("address", {}).get("hash"),
-            "block_number": item.get("block_number"),
-            "data": item.get("data"),
-            "decoded": item.get("decoded"),
-            "index": item.get("index"),
-            "topics": item.get("topics"),
-        }
-        if item.get("data_truncated"):
-            new_item["data_truncated"] = True
-        transformed_items.append(new_item)
+        if isinstance(item.get("address"), dict):
+            item["address"] = item["address"].get("hash")
+        log_items.append(LogItem.model_validate(item))
 
-    transformed_response = {
-        "items": transformed_items,
-    }
+    data_description = [
+        "Items Structure:",
+        "address: The contract address that emitted the log (string)",
+        "block_number: Block where the event was emitted",
+        "index: Log position within the block",
+        "topics: Raw indexed event parameters (first topic is event signature hash)",
+        "data: Raw non-indexed event parameters (hex encoded). May be truncated.",
+        "decoded: If available, the decoded event with its name and parameters",
+        "data_truncated: (Optional) true if the data field was shortened.",
+        "Event Decoding in decoded field:",
+        "method_call: Actually the event signature",
+        "method_id: Actually the event signature hash",
+        "parameters: Decoded event parameters with names, types, values, and indexing status",
+    ]
 
-    # Report completion
-    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
+    notes = None
+    if was_truncated:
+        notes = [
+            "One or more log items in this response had a data field that was too large and has been truncated.",
+            f"To get the full log data, request {base_url}/api/v2/transactions/{transaction_hash}/logs",
+        ]
 
-    logs_json_str = json.dumps(transformed_response)  # Compact JSON
-
-    prefix = """**Items Structure:**
-- `address`: The contract address that emitted the log (string)
-- `block_number`: Block where the event was emitted
-- `index`: Log position within the block
-- `topics`: Raw indexed event parameters (first topic is event signature hash)
-- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**
-- `decoded`: If available, the decoded event with its name and parameters
-- `data_truncated`: (Optional) `true` if the `data` field was shortened.
-
-**Event Decoding in `decoded` field:**
-- `method_call`: **Actually the event signature** (e.g., "Transfer(address indexed from, address indexed to, uint256 value)")
-- `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)
-- `parameters`: Decoded event parameters with names, types, values, and indexing status
-
-**Transaction logs JSON:**
-"""  # noqa: E501
-
-    output = f"{prefix}{logs_json_str}"
-
+    pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
         next_cursor = encode_cursor(next_page_params)
-        pagination_hint = f"""
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="get_transaction_logs",
+                params={
+                    "chain_id": chain_id,
+                    "transaction_hash": transaction_hash,
+                    "cursor": next_cursor,
+                },
+            )
+        )
 
-----
-To get the next page call get_transaction_logs(chain_id=\"{chain_id}\", transaction_hash=\"{transaction_hash}\", cursor=\"{next_cursor}\")"""  # noqa: E501
-        output += pagination_hint
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
 
-    # Add a note about truncated data if it happened
-    if was_truncated:
-        note_on_truncation = f"""
-----
-**Note on Truncated Data:**
-One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `"data_truncated": true`).
-If the full log data is crucial for your analysis, you can retrieve the complete, untruncated logs for this transaction programmatically. For example, using curl:
-`curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`
-You would then need to parse the JSON response and find the specific log by its index.
-"""  # noqa: E501
-        output += note_on_truncation
-
-    return output
+    return build_tool_response(
+        data=log_items,
+        data_description=data_description,
+        notes=notes,
+        pagination=pagination,
+    )
