@@ -158,8 +158,6 @@ class TokenHoldingData(BaseModel):
 
 
 # --- Model for nft_tokens_by_address Data Payload ---
-
-
 class NftTokenInstance(BaseModel):
     """Represents a single NFT instance with its metadata."""
 
@@ -177,8 +175,6 @@ class NftTokenInstance(BaseModel):
 
 
 # --- Model for nft_tokens_by_address Data Payload ---
-
-
 class NftCollectionInfo(BaseModel):
     """Represents the metadata for an NFT collection."""
 
@@ -191,8 +187,6 @@ class NftCollectionInfo(BaseModel):
 
 
 # --- Model for nft_tokens_by_address Data Payload ---
-
-
 class NftCollectionHolding(BaseModel):
     """Represents an address's holding in a single NFT collection."""
 
