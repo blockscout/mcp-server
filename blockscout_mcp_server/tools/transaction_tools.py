@@ -448,24 +448,35 @@ async def get_transaction_logs(
 
     data_description = [
         "Items Structure:",
-        "address: The contract address that emitted the log (string)",
-        "block_number: Block where the event was emitted",
-        "index: Log position within the block",
-        "topics: Raw indexed event parameters (first topic is event signature hash)",
-        "data: Raw non-indexed event parameters (hex encoded). May be truncated.",
-        "decoded: If available, the decoded event with its name and parameters",
-        "data_truncated: (Optional) true if the data field was shortened.",
-        "Event Decoding in decoded field:",
-        "method_call: Actually the event signature",
-        "method_id: Actually the event signature hash",
-        "parameters: Decoded event parameters with names, types, values, and indexing status",
+        "- `address`: The contract address that emitted the log (string)",
+        "- `block_number`: Block where the event was emitted",
+        "- `index`: Log position within the block",
+        "- `topics`: Raw indexed event parameters (first topic is event signature hash)",
+        "- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**",
+        "- `decoded`: If available, the decoded event with its name and parameters",
+        "- `data_truncated`: (Optional) `true` if the `data` or `decoded` field was shortened.",
+        "Event Decoding in `decoded` field:",
+        (
+            "- `method_call`: **Actually the event signature** "
+            '(e.g., "Transfer(address indexed from, address indexed to, uint256 value)")'
+        ),
+        "- `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)",
+        "- `parameters`: Decoded event parameters with names, types, values, and indexing status",
     ]
 
     notes = None
     if was_truncated:
         notes = [
-            "One or more log items in this response had a data field that was too large and has been truncated.",
-            f"To get the full log data, request {base_url}/api/v2/transactions/{transaction_hash}/logs",
+            (
+                "One or more log items in this response had a `data` field that was "
+                'too large and has been truncated (indicated by `"data_truncated": true`).'
+            ),
+            (
+                "If the full log data is crucial for your analysis, you can retrieve the complete, "
+                "untruncated logs for this transaction programmatically. For example, using curl:"
+            ),
+            f'`curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`',
+            "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 
     pagination = None

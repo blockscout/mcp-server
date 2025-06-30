@@ -17,29 +17,7 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transactions_by_address,
     transaction_summary,
 )
-
-
-def _find_truncated_call_executed_function_in_logs(logs: list[LogItem]) -> bool:
-    call_executed_log = next(
-        (
-            item
-            for item in logs
-            if isinstance(item.decoded, dict) and item.decoded.get("method_call", "").startswith("CallExecuted")
-        ),
-        None,
-    )
-    if not call_executed_log:
-        return False
-
-    data_param = next(
-        (p for p in call_executed_log.decoded.get("parameters", []) if p.get("name") == "data"),
-        None,
-    )
-    if not data_param:
-        return False
-
-    value = data_param.get("value")
-    return isinstance(value, dict) and value.get("value_truncated")
+from tests.integration.helpers import is_log_a_truncated_call_executed
 
 
 @pytest.mark.integration
@@ -319,7 +297,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
         except httpx.HTTPStatusError as e:
             pytest.skip(f"API request failed on page {page_num + 1}: {e}")
 
-        if _find_truncated_call_executed_function_in_logs(result.data):
+        if any(is_log_a_truncated_call_executed(log) for log in result.data):
             found_truncated_log = True
             break
 

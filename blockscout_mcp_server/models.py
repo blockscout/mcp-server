@@ -216,9 +216,9 @@ class NftCollectionHolding(BaseModel):
     )
 
 
-# --- Model for get_address_logs Data Payload ---
-class LogItem(BaseModel):
-    """Represents a single log item from an address."""
+# --- Models for Log Items ---
+class LogItemShort(BaseModel):
+    """Represents a single log item, optimized for context when the address is redundant."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -234,6 +234,15 @@ class LogItem(BaseModel):
     data_truncated: bool | None = Field(
         None,
         description="Flag indicating if the 'data' or 'decoded' field was shortened.",
+    )
+
+
+class LogItem(LogItemShort):
+    """Represents a single log item with its originating contract address."""
+
+    address: str | None = Field(
+        None,
+        description="The contract address that emitted the log.",
     )
 
 

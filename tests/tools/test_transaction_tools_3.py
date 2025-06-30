@@ -156,7 +156,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
         assert result.pagination is None
         actual = result.data[0]
         expected = expected_log_items[0]
-        assert actual.model_extra["address"] == expected.address
+        assert actual.address == expected.address
         assert actual.block_number == expected.block_number
         assert actual.data == expected.data
         assert actual.decoded == expected.decoded
@@ -226,7 +226,7 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
         assert isinstance(result, ToolResponse)
         actual = result.data[0]
         expected = expected_log_items[0]
-        assert actual.model_extra["address"] == expected.address
+        assert actual.address == expected.address
         assert actual.block_number == expected.block_number
         assert actual.data == expected.data
         assert actual.decoded == expected.decoded

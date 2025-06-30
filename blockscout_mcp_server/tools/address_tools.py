@@ -6,7 +6,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
-    LogItem,
+    LogItemShort,
     NextCallInfo,
     NftCollectionHolding,
     NftCollectionInfo,
@@ -270,7 +270,7 @@ async def get_address_logs(
             description="The pagination cursor from a previous response to get the next page of results.",
         ),
     ] = None,
-) -> ToolResponse[list[LogItem]]:
+) -> ToolResponse[list[LogItemShort]]:
     """
     Get comprehensive logs emitted by a specific address.
     Returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
@@ -308,7 +308,7 @@ async def get_address_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
-    log_items = [LogItem.model_validate(item) for item in original_items]
+    log_items = [LogItemShort.model_validate(item) for item in original_items]
 
     data_description = [
         "Items Structure:",

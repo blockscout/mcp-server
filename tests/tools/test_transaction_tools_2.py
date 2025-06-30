@@ -458,7 +458,7 @@ async def test_get_transaction_logs_success(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data[0], LogItem)
         for actual, expected in zip(result.data, expected_log_items):
-            assert actual.model_extra["address"] == expected.address
+            assert actual.address == expected.address
             assert actual.block_number == expected.block_number
             assert actual.data == expected.data
             assert actual.decoded == expected.decoded
