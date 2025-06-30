@@ -111,6 +111,8 @@ When adding a new tool to the MCP server, you need to modify these files:
 
 **All tools MUST return a strongly-typed `ToolResponse[YourDataModel]` instead of generic `ToolResponse[dict]`.** This ensures consistency, reliability, and better AI reasoning.
 
+When defining your `BaseModel` subclasses, provide `Field(description=...)` annotations for each attribute so future readers understand the intent of every field.
+
 ### When to Use `ConfigDict(extra="allow")`
 
 #### ✅ **USE `extra="allow"`** for External API Response Models
@@ -120,12 +122,15 @@ When your model represents data from external APIs, use `extra="allow"` to handl
 ```python
 class MyApiResponseData(BaseModel):
     """Represents data from external API that may evolve."""
-    
-    model_config = ConfigDict(extra="allow")  # Preserves unknown fields
-    
-    # Define known fields with strong types
-    address: str
-    transaction_count: int
+
+    # External APIs may add new fields; allow them to avoid validation errors
+    model_config = ConfigDict(extra="allow")
+
+    # Define known fields with explicit annotations
+    address: str = Field(description="The account address.")
+    transaction_count: int = Field(
+        description="Number of transactions associated with the address."
+    )
 ```
 
 **Why:** External APIs evolve and add new fields. Without `extra="allow"`, your model will fail when APIs return unexpected data.
@@ -137,10 +142,10 @@ When your model represents data we control internally, don't use `extra="allow"`
 ```python
 class MyInternalData(BaseModel):
     """Our own structured data with controlled schema."""
-    
+
     # No extra="allow" - we control this structure
-    extracted_field: str
-    computed_value: int
+    extracted_field: str = Field(description="Normalized data we compute.")
+    computed_value: int = Field(description="Derived value used for analytics.")
 ```
 
 ## Tool Function Structure
