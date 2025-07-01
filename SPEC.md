@@ -119,144 +119,63 @@ sequenceDiagram
    - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
-This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
+   This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
 
-**Example: Structured Response from `get_chains_list`**
+   **Example: Comprehensive ToolResponse Structure**
 
-To illustrate this pattern, the `get_chains_list` tool returns a `ToolResponse[list[ChainInfo]]`. The `data` field holds a list of `ChainInfo` items. The final JSON response looks like this:
+   This synthetic example demonstrates all features of the standardized `ToolResponse` format that tools use to communicate with the AI agent. It shows how the server structures responses with the primary data payload, contextual metadata, pagination, and guidance for follow-up actions.
 
-```json
-{
-  "data": [
-    { "name": "Arbitrum One", "chain_id": 42161 },
-    { "name": "Base", "chain_id": 8453 },
-    { "name": "Ethereum", "chain_id": 1 }
-  ],
-  "data_description": null,
-  "notes": null,
-  "instructions": null,
-  "pagination": null
-}
-```
-
-**Example: Structured Response from `get_address_logs` with All Features**
-
-This example shows a comprehensive response from `get_address_logs`, demonstrating the data payload, data description, a truncation note, and pagination information all in one structured object.
-
-```json
-{
-  "data": [
+    ```json
     {
-      "block_number": 19000000,
-      "transaction_hash": "0xtx123...",
-      "topics": ["0xtopic1..."],
-      "data": "0x...",
-      "decoded": { "...": "..." },
-      "index": 0,
-      "data_truncated": true
-    }
-  ],
-  "data_description": [
-    "Items Structure:",
-    "- `block_number`: Block where the event was emitted",
-    "- `transaction_hash`: Transaction that triggered the event",
-    "- `index`: Log position within the block",
-    "- `topics`: Raw indexed event parameters (first topic is event signature hash)",
-    "- `data`: Raw non-indexed event parameters (hex encoded). **May be truncated.**",
-    "- `data_truncated`: (Optional) `true` if the `data` or `decoded` field was shortened.",
-    "Event Decoding in `decoded` field:",
-    "- `method_call`: **Actually the event signature** (e.g., \"Transfer(address indexed from, address indexed to, uint256 value)\")",
-    "- `method_id`: **Actually the event signature hash** (first 4 bytes of keccak256 hash)",
-    "- `parameters`: Decoded event parameters with names, types, values, and indexing status"
-  ],
-  "notes": [
-    "One or more log items in this response had a `data` field that was too large and has been truncated (indicated by `\"data_truncated\": true`).",
-    "If the full log data is crucial for your analysis, you must first get the `transaction_hash` from the specific log item. Then, you can retrieve all logs for that single transaction programmatically. For example, using curl:",
-    "`curl \"https://eth.blockscout.com/api/v2/transactions/{THE_TRANSACTION_HASH}/logs\"`"
-  ],
-  "instructions": null,
-  "pagination": {
-    "next_call": {
-      "tool_name": "get_address_logs",
-      "params": {
-        "chain_id": "1",
-        "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-        "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0="
+      "data": [
+        {
+          "block_number": 19000000,
+          "transaction_hash": "0x1a2b3c4d5e6f...",
+          "token_symbol": "USDC",
+          "amount": "1000000000",
+          "from_address": "0xa1b2c3d4e5f6...",
+          "to_address": "0xf6e5d4c3b2a1...",
+          "raw_data": "0x1234...",
+          "raw_data_truncated": true,
+          "decoded_data": {
+            "method": "transfer",
+            "parameters": [
+              {"name": "to", "value": "0xf6e5d4c3b2a1...", "type": "address"},
+              {"name": "amount", "value": "1000000000", "type": "uint256"}
+            ]
+          }
+        }
+      ],
+      "data_description": [
+        "Response Structure:",
+        "- `block_number`: Block height where the transaction was included",
+        "- `token_symbol`: Token ticker (e.g., USDC, ETH, WBTC)",
+        "- `amount`: Transfer amount in smallest token units (wei for ETH)",
+        "- `raw_data`: Transaction input data (hex encoded). **May be truncated.**",
+        "- `raw_data_truncated`: Present when `raw_data` field has been shortened",
+        "- `decoded_data`: Human-readable interpretation of the raw transaction data"
+      ],
+      "notes": [
+        "Large data fields have been truncated to conserve context (indicated by `*_truncated: true`).",
+        "For complete untruncated data, retrieve it directly:",
+        "`curl \"https://eth.blockscout.com/api/v2/transactions/0x1a2b3c4d5e6f.../raw-trace\"`"
+      ],
+      "instructions": [
+        "Use `get_address_info` to get detailed information about any address in the results",
+        "Use `get_transaction_info` to get full transaction details including gas usage and status"
+      ],
+      "pagination": {
+        "next_call": {
+          "tool_name": "get_address_transactions", 
+          "params": {
+            "chain_id": "1",
+            "address": "0xa1b2c3d4e5f6...",
+            "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDJ9"
+          }
+        }
       }
     }
-  }
-}
-```
-
-**Example: Structured Response from `get_tokens_by_address` with Pagination**
-
-This example shows how a tool communicates that more data is available using the structured `pagination` field. The `data` field contains the first page of results, and the `pagination` object provides all the necessary information for the AI to make the subsequent call for the next page.
-
-```json
-{
-  "data": [
-    {
-      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      "name": "USD Coin",
-      "symbol": "USDC",
-      "decimals": "6",
-      "total_supply": "...",
-      "circulating_market_cap": "...",
-      "exchange_rate": "1.00",
-      "holders_count": "...",
-      "balance": "500000000"
-    }
-  ],
-  "data_description": null,
-  "notes": null,
-  "instructions": null,
-  "pagination": {
-    "next_call": {
-      "tool_name": "get_tokens_by_address",
-      "params": {
-        "chain_id": "1",
-        "address": "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503",
-        "cursor": "eyJmaWF0X3ZhbHVlIjoiNTAwLjAwIiwiaWQiOjEyMzQ1LCJpdGVtc19jb3VudCI6NTAsInZhbHVlIjoiNTAwMDAwMDAwIn0="
-      }
-    }
-  }
-}
-```
-
-This example demonstrates how a tool-specific data model fits cleanly into the standardized `data` field of the `ToolResponse`.
-
-**Example: Structured Response from `get_transaction_info` with Truncation**
-
-This example shows how a tool communicates important metadata, like a data truncation warning, using the optional `notes` field. It also demonstrates how nested objects like `token_transfers` are now strongly typed. The primary data remains cleanly structured in the `data` field, while the contextual warning is provided separately.
-
-```json
-{
-  "data": {
-    "from_address": "0x...",
-    "to_address": "0x...",
-    "token_transfers": [
-      {
-        "from_address": "0x...",
-        "to_address": "0x...",
-        "token": { "...": "..." },
-        "transfer_type": "token_transfer"
-      }
-    ],
-    "raw_input": "0x...",
-    "raw_input_truncated": true,
-    "decoded_input": null,
-    "status": "ok",
-    "timestamp": "2024-05-20T12:00:00.000Z"
-  },
-  "data_description": null,
-  "notes": [
-    "One or more large data fields in this response have been truncated (indicated by \"value_truncated\": true or \"raw_input_truncated\": true).",
-    "To get the full, untruncated data, you can retrieve it programmatically. For example, using curl:\n`curl \"https://eth.blockscout.com/api/v2/transactions/0x...\"`"
-  ],
-  "instructions": null,
-  "pagination": null
-}
-```
+    ```
 
 3. **Response Processing and Context Optimization**:
 
