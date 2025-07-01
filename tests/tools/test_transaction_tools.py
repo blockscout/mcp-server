@@ -4,7 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import ToolResponse, TransactionSummaryData
+from blockscout_mcp_server.models import (
+    AdvancedFilterItem,
+    ToolResponse,
+    TransactionSummaryData,
+)
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
     get_transactions_by_address,
@@ -45,7 +49,9 @@ async def test_get_transactions_by_address_calls_wrapper_correctly(mock_ctx):
         )
 
         # ASSERT
-        assert result == mock_api_response
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert result.data == []
         mock_get_url.assert_called_once_with(chain_id)
 
         # Assert that the wrapper was called once
@@ -114,7 +120,11 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
         result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        assert result == mock_api_response
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert len(result.data) == 1
+        assert isinstance(result.data[0], AdvancedFilterItem)
+        assert result.data[0].model_dump(by_alias=True)["hash"] == "0xabc123"
         mock_get_url.assert_called_once_with(chain_id)
         mock_wrapper.assert_called_once()
 
@@ -150,16 +160,13 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
         "next_page_params": None,
     }
 
-    expected_transformed_response = {
-        "items": [
-            {
-                "from": "0xfrom_hash",
-                "to": "0xto_hash",
-                "value": "kept",
-            }
-        ],
-        "next_page_params": None,
-    }
+    expected_items = [
+        {
+            "from": "0xfrom_hash",
+            "to": "0xto_hash",
+            "value": "kept",
+        }
+    ]
 
     with (
         patch(
@@ -174,7 +181,15 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
 
         result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        assert result == expected_transformed_response
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert len(result.data) == 1
+        item_model = result.data[0]
+        assert isinstance(item_model, AdvancedFilterItem)
+        assert item_model.from_address == expected_items[0]["from"]
+        assert item_model.to_address == expected_items[0]["to"]
+        item_dict = item_model.model_dump(by_alias=True)
+        assert item_dict["value"] == expected_items[0]["value"]
 
 
 @pytest.mark.asyncio
@@ -208,7 +223,9 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
         )
 
         # ASSERT
-        assert result == mock_api_response
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert result.data == []
         mock_get_url.assert_called_once_with(chain_id)
         mock_wrapper.assert_called_once()
 
@@ -304,17 +321,14 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
         "next_page_params": None,
     }
 
-    expected_transformed_response = {
-        "items": [
-            {
-                "from": "0xfrom_hash",
-                "to": "0xto_hash",
-                "token": "kept",
-                "total": "kept",
-            }
-        ],
-        "next_page_params": None,
-    }
+    expected_items = [
+        {
+            "from": "0xfrom_hash",
+            "to": "0xto_hash",
+            "token": "kept",
+            "total": "kept",
+        }
+    ]
 
     with (
         patch(
@@ -329,7 +343,16 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
 
         result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        assert result == expected_transformed_response
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, list)
+        assert len(result.data) == 1
+        item_model = result.data[0]
+        assert isinstance(item_model, AdvancedFilterItem)
+        assert item_model.from_address == expected_items[0]["from"]
+        assert item_model.to_address == expected_items[0]["to"]
+        item_dict = item_model.model_dump(by_alias=True)
+        assert item_dict["token"] == expected_items[0]["token"]
+        assert item_dict["total"] == expected_items[0]["total"]
 
 
 @pytest.mark.asyncio

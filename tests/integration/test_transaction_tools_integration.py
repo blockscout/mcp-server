@@ -3,6 +3,7 @@ import pytest
 
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT, LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
+    AdvancedFilterItem,
     LogItem,
     TokenTransfer,
     ToolResponse,
@@ -231,19 +232,20 @@ async def test_get_transactions_by_address_integration(mock_ctx):
         ctx=mock_ctx,
     )
 
-    assert isinstance(result, dict)
-    assert "items" in result
-    items = result["items"]
+    assert isinstance(result, ToolResponse)
+    items = result.data
     assert isinstance(items, list)
 
     if not items:
         pytest.skip("No transactions found for the given address and time range.")
 
     for item in items:
-        assert isinstance(item.get("from"), str)
-        assert isinstance(item.get("to"), str)
-        assert "token" not in item
-        assert "total" not in item
+        assert isinstance(item, AdvancedFilterItem)
+        assert isinstance(item.from_address, str | type(None))
+        assert isinstance(item.to_address, str | type(None))
+        item_dict = item.model_dump(by_alias=True)
+        assert "token" not in item_dict
+        assert "total" not in item_dict
 
 
 @pytest.mark.integration
@@ -259,19 +261,20 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
         ctx=mock_ctx,
     )
 
-    assert isinstance(result, dict)
-    assert "items" in result
-    items = result["items"]
+    assert isinstance(result, ToolResponse)
+    items = result.data
     assert isinstance(items, list)
 
     if not items:
         pytest.skip("No token transfers found for the given address and time range.")
 
     for item in items:
-        assert isinstance(item.get("from"), str)
-        assert isinstance(item.get("to"), str)
-        assert "value" not in item
-        assert "internal_transaction_index" not in item
+        assert isinstance(item, AdvancedFilterItem)
+        assert isinstance(item.from_address, str | type(None))
+        assert isinstance(item.to_address, str | type(None))
+        item_dict = item.model_dump(by_alias=True)
+        assert "value" not in item_dict
+        assert "internal_transaction_index" not in item_dict
 
 
 @pytest.mark.integration
