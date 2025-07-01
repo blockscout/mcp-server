@@ -482,6 +482,9 @@ async def get_transaction_logs(
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 
+    # Since there could be more than one page of logs for the same transaction,
+    # the pagination information is extracted from API response and added explicitly
+    # to the tool response
     pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:

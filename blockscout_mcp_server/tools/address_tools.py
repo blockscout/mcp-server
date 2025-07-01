@@ -135,6 +135,7 @@ async def get_tokens_by_address(
     items_data = response_data.get("items", [])
     token_holdings = []
     for item in items_data:
+        # To preserve the LLM context, only specific fields are added to the response
         token = item.get("token", {})
         token_holdings.append(
             TokenHoldingData(
@@ -150,6 +151,9 @@ async def get_tokens_by_address(
             )
         )
 
+    # Since there could be more than one page of tokens for the same address,
+    # the pagination information is extracted from API response and added explicitly
+    # to the tool response
     pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
@@ -217,6 +221,8 @@ async def nft_tokens_by_address(
 
         token_instances: list[NftTokenInstance] = []
         for instance in item.get("token_instances", []):
+            # To preserve the LLM context, only specific fields for NFT instances are
+            # added to the response
             metadata = instance.get("metadata", {}) or {}
             token_instances.append(
                 NftTokenInstance(
@@ -229,6 +235,8 @@ async def nft_tokens_by_address(
                 )
             )
 
+        # To preserve the LLM context, only specific fields for NFT collections are
+        # added to the response
         collection_info = NftCollectionInfo(
             type=token.get("type", ""),
             address=token.get("address_hash", ""),
@@ -246,6 +254,9 @@ async def nft_tokens_by_address(
             )
         )
 
+    # Since there could be more than one page of collections for the same address,
+    # the pagination information is extracted from API response and added explicitly
+    # to the tool response
     pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
@@ -342,6 +353,9 @@ async def get_address_logs(
             f'`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`',
         ]
 
+    # Since there could be more than one page of logs for the same address,
+    # the pagination information is extracted from API response and added explicitly
+    # to the tool response
     pagination = None
     next_page_params = response_data.get("next_page_params")
     if next_page_params:
