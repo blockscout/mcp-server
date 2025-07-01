@@ -339,7 +339,6 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
                 decoded=None,
                 index=None,
                 topics=None,
-                data_truncated=True,
             )
         ]
 
@@ -353,7 +352,7 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
         assert actual.decoded == expected.decoded
         assert actual.index == expected.index
         assert actual.topics == expected.topics
-        assert actual.data_truncated == expected.data_truncated
+        assert actual.model_extra.get("data_truncated") is True
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
 
@@ -417,3 +416,4 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         assert actual.topics == expected.topics
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
+        assert actual.model_extra.get("data_truncated") is None
