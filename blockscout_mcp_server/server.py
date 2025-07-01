@@ -3,6 +3,8 @@ from typing import Annotated
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from blockscout_mcp_server.constants import SERVER_INSTRUCTIONS, SERVER_NAME
 from blockscout_mcp_server.tools.address_tools import (
@@ -24,8 +26,6 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transactions_by_address,
     transaction_summary,
 )
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse
 
 mcp = FastMCP(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
 
