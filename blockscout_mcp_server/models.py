@@ -161,6 +161,27 @@ class TransactionInfoData(BaseModel):
     raw_input_truncated: bool | None = Field(default=None, description="Indicates if raw_input was truncated.")
 
 
+# --- Model for get_transactions_by_address and get_token_transfers_by_address Data Payload ---
+class AdvancedFilterItem(BaseModel):
+    """Represents a single item from the advanced filter API response,
+    explicitly defining only the fields that are transformed by the tool.
+    Other fields are passed through dynamically.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    from_address: str | None = Field(
+        default=None,
+        alias="from",
+        description="The sender address.",
+    )
+    to_address: str | None = Field(
+        default=None,
+        alias="to",
+        description="The recipient address.",
+    )
+
+
 # --- Model for get_tokens_by_address Data Payload ---
 class TokenHoldingData(BaseModel):
     """Represents a single token holding with its associated metadata."""

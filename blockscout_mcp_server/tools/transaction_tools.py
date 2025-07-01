@@ -6,6 +6,7 @@ from pydantic import Field
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
+    AdvancedFilterItem,
     LogItem,
     NextCallInfo,
     PaginationInfo,
@@ -126,7 +127,7 @@ async def get_transactions_by_address(
     methods: Annotated[
         str | None, Field(description="A method signature to filter transactions by (e.g 0x304e6ade)")
     ] = None,
-) -> dict:
+) -> ToolResponse[list[AdvancedFilterItem]]:
     """
     Get transactions for an address within a specific time range.
     Use cases:
@@ -194,8 +195,9 @@ async def get_transactions_by_address(
 
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
 
-    response_data["items"] = transformed_items
-    return response_data
+    result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
+
+    return build_tool_response(data=result_data)
 
 
 async def get_token_transfers_by_address(
@@ -220,7 +222,7 @@ async def get_token_transfers_by_address(
             description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens."  # noqa: E501
         ),
     ] = None,
-) -> dict:
+) -> ToolResponse[list[AdvancedFilterItem]]:
     """
     Get ERC-20 token transfers for an address within a specific time range.
     Use cases:
@@ -288,8 +290,9 @@ async def get_token_transfers_by_address(
 
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
 
-    response_data["items"] = transformed_items
-    return response_data
+    result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
+
+    return build_tool_response(data=result_data)
 
 
 async def transaction_summary(
