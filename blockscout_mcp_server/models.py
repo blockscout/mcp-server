@@ -237,14 +237,13 @@ class NftCollectionHolding(BaseModel):
     )
 
 
-# --- Model for get_address_logs Data Payload ---
-class LogItemShort(BaseModel):
-    """Represents a single log item, optimized for context when the address is redundant."""
+# --- Model for get_address_logs and get_transaction_logs Data Payloads ---
+class LogItemBase(BaseModel):
+    """Common fields for log items from Blockscout."""
 
     model_config = ConfigDict(extra="allow")
 
     block_number: int | None = Field(None, description="The block where the event was emitted.")
-    transaction_hash: str | None = Field(None, description="The transaction that triggered the event.")
     topics: list[str | None] | None = Field(None, description="Raw indexed event parameters.")
     data: str | None = Field(
         None,
@@ -252,14 +251,16 @@ class LogItemShort(BaseModel):
     )
     decoded: dict[str, Any] | None = Field(None, description="Decoded event parameters, if available.")
     index: int | None = Field(None, description="The log's position within the block.")
-    data_truncated: bool | None = Field(
-        None,
-        description="Flag indicating if the 'data' or 'decoded' field was shortened.",
-    )
+
+
+class AddressLogItem(LogItemBase):
+    """Represents a single log item when the address is redundant."""
+
+    transaction_hash: str | None = Field(None, description="The transaction that triggered the event.")
 
 
 # --- Model for get_transaction_logs Data Payload ---
-class LogItem(LogItemShort):
+class TransactionLogItem(LogItemBase):
     """Represents a single log item with its originating contract address."""
 
     address: str | None = Field(

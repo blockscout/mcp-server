@@ -4,10 +4,10 @@ import pytest
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT, LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
     AdvancedFilterItem,
-    LogItem,
     TokenTransfer,
     ToolResponse,
     TransactionInfoData,
+    TransactionLogItem,
     TransactionSummaryData,
 )
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
@@ -61,7 +61,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
     # 3. Validate the schema of the first transformed log item.
     first_log = result.data[0]
-    assert isinstance(first_log, LogItem)
+    assert isinstance(first_log, TransactionLogItem)
     if first_log.data_truncated is not None:
         assert isinstance(first_log.data_truncated, bool)
 

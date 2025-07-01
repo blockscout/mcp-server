@@ -6,10 +6,10 @@ import pytest
 
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
-    LogItem,
     TokenTransfer,
     ToolResponse,
     TransactionInfoData,
+    TransactionLogItem,
 )
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_info, get_transaction_logs
 
@@ -414,7 +414,7 @@ async def test_get_transaction_logs_success(mock_ctx):
     }
 
     expected_log_items = [
-        LogItem(
+        TransactionLogItem(
             address="0xcontract1...",
             block_number=19000000,
             data="0xdata123...",
@@ -422,7 +422,7 @@ async def test_get_transaction_logs_success(mock_ctx):
             index=0,
             topics=["0xtopic1...", "0xtopic2..."],
         ),
-        LogItem(
+        TransactionLogItem(
             address="0xcontract2...",
             block_number=19000000,
             data="0xdata456...",
@@ -456,7 +456,7 @@ async def test_get_transaction_logs_success(mock_ctx):
         )
 
         assert isinstance(result, ToolResponse)
-        assert isinstance(result.data[0], LogItem)
+        assert isinstance(result.data[0], TransactionLogItem)
         for actual, expected in zip(result.data, expected_log_items):
             assert actual.address == expected.address
             assert actual.block_number == expected.block_number
@@ -464,6 +464,7 @@ async def test_get_transaction_logs_success(mock_ctx):
             assert actual.decoded == expected.decoded
             assert actual.index == expected.index
             assert actual.topics == expected.topics
+        assert "transaction_hash" not in result.data[0].model_dump()
         assert result.pagination is None
 
         assert mock_ctx.report_progress.call_count == 3
