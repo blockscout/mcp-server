@@ -7,11 +7,11 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
     AdvancedFilterItem,
-    LogItem,
     NextCallInfo,
     PaginationInfo,
     ToolResponse,
     TransactionInfoData,
+    TransactionLogItem,
     TransactionSummaryData,
 )
 from blockscout_mcp_server.tools.common import (
@@ -406,7 +406,7 @@ async def get_transaction_logs(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> ToolResponse[list[LogItem]]:
+) -> ToolResponse[list[TransactionLogItem]]:
     """
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
@@ -443,11 +443,22 @@ async def get_transaction_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
-    log_items: list[LogItem] = []
+    log_items: list[TransactionLogItem] = []
     for item in original_items:
-        if isinstance(item.get("address"), dict):
-            item["address"] = item["address"].get("hash")
-        log_items.append(LogItem.model_validate(item))
+        curated_item = {
+            "address": item.get("address", {}).get("hash")
+            if isinstance(item.get("address"), dict)
+            else item.get("address"),
+            "block_number": item.get("block_number"),
+            "topics": item.get("topics"),
+            "data": item.get("data"),
+            "decoded": item.get("decoded"),
+            "index": item.get("index"),
+        }
+        if item.get("data_truncated"):
+            curated_item["data_truncated"] = True
+
+        log_items.append(TransactionLogItem(**curated_item))
 
     data_description = [
         "Items Structure:",

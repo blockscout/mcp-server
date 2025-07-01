@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import LogItemShort, ToolResponse
+from blockscout_mcp_server.models import AddressLogItem, ToolResponse
 from blockscout_mcp_server.tools.address_tools import get_address_logs
 from blockscout_mcp_server.tools.common import encode_cursor
 
@@ -53,8 +53,9 @@ async def test_get_address_logs_success(mock_ctx):
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
 
         assert isinstance(result, ToolResponse)
-        assert isinstance(result.data[0], LogItemShort)
+        assert isinstance(result.data[0], AddressLogItem)
         assert result.data[0].transaction_hash == "0xtx123..."
+        assert "address" not in result.data[0].model_dump()
         assert result.data_description is not None
         assert "Items Structure:" in result.data_description[0]
         assert result.pagination is None
@@ -108,7 +109,7 @@ async def test_get_address_logs_with_pagination(mock_ctx):
 
         mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
         assert isinstance(result, ToolResponse)
-        assert isinstance(result.data[0], LogItemShort)
+        assert isinstance(result.data[0], AddressLogItem)
         assert result.pagination is not None
         assert result.pagination.next_call.tool_name == "get_address_logs"
         assert result.pagination.next_call.params["cursor"] == fake_cursor
@@ -269,6 +270,7 @@ async def test_get_address_logs_with_truncation_note(mock_ctx):
 
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
         assert isinstance(result, ToolResponse)
+        assert result.data[0].model_extra.get("data_truncated") is True
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
         assert f'`curl "{mock_base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`' in result.notes[2]
@@ -305,6 +307,7 @@ async def test_get_address_logs_with_decoded_truncation_note(mock_ctx):
 
         mock_process_logs.assert_called_once_with(mock_api_response["items"])
         assert isinstance(result, ToolResponse)
+        assert result.data[0].model_extra.get("data_truncated") is None
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
         assert f'`curl "{mock_base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`' in result.notes[2]

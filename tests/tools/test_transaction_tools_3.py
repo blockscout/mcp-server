@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import LogItem, ToolResponse
+from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
 from blockscout_mcp_server.tools.common import encode_cursor
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_logs
 
@@ -21,7 +21,7 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
     mock_api_response = {"items": []}
 
-    expected_log_items: list[LogItem] = []
+    expected_log_items: list[TransactionLogItem] = []
 
     with (
         patch(
@@ -119,7 +119,7 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
     }
 
     expected_log_items = [
-        LogItem(
+        TransactionLogItem(
             address="0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0",
             block_number=19000000,
             data="0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
@@ -191,7 +191,7 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
     }
 
     expected_log_items = [
-        LogItem(
+        TransactionLogItem(
             address="0xcontract1",
             block_number=1,
             data="0x",
@@ -332,14 +332,13 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
 
         # ASSERT
         expected_log_items = [
-            LogItem(
+            TransactionLogItem(
                 address=None,
                 block_number=None,
                 data=truncated_item["data"],
                 decoded=None,
                 index=None,
                 topics=None,
-                data_truncated=True,
             )
         ]
 
@@ -353,7 +352,7 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
         assert actual.decoded == expected.decoded
         assert actual.index == expected.index
         assert actual.topics == expected.topics
-        assert actual.data_truncated == expected.data_truncated
+        assert actual.model_extra.get("data_truncated") is True
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
 
@@ -396,7 +395,7 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
         expected_log_items = [
-            LogItem(
+            TransactionLogItem(
                 address=None,
                 block_number=None,
                 data=truncated_item["data"],
@@ -417,3 +416,4 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         assert actual.topics == expected.topics
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
+        assert actual.model_extra.get("data_truncated") is None
