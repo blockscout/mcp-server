@@ -3,7 +3,7 @@ import pytest
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
-    LogItemShort,
+    AddressLogItem,
     NftCollectionHolding,
     ToolResponse,
 )
@@ -57,7 +57,7 @@ async def test_get_address_logs_integration(mock_ctx):
     assert len(result.data) > 0
 
     first_log = result.data[0]
-    assert isinstance(first_log, LogItemShort)
+    assert isinstance(first_log, AddressLogItem)
     assert isinstance(first_log.transaction_hash, str)
     assert first_log.transaction_hash.startswith("0x")
     assert isinstance(first_log.block_number, int)
