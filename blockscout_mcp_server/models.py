@@ -37,7 +37,7 @@ class ChainInfo(BaseModel):
     """Represents a blockchain with its essential identifiers."""
 
     name: str = Field(description="The common name of the blockchain (e.g., 'Ethereum').")
-    chain_id: int = Field(description="The unique numeric identifier for the chain.")
+    chain_id: str = Field(description="The unique identifier for the chain.")
 
 
 # --- Model for __get_instructions__ Data Payload ---
