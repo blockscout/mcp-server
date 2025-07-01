@@ -53,9 +53,11 @@ mcp.tool()(get_chains_list)
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
 
+
 @mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
 async def health_check(_: Request) -> PlainTextResponse:
     return PlainTextResponse("OK", status_code=200)
+
 
 @cli_app.command()
 def main_command(
