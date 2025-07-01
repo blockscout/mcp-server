@@ -246,6 +246,9 @@ async def test_get_transactions_by_address_integration(mock_ctx):
         item_dict = item.model_dump(by_alias=True)
         assert "token" not in item_dict
         assert "total" not in item_dict
+        assert "hash" in item_dict
+        assert "timestamp" in item_dict
+        assert "value" in item_dict
 
 
 @pytest.mark.integration
@@ -275,6 +278,10 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
         item_dict = item.model_dump(by_alias=True)
         assert "value" not in item_dict
         assert "internal_transaction_index" not in item_dict
+        assert "hash" in item_dict
+        assert "timestamp" in item_dict
+        assert "token" in item_dict
+        assert "total" in item_dict
 
 
 @pytest.mark.integration
