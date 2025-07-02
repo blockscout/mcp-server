@@ -3,6 +3,8 @@ from typing import Annotated
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from blockscout_mcp_server.constants import (
     GENERAL_RULES,
@@ -69,6 +71,11 @@ mcp.tool()(get_chains_list)
 
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
+
+
+@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+async def health_check(_: Request) -> PlainTextResponse:
+    return PlainTextResponse("OK", status_code=200)
 
 
 @cli_app.command()
