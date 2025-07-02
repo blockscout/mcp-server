@@ -163,12 +163,9 @@ class TransactionInfoData(BaseModel):
 
 # --- Model for get_transactions_by_address and get_token_transfers_by_address Data Payload ---
 class AdvancedFilterItem(BaseModel):
-    """Represents a single item from the advanced filter API response,
-    explicitly defining only the fields that are transformed by the tool.
-    Other fields are passed through dynamically.
-    """
+    """Represents a single item from the advanced filter API response."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
     from_address: str | None = Field(
         default=None,
@@ -241,7 +238,7 @@ class NftCollectionHolding(BaseModel):
 class LogItemBase(BaseModel):
     """Common fields for log items from Blockscout."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")  # Just to allow `data_truncated` field to be added to the response
 
     block_number: int | None = Field(None, description="The block where the event was emitted.")
     topics: list[str | None] | None = Field(None, description="Raw indexed event parameters.")
@@ -253,6 +250,7 @@ class LogItemBase(BaseModel):
     index: int | None = Field(None, description="The log's position within the block.")
 
 
+# --- Model for get_address_logs Data Payload ---
 class AddressLogItem(LogItemBase):
     """Represents a single log item when the address is redundant."""
 
