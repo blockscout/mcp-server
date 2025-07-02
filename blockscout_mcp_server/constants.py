@@ -18,16 +18,16 @@ GENERAL_RULES = [
 ]
 
 RECOMMENDED_CHAINS = [
-    {"name": "Ethereum", "chain_id": 1},
-    {"name": "Polygon PoS", "chain_id": 137},
-    {"name": "Base", "chain_id": 8453},
-    {"name": "Arbitrum One", "chain_id": 42161},
-    {"name": "OP Mainnet", "chain_id": 10},
-    {"name": "ZkSync Era", "chain_id": 324},
-    {"name": "Polygon zkEVM", "chain_id": 1101},
-    {"name": "Gnosis", "chain_id": 100},
-    {"name": "Celo", "chain_id": 42220},
-    {"name": "Scroll", "chain_id": 534352},
+    {"name": "Ethereum", "chain_id": "1"},
+    {"name": "Polygon PoS", "chain_id": "137"},
+    {"name": "Base", "chain_id": "8453"},
+    {"name": "Arbitrum One", "chain_id": "42161"},
+    {"name": "OP Mainnet", "chain_id": "10"},
+    {"name": "ZkSync Era", "chain_id": "324"},
+    {"name": "Polygon zkEVM", "chain_id": "1101"},
+    {"name": "Gnosis", "chain_id": "100"},
+    {"name": "Celo", "chain_id": "42220"},
+    {"name": "Scroll", "chain_id": "534352"},
 ]
 
 SERVER_NAME = "blockscout-mcp-server"
