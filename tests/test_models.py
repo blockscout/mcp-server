@@ -271,3 +271,42 @@ def test_nft_collection_holding_model():
     assert len(holding.token_instances) == 2
     assert holding.token_instances[0].metadata_attributes[0]["value"] == "Red"
     assert holding.token_instances[1].name == "NFT #2"
+
+
+def test_nft_token_instance_metadata_attributes_formats():
+    """Test NftTokenInstance handles both list and dict formats for metadata_attributes."""
+    from blockscout_mcp_server.models import NftTokenInstance
+
+    # Test with list format (multiple attributes)
+    instance_list = NftTokenInstance(
+        id="1",
+        name="Test NFT",
+        metadata_attributes=[
+            {"trait_type": "Body", "value": "Female"},
+            {"trait_type": "Hair", "value": "Wild Blonde"},
+            {"trait_type": "Eyes", "value": "Green Eye Shadow"}
+        ]
+    )
+    assert isinstance(instance_list.metadata_attributes, list)
+    assert len(instance_list.metadata_attributes) == 3
+    assert instance_list.metadata_attributes[0]["trait_type"] == "Body"
+    assert instance_list.metadata_attributes[0]["value"] == "Female"
+
+    # Test with dict format (single attribute)
+    instance_dict = NftTokenInstance(
+        id="2", 
+        name="Test NFT 2",
+        metadata_attributes={"trait_type": "Common", "value": "Gray"}
+    )
+    assert isinstance(instance_dict.metadata_attributes, dict)
+    assert instance_dict.metadata_attributes["trait_type"] == "Common"
+    assert instance_dict.metadata_attributes["value"] == "Gray"
+
+    # Test with None
+    instance_none = NftTokenInstance(id="3", name="Test NFT 3")
+    assert instance_none.metadata_attributes is None
+
+    # Test with empty list
+    instance_empty = NftTokenInstance(id="4", name="Test NFT 4", metadata_attributes=[])
+    assert isinstance(instance_empty.metadata_attributes, list)
+    assert len(instance_empty.metadata_attributes) == 0

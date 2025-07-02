@@ -19,7 +19,7 @@ from tests.integration.helpers import is_log_a_truncated_call_executed
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_integration(mock_ctx):
-    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"  # Vitalik Buterin
+    address = "0xA94b3E48215c72266f5006bcA6EE67Fff7122307"  # Address with NFT holdings
     result = await nft_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
 
     assert isinstance(result, ToolResponse)
@@ -129,7 +129,7 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     """Tests that nft_tokens_by_address can successfully use a cursor to fetch a second page."""
-    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    address = "0xA94b3E48215c72266f5006bcA6EE67Fff7122307"
     chain_id = "1"
 
     try:

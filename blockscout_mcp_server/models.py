@@ -206,8 +206,9 @@ class NftTokenInstance(BaseModel):
         None,
         description="A URL to an external site or application related to the NFT.",  # noqa: E501
     )
-    metadata_attributes: list | None = Field(
-        None, description="A list of metadata attributes (traits) associated with the NFT."
+    metadata_attributes: list | dict | None = Field(
+        None,
+        description="The metadata attributes (traits) associated with the NFT.",
     )
 
 
