@@ -195,8 +195,11 @@ async def get_transactions_by_address(
 
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
 
+    # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
 
+    # The pagination information is not extracted from the API response as it is assumed that
+    # the LLM will use the `age_from` and `age_to` parameters to paginate through the results.
     return build_tool_response(data=result_data)
 
 
@@ -290,8 +293,11 @@ async def get_token_transfers_by_address(
 
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
 
+    # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
 
+    # The pagination information is not extracted from the API response as it is assumed that
+    # the LLM will use the `age_from` and `age_to` parameters to paginate through the results.
     return build_tool_response(data=result_data)
 
 
@@ -328,6 +334,8 @@ async def transaction_summary(
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
 
+    # Only the summary is extracted from the API response since only this field contains
+    # information that could be handled by the LLM without additional interpretation instructions
     summary = response_data.get("data", {}).get("summaries")
 
     if summary is not None and not isinstance(summary, list):
@@ -377,7 +385,10 @@ async def get_transaction_info(
     # Process data for truncation
     processed_data, was_truncated = _process_and_truncate_tx_info_data(response_data, include_raw_input)
 
-    # Apply standard transformations
+    # Apply transformations to the data to preserve the LLM context:
+    # 1. Remove redundant top-level hash
+    # 2. Simplify top-level 'from' and 'to' objects
+    # 3. Optimize the 'token_transfers' list to remove fields duplicated in the top-level objects
     final_data_dict = _transform_transaction_info(processed_data)
 
     transaction_data = TransactionInfoData(**final_data_dict)
@@ -443,6 +454,7 @@ async def get_transaction_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
+    # To preserve the LLM context, only specific fields are added to the response
     log_items: list[TransactionLogItem] = []
     for item in original_items:
         curated_item = {
