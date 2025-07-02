@@ -21,8 +21,8 @@ async def test_get_chains_list_success(mock_ctx):
     ]
 
     expected_data = [
-        ChainInfo(name="Ethereum", chain_id=1),
-        ChainInfo(name="Polygon PoS", chain_id=137),
+        ChainInfo(name="Ethereum", chain_id="1"),
+        ChainInfo(name="Polygon PoS", chain_id="137"),
     ]
 
     # Use `patch` to replace the real `make_chainscout_request` with our mock.
@@ -121,8 +121,8 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
 
     # Only valid entries should appear in output
     expected_data = [
-        ChainInfo(name="Ethereum", chain_id=1),
-        ChainInfo(name="Polygon PoS", chain_id=137),
+        ChainInfo(name="Ethereum", chain_id="1"),
+        ChainInfo(name="Polygon PoS", chain_id="137"),
     ]
 
     with patch(

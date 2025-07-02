@@ -69,6 +69,7 @@ async def lookup_token_by_symbol(
 
     items_to_process = all_items[:TOKEN_RESULTS_LIMIT]
 
+    # To preserve the LLM context, only specific fields are added to the response
     search_results = [
         TokenSearchResult(
             address=item.get("address_hash", ""),

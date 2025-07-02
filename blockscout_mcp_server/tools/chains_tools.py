@@ -33,13 +33,12 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
 
     chains: list[ChainInfo] = []
     if isinstance(response_data, list):
-        sorted_chains = sorted(response_data, key=lambda x: x.get("name", ""))
-        for item in sorted_chains:
-            if item.get("name") and item.get("chainid"):
-                try:
-                    chain_id = int(item["chainid"])
-                except (TypeError, ValueError):
-                    continue
-                chains.append(ChainInfo(name=item["name"], chain_id=chain_id))
+        # 1. No need to sort the chains as per the nature of Chainscout: most popular chains are at the top
+        # 2. The chain ID can be either numeric or string, so we don't need to convert it to int
+        chains.extend(
+            ChainInfo(name=item["name"], chain_id=item["chainid"])
+            for item in response_data
+            if item.get("name") and item.get("chainid")
+        )
 
     return build_tool_response(data=chains)

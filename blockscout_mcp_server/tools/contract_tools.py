@@ -11,6 +11,9 @@ from blockscout_mcp_server.tools.common import (
     report_and_log_progress,
 )
 
+# The contracts sources are not returned by MCP tools as they consume too much context.
+# More elegant solution needs to be found.
+
 
 async def get_contract_abi(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -51,7 +54,7 @@ async def get_contract_abi(
         message="Successfully fetched contract ABI.",
     )
 
-    # Extract the ABI from the response and wrap it in a ToolResponse
+    # Extract the ABI from the API response as it is
     abi_data = ContractAbiData(abi=response_data.get("abi"))
 
     return build_tool_response(data=abi_data)

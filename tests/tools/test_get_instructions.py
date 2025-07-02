@@ -12,7 +12,7 @@ async def test_get_instructions_success(mock_ctx):
     # ARRANGE
     mock_version = "1.2.3"
     mock_rules = ["Rule 1.", "Rule 2."]
-    mock_chains = [{"name": "TestChain", "chain_id": 999}]
+    mock_chains = [{"name": "TestChain", "chain_id": "999"}]
 
     with (
         patch("blockscout_mcp_server.tools.get_instructions.SERVER_VERSION", mock_version),
@@ -30,7 +30,7 @@ async def test_get_instructions_success(mock_ctx):
         assert result.data.general_rules == mock_rules
         assert len(result.data.recommended_chains) == 1
         assert result.data.recommended_chains[0].name == "TestChain"
-        assert result.data.recommended_chains[0].chain_id == 999
+        assert result.data.recommended_chains[0].chain_id == "999"
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2

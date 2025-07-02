@@ -37,7 +37,7 @@ def test_tool_response_complex_data():
     instructions_data = InstructionsData(
         version="1.0.0",
         general_rules=["Rule 1"],
-        recommended_chains=[ChainInfo(name="TestChain", chain_id=123)],
+        recommended_chains=[ChainInfo(name="TestChain", chain_id="123")],
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
@@ -80,20 +80,20 @@ def test_pagination_info():
 
 def test_chain_info():
     """Test ChainInfo model."""
-    chain = ChainInfo(name="Ethereum", chain_id=1)
+    chain = ChainInfo(name="Ethereum", chain_id="1")
     assert chain.name == "Ethereum"
-    assert chain.chain_id == 1
+    assert chain.chain_id == "1"
 
 
 def test_instructions_data():
     """Test InstructionsData model."""
-    chains = [ChainInfo(name="Ethereum", chain_id=1), ChainInfo(name="Polygon", chain_id=137)]
+    chains = [ChainInfo(name="Ethereum", chain_id="1"), ChainInfo(name="Polygon", chain_id="137")]
     instructions = InstructionsData(version="2.0.0", general_rules=["Rule 1", "Rule 2"], recommended_chains=chains)
     assert instructions.version == "2.0.0"
     assert len(instructions.general_rules) == 2
     assert len(instructions.recommended_chains) == 2
     assert instructions.recommended_chains[0].name == "Ethereum"
-    assert instructions.recommended_chains[1].chain_id == 137
+    assert instructions.recommended_chains[1].chain_id == "137"
 
 
 def test_tool_response_serialization():

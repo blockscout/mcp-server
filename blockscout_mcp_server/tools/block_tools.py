@@ -89,6 +89,9 @@ async def get_block_info(
         message="Successfully fetched all block data.",
     )
 
+    # The block details are added to the response as they are returned by the API.
+    # Where as for transactions only the hashes are added. AI agents can use the hashes
+    # to get the full transaction details using the `get_transaction_info` tool.
     block_data = BlockInfoData(block_details=block_info_result, transaction_hashes=tx_hashes)
     return build_tool_response(data=block_data, notes=notes)
 
@@ -130,9 +133,11 @@ async def get_latest_block(
         message="Successfully fetched latest block data.",
     )
 
-    # The API returns a list. Extract data from the first item as per responseTemplate
+    # The API returns a list. Extract data from the first item
     if response_data and isinstance(response_data, list) and len(response_data) > 0:
         first_block = response_data[0]
+        # The main idea of this tool is to provide the latest block number of the chain.
+        # The timestamp is provided to be used as a reference timestamp for other API calls.
         block_data = LatestBlockData(
             block_number=first_block.get("height"),
             timestamp=first_block.get("timestamp"),
