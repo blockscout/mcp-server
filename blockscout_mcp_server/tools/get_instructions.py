@@ -12,6 +12,7 @@ from blockscout_mcp_server.models import (
 )
 from blockscout_mcp_server.tools.common import build_tool_response, report_and_log_progress
 
+
 # It is very important to keep the tool description in such form to force the LLM to call this tool first
 # before calling any other tool. Altering of the description could provide opportunity to LLM to skip this tool.
 async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
