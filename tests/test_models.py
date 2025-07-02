@@ -284,8 +284,8 @@ def test_nft_token_instance_metadata_attributes_formats():
         metadata_attributes=[
             {"trait_type": "Body", "value": "Female"},
             {"trait_type": "Hair", "value": "Wild Blonde"},
-            {"trait_type": "Eyes", "value": "Green Eye Shadow"}
-        ]
+            {"trait_type": "Eyes", "value": "Green Eye Shadow"},
+        ],
     )
     assert isinstance(instance_list.metadata_attributes, list)
     assert len(instance_list.metadata_attributes) == 3
@@ -294,9 +294,7 @@ def test_nft_token_instance_metadata_attributes_formats():
 
     # Test with dict format (single attribute)
     instance_dict = NftTokenInstance(
-        id="2", 
-        name="Test NFT 2",
-        metadata_attributes={"trait_type": "Common", "value": "Gray"}
+        id="2", name="Test NFT 2", metadata_attributes={"trait_type": "Common", "value": "Gray"}
     )
     assert isinstance(instance_dict.metadata_attributes, dict)
     assert instance_dict.metadata_attributes["trait_type"] == "Common"
