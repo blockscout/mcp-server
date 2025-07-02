@@ -218,8 +218,8 @@ class NftCollectionInfo(BaseModel):
 
     type: str = Field(description="The token standard of the collection.")
     address: str = Field(description="The smart contract address of the NFT collection.")
-    name: str = Field(description="The name of the collection.")
-    symbol: str = Field(description="The symbol of the collection.")
+    name: str | None = Field(None, description="The name of the collection.")
+    symbol: str | None = Field(None, description="The symbol of the collection.")
     holders_count: int = Field(description="The number of unique addresses that hold a token from this collection.")
     total_supply: int = Field(description="The total number of tokens in the collection.")
 

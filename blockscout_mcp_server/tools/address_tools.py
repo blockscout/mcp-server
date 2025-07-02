@@ -240,8 +240,8 @@ async def nft_tokens_by_address(
         collection_info = NftCollectionInfo(
             type=token.get("type", ""),
             address=token.get("address_hash", ""),
-            name=token.get("name", ""),
-            symbol=token.get("symbol", ""),
+            name=token.get("name"),
+            symbol=token.get("symbol"),
             holders_count=token.get("holders_count") or 0,
             total_supply=token.get("total_supply") or 0,
         )

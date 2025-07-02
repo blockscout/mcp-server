@@ -308,3 +308,34 @@ def test_nft_token_instance_metadata_attributes_formats():
     instance_empty = NftTokenInstance(id="4", name="Test NFT 4", metadata_attributes=[])
     assert isinstance(instance_empty.metadata_attributes, list)
     assert len(instance_empty.metadata_attributes) == 0
+
+
+def test_nft_collection_info_handles_none_values():
+    """Test NftCollectionInfo handles None values for name and symbol."""
+    from blockscout_mcp_server.models import NftCollectionInfo
+
+    # Test with None name and symbol (real-world scenario from API)
+    collection_with_nones = NftCollectionInfo(
+        type="ERC-721",
+        address="0x123abc",
+        name=None,
+        symbol=None,
+        holders_count=10,
+        total_supply=100
+    )
+    assert collection_with_nones.name is None
+    assert collection_with_nones.symbol is None
+    assert collection_with_nones.type == "ERC-721"
+    assert collection_with_nones.address == "0x123abc"
+
+    # Test with valid name and symbol
+    collection_with_values = NftCollectionInfo(
+        type="ERC-721",
+        address="0x456def",
+        name="Test Collection",
+        symbol="TEST",
+        holders_count=20,
+        total_supply=200
+    )
+    assert collection_with_values.name == "Test Collection"
+    assert collection_with_values.symbol == "TEST"

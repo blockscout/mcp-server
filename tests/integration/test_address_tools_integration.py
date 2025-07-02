@@ -31,7 +31,8 @@ async def test_nft_tokens_by_address_integration(mock_ctx):
     assert isinstance(first_holding, NftCollectionHolding)
     assert isinstance(first_holding.collection.address, str)
     assert first_holding.collection.address.startswith("0x")
-    assert isinstance(first_holding.collection.name, str)
+    # Collection name can be None from the API
+    assert first_holding.collection.name is None or isinstance(first_holding.collection.name, str)
 
 
 @pytest.mark.integration

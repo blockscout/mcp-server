@@ -152,9 +152,12 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
         "items": [
             {
                 "token": {
-                    "name": "Incomplete NFT",
+                    "name": None,  # Explicit None to test the fix
+                    "symbol": None,  # Explicit None to test the fix
                     "address_hash": "0xincomplete123",
-                    # Missing symbol, type, holders_count, total_supply
+                    "type": "ERC-721",
+                    "holders_count": 0,
+                    "total_supply": 0,
                 },
                 "token_instances": [
                     {
@@ -194,6 +197,9 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert len(result.data) == 2
         assert result.data[0].collection.address == "0xincomplete123"
+        # Test that None values are handled properly
+        assert result.data[0].collection.name is None
+        assert result.data[0].collection.symbol is None
         assert result.data[0].token_instances[0].id == "999"
         assert result.data[1].collection.address == "0xempty456"
         assert result.data[1].token_instances == []
