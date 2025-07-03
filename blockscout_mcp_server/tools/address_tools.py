@@ -99,8 +99,8 @@ async def get_tokens_by_address(
     """
     Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
     Returns detailed token information including contract details (name, symbol, decimals), market metrics (exchange rate, market cap, volume), holders count, and actual balance (provided as is, without adjusting by decimals).
-    Supports pagination.
     Essential for portfolio analysis, wallet auditing, and DeFi position tracking.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/tokens"
     params = {"tokens": "ERC-20"}
@@ -185,6 +185,7 @@ async def nft_tokens_by_address(
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
     Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).
     Essential for a detailed overview of an address's digital collectibles and their associated collection data.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
 
     api_path = f"/api/v2/addresses/{address}/nft/collections"
@@ -286,6 +287,7 @@ async def get_address_logs(
     Get comprehensive logs emitted by a specific address.
     Returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events emitted by specific addresses, monitoring token contract activities, tracking DeFi protocol state changes, debugging contract event emissions, and understanding address-specific event history flows.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/logs"
     params = {}

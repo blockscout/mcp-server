@@ -441,10 +441,22 @@ def build_tool_response(
     Returns:
         A ToolResponse instance.
     """
+    # Automatically add pagination instructions when pagination is present
+    final_instructions = list(instructions) if instructions else []
+
+    if pagination:
+        pagination_instructions = [
+            "⚠️ PAGINATION DETECTED: This response contains only one page of a larger dataset.",
+            f"To get the next page, call the tool '{pagination.next_call.tool_name}' with these exact parameters:",
+            f"Parameters: {pagination.next_call.params}",
+            "Continue calling subsequent pages if you need comprehensive results.",
+        ]
+        final_instructions.extend(pagination_instructions)
+
     return ToolResponse(
         data=data,
         data_description=data_description,
         notes=notes,
-        instructions=instructions,
+        instructions=final_instructions if final_instructions else None,
         pagination=pagination,
     )

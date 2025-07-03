@@ -329,3 +329,49 @@ def test_nft_collection_info_handles_none_values():
     )
     assert collection_with_values.name == "Test Collection"
     assert collection_with_values.symbol == "TEST"
+
+
+def test_build_tool_response_with_pagination_instructions():
+    """Test that build_tool_response automatically adds pagination instructions."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    # Create pagination info
+    pagination = PaginationInfo(
+        next_call=NextCallInfo(
+            tool_name="get_tokens_by_address", params={"chain_id": "1", "address": "0x123", "cursor": "next_page_token"}
+        )
+    )
+
+    # Test with existing instructions
+    response = build_tool_response(
+        data="test_data",
+        instructions=["Existing instruction"],
+        pagination=pagination,
+    )
+
+    # Verify pagination instructions were added
+    assert response.instructions is not None
+    assert len(response.instructions) == 5  # 1 existing + 4 pagination instructions
+    assert response.instructions[0] == "Existing instruction"
+    assert "⚠️ PAGINATION DETECTED" in response.instructions[1]
+    assert "get_tokens_by_address" in response.instructions[2]
+    assert "chain_id" in response.instructions[3]
+    assert "Continue calling subsequent pages" in response.instructions[4]
+
+    # Test with no existing instructions
+    response_no_existing = build_tool_response(
+        data="test_data",
+        pagination=pagination,
+    )
+
+    # Verify pagination instructions were added even without existing instructions
+    assert response_no_existing.instructions is not None
+    assert len(response_no_existing.instructions) == 4  # Only pagination instructions
+    assert "⚠️ PAGINATION DETECTED" in response_no_existing.instructions[0]
+
+    # Test without pagination (should not add instructions)
+    response_no_pagination = build_tool_response(
+        data="test_data",
+    )
+
+    assert response_no_pagination.instructions is None
