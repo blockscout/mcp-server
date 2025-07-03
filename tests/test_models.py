@@ -351,12 +351,11 @@ def test_build_tool_response_with_pagination_instructions():
 
     # Verify pagination instructions were added
     assert response.instructions is not None
-    assert len(response.instructions) == 5  # 1 existing + 4 pagination instructions
+    assert len(response.instructions) == 3  # 1 existing + 2 pagination instructions
     assert response.instructions[0] == "Existing instruction"
-    assert "⚠️ PAGINATION DETECTED" in response.instructions[1]
-    assert "get_tokens_by_address" in response.instructions[2]
-    assert "chain_id" in response.instructions[3]
-    assert "Continue calling subsequent pages" in response.instructions[4]
+    assert "⚠️ MORE DATA AVAILABLE" in response.instructions[1]
+    assert "Use pagination.next_call to get the next page" in response.instructions[1]
+    assert "Continue calling subsequent pages" in response.instructions[2]
 
     # Test with no existing instructions
     response_no_existing = build_tool_response(
@@ -366,8 +365,8 @@ def test_build_tool_response_with_pagination_instructions():
 
     # Verify pagination instructions were added even without existing instructions
     assert response_no_existing.instructions is not None
-    assert len(response_no_existing.instructions) == 4  # Only pagination instructions
-    assert "⚠️ PAGINATION DETECTED" in response_no_existing.instructions[0]
+    assert len(response_no_existing.instructions) == 2  # Only pagination instructions
+    assert "⚠️ MORE DATA AVAILABLE" in response_no_existing.instructions[0]
 
     # Test without pagination (should not add instructions)
     response_no_pagination = build_tool_response(
