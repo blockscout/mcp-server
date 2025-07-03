@@ -442,7 +442,7 @@ def build_tool_response(
         A ToolResponse instance.
     """
     # Automatically add pagination instructions when pagination is present
-    final_instructions = list(instructions) if instructions else []
+    final_instructions = list(instructions) if instructions is not None else []
 
     if pagination:
         pagination_instructions = [
@@ -451,10 +451,15 @@ def build_tool_response(
         ]
         final_instructions.extend(pagination_instructions)
 
+    # Return instructions if they were explicitly provided (even if empty) or if pagination added some
+    final_instructions_output = None
+    if instructions is not None or pagination is not None:
+        final_instructions_output = final_instructions
+
     return ToolResponse(
         data=data,
         data_description=data_description,
         notes=notes,
-        instructions=final_instructions if final_instructions else None,
+        instructions=final_instructions_output,
         pagination=pagination,
     )

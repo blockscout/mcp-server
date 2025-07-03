@@ -368,9 +368,17 @@ def test_build_tool_response_with_pagination_instructions():
     assert len(response_no_existing.instructions) == 2  # Only pagination instructions
     assert "⚠️ MORE DATA AVAILABLE" in response_no_existing.instructions[0]
 
-    # Test without pagination (should not add instructions)
+    # Test without pagination and no instructions (should return None)
     response_no_pagination = build_tool_response(
         data="test_data",
     )
 
     assert response_no_pagination.instructions is None
+
+    # Test without pagination but with empty instructions (should return empty list)
+    response_empty_instructions = build_tool_response(
+        data="test_data",
+        instructions=[],
+    )
+
+    assert response_empty_instructions.instructions == []
