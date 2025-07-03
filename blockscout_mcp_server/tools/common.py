@@ -446,9 +446,7 @@ def build_tool_response(
 
     if pagination:
         pagination_instructions = [
-            "⚠️ PAGINATION DETECTED: This response contains only one page of a larger dataset.",
-            f"To get the next page, call the tool '{pagination.next_call.tool_name}' with these exact parameters:",
-            f"Parameters: {pagination.next_call.params}",
+            "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.",
             "Continue calling subsequent pages if you need comprehensive results.",
         ]
         final_instructions.extend(pagination_instructions)
