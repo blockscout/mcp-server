@@ -13,7 +13,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### MCP Tool Development
 
-- **Follow** `.cursor/rules/110-new-mcp-tool.mdc` whenever creating new MCP tool functions or modifying existing  ones
+- **Follow** `.cursor/rules/110-new-mcp-tool.mdc` whenever creating new MCP tool functions or modifying existing ones
 - **Apply** `.cursor/rules/120-mcp-tool-arguments.mdc` rules to the tool's parameters list whenever modifying existing MCP tool functions
 - **Follow** `.cursor/rules/130-version-management.mdc` when updating the version of the MCP server
 - **Apply** `.cursor/rules/140-tool-description.mdc` rules to the tool's description field whenever creating a new MCP tool or updating an existing one

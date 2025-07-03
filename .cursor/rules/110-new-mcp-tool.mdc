@@ -166,6 +166,7 @@ async def tool_name(
     """
     Descriptive docstring explaining what the tool does.
     Include use cases and examples if helpful.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """
     # Construct API path, often with argument interpolation
     api_path = f"/api/v2/some_endpoint/{required_arg}"
@@ -360,6 +361,9 @@ Your tool should accept an optional `cursor` argument. If it's provided, use the
 **B. Generating Structured Pagination:**
 In your response, check for `next_page_params` from the API. If they exist, create `PaginationInfo` and `NextCallInfo` objects with the structured parameters for the next call.
 
+**C. Tool Description Guidelines:**
+For paginated tools, **MUST** include this exact notice in the docstring: `**SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.`
+
 **Complete Example Pattern:**
 
 ```python
@@ -376,6 +380,7 @@ async def paginated_tool_name(
 ) -> ToolResponse[list[dict]]:
     """
     A tool that demonstrates the correct way to handle pagination.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """
     api_path = f"/api/v2/some_paginated_endpoint/{address}"
     query_params = {}
@@ -416,7 +421,7 @@ async def paginated_tool_name(
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
 
-**Example: Transforming a Transaction Response**
+##### Example: Transforming a Transaction Response
 
 **Before (Raw API Response):**
 This is the verbose data we get from the Blockscout API.
@@ -545,11 +550,13 @@ async def tool_with_nested_data(chain_id: str, hash: str, ctx: Context) -> ToolR
 **CRITICAL: Always raise exceptions for error conditions, never return "error" responses.** The MCP framework converts exceptions to `isError=True`, but `ToolResponse` objects with error messages in `notes` are treated as successful responses (`isError=False`).
 
 **Exception Types:**
+
 - `ValueError`: Invalid input parameters
 - `RuntimeError`: API failures or infrastructure issues
 - `TimeoutError`: Timeout conditions
 
 **Notes Field Usage:**
+
 ```python
 # ✅ CORRECT: Warnings about successful data
 return build_tool_response(data=data, notes=["Data was truncated"])
@@ -640,4 +647,5 @@ return build_tool_response(data=combined_data, notes=notes)
 ```
 
 **Key Points:**
+
 - Always use `return_exceptions=True`

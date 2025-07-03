@@ -116,7 +116,7 @@ sequenceDiagram
    - `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
    - `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
    - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues. This field includes guidance on how to retrieve full data if it has been truncated.
-   - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps.
+   - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps. When pagination is available, the server automatically appends pagination instructions to motivate LLMs to fetch additional pages.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
    This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
@@ -162,7 +162,9 @@ sequenceDiagram
       ],
       "instructions": [
         "Use `get_address_info` to get detailed information about any address in the results",
-        "Use `get_transaction_info` to get full transaction details including gas usage and status"
+        "Use `get_transaction_info` to get full transaction details including gas usage and status",
+        "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.",
+        "Continue calling subsequent pages if you need comprehensive results."
       ],
       "pagination": {
         "next_call": {
@@ -232,18 +234,26 @@ sequenceDiagram
        }
        ```
 
-    c) Log Data Field Truncation
+    **c) Automatic Pagination Instructions for LLM Guidance:**
+     To address the common issue of LLMs ignoring structured pagination data, the server implements a multi-layered approach to ensure LLMs actually use pagination when available:
+     - **Enhanced General Rules**: Server instructions include explicit pagination handling rules that LLMs receive upfront
+     - **Automatic Instruction Generation**: When a tool response includes pagination, the server automatically appends motivational instructions to the `instructions` field (e.g., "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.")
+     - **Tool Description Enhancement**: All paginated tools include prominent **"SUPPORTS PAGINATION"** notices in their docstrings
+
+     This balanced approach provides both human-readable motivation and machine-readable execution details, significantly improving the likelihood that LLMs will fetch complete datasets for comprehensive analysis.
+
+    **d) Log Data Field Truncation**
 
     To prevent LLM context overflow from excessively large `data` fields in transaction logs, the server implements a smart truncation strategy.
 
-    - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 1026 characters (representing 512 bytes of data plus the '0x' prefix), it is truncated.
+    - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 514 characters (representing 256 bytes of data plus the '0x' prefix), it is truncated.
     - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
     - **Decoded Truncation**: Oversized string values inside the `decoded` dictionary are recursively replaced with `{"value_sample": "...", "value_truncated": true}`.
     - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
 
     This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
 
-    d) Transaction Input Data Truncation
+    **e) Transaction Input Data Truncation**
 
     To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.
 
