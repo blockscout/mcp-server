@@ -24,7 +24,7 @@ async def test_nft_tokens_by_address_integration(mock_ctx):
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, list)
-    assert len(result.data) > 0
+    assert 0 < len(result.data) <= 10
     assert result.pagination is not None
 
     first_holding = result.data[0]

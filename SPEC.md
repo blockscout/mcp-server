@@ -202,8 +202,8 @@ sequenceDiagram
      - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
      - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
 
-     **Mechanism:**
-     When the Blockscout API returns a `next_page_params` dictionary, the server serializes this dictionary into a compact JSON string, which is then Base64URL-encoded. This creates a single, opaque, and URL-safe string that serves as the cursor for the next page.
+    **Mechanism:**
+    The server fetches a full page of results from Blockscout but returns only a small slice to the client (default 10 items). Pagination cursors are generated from the last item of that slice. When the Blockscout API returns a `next_page_params` dictionary, the server serializes it into a compact JSON string and Base64URL-encodes it, producing an opaque cursor for the next page.
 
      **Example:**
 
