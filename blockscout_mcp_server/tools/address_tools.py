@@ -20,6 +20,7 @@ from blockscout_mcp_server.tools.common import (
     _process_and_truncate_log_items,
     apply_cursor_to_params,
     build_tool_response,
+    create_items_pagination,
     encode_cursor,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -313,8 +314,7 @@ async def get_address_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
-    log_items: list[AddressLogItem] = []
-    # To preserve the LLM context, only specific fields are added to the response
+    log_items_dicts: list[dict] = []
     for item in original_items:
         curated_item = {
             "block_number": item.get("block_number"),
@@ -327,7 +327,7 @@ async def get_address_logs(
         if item.get("data_truncated"):
             curated_item["data_truncated"] = True
 
-        log_items.append(AddressLogItem(**curated_item))
+        log_items_dicts.append(curated_item)
 
     data_description = [
         "Items Structure:",
@@ -361,26 +361,24 @@ async def get_address_logs(
             f'`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`',
         ]
 
-    # Since there could be more than one page of logs for the same address,
-    # the pagination information is extracted from API response and added explicitly
-    # to the tool response
-    pagination = None
-    next_page_params = response_data.get("next_page_params")
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="get_address_logs",
-                params={
-                    "chain_id": chain_id,
-                    "address": address,
-                    "cursor": next_cursor,
-                },
-            )
-        )
+    def _cursor_extractor(item: dict) -> dict:
+        return {
+            "block_number": item.get("block_number"),
+            "index": item.get("index"),
+        }
+
+    sliced_items, pagination = create_items_pagination(
+        items=log_items_dicts,
+        page_size=config.logs_page_size,
+        tool_name="get_address_logs",
+        next_call_base_params={"chain_id": chain_id, "address": address},
+        cursor_extractor=_cursor_extractor,
+    )
+
+    sliced_log_items = [AddressLogItem(**item) for item in sliced_items]
 
     return build_tool_response(
-        data=log_items,
+        data=sliced_log_items,
         data_description=data_description,
         notes=notes,
         pagination=pagination,

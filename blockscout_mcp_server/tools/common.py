@@ -13,7 +13,7 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
 )
-from blockscout_mcp_server.models import PaginationInfo, ToolResponse
+from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 
 
 class ChainNotFoundError(ValueError):
@@ -483,3 +483,33 @@ def apply_cursor_to_params(cursor: str | None, params: dict) -> None:
             raise ValueError(
                 "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
             )
+
+
+def create_items_pagination(
+    *,
+    items: list[dict],
+    page_size: int,
+    tool_name: str,
+    next_call_base_params: dict,
+    cursor_extractor: Callable[[dict], dict],
+) -> tuple[list[dict], PaginationInfo | None]:
+    """Slice items list and generate pagination info if needed."""
+    if len(items) <= page_size:
+        return items, None
+
+    sliced_items = items[:page_size]
+    last_item_for_cursor = items[page_size - 1]
+    next_page_params = cursor_extractor(last_item_for_cursor)
+    next_cursor = encode_cursor(next_page_params)
+
+    final_params = next_call_base_params.copy()
+    final_params["cursor"] = next_cursor
+
+    pagination = PaginationInfo(
+        next_call=NextCallInfo(
+            tool_name=tool_name,
+            params=final_params,
+        )
+    )
+
+    return sliced_items, pagination

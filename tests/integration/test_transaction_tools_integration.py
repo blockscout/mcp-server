@@ -58,7 +58,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
     # 2. Verify the basic structure
     assert isinstance(result.data, list)
-    assert len(result.data) > 0
+    assert 0 < len(result.data) <= 10
 
     # 3. Validate the schema of the first transformed log item.
     first_log = result.data[0]

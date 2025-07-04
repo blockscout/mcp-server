@@ -19,6 +19,7 @@ from blockscout_mcp_server.tools.common import (
     _recursively_truncate_and_flag_long_strings,
     apply_cursor_to_params,
     build_tool_response,
+    create_items_pagination,
     encode_cursor,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -502,22 +503,6 @@ async def get_transaction_logs(
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
     # To preserve the LLM context, only specific fields are added to the response
-    log_items: list[TransactionLogItem] = []
-    for item in original_items:
-        curated_item = {
-            "address": item.get("address", {}).get("hash")
-            if isinstance(item.get("address"), dict)
-            else item.get("address"),
-            "block_number": item.get("block_number"),
-            "topics": item.get("topics"),
-            "data": item.get("data"),
-            "decoded": item.get("decoded"),
-            "index": item.get("index"),
-        }
-        if item.get("data_truncated"):
-            curated_item["data_truncated"] = True
-
-        log_items.append(TransactionLogItem(**curated_item))
 
     data_description = [
         "Items Structure:",
@@ -552,23 +537,38 @@ async def get_transaction_logs(
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 
-    # Since there could be more than one page of logs for the same transaction,
-    # the pagination information is extracted from API response and added explicitly
-    # to the tool response
-    pagination = None
-    next_page_params = response_data.get("next_page_params")
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="get_transaction_logs",
-                params={
-                    "chain_id": chain_id,
-                    "transaction_hash": transaction_hash,
-                    "cursor": next_cursor,
-                },
-            )
+    def _cursor_extractor(item: dict) -> dict:
+        return {
+            "block_number": item.get("block_number"),
+            "index": item.get("index"),
+        }
+
+    log_items_dicts: list[dict] = []
+    for item in original_items:
+        address_value = (
+            item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else item.get("address")
         )
+        curated_item = {
+            "address": address_value,
+            "block_number": item.get("block_number"),
+            "topics": item.get("topics"),
+            "data": item.get("data"),
+            "decoded": item.get("decoded"),
+            "index": item.get("index"),
+        }
+        if item.get("data_truncated"):
+            curated_item["data_truncated"] = True
+        log_items_dicts.append(curated_item)
+
+    sliced_items, pagination = create_items_pagination(
+        items=log_items_dicts,
+        page_size=config.logs_page_size,
+        tool_name="get_transaction_logs",
+        next_call_base_params={"chain_id": chain_id, "transaction_hash": transaction_hash},
+        cursor_extractor=_cursor_extractor,
+    )
+
+    log_items = [TransactionLogItem(**item) for item in sliced_items]
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
 

@@ -22,6 +22,7 @@ class ServerConfig(BaseSettings):
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates
 
     nft_page_size: int = 10
+    logs_page_size: int = 10
 
 
 config = ServerConfig()
