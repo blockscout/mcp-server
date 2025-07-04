@@ -356,7 +356,7 @@ return build_tool_response(
 For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
 
 **A. Handling the Incoming Cursor:**
-Your tool should accept an optional `cursor` argument. If it's provided, use the `decode_cursor` helper to parse it and apply the parameters to your API call.
+Your tool should accept an optional `cursor` argument. If it's provided, use the `apply_cursor_to_params` helper from `tools/common.py`. This helper centralizes the logic for decoding the cursor and handling potential `InvalidCursorError` exceptions, raising a user-friendly `ValueError` automatically.
 
 **B. Generating Structured Pagination:**
 In your response, check for `next_page_params` from the API. If they exist, create `PaginationInfo` and `NextCallInfo` objects with the structured parameters for the next call.
@@ -369,7 +369,13 @@ For paginated tools, **MUST** include this exact notice in the docstring: `**SUP
 ```python
 from typing import Annotated, Optional
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url, encode_cursor, decode_cursor, InvalidCursorError, build_tool_response
+from blockscout_mcp_server.tools.common import (
+    make_blockscout_request,
+    get_blockscout_base_url,
+    encode_cursor,
+    apply_cursor_to_params,
+    build_tool_response
+)
 from blockscout_mcp_server.models import ToolResponse, PaginationInfo, NextCallInfo
 
 async def paginated_tool_name(
@@ -385,13 +391,8 @@ async def paginated_tool_name(
     api_path = f"/api/v2/some_paginated_endpoint/{address}"
     query_params = {}
 
-    # 1. Handle incoming cursor
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            query_params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError("Invalid or expired pagination cursor. Please make a new request without the cursor to start over.")
+    # 1. Handle incoming cursor using the helper function
+    apply_cursor_to_params(cursor, query_params)
 
     base_url = await get_blockscout_base_url(chain_id)
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
@@ -416,7 +417,6 @@ async def paginated_tool_name(
 
     return build_tool_response(data=processed_items, pagination=pagination)
 ```
-
 #### 6. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.
