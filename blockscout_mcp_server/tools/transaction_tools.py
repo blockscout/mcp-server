@@ -21,6 +21,7 @@ from blockscout_mcp_server.tools.common import (
     build_tool_response,
     create_items_pagination,
     encode_cursor,
+    extract_log_cursor_params,
     get_blockscout_base_url,
     make_blockscout_request,
     make_request_with_periodic_progress,
@@ -537,12 +538,6 @@ async def get_transaction_logs(
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 
-    def _cursor_extractor(item: dict) -> dict:
-        return {
-            "block_number": item.get("block_number"),
-            "index": item.get("index"),
-        }
-
     log_items_dicts: list[dict] = []
     for item in original_items:
         address_value = (
@@ -565,7 +560,7 @@ async def get_transaction_logs(
         page_size=config.logs_page_size,
         tool_name="get_transaction_logs",
         next_call_base_params={"chain_id": chain_id, "transaction_hash": transaction_hash},
-        cursor_extractor=_cursor_extractor,
+        cursor_extractor=extract_log_cursor_params,
     )
 
     log_items = [TransactionLogItem(**item) for item in sliced_items]

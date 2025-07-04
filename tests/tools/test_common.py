@@ -369,3 +369,16 @@ def test_create_items_pagination_with_fewer_items():
 
     assert sliced == items
     assert pagination is None
+
+
+def test_extract_log_cursor_params():
+    """Verify the log cursor extractor works correctly."""
+    from blockscout_mcp_server.tools.common import extract_log_cursor_params
+
+    complete_item = {"block_number": 123, "index": 7, "data": "0x"}
+    assert extract_log_cursor_params(complete_item) == {"block_number": 123, "index": 7}
+
+    missing_fields_item = {"data": "0xdead"}
+    assert extract_log_cursor_params(missing_fields_item) == {"block_number": None, "index": None}
+
+    assert extract_log_cursor_params({}) == {"block_number": None, "index": None}

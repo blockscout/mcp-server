@@ -22,6 +22,7 @@ from blockscout_mcp_server.tools.common import (
     build_tool_response,
     create_items_pagination,
     encode_cursor,
+    extract_log_cursor_params,
     get_blockscout_base_url,
     make_blockscout_request,
     make_metadata_request,
@@ -361,18 +362,12 @@ async def get_address_logs(
             f'`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`',
         ]
 
-    def _cursor_extractor(item: dict) -> dict:
-        return {
-            "block_number": item.get("block_number"),
-            "index": item.get("index"),
-        }
-
     sliced_items, pagination = create_items_pagination(
         items=log_items_dicts,
         page_size=config.logs_page_size,
         tool_name="get_address_logs",
         next_call_base_params={"chain_id": chain_id, "address": address},
-        cursor_extractor=_cursor_extractor,
+        cursor_extractor=extract_log_cursor_params,
     )
 
     sliced_log_items = [AddressLogItem(**item) for item in sliced_items]

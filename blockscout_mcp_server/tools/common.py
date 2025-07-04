@@ -513,3 +513,12 @@ def create_items_pagination(
     )
 
     return sliced_items, pagination
+
+
+def extract_log_cursor_params(item: dict) -> dict:
+    """Return cursor parameters extracted from a log item."""
+
+    return {
+        "block_number": item.get("block_number"),
+        "index": item.get("index"),
+    }
