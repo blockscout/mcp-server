@@ -16,10 +16,9 @@ from blockscout_mcp_server.models import (
     ToolResponse,
 )
 from blockscout_mcp_server.tools.common import (
-    InvalidCursorError,
     _process_and_truncate_log_items,
+    apply_cursor_to_params,
     build_tool_response,
-    decode_cursor,
     encode_cursor,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -106,14 +105,7 @@ async def get_tokens_by_address(
     params = {"tokens": "ERC-20"}
 
     # Add pagination parameters if provided via cursor
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, params)
 
     # Report start of operation
     await report_and_log_progress(
@@ -191,14 +183,7 @@ async def nft_tokens_by_address(
     api_path = f"/api/v2/addresses/{address}/nft/collections"
     params = {"type": "ERC-721,ERC-404,ERC-1155"}
 
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, params)
 
     await report_and_log_progress(
         ctx, progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
@@ -293,14 +278,7 @@ async def get_address_logs(
     params = {}
 
     # Add pagination parameters if provided via cursor
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, params)
 
     # Report start of operation
     await report_and_log_progress(

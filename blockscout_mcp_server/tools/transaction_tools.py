@@ -15,11 +15,10 @@ from blockscout_mcp_server.models import (
     TransactionSummaryData,
 )
 from blockscout_mcp_server.tools.common import (
-    InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    apply_cursor_to_params,
     build_tool_response,
-    decode_cursor,
     encode_cursor,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -157,14 +156,7 @@ async def get_transactions_by_address(
     if methods:
         query_params["methods"] = methods
 
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            query_params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, query_params)
 
     tool_overall_total_steps = 2.0
 
@@ -292,14 +284,7 @@ async def get_token_transfers_by_address(
     if token:
         query_params["token_contract_address_hashes_to_include"] = token
 
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            query_params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, query_params)
 
     tool_overall_total_steps = 2.0
 
@@ -495,14 +480,7 @@ async def get_transaction_logs(
     api_path = f"/api/v2/transactions/{transaction_hash}/logs"
     params = {}
 
-    if cursor:
-        try:
-            decoded_params = decode_cursor(cursor)
-            params.update(decoded_params)
-        except InvalidCursorError:
-            raise ValueError(
-                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
-            )
+    apply_cursor_to_params(cursor, params)
 
     # Report start of operation
     await report_and_log_progress(

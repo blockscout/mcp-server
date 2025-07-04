@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from mcp.server.fastmcp import Context
 
@@ -10,6 +12,7 @@ from blockscout_mcp_server.tools.common import (
     InvalidCursorError,
     _process_and_truncate_log_items,
     _recursively_truncate_and_flag_long_strings,
+    apply_cursor_to_params,
     build_tool_response,
     decode_cursor,
     encode_cursor,
@@ -295,3 +298,34 @@ def test_build_tool_response_complex_data():
     assert response.instructions[0] == "Use the pagination cursor to get more results."
     assert response.pagination.next_call.tool_name == "get_transactions"
     assert response.pagination.next_call.params["cursor"] == "next_page"
+
+
+def test_apply_cursor_to_params_success():
+    """Verify the helper correctly updates params when given a valid cursor."""
+    params = {"initial": "value"}
+    decoded = {"page": 2, "offset": 50}
+    cursor_str = "valid_cursor"
+
+    with patch("blockscout_mcp_server.tools.common.decode_cursor") as mock_decode:
+        mock_decode.return_value = decoded
+        apply_cursor_to_params(cursor_str, params)
+        mock_decode.assert_called_once_with(cursor_str)
+
+    assert params == {"initial": "value", "page": 2, "offset": 50}
+
+
+def test_apply_cursor_to_params_none_cursor():
+    """Verify the helper leaves params unchanged when cursor is None."""
+    params = {"initial": "value"}
+    original = params.copy()
+    apply_cursor_to_params(None, params)
+    assert params == original
+
+
+def test_apply_cursor_to_params_invalid_cursor_raises_value_error():
+    """Verify a ValueError is raised when decode_cursor fails."""
+    params = {}
+    with patch("blockscout_mcp_server.tools.common.decode_cursor") as mock_decode:
+        mock_decode.side_effect = InvalidCursorError
+        with pytest.raises(ValueError, match="Invalid or expired pagination cursor"):
+            apply_cursor_to_params("invalid", params)

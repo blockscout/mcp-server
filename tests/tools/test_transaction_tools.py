@@ -1,5 +1,5 @@
 # tests/tools/test_transaction_tools.py
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -11,6 +11,7 @@ from blockscout_mcp_server.models import (
 )
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
+    get_transaction_logs,
     get_transactions_by_address,
     transaction_summary,
 )
@@ -268,13 +269,12 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_wrapper,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.decode_cursor",
-            new_callable=MagicMock,
-        ) as mock_decode,
+            "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        ) as mock_apply_cursor,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = {"items": []}
-        mock_decode.return_value = decoded
+        mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded)
 
         await get_transactions_by_address(
             chain_id=chain_id,
@@ -283,7 +283,7 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
             ctx=mock_ctx,
         )
 
-        mock_decode.assert_called_once_with(cursor)
+        mock_apply_cursor.assert_called_once_with(cursor, ANY)
         call_args, call_kwargs = mock_wrapper.call_args
         params = call_kwargs["request_args"]["params"]
         expected_params = {
@@ -507,13 +507,12 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_wrapper,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.decode_cursor",
-            new_callable=MagicMock,
-        ) as mock_decode,
+            "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        ) as mock_apply_cursor,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = {"items": []}
-        mock_decode.return_value = decoded
+        mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded)
 
         await get_token_transfers_by_address(
             chain_id=chain_id,
@@ -522,7 +521,7 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
             ctx=mock_ctx,
         )
 
-        mock_decode.assert_called_once_with(cursor)
+        mock_apply_cursor.assert_called_once_with(cursor, ANY)
         call_args, call_kwargs = mock_wrapper.call_args
         params = call_kwargs["request_args"]["params"]
         expected_params = {
@@ -723,3 +722,39 @@ async def test_transaction_summary_handles_empty_list(mock_ctx):
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_invalid_cursor(mock_ctx):
+    """Verify ValueError is raised when the cursor is invalid."""
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        side_effect=ValueError("Invalid cursor"),
+    ) as mock_apply:
+        with pytest.raises(ValueError, match="Invalid cursor"):
+            await get_transactions_by_address(chain_id="1", address="0x123", cursor="bad", ctx=mock_ctx)
+    mock_apply.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_invalid_cursor(mock_ctx):
+    """Verify ValueError is raised when the cursor is invalid."""
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        side_effect=ValueError("invalid"),
+    ) as mock_apply:
+        with pytest.raises(ValueError, match="invalid"):
+            await get_token_transfers_by_address(chain_id="1", address="0xabc", cursor="bad", ctx=mock_ctx)
+    mock_apply.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_invalid_cursor(mock_ctx):
+    """Verify ValueError is raised when the cursor is invalid."""
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        side_effect=ValueError("bad"),
+    ) as mock_apply:
+        with pytest.raises(ValueError, match="bad"):
+            await get_transaction_logs(chain_id="1", transaction_hash="0xhash", cursor="bad", ctx=mock_ctx)
+    mock_apply.assert_called_once()

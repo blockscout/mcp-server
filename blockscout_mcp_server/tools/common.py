@@ -463,3 +463,23 @@ def build_tool_response(
         instructions=final_instructions_output,
         pagination=pagination,
     )
+
+
+def apply_cursor_to_params(cursor: str | None, params: dict) -> None:
+    """Decodes a pagination cursor and updates the params dictionary in-place.
+
+    Args:
+        cursor: The opaque cursor string from a previous tool response.
+        params: The dictionary of query parameters to be updated.
+
+    Raises:
+        ValueError: If the cursor is invalid or expired.
+    """
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            params.update(decoded_params)
+        except InvalidCursorError:
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )

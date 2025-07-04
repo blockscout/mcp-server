@@ -1,5 +1,5 @@
 # tests/tools/test_address_tools_2.py
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -12,7 +12,7 @@ from blockscout_mcp_server.models import (
 from blockscout_mcp_server.tools.address_tools import (
     nft_tokens_by_address,
 )
-from blockscout_mcp_server.tools.common import InvalidCursorError, encode_cursor
+from blockscout_mcp_server.tools.common import encode_cursor
 
 
 @pytest.mark.asyncio
@@ -359,15 +359,15 @@ async def test_nft_tokens_by_address_with_cursor(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools.decode_cursor") as mock_decode_cursor,
+        patch("blockscout_mcp_server.tools.address_tools.apply_cursor_to_params") as mock_apply_cursor,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = {"items": []}
-        mock_decode_cursor.return_value = decoded_params
+        mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded_params)
 
         await nft_tokens_by_address(chain_id=chain_id, address=address, cursor=cursor, ctx=mock_ctx)
 
-        mock_decode_cursor.assert_called_once_with(cursor)
+        mock_apply_cursor.assert_called_once_with(cursor, ANY)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
@@ -383,8 +383,8 @@ async def test_nft_tokens_by_address_invalid_cursor(mock_ctx):
     invalid_cursor = "bad_cursor"
 
     with patch(
-        "blockscout_mcp_server.tools.address_tools.decode_cursor",
-        side_effect=InvalidCursorError,
+        "blockscout_mcp_server.tools.address_tools.apply_cursor_to_params",
+        side_effect=ValueError("bad"),
     ):
-        with pytest.raises(ValueError, match="Invalid or expired pagination cursor"):
+        with pytest.raises(ValueError, match="bad"):
             await nft_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
