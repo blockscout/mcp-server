@@ -397,13 +397,13 @@ async def paginated_tool_name(
     base_url = await get_blockscout_base_url(chain_id)
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
 
-    page_size = config.nft_page_size  # Use your config setting
+    PAGE_SIZE = 10 # This should be a configurable value per-tool
     items = response_data.get("items", [])
     items_to_return = items
     next_page_params = None
-    if len(items) > page_size:
-        items_to_return = items[:page_size]
-        last = items[page_size - 1]
+    if len(items) > PAGE_SIZE:
+        items_to_return = items[:PAGE_SIZE]
+        last = items[PAGE_SIZE - 1]
         next_page_params = {
             "some_id": last.get("id"),
             "items_count": 50,
