@@ -27,6 +27,8 @@ from blockscout_mcp_server.tools.common import (
     report_and_log_progress,
 )
 
+EXCLUDED_TX_TYPES = {"ERC-20", "ERC-721", "ERC-1155", "ERC-404"}
+
 
 def _transform_advanced_filter_item(item: dict, fields_to_remove: list[str]) -> dict:
     """Transforms a single item from the advanced filter API response."""
@@ -189,7 +191,6 @@ async def get_transactions_by_address(
 
     original_items = response_data.get("items", [])
 
-    EXCLUDED_TX_TYPES = {"ERC-20", "ERC-721", "ERC-1155", "ERC-404"}
     filtered_items = [item for item in original_items if item.get("type") not in EXCLUDED_TX_TYPES]
 
     fields_to_remove = [

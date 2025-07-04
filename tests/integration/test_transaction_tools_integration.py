@@ -12,6 +12,7 @@ from blockscout_mcp_server.models import (
 )
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction_tools import (
+    EXCLUDED_TX_TYPES,
     get_token_transfers_by_address,
     get_transaction_info,
     get_transaction_logs,
@@ -229,7 +230,6 @@ async def test_get_transactions_by_address_integration(mock_ctx):
     and that token transfers are correctly filtered out from the live response.
     """
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-    EXCLUDED_TX_TYPES = {"ERC-20", "ERC-721", "ERC-1155", "ERC-404"}
 
     result = await get_transactions_by_address(
         chain_id="1",
