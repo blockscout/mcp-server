@@ -4,6 +4,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import (
     AddressInfoData,
     AddressLogItem,
@@ -199,10 +200,25 @@ async def nft_tokens_by_address(
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data.")
 
-    items_data = response_data.get("items", [])
+    page_size = config.nft_page_size
+    original_items = response_data.get("items", [])
+
+    items_to_return = original_items
+    next_page_params = None
+
+    if len(original_items) > page_size:
+        items_to_return = original_items[:page_size]
+        last_item_for_cursor = original_items[page_size - 1]
+        token_info = last_item_for_cursor.get("token", {})
+        next_page_params = {
+            "token_contract_address_hash": token_info.get("address_hash"),
+            "token_type": token_info.get("type"),
+            "items_count": 50,
+        }
+
     nft_holdings: list[NftCollectionHolding] = []
 
-    for item in items_data:
+    for item in items_to_return:
         token = item.get("token", {})
 
         token_instances: list[NftTokenInstance] = []
@@ -240,19 +256,17 @@ async def nft_tokens_by_address(
             )
         )
 
-    # Since there could be more than one page of collections for the same address,
-    # the pagination information is extracted from API response and added explicitly
-    # to the tool response
     pagination = None
-    next_page_params = response_data.get("next_page_params")
     if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="nft_tokens_by_address",
-                params={"chain_id": chain_id, "address": address, "cursor": next_cursor},
+        filtered_next_page_params = {k: v for k, v in next_page_params.items() if v is not None}
+        if filtered_next_page_params:
+            next_cursor = encode_cursor(filtered_next_page_params)
+            pagination = PaginationInfo(
+                next_call=NextCallInfo(
+                    tool_name="nft_tokens_by_address",
+                    params={"chain_id": chain_id, "address": address, "cursor": next_cursor},
+                )
             )
-        )
 
     return build_tool_response(data=nft_holdings, pagination=pagination)
 
