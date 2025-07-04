@@ -148,24 +148,40 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
     mock_api_response = {
         "items": [
             {
-                "from": {"hash": "0xfrom_hash"},
-                "to": {"hash": "0xto_hash"},
+                "type": "call",
+                "from": {"hash": "0xfrom_hash_1"},
+                "to": {"hash": "0xto_hash_1"},
+                "value": "kept1",
                 "token": "should be removed",
                 "total": "should be removed",
-                "value": "kept",
-                "token_transfer_batch_index": 1,
-                "token_transfer_index": 1,
-            }
+            },
+            {
+                "type": "ERC-20",
+                "from": {"hash": "0xfrom_hash_2"},
+                "to": {"hash": "0xto_hash_2"},
+                "token": {"symbol": "USDC"},
+            },
+            {
+                "type": "creation",
+                "from": {"hash": "0xfrom_hash_3"},
+                "to": None,
+                "value": "kept2",
+            },
         ],
         "next_page_params": None,
     }
 
     expected_items = [
         {
-            "from": "0xfrom_hash",
-            "to": "0xto_hash",
-            "value": "kept",
-        }
+            "from": "0xfrom_hash_1",
+            "to": "0xto_hash_1",
+            "value": "kept1",
+        },
+        {
+            "from": "0xfrom_hash_3",
+            "to": None,
+            "value": "kept2",
+        },
     ]
 
     with (
@@ -183,13 +199,14 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
 
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
-        assert len(result.data) == 1
-        item_model = result.data[0]
-        assert isinstance(item_model, AdvancedFilterItem)
-        assert item_model.from_address == expected_items[0]["from"]
-        assert item_model.to_address == expected_items[0]["to"]
-        item_dict = item_model.model_dump(by_alias=True)
-        assert item_dict["value"] == expected_items[0]["value"]
+        assert len(result.data) == 2
+        for idx, expected in enumerate(expected_items):
+            item_model = result.data[idx]
+            assert isinstance(item_model, AdvancedFilterItem)
+            assert item_model.from_address == expected["from"]
+            assert item_model.to_address == expected["to"]
+            item_dict = item_model.model_dump(by_alias=True)
+            assert item_dict.get("value") == expected["value"]
 
 
 @pytest.mark.asyncio

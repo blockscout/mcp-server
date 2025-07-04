@@ -129,12 +129,14 @@ async def get_transactions_by_address(
     ] = None,
 ) -> ToolResponse[list[AdvancedFilterItem]]:
     """
-    Get transactions for an address within a specific time range.
+    Retrieves native currency transfers and smart contract interactions (calls, internal txs) for an address.
+    **EXCLUDES TOKEN TRANSFERS**: Filters out direct token balance changes (ERC-20, etc.). You'll see calls *to* token contracts, but not the `Transfer` events. For token history, use `get_token_transfers_by_address`.
+    A single tx can have multiple records from internal calls; use `internal_transaction_index` for execution order.
     Use cases:
-      - `get_transactions_by_address(address, age_from)` - get all transactions to/from the address since the given date up to the current time
-      - `get_transactions_by_address(address, age_from, age_to)` - get all transactions to/from the address between the given dates
-      - `get_transactions_by_address(address, age_from, age_to, methods)` - get all transactions to/from the address between the given dates and invoking the given method signature
-    Manipulating `age_from` and `age_to` allows you to paginate through results by time ranges.
+      - `get_transactions_by_address(address, age_from)` - get all txs to/from the address since a given date.
+      - `get_transactions_by_address(address, age_from, age_to)` - get all txs to/from the address between given dates.
+      - `get_transactions_by_address(address, age_from, age_to, methods)` - get all txs to/from the address between given dates, filtered by method.
+    Manipulating `age_from` and `age_to` allows paginating by time.
     """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
     query_params = {"to_address_hashes_to_include": address, "from_address_hashes_to_include": address}
@@ -186,6 +188,10 @@ async def get_transactions_by_address(
     # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
 
     original_items = response_data.get("items", [])
+
+    EXCLUDED_TX_TYPES = {"ERC-20", "ERC-721", "ERC-1155", "ERC-404"}
+    filtered_items = [item for item in original_items if item.get("type") not in EXCLUDED_TX_TYPES]
+
     fields_to_remove = [
         "total",
         "token",
@@ -193,7 +199,7 @@ async def get_transactions_by_address(
         "token_transfer_index",
     ]
 
-    transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
+    transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in filtered_items]
 
     # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
