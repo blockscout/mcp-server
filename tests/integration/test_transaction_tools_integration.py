@@ -294,6 +294,65 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_get_transactions_by_address_pagination_integration(mock_ctx):
+    """Tests that get_transactions_by_address can successfully use a cursor to fetch a second page."""
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    chain_id = "1"
+
+    try:
+        first_page = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"API request failed: {e}")
+
+    if not first_page.pagination:
+        pytest.skip("Pagination info missing from first page.")
+
+    cursor = first_page.pagination.next_call.params["cursor"]
+
+    try:
+        second_page = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+    except httpx.HTTPStatusError as e:
+        pytest.fail(f"Failed to fetch second page: {e}")
+
+    assert isinstance(second_page.data, list)
+    if second_page.data:
+        assert first_page.data[0] != second_page.data[0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_pagination_integration(mock_ctx):
+    """Tests that get_token_transfers_by_address can successfully use a cursor to fetch a second page."""
+    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    chain_id = "1"
+
+    try:
+        first_page = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+    except httpx.HTTPStatusError as e:
+        pytest.skip(f"API request failed: {e}")
+
+    if not first_page.pagination:
+        pytest.skip("Pagination info missing from first page.")
+
+    cursor = first_page.pagination.next_call.params["cursor"]
+
+    try:
+        second_page = await get_token_transfers_by_address(
+            chain_id=chain_id,
+            address=address,
+            ctx=mock_ctx,
+            cursor=cursor,
+        )
+    except httpx.HTTPStatusError as e:
+        pytest.fail(f"Failed to fetch second page: {e}")
+
+    assert isinstance(second_page.data, list)
+    if second_page.data:
+        assert first_page.data[0] != second_page.data[0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
     """
     Tests that get_transaction_logs can find truncated data by searching across pages.

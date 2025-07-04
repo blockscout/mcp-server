@@ -127,7 +127,12 @@ async def get_transactions_by_address(
     age_from: Annotated[str | None, Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z).")] = None,
     age_to: Annotated[str | None, Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z).")] = None,
     methods: Annotated[
-        str | None, Field(description="A method signature to filter transactions by (e.g 0x304e6ade)")
+        str | None,
+        Field(description="A method signature to filter transactions by (e.g 0x304e6ade)"),
+    ] = None,
+    cursor: Annotated[
+        str | None,
+        Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
 ) -> ToolResponse[list[AdvancedFilterItem]]:
     """
@@ -138,16 +143,28 @@ async def get_transactions_by_address(
       - `get_transactions_by_address(address, age_from)` - get all txs to/from the address since a given date.
       - `get_transactions_by_address(address, age_from, age_to)` - get all txs to/from the address between given dates.
       - `get_transactions_by_address(address, age_from, age_to, methods)` - get all txs to/from the address between given dates, filtered by method.
-    Manipulating `age_from` and `age_to` allows paginating by time.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
-    query_params = {"to_address_hashes_to_include": address, "from_address_hashes_to_include": address}
+    query_params = {
+        "to_address_hashes_to_include": address,
+        "from_address_hashes_to_include": address,
+    }
     if age_from:
         query_params["age_from"] = age_from
     if age_to:
         query_params["age_to"] = age_to
     if methods:
         query_params["methods"] = methods
+
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            query_params.update(decoded_params)
+        except InvalidCursorError:
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
 
     tool_overall_total_steps = 2.0
 
@@ -205,9 +222,25 @@ async def get_transactions_by_address(
     # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
 
-    # The pagination information is not extracted from the API response as it is assumed that
-    # the LLM will use the `age_from` and `age_to` parameters to paginate through the results.
-    return build_tool_response(data=result_data)
+    pagination = None
+    next_page_params = response_data.get("next_page_params")
+    if next_page_params:
+        next_cursor = encode_cursor(next_page_params)
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="get_transactions_by_address",
+                params={
+                    "chain_id": chain_id,
+                    "address": address,
+                    "age_from": age_from,
+                    "age_to": age_to,
+                    "methods": methods,
+                    "cursor": next_cursor,
+                },
+            )
+        )
+
+    return build_tool_response(data=result_data, pagination=pagination)
 
 
 async def get_token_transfers_by_address(
@@ -232,6 +265,10 @@ async def get_token_transfers_by_address(
             description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens."  # noqa: E501
         ),
     ] = None,
+    cursor: Annotated[
+        str | None,
+        Field(description="The pagination cursor from a previous response to get the next page of results."),
+    ] = None,
 ) -> ToolResponse[list[AdvancedFilterItem]]:
     """
     Get ERC-20 token transfers for an address within a specific time range.
@@ -239,7 +276,7 @@ async def get_token_transfers_by_address(
       - `get_token_transfers_by_address(address, age_from)` - get all transfers of any ERC-20 token to/from the address since the given date up to the current time
       - `get_token_transfers_by_address(address, age_from, age_to)` - get all transfers of any ERC-20 token to/from the address between the given dates
       - `get_token_transfers_by_address(address, age_from, age_to, token)` - get all transfers of the given ERC-20 token to/from the address between the given dates
-    Manipulating `age_from` and `age_to` allows you to paginate through results by time ranges. For example, after getting transfers up to a certain timestamp, you can use that timestamp as `age_to` in the next query to get the next page of older transfers.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
     query_params = {
@@ -254,6 +291,15 @@ async def get_token_transfers_by_address(
         query_params["age_to"] = age_to
     if token:
         query_params["token_contract_address_hashes_to_include"] = token
+
+    if cursor:
+        try:
+            decoded_params = decode_cursor(cursor)
+            query_params.update(decoded_params)
+        except InvalidCursorError:
+            raise ValueError(
+                "Invalid or expired pagination cursor. Please make a new request without the cursor to start over."
+            )
 
     tool_overall_total_steps = 2.0
 
@@ -303,9 +349,25 @@ async def get_token_transfers_by_address(
     # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
 
-    # The pagination information is not extracted from the API response as it is assumed that
-    # the LLM will use the `age_from` and `age_to` parameters to paginate through the results.
-    return build_tool_response(data=result_data)
+    pagination = None
+    next_page_params = response_data.get("next_page_params")
+    if next_page_params:
+        next_cursor = encode_cursor(next_page_params)
+        pagination = PaginationInfo(
+            next_call=NextCallInfo(
+                tool_name="get_token_transfers_by_address",
+                params={
+                    "chain_id": chain_id,
+                    "address": address,
+                    "age_from": age_from,
+                    "age_to": age_to,
+                    "token": token,
+                    "cursor": next_cursor,
+                },
+            )
+        )
+
+    return build_tool_response(data=result_data, pagination=pagination)
 
 
 async def transaction_summary(

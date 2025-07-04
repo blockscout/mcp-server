@@ -45,7 +45,12 @@ async def test_get_transactions_by_address_calls_wrapper_correctly(mock_ctx):
 
         # ACT
         result = await get_transactions_by_address(
-            chain_id=chain_id, address=address, age_from=age_from, age_to=age_to, methods=methods, ctx=mock_ctx
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            age_to=age_to,
+            methods=methods,
+            ctx=mock_ctx,
         )
 
         # ASSERT
@@ -209,7 +214,84 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
             assert item_dict.get("value") == expected["value"]
             # removed fields should not be present after transformation
             assert "token" not in item_dict
-            assert "total" not in item_dict
+        assert "total" not in item_dict
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_with_pagination(mock_ctx):
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"items": [], "next_page_params": {"page": 2}}
+
+    fake_cursor = "ENCODED_CURSOR"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+        mock_encode_cursor.return_value = fake_cursor
+
+        result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
+        assert result.pagination is not None
+        assert result.pagination.next_call.tool_name == "get_transactions_by_address"
+        assert result.pagination.next_call.params["cursor"] == fake_cursor
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
+    chain_id = "1"
+    address = "0x123abc"
+    cursor = "CURSOR"
+    decoded = {"page": 2}
+    mock_base_url = "https://eth.blockscout.com"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.decode_cursor",
+            new_callable=MagicMock,
+        ) as mock_decode,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = {"items": []}
+        mock_decode.return_value = decoded
+
+        await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            cursor=cursor,
+            ctx=mock_ctx,
+        )
+
+        mock_decode.assert_called_once_with(cursor)
+        call_args, call_kwargs = mock_wrapper.call_args
+        params = call_kwargs["request_args"]["params"]
+        expected_params = {
+            "to_address_hashes_to_include": address,
+            "from_address_hashes_to_include": address,
+            **decoded,
+        }
+        assert params == expected_params
 
 
 @pytest.mark.asyncio
@@ -373,6 +455,83 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
         item_dict = item_model.model_dump(by_alias=True)
         assert item_dict["token"] == expected_items[0]["token"]
         assert item_dict["total"] == expected_items[0]["total"]
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"items": [], "next_page_params": {"page": 2}}
+    fake_cursor = "ENCODED_CURSOR"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+        mock_encode_cursor.return_value = fake_cursor
+
+        result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
+        assert result.pagination is not None
+        assert result.pagination.next_call.tool_name == "get_token_transfers_by_address"
+        assert result.pagination.next_call.params["cursor"] == fake_cursor
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
+    chain_id = "1"
+    address = "0x123abc"
+    cursor = "CURSOR"
+    decoded = {"page": 2}
+    mock_base_url = "https://eth.blockscout.com"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.decode_cursor",
+            new_callable=MagicMock,
+        ) as mock_decode,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = {"items": []}
+        mock_decode.return_value = decoded
+
+        await get_token_transfers_by_address(
+            chain_id=chain_id,
+            address=address,
+            cursor=cursor,
+            ctx=mock_ctx,
+        )
+
+        mock_decode.assert_called_once_with(cursor)
+        call_args, call_kwargs = mock_wrapper.call_args
+        params = call_kwargs["request_args"]["params"]
+        expected_params = {
+            "transaction_types": "ERC-20",
+            "to_address_hashes_to_include": address,
+            "from_address_hashes_to_include": address,
+            **decoded,
+        }
+        assert params == expected_params
 
 
 @pytest.mark.asyncio
