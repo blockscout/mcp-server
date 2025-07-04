@@ -242,6 +242,8 @@ async def test_get_transactions_by_address_integration(mock_ctx):
     items = result.data
     assert isinstance(items, list)
 
+    assert len(items) <= 10
+
     if not items:
         pytest.skip("No non-token transactions found for the given address and time range to verify.")
 
@@ -275,6 +277,8 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     items = result.data
     assert isinstance(items, list)
+
+    assert len(items) <= 10
 
     if not items:
         pytest.skip("No token transfers found for the given address and time range.")

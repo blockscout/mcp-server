@@ -382,3 +382,40 @@ def test_extract_log_cursor_params():
     assert extract_log_cursor_params(missing_fields_item) == {"block_number": None, "index": None}
 
     assert extract_log_cursor_params({}) == {"block_number": None, "index": None}
+
+
+def test_extract_advanced_filters_cursor_params():
+    """Verify the advanced filters cursor extractor works correctly."""
+    from blockscout_mcp_server.tools.common import (
+        extract_advanced_filters_cursor_params,
+    )
+
+    item = {
+        "block_number": 100,
+        "transaction_index": 5,
+        "internal_transaction_index": 2,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": 1,
+        "other_field": "ignore",
+    }
+
+    expected_params = {
+        "block_number": 100,
+        "transaction_index": 5,
+        "internal_transaction_index": 2,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": 1,
+    }
+
+    assert extract_advanced_filters_cursor_params(item) == expected_params
+
+    item_missing = {"block_number": 200}
+    expected_missing = {
+        "block_number": 200,
+        "transaction_index": None,
+        "internal_transaction_index": None,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": None,
+    }
+
+    assert extract_advanced_filters_cursor_params(item_missing) == expected_missing

@@ -522,3 +522,15 @@ def extract_log_cursor_params(item: dict) -> dict:
         "block_number": item.get("block_number"),
         "index": item.get("index"),
     }
+
+
+def extract_advanced_filters_cursor_params(item: dict) -> dict:
+    """Return cursor parameters extracted from an advanced-filters item."""
+
+    return {
+        "block_number": item.get("block_number"),
+        "transaction_index": item.get("transaction_index"),
+        "internal_transaction_index": item.get("internal_transaction_index"),
+        "token_transfer_batch_index": item.get("token_transfer_batch_index"),
+        "token_transfer_index": item.get("token_transfer_index"),
+    }
