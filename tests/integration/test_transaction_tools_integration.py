@@ -225,13 +225,16 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_integration(mock_ctx):
-    """Tests that get_transactions_by_address returns a transformed list of transactions."""
+    """Tests that get_transactions_by_address returns a transformed list of transactions
+    and that token transfers are correctly filtered out from the live response.
+    """
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    EXCLUDED_TX_TYPES = {"ERC-20", "ERC-721", "ERC-1155", "ERC-404"}
 
     result = await get_transactions_by_address(
         chain_id="1",
         address=address,
-        age_to="2016-01-01T00:00:00.00Z",
+        age_to="2017-01-01T00:00:00.00Z",  # Use a range more likely to have varied tx types
         ctx=mock_ctx,
     )
 
@@ -240,13 +243,15 @@ async def test_get_transactions_by_address_integration(mock_ctx):
     assert isinstance(items, list)
 
     if not items:
-        pytest.skip("No transactions found for the given address and time range.")
+        pytest.skip("No non-token transactions found for the given address and time range to verify.")
 
     for item in items:
         assert isinstance(item, AdvancedFilterItem)
         assert isinstance(item.from_address, str | type(None))
         assert isinstance(item.to_address, str | type(None))
         item_dict = item.model_dump(by_alias=True)
+        # Verify that no excluded token transfer types appear in the result
+        assert item.model_extra.get("type") not in EXCLUDED_TX_TYPES
         assert "token" not in item_dict
         assert "total" not in item_dict
         assert "hash" in item_dict
