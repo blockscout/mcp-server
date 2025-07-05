@@ -23,6 +23,7 @@ class ServerConfig(BaseSettings):
 
     nft_page_size: int = 10
     logs_page_size: int = 10
+    advanced_filters_page_size: int = 10
 
 
 config = ServerConfig()
