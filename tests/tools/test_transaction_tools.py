@@ -4,8 +4,11 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import (
     AdvancedFilterItem,
+    NextCallInfo,
+    PaginationInfo,
     ToolResponse,
     TransactionSummaryData,
 )
@@ -224,9 +227,7 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    mock_api_response = {"items": [], "next_page_params": {"page": 2}}
-
-    fake_cursor = "ENCODED_CURSOR"
+    mock_api_response = {"items": []}
 
     with (
         patch(
@@ -237,18 +238,55 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
             "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
-        mock_encode_cursor.return_value = fake_cursor
+        mock_create_pagination.return_value = (
+            [],
+            PaginationInfo(
+                next_call=NextCallInfo(
+                    tool_name="get_transactions_by_address",
+                    params={"cursor": "CUR"},
+                )
+            ),
+        )
 
         result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
-        assert result.pagination is not None
-        assert result.pagination.next_call.tool_name == "get_transactions_by_address"
-        assert result.pagination.next_call.params["cursor"] == fake_cursor
+        mock_create_pagination.assert_called_once()
+        assert isinstance(result.pagination, PaginationInfo)
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_custom_page_size(mock_ctx):
+    chain_id = "1"
+    address = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    items = [{"block_number": i} for i in range(10)]
+    mock_api_response = {"items": items}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch.object(config, "advanced_filters_page_size", 5),
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+        mock_create_pagination.return_value = (items[:5], None)
+
+        await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_create_pagination.assert_called_once()
+        assert mock_create_pagination.call_args.kwargs["page_size"] == 5
 
 
 @pytest.mark.asyncio
@@ -463,8 +501,7 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    mock_api_response = {"items": [], "next_page_params": {"page": 2}}
-    fake_cursor = "ENCODED_CURSOR"
+    mock_api_response = {"items": []}
 
     with (
         patch(
@@ -475,18 +512,55 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
             "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
-        mock_encode_cursor.return_value = fake_cursor
+        mock_create_pagination.return_value = (
+            [],
+            PaginationInfo(
+                next_call=NextCallInfo(
+                    tool_name="get_token_transfers_by_address",
+                    params={"cursor": "CUR"},
+                )
+            ),
+        )
 
         result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
-        assert result.pagination is not None
-        assert result.pagination.next_call.tool_name == "get_token_transfers_by_address"
-        assert result.pagination.next_call.params["cursor"] == fake_cursor
+        mock_create_pagination.assert_called_once()
+        assert isinstance(result.pagination, PaginationInfo)
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
+    chain_id = "1"
+    address = "0x123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    items = [{"block_number": i} for i in range(10)]
+    mock_api_response = {"items": items}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            new_callable=AsyncMock,
+        ) as mock_wrapper,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch.object(config, "advanced_filters_page_size", 5),
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_wrapper.return_value = mock_api_response
+        mock_create_pagination.return_value = (items[:5], None)
+
+        await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_create_pagination.assert_called_once()
+        assert mock_create_pagination.call_args.kwargs["page_size"] == 5
 
 
 @pytest.mark.asyncio

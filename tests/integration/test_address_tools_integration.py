@@ -55,7 +55,7 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert result.pagination is not None
     assert isinstance(result.data, list)
-    assert len(result.data) > 0
+    assert 0 < len(result.data) <= 10
 
     first_log = result.data[0]
     assert isinstance(first_log, AddressLogItem)

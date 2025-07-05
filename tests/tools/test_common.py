@@ -14,6 +14,7 @@ from blockscout_mcp_server.tools.common import (
     _recursively_truncate_and_flag_long_strings,
     apply_cursor_to_params,
     build_tool_response,
+    create_items_pagination,
     decode_cursor,
     encode_cursor,
 )
@@ -329,3 +330,92 @@ def test_apply_cursor_to_params_invalid_cursor_raises_value_error():
         mock_decode.side_effect = InvalidCursorError
         with pytest.raises(ValueError, match="Invalid or expired pagination cursor"):
             apply_cursor_to_params("invalid", params)
+
+
+def test_create_items_pagination_with_more_items():
+    """Verify the helper slices the list and creates a pagination object."""
+    items = [{"index": i} for i in range(20)]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"index": item["index"]},
+    )
+
+    assert len(sliced) == page_size
+    assert sliced[0]["index"] == 0
+    assert sliced[-1]["index"] == page_size - 1
+    assert pagination is not None
+    assert pagination.next_call.tool_name == "test_tool"
+    decoded_cursor = decode_cursor(pagination.next_call.params["cursor"])
+    assert decoded_cursor == {"index": page_size - 1}
+
+
+def test_create_items_pagination_with_fewer_items():
+    """Verify the helper does nothing when items are below the page size."""
+    items = [{"index": i} for i in range(5)]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"index": item["index"]},
+    )
+
+    assert sliced == items
+    assert pagination is None
+
+
+def test_extract_log_cursor_params():
+    """Verify the log cursor extractor works correctly."""
+    from blockscout_mcp_server.tools.common import extract_log_cursor_params
+
+    complete_item = {"block_number": 123, "index": 7, "data": "0x"}
+    assert extract_log_cursor_params(complete_item) == {"block_number": 123, "index": 7}
+
+    missing_fields_item = {"data": "0xdead"}
+    assert extract_log_cursor_params(missing_fields_item) == {"block_number": None, "index": None}
+
+    assert extract_log_cursor_params({}) == {"block_number": None, "index": None}
+
+
+def test_extract_advanced_filters_cursor_params():
+    """Verify the advanced filters cursor extractor works correctly."""
+    from blockscout_mcp_server.tools.common import (
+        extract_advanced_filters_cursor_params,
+    )
+
+    item = {
+        "block_number": 100,
+        "transaction_index": 5,
+        "internal_transaction_index": 2,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": 1,
+        "other_field": "ignore",
+    }
+
+    expected_params = {
+        "block_number": 100,
+        "transaction_index": 5,
+        "internal_transaction_index": 2,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": 1,
+    }
+
+    assert extract_advanced_filters_cursor_params(item) == expected_params
+
+    item_missing = {"block_number": 200}
+    expected_missing = {
+        "block_number": 200,
+        "transaction_index": None,
+        "internal_transaction_index": None,
+        "token_transfer_batch_index": None,
+        "token_transfer_index": None,
+    }
+
+    assert extract_advanced_filters_cursor_params(item_missing) == expected_missing

@@ -58,7 +58,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
     # 2. Verify the basic structure
     assert isinstance(result.data, list)
-    assert len(result.data) > 0
+    assert 0 < len(result.data) <= 10
 
     # 3. Validate the schema of the first transformed log item.
     first_log = result.data[0]
@@ -242,6 +242,10 @@ async def test_get_transactions_by_address_integration(mock_ctx):
     items = result.data
     assert isinstance(items, list)
 
+    assert len(items) <= 10
+    if len(items) == 10:
+        assert result.pagination is not None, "Pagination info should be present when a full page is returned."
+
     if not items:
         pytest.skip("No non-token transactions found for the given address and time range to verify.")
 
@@ -275,6 +279,10 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     items = result.data
     assert isinstance(items, list)
+
+    assert len(items) <= 10
+    if len(items) == 10:
+        assert result.pagination is not None, "Pagination info should be present when a full page is returned."
 
     if not items:
         pytest.skip("No token transfers found for the given address and time range.")

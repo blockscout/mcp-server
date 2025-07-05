@@ -4,7 +4,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
+from blockscout_mcp_server.config import config
+from blockscout_mcp_server.models import (
+    NextCallInfo,
+    PaginationInfo,
+    ToolResponse,
+    TransactionLogItem,
+)
 from blockscout_mcp_server.tools.common import encode_cursor
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_logs
 
@@ -213,16 +219,34 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_request,
         patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
-        patch("blockscout_mcp_server.tools.transaction_tools.encode_cursor") as mock_encode_cursor,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
         mock_process_logs.return_value = (mock_api_response["items"], False)
-        mock_encode_cursor.return_value = fake_cursor
+        curated_dicts = [
+            {
+                "address": "0xcontract1",
+                "block_number": 1,
+                "topics": [],
+                "data": "0x",
+                "decoded": None,
+                "index": 0,
+            }
+        ]
+        mock_create_pagination.return_value = (
+            curated_dicts,
+            PaginationInfo(
+                next_call=NextCallInfo(
+                    tool_name="get_transaction_logs",
+                    params={"chain_id": chain_id, "transaction_hash": hash, "cursor": fake_cursor},
+                )
+            ),
+        )
 
         result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
 
-        mock_encode_cursor.assert_called_once_with(mock_api_response["next_page_params"])
+        mock_create_pagination.assert_called_once()
         assert isinstance(result, ToolResponse)
         actual = result.data[0]
         expected = expected_log_items[0]
@@ -417,3 +441,35 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         assert result.notes is not None
         assert "One or more log items" in result.notes[0]
         assert actual.model_extra.get("data_truncated") is None
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_custom_page_size(mock_ctx):
+    chain_id = "1"
+    tx_hash = "0xabc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"items": [{"block_number": i, "index": i} for i in range(10)]}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch.object(config, "logs_page_size", 5),
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+        mock_process_logs.return_value = (mock_api_response["items"], False)
+        mock_create_pagination.return_value = (mock_api_response["items"][:5], None)
+
+        await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        mock_create_pagination.assert_called_once()
+        assert mock_create_pagination.call_args.kwargs["page_size"] == 5
