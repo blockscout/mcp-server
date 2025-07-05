@@ -316,6 +316,7 @@ async def get_address_logs(
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
     log_items_dicts: list[dict] = []
+    # To preserve the LLM context, only specific fields are added to the response
     for item in original_items:
         curated_item = {
             "block_number": item.get("block_number"),

@@ -224,6 +224,7 @@ async def get_transactions_by_address(
         },
         cursor_extractor=extract_advanced_filters_cursor_params,
     )
+    # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     sliced_items = [AdvancedFilterItem.model_validate(item) for item in sliced_items]
 
     return build_tool_response(data=sliced_items, pagination=pagination)
@@ -338,6 +339,7 @@ async def get_token_transfers_by_address(
         },
         cursor_extractor=extract_advanced_filters_cursor_params,
     )
+    # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
     sliced_items = [AdvancedFilterItem.model_validate(item) for item in sliced_items]
 
     return build_tool_response(data=sliced_items, pagination=pagination)
@@ -489,7 +491,23 @@ async def get_transaction_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
+    log_items_dicts: list[dict] = []
     # To preserve the LLM context, only specific fields are added to the response
+    for item in original_items:
+        address_value = (
+            item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else item.get("address")
+        )
+        curated_item = {
+            "address": address_value,
+            "block_number": item.get("block_number"),
+            "topics": item.get("topics"),
+            "data": item.get("data"),
+            "decoded": item.get("decoded"),
+            "index": item.get("index"),
+        }
+        if item.get("data_truncated"):
+            curated_item["data_truncated"] = True
+        log_items_dicts.append(curated_item)
 
     data_description = [
         "Items Structure:",
@@ -523,23 +541,6 @@ async def get_transaction_logs(
             f'`curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`',
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
-
-    log_items_dicts: list[dict] = []
-    for item in original_items:
-        address_value = (
-            item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else item.get("address")
-        )
-        curated_item = {
-            "address": address_value,
-            "block_number": item.get("block_number"),
-            "topics": item.get("topics"),
-            "data": item.get("data"),
-            "decoded": item.get("decoded"),
-            "index": item.get("index"),
-        }
-        if item.get("data_truncated"):
-            curated_item["data_truncated"] = True
-        log_items_dicts.append(curated_item)
 
     sliced_items, pagination = create_items_pagination(
         items=log_items_dicts,
