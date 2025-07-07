@@ -13,7 +13,7 @@ mcp-server/
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
-│       ├── common.py           # Shared utilities for tools (e.g., HTTP client, chain resolution, progress reporting, data processing and truncation helpers)
+│       ├── common.py           # Shared utilities and common functionality for all tools
 │       ├── get_instructions.py # Implements the __get_instructions__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
@@ -167,19 +167,9 @@ mcp-server/
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:
-            * Contains shared utility functions for all tool modules, including data processing and truncation helpers.
-            * Implements chain resolution and caching mechanism with `get_blockscout_base_url` function.
-            * Implements helper functions (`encode_cursor`, `decode_cursor`) and a custom exception (`InvalidCursorError`) for handling opaque pagination cursors.
-            * Contains asynchronous HTTP client functions for different API endpoints:
-                * `make_blockscout_request`: Takes base_url (resolved from chain_id), API path, and parameters for Blockscout API calls.
-                * `make_bens_request`: For BENS API calls.
-                * `make_chainscout_request`: For Chainscout API calls.
-                * `make_metadata_request`: For Blockscout Metadata API calls.
-            * These functions handle:
-                * API key inclusion
-                * Common HTTP error patterns
-                * URL construction
-                * Response parsing
+            * Provides shared utilities and common functionality for all MCP tools.
+            * Handles API communication, chain resolution, pagination, data processing, and error handling.
+            * Implements standardized patterns used across the tool ecosystem.
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.
