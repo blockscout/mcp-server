@@ -383,7 +383,7 @@ async def test_get_transaction_logs_success(mock_ctx):
     """
     # ARRANGE
     chain_id = "1"
-    hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
@@ -393,7 +393,7 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "topics": ["0xtopic1...", "0xtopic2..."],
                 "data": "0xdata123...",
                 "log_index": "0",
-                "transaction_hash": hash,
+                "transaction_hash": tx_hash,
                 "block_number": 19000000,
                 "block_hash": "0xblockhash1...",
                 "decoded": {"name": "EventA"},
@@ -404,7 +404,7 @@ async def test_get_transaction_logs_success(mock_ctx):
                 "topics": ["0xtopic3..."],
                 "data": "0xdata456...",
                 "log_index": "1",
-                "transaction_hash": hash,
+                "transaction_hash": tx_hash,
                 "block_number": 19000000,
                 "block_hash": "0xblockhash2...",
                 "decoded": {"name": "EventB"},
@@ -447,12 +447,12 @@ async def test_get_transaction_logs_success(mock_ctx):
         mock_request.return_value = mock_api_response
 
         # ACT
-        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=hash, ctx=mock_ctx)
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/transactions/{hash}/logs", params={}
+            base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/logs", params={}
         )
 
         assert isinstance(result, ToolResponse)
