@@ -367,7 +367,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
     """
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     chain_id = "1"
-    MAX_PAGES_TO_CHECK = 5
+    MAX_PAGES_TO_CHECK = 20
     cursor = None
     found_truncated_log = False
 

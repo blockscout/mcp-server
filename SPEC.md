@@ -190,33 +190,35 @@ sequenceDiagram
 
    **Specific Optimizations:**
 
-     **a) Address Object Simplification:**
-     Many Blockscout API endpoints return addresses as complex JSON objects containing hash, name, contract flags, public tags, and other metadata. To conserve LLM context, the server systematically simplifies these objects into single address strings (e.g., `"0x123..."`) before returning responses. This approach:
-     - **Reduces Context Consumption**: A single address string uses significantly less context than a full address object with multiple fields
-     - **Encourages Compositional Tool Use**: When detailed address information is needed, the AI is guided to use dedicated tools like `get_address_info`
-     - **Maintains Essential Functionality**: The core address hash is preserved, which is sufficient for most blockchain operations
+    **a) Address Object Simplification:**
+    Many Blockscout API endpoints return addresses as complex JSON objects containing hash, name, contract flags, public tags, and other metadata. To conserve LLM context, the server systematically simplifies these objects into single address strings (e.g., `"0x123..."`) before returning responses. This approach:
 
-     **b) Opaque Cursor Strategy for Pagination:**
-     For handling large, paginated datasets, the server uses an **opaque cursor** strategy that avoids exposing multiple, complex pagination parameters (e.g., `page`, `offset`, `items_count`) in tool signatures and responses. This approach provides several key benefits:
-     - **Context Conservation**: A single cursor string consumes significantly less LLM context than a list of individual parameters.
-     - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
-     - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
+    - **Reduces Context Consumption**: A single address string uses significantly less context than a full address object with multiple fields
+    - **Encourages Compositional Tool Use**: When detailed address information is needed, the AI is guided to use dedicated tools like `get_address_info`
+    - **Maintains Essential Functionality**: The core address hash is preserved, which is sufficient for most blockchain operations
+
+    **b) Opaque Cursor Strategy for Pagination:**
+    For handling large, paginated datasets, the server uses an **opaque cursor** strategy that avoids exposing multiple, complex pagination parameters (e.g., `page`, `offset`, `items_count`) in tool signatures and responses. This approach provides several key benefits:
+
+    - **Context Conservation**: A single cursor string consumes significantly less LLM context than a list of individual parameters.
+    - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
+    - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
 
     **Mechanism:**
-    The server fetches a full page of results from Blockscout but returns only a small slice to the client (default 10 items). Pagination cursors are generated from the last item of that slice. When the Blockscout API returns a `next_page_params` dictionary, the server serializes it into a compact JSON string and Base64URL-encodes it, producing an opaque cursor for the next page.
+    When the Blockscout API returns a `next_page_params` dictionary, the server serializes this dictionary into a compact JSON string, which is then Base64URL-encoded. This creates a single, opaque, and URL-safe string that serves as the cursor for the next page.
 
-     **Example:**
+    **Example:**
 
-     - **Blockscout API `next_page_params`:**
+    - **Blockscout API `next_page_params`:**
 
        ```json
        { "block_number": 18999999, "index": 42, "items_count": 50 }
        ```
 
-     - **Generated Opaque Cursor:**
+    - **Generated Opaque Cursor:**
        `eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0`
 
-     - **Final Tool Response (JSON):**
+    - **Final Tool Response (JSON):**
 
        ```json
        {
@@ -234,15 +236,39 @@ sequenceDiagram
        }
        ```
 
-    **c) Automatic Pagination Instructions for LLM Guidance:**
-     To address the common issue of LLMs ignoring structured pagination data, the server implements a multi-layered approach to ensure LLMs actually use pagination when available:
-     - **Enhanced General Rules**: Server instructions include explicit pagination handling rules that LLMs receive upfront
-     - **Automatic Instruction Generation**: When a tool response includes pagination, the server automatically appends motivational instructions to the `instructions` field (e.g., "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.")
-     - **Tool Description Enhancement**: All paginated tools include prominent **"SUPPORTS PAGINATION"** notices in their docstrings
+    **c) Response Slicing and Context-Aware Pagination:**
 
-     This balanced approach provides both human-readable motivation and machine-readable execution details, significantly improving the likelihood that LLMs will fetch complete datasets for comprehensive analysis.
+    To prevent overwhelming the LLM with long lists of items (e.g., token holdings, transaction logs), the server implements a response slicing strategy. This conserves context while ensuring all data remains accessible through robust pagination.
 
-    **d) Log Data Field Truncation**
+    **Basic Slicing Mechanism:**
+
+    - The server fetches a full page of data from the Blockscout API (typically 50 items) but returns only a smaller, configurable slice to the client (e.g., 10 items). If the original response contained more items than the slice size, pagination is initiated.
+    - **Cursor Generation**: Instead of using the `next_page_params` directly from the Blockscout API (which would skip most of the fetched items), the server generates a new pagination cursor based on the **last item of the returned slice**. This ensures the next request starts exactly where the previous one left off, providing seamless continuity.
+    - **Configuration**: The size of the slice returned to the client is configurable via environment variables (e.g., `BLOCKSCOUT_*_PAGE_SIZE`), allowing for fine-tuning of context usage.
+
+    **Advanced Multi-Page Fetching with Filtering:**
+    For tools that apply significant filtering (e.g., `get_transactions_by_address` which excludes token transfers), the server implements a sophisticated multi-page fetching strategy to handle cases where filtering removes most items from each API page:
+
+    - **Smart Pagination Logic**: The server fetches up to 10 consecutive full-size pages from the Blockscout API, filtering and accumulating items until it has enough for a meaningful client response.
+    - **Sparse Data Detection**: If after fetching 10 pages the last page contained no filtered items and the accumulated results are still insufficient for a full client page, the data is considered "too sparse" and pagination is terminated to avoid infinite loops with minimal results.
+    - **Pagination Decision**: The server offers pagination to the client only when:
+      1. It has accumulated more than the target page size (definitive evidence of more data), OR
+      2. It reached the 10-page limit AND the last fetched page contained items AND the API indicates more pages are available (likely more data)
+    - **Efficiency Balance**: This approach balances network efficiency (fetching larger chunks) with context efficiency (returning smaller slices) while handling the complex reality of heavily filtered blockchain data.
+
+    This strategy combines the network efficiency of fetching larger data chunks from the backend with the context efficiency of providing smaller, digestible responses to the AI.
+
+    **d) Automatic Pagination Instructions for LLM Guidance:**
+
+    To address the common issue of LLMs ignoring structured pagination data, the server implements a multi-layered approach to ensure LLMs actually use pagination when available:
+
+    - **Enhanced General Rules**: Server instructions include explicit pagination handling rules that LLMs receive upfront
+    - **Automatic Instruction Generation**: When a tool response includes pagination, the server automatically appends motivational instructions to the `instructions` field (e.g., "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.")
+    - **Tool Description Enhancement**: All paginated tools include prominent **"SUPPORTS PAGINATION"** notices in their docstrings
+
+    This balanced approach provides both human-readable motivation and machine-readable execution details, significantly improving the likelihood that LLMs will fetch complete datasets for comprehensive analysis.
+
+    **e) Log Data Field Truncation**
 
     To prevent LLM context overflow from excessively large `data` fields in transaction logs, the server implements a smart truncation strategy.
 
@@ -253,7 +279,7 @@ sequenceDiagram
 
     This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
 
-    **e) Transaction Input Data Truncation**
+    **f) Transaction Input Data Truncation**
 
     To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.
 

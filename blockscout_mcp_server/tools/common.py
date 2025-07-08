@@ -492,13 +492,33 @@ def create_items_pagination(
     tool_name: str,
     next_call_base_params: dict,
     cursor_extractor: Callable[[dict], dict],
+    force_pagination: bool = False,
 ) -> tuple[list[dict], PaginationInfo | None]:
-    """Slice items list and generate pagination info if needed."""
-    if len(items) <= page_size:
+    """
+    Slice items list and generate pagination info if needed.
+
+    Args:
+        force_pagination: If True, creates pagination even when items <= page_size,
+                         using the last item for cursor generation. Useful when the caller
+                         knows there are more pages available despite having few items.
+    """
+    if len(items) <= page_size and not force_pagination:
         return items, None
 
-    sliced_items = items[:page_size]
-    last_item_for_cursor = items[page_size - 1]
+    # Determine pagination behavior
+    if len(items) > page_size:
+        # Normal case: slice items and use item at page_size - 1 for cursor
+        sliced_items = items[:page_size]
+        last_item_for_cursor = items[page_size - 1]
+    else:
+        # Force pagination case: use all items and last item for cursor
+        sliced_items = items
+        last_item_for_cursor = items[-1] if items else None
+
+    # Only create pagination if we have an item to generate cursor from
+    if not last_item_for_cursor:
+        return sliced_items, None
+
     next_page_params = cursor_extractor(last_item_for_cursor)
     next_cursor = encode_cursor(next_page_params)
 

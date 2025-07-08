@@ -301,7 +301,7 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
             base_url=mock_base_url,
-            api_path=f"/api/v2/transactions/{hash}/logs",
+            api_path=f"/api/v2/transactions/{tx_hash}/logs",
             params=decoded_params,
         )
         mock_process_logs.assert_called_once_with(mock_api_response["items"])

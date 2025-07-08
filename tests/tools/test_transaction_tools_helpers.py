@@ -152,3 +152,41 @@ def test_transform_item_with_missing_keys():
     }
 
     assert _transform_advanced_filter_item(raw_item, fields_to_remove) == expected
+
+
+def test_transformation_preserves_unknown_fields():
+    """
+    Test that transformation preserves fields not in the removal list.
+    """
+    # ARRANGE
+    item_with_extra_fields = {
+        "type": "call",
+        "hash": "0x1",
+        "from": {"hash": "0xfrom"},
+        "to": {"hash": "0xto"},
+        "value": "1000",
+        "gas_used": "21000",
+        "custom_field": "should_be_kept",
+        "token": "should_be_removed",
+        "timestamp": "2024-01-01T00:00:00Z",
+    }
+    fields_to_remove = ["token"]
+
+    # ACT
+    transformed = _transform_advanced_filter_item(item_with_extra_fields, fields_to_remove)
+
+    # ASSERT
+    # Standard transformations applied
+    assert transformed["from"] == "0xfrom"
+    assert transformed["to"] == "0xto"
+
+    # Specified field removed
+    assert "token" not in transformed
+
+    # Other fields preserved
+    assert transformed["type"] == "call"
+    assert transformed["hash"] == "0x1"
+    assert transformed["value"] == "1000"
+    assert transformed["gas_used"] == "21000"
+    assert transformed["custom_field"] == "should_be_kept"
+    assert transformed["timestamp"] == "2024-01-01T00:00:00Z"

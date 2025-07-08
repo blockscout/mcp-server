@@ -371,6 +371,133 @@ def test_create_items_pagination_with_fewer_items():
     assert pagination is None
 
 
+def test_create_items_pagination_force_pagination_with_fewer_items():
+    """Verify force_pagination=True creates pagination even when items are below page size."""
+    items = [{"index": i} for i in range(5)]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"index": item["index"]},
+        force_pagination=True,
+    )
+
+    assert sliced == items  # All items should be returned
+    assert pagination is not None  # Pagination should be created
+    assert pagination.next_call.tool_name == "test_tool"
+    decoded_cursor = decode_cursor(pagination.next_call.params["cursor"])
+    assert decoded_cursor == {"index": 4}  # Last item index
+
+
+def test_create_items_pagination_force_pagination_with_empty_items():
+    """Verify force_pagination=True handles empty items list gracefully."""
+    items = []
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"index": item["index"]},
+        force_pagination=True,
+    )
+
+    assert sliced == []
+    assert pagination is None  # No pagination when no items
+
+
+def test_create_items_pagination_force_pagination_with_more_items():
+    """Verify force_pagination=True behaves normally when items exceed page size."""
+    items = [{"index": i} for i in range(20)]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"index": item["index"]},
+        force_pagination=True,
+    )
+
+    assert len(sliced) == page_size
+    assert sliced[0]["index"] == 0
+    assert sliced[-1]["index"] == page_size - 1
+    assert pagination is not None
+    assert pagination.next_call.tool_name == "test_tool"
+    decoded_cursor = decode_cursor(pagination.next_call.params["cursor"])
+    assert decoded_cursor == {"index": page_size - 1}  # Same behavior as normal case
+
+
+def test_create_items_pagination_force_pagination_cursor_generation():
+    """Verify force_pagination=True uses the last item for cursor generation."""
+    items = [{"block_number": 100, "index": 1}, {"block_number": 200, "index": 2}]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"block_number": item["block_number"], "index": item["index"]},
+        force_pagination=True,
+    )
+
+    assert sliced == items
+    assert pagination is not None
+    decoded_cursor = decode_cursor(pagination.next_call.params["cursor"])
+    assert decoded_cursor == {"block_number": 200, "index": 2}  # Last item's data
+
+
+def test_create_items_pagination_normal_cursor_generation():
+    """Verify normal pagination uses the item at page_size-1 for cursor generation."""
+    items = [{"block_number": 100 + i, "index": i} for i in range(15)]
+    page_size = 10
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params={"chain_id": "1"},
+        cursor_extractor=lambda item: {"block_number": item["block_number"], "index": item["index"]},
+    )
+
+    assert len(sliced) == page_size
+    assert pagination is not None
+    decoded_cursor = decode_cursor(pagination.next_call.params["cursor"])
+    # Should use items[page_size - 1] = items[9] = {"block_number": 109, "index": 9}
+    assert decoded_cursor == {"block_number": 109, "index": 9}
+
+
+def test_create_items_pagination_preserves_base_params():
+    """Verify pagination preserves base parameters and adds cursor."""
+    items = [{"index": i} for i in range(5)]
+    page_size = 10
+    base_params = {"chain_id": "1", "address": "0x123", "other": "value"}
+
+    sliced, pagination = create_items_pagination(
+        items=items,
+        page_size=page_size,
+        tool_name="test_tool",
+        next_call_base_params=base_params,
+        cursor_extractor=lambda item: {"index": item["index"]},
+        force_pagination=True,
+    )
+
+    assert pagination is not None
+    params = pagination.next_call.params
+    assert params["chain_id"] == "1"
+    assert params["address"] == "0x123"
+    assert params["other"] == "value"
+    assert "cursor" in params
+    decoded_cursor = decode_cursor(params["cursor"])
+    assert decoded_cursor == {"index": 4}
+
+
 def test_extract_log_cursor_params():
     """Verify the log cursor extractor works correctly."""
     from blockscout_mcp_server.tools.common import extract_log_cursor_params
