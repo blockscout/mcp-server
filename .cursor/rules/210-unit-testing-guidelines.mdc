@@ -7,6 +7,37 @@ alwaysApply: false
 
 This document provides detailed guidelines for writing effective unit tests for MCP tool functions and related components.
 
+## **HIGH PRIORITY: Keep Unit Tests Simple and Focused**
+
+**Each unit test must be narrow and specific.** A single test should verify one specific behavior or scenario. If a test attempts to cover multiple scenarios or different groups of input parameters, **split it into separate tests**.
+
+**Simple tests are:**
+
+- Easier to understand and maintain
+- Faster to debug when they fail
+- More reliable and less prone to false positives
+- Better at pinpointing the exact cause of failures
+
+**Example - Split complex tests:**
+
+```python
+# BAD: One test covering multiple scenarios
+def test_lookup_token_complex():
+    # Tests both success and error cases
+    # Tests multiple input parameter combinations
+    # Hard to debug when it fails
+
+# GOOD: Separate focused tests
+def test_lookup_token_success():
+    # Tests only the success scenario
+
+def test_lookup_token_invalid_symbol():
+    # Tests only invalid symbol error case
+
+def test_lookup_token_network_error():
+    # Tests only network error handling
+```
+
 ## Key Testing Patterns & Guidelines
 
 ### A. Use the `mock_ctx` Fixture
@@ -16,6 +47,7 @@ A reusable `pytest` fixture named `mock_ctx` is defined in `tests/conftest.py`. 
 **DO NOT** create a manual `MagicMock` for the context within your test functions.
 
 **Correct Usage:**
+
 ```python
 import pytest
 
@@ -38,8 +70,6 @@ For tools that return a `ToolResponse` object containing structured data, **DO N
 
 However, the approach depends on the complexity of the tool.
 
-
-
 ### C. Handling Repetitive Data in Assertions (DAMP vs. DRY)
 
 When testing tools that transform a list of items (e.g., `lookup_token_by_symbol`), explicitly writing out the entire `expected_result` can lead to large, repetitive, and hard-to-maintain test code.
@@ -47,6 +77,7 @@ When testing tools that transform a list of items (e.g., `lookup_token_by_symbol
 In these cases, it is better to **programmatically generate the `expected_result`** from the `mock_api_response`. This keeps the test maintainable while still explicitly documenting the transformation logic itself.
 
 **Correct Usage:**
+
 ```python
 import copy
 from blockscout_mcp_server.models import ToolResponse

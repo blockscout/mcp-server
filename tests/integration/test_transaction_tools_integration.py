@@ -58,7 +58,7 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
     # 2. Verify the basic structure
     assert isinstance(result.data, list)
-    assert len(result.data) > 0
+    assert 0 < len(result.data) <= 10
 
     # 3. Validate the schema of the first transformed log item.
     first_log = result.data[0]
@@ -242,6 +242,10 @@ async def test_get_transactions_by_address_integration(mock_ctx):
     items = result.data
     assert isinstance(items, list)
 
+    assert len(items) <= 10
+    if len(items) == 10:
+        assert result.pagination is not None, "Pagination info should be present when a full page is returned."
+
     if not items:
         pytest.skip("No non-token transactions found for the given address and time range to verify.")
 
@@ -275,6 +279,10 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     items = result.data
     assert isinstance(items, list)
+
+    assert len(items) <= 10
+    if len(items) == 10:
+        assert result.pagination is not None, "Pagination info should be present when a full page is returned."
 
     if not items:
         pytest.skip("No token transfers found for the given address and time range.")
@@ -359,7 +367,7 @@ async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
     """
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     chain_id = "1"
-    MAX_PAGES_TO_CHECK = 5
+    MAX_PAGES_TO_CHECK = 20
     cursor = None
     found_truncated_log = False
 

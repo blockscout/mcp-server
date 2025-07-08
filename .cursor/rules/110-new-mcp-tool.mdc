@@ -353,15 +353,50 @@ return build_tool_response(
 
 #### 5. Handling Pagination with Opaque Cursors (`return_type: ToolResponse[list[dict]]`)
 
-For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context. The implementation involves both handling an incoming cursor and generating the next one.
+For tools that return paginated data, do not expose individual pagination parameters (like `page`, `offset`, `items_count`) in the tool's signature. Instead, use a single, opaque `cursor` string. This improves robustness and saves LLM context.
+
+**Context Conservation Strategy:**
+Many blockchain APIs return large datasets (50+ items per page) that would overwhelm LLM context. To balance network efficiency with context conservation, tools should:
+
+- Fetch larger pages from APIs (typically 50 items) for network efficiency
+- Return smaller slices to the LLM (typically 10-20 items) to conserve context
+- Generate pagination objects that allow the LLM to request additional pages when needed
 
 **A. Handling the Incoming Cursor:**
 Your tool should accept an optional `cursor` argument. If it's provided, use the `apply_cursor_to_params` helper from `tools/common.py`. This helper centralizes the logic for decoding the cursor and handling potential `InvalidCursorError` exceptions, raising a user-friendly `ValueError` automatically.
 
 **B. Generating Structured Pagination:**
-In your response, check for `next_page_params` from the API. If they exist, create `PaginationInfo` and `NextCallInfo` objects with the structured parameters for the next call.
+**ALWAYS use the `create_items_pagination` helper** from `tools/common.py` instead of manually creating pagination objects. This function implements the response slicing strategy described above, while also ensuring consistency and handling edge cases properly.
 
-**C. Tool Description Guidelines:**
+**C. Page Size Configuration:**
+For each new paginated tool, you must add a dedicated page size configuration variable:
+
+1. **Add to `blockscout_mcp_server/config.py`**:
+
+   ```python
+   class ServerConfig(BaseSettings):
+       # Existing page sizes
+       nft_page_size: int = 10
+       logs_page_size: int = 10
+       advanced_filters_page_size: int = 10
+       
+       # Add your new page size
+       my_tool_page_size: int = 15  # Adjust based on typical item size
+   ```
+
+2. **Add to `.env.example`**:
+
+   ```shell
+   BLOCKSCOUT_MY_TOOL_PAGE_SIZE=15
+   ```
+
+3. **Add to `Dockerfile`**:
+
+   ```dockerfile
+   ENV BLOCKSCOUT_MY_TOOL_PAGE_SIZE="15"
+   ```
+
+**D. Tool Description Guidelines:**
 For paginated tools, **MUST** include this exact notice in the docstring: `**SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.`
 
 **Complete Example Pattern:**
@@ -372,11 +407,25 @@ from pydantic import Field
 from blockscout_mcp_server.tools.common import (
     make_blockscout_request,
     get_blockscout_base_url,
-    encode_cursor,
     apply_cursor_to_params,
-    build_tool_response
+    build_tool_response,
+    create_items_pagination,
 )
-from blockscout_mcp_server.models import ToolResponse, PaginationInfo, NextCallInfo
+from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.config import config
+
+def extract_cursor_params(item: dict) -> dict:
+    """Extract cursor parameters from an item for pagination continuation.
+    
+    This function determines which fields from the last item should be used
+    as cursor parameters for the next page request. The returned dictionary
+    will be encoded as an opaque cursor string.
+    """
+    return {
+        "some_id": item.get("id"),  # Primary pagination key
+        "timestamp": item.get("timestamp"),  # Secondary sort key if needed
+        "items_count": 50,  # Page size for next request
+    }
 
 async def paginated_tool_name(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -397,37 +446,27 @@ async def paginated_tool_name(
     base_url = await get_blockscout_base_url(chain_id)
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=query_params)
 
-    PAGE_SIZE = 10 # This should be a configurable value per-tool
+    # 2. Process/transform items if needed
     items = response_data.get("items", [])
-    items_to_return = items
-    next_page_params = None
-    if len(items) > PAGE_SIZE:
-        items_to_return = items[:PAGE_SIZE]
-        last = items[PAGE_SIZE - 1]
-        next_page_params = {
-            "some_id": last.get("id"),
-            "items_count": 50,
-        }
+    processed_items = process_items(items)  # Your transformation logic here
 
-    processed_items = process_items(items_to_return)
+    # 3. Use create_items_pagination helper to handle slicing and pagination
+    sliced_items, pagination = create_items_pagination(
+        items=processed_items,
+        page_size=config.my_tool_page_size,  # Use the page size you configured above
+        tool_name="paginated_tool_name",
+        next_call_base_params={
+            "chain_id": chain_id,
+            "address": address,
+            # Include other non-cursor parameters that should be preserved
+        },
+        cursor_extractor=extract_cursor_params,
+        force_pagination=False,  # Set to True if you know there are more pages despite few items
+    )
 
-    # 2. Generate structured pagination
-    pagination = None
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="paginated_tool_name",
-                params={
-                    "chain_id": chain_id,
-                    "address": address,
-                    "cursor": next_cursor
-                }
-            )
-        )
-
-    return build_tool_response(data=processed_items, pagination=pagination)
+    return build_tool_response(data=sliced_items, pagination=pagination)
 ```
+
 #### 6. Simplifying Address Objects to Save Context (`return_type: ToolResponse[dict]`)
 
 **Rationale:** Many Blockscout API endpoints return addresses as complex JSON objects containing the hash, name, tags, etc. To conserve LLM context and encourage compositional tool use, we must simplify these objects into a single address string. If the AI needs more details about an address, it should be guided to use the dedicated `get_address_info` tool.

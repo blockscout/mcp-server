@@ -7,8 +7,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import (
     AdvancedFilterItem,
-    NextCallInfo,
-    PaginationInfo,
     ToolResponse,
     TransactionInfoData,
     TransactionLogItem,
@@ -19,7 +17,9 @@ from blockscout_mcp_server.tools.common import (
     _recursively_truncate_and_flag_long_strings,
     apply_cursor_to_params,
     build_tool_response,
-    encode_cursor,
+    create_items_pagination,
+    extract_advanced_filters_cursor_params,
+    extract_log_cursor_params,
     get_blockscout_base_url,
     make_blockscout_request,
     make_request_with_periodic_progress,
@@ -119,6 +119,94 @@ def _transform_transaction_info(data: dict) -> dict:
     return transformed_data
 
 
+async def _fetch_filtered_transactions_with_smart_pagination(
+    base_url: str,
+    api_path: str,
+    initial_params: dict,
+    target_page_size: int,
+    ctx: Context,
+    max_pages_to_fetch: int = 10,  # Prevent infinite loops
+    progress_start_step: float = 2.0,
+    total_steps: float = 12.0,
+) -> tuple[list[dict], bool]:
+    """
+    Fetch and accumulate filtered transaction items across multiple pages until we have enough items.
+
+    This function handles the complex case where filtering removes most items from each page,
+    requiring us to fetch multiple pages to get enough filtered results.
+
+    The key insight: we accumulate items until we have target_page_size + 1 items (so create_items_pagination
+    can detect if pagination is needed) OR until no more API pages are available.
+
+    Returns:
+        tuple of (filtered_items, has_more_pages_available)
+        - filtered_items: list of raw API data, not transformed
+        - has_more_pages_available: True if there are likely more pages with data available
+    """
+    accumulated_items = []
+    current_params = initial_params.copy()
+    pages_fetched = 0
+    last_page_had_items = False
+    api_has_more_pages = False
+
+    while pages_fetched < max_pages_to_fetch:
+        current_step = progress_start_step + pages_fetched
+
+        # Fetch current page using periodic progress reporting to provide ability
+        # to track progress the page fetch
+        response_data = await make_request_with_periodic_progress(
+            ctx=ctx,
+            request_function=make_blockscout_request,
+            request_args={"base_url": base_url, "api_path": api_path, "params": current_params},
+            total_duration_hint=config.bs_timeout,
+            progress_interval_seconds=config.progress_interval_seconds,
+            in_progress_message_template=(
+                f"Fetching page {pages_fetched + 1}, accumulated {len(accumulated_items)} items... "
+                f"({{elapsed_seconds:.0f}}s / {{total_hint:.0f}}s hint)"
+            ),
+            tool_overall_total_steps=total_steps,
+            current_step_number=current_step,
+            current_step_message_prefix=f"Fetching page {pages_fetched + 1}",
+        )
+
+        original_items = response_data.get("items", [])
+        next_page_params = response_data.get("next_page_params")
+        pages_fetched += 1
+
+        # Filter items from current page
+        filtered_items = [item for item in original_items if item.get("type") not in EXCLUDED_TX_TYPES]
+
+        # Track if this page had items and if API indicates more pages
+        last_page_had_items = len(filtered_items) > 0
+        api_has_more_pages = next_page_params is not None
+
+        # Add to accumulated items
+        accumulated_items.extend(filtered_items)
+
+        # Check if we have enough items for pagination decision
+        # We need target_page_size + 1 so create_items_pagination can detect if pagination is needed
+        if len(accumulated_items) > target_page_size:
+            # We have more than a page, so there are definitely more items available
+            break
+
+        if not next_page_params:
+            # No more pages available, return whatever we have
+            break
+
+        # Prepare for next page
+        current_params.update(next_page_params)
+
+    # Determine if there are more pages available:
+    # 1. If we have > target_page_size items, there are definitely more pages
+    # 2. If we hit the page limit but the last page had items AND the API says there are more pages,
+    #    then there are likely more pages with data
+    has_more_pages = len(accumulated_items) > target_page_size or (
+        pages_fetched >= max_pages_to_fetch and last_page_had_items and api_has_more_pages
+    )
+
+    return accumulated_items, has_more_pages
+
+
 async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
@@ -158,7 +246,9 @@ async def get_transactions_by_address(
 
     apply_cursor_to_params(cursor, query_params)
 
-    tool_overall_total_steps = 2.0
+    # Calculate total steps:
+    # 1 (URL resolution) + 10 (max iterations in _fetch_filtered_transactions_with_smart_pagination) + 1 (finalization)
+    tool_overall_total_steps = 12.0
 
     # Report start of operation
     await report_and_log_progress(
@@ -170,7 +260,7 @@ async def get_transactions_by_address(
 
     base_url = await get_blockscout_base_url(chain_id)
 
-    # Report progress after resolving Blockscout URL
+    # Report progress after resolving Blockscout URL (step 1 complete)
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -178,61 +268,56 @@ async def get_transactions_by_address(
         message="Resolved Blockscout instance URL. Now fetching transactions...",
     )
 
-    # Use the periodic progress wrapper for the potentially long-running API call
-    response_data = await make_request_with_periodic_progress(
+    # Use smart pagination that handles filtering across multiple pages (steps 2-11)
+    # internally, it uses make_request_with_periodic_progress to report progress for each page fetch
+    filtered_items, has_more_pages = await _fetch_filtered_transactions_with_smart_pagination(
+        base_url=base_url,
+        api_path=api_path,
+        initial_params=query_params,
+        target_page_size=config.advanced_filters_page_size,
         ctx=ctx,
-        request_function=make_blockscout_request,
-        request_args={
-            "base_url": base_url,
-            "api_path": api_path,
-            "params": query_params,
-        },
-        total_duration_hint=config.bs_timeout,  # Use configured timeout
-        progress_interval_seconds=config.progress_interval_seconds,  # Use configured interval
-        in_progress_message_template="Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s hint)",
-        tool_overall_total_steps=tool_overall_total_steps,
-        current_step_number=2.0,  # This is the 2nd step of the tool
-        current_step_message_prefix="Fetching transactions",
+        progress_start_step=2.0,
+        total_steps=tool_overall_total_steps,
     )
 
-    # The wrapper make_request_with_periodic_progress handles the final progress report for this step.
-    # So, no explicit ctx.report_progress(progress=2.0, ...) is needed here.
+    # Report completion after fetching all needed pages (step 12)
+    await report_and_log_progress(
+        ctx,
+        progress=tool_overall_total_steps,
+        total=tool_overall_total_steps,
+        message="Successfully fetched transaction data.",
+    )
 
-    original_items = response_data.get("items", [])
-
-    filtered_items = [item for item in original_items if item.get("type") not in EXCLUDED_TX_TYPES]
-
+    # Transform filtered items (separate responsibility from filtering/pagination)
     fields_to_remove = [
         "total",
         "token",
         "token_transfer_batch_index",
         "token_transfer_index",
     ]
-
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in filtered_items]
 
-    # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
-    result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
+    # Use create_items_pagination to handle slicing and pagination logic
+    # Force pagination if we know there are more pages available despite having few items
+    final_items, pagination = create_items_pagination(
+        items=transformed_items,
+        page_size=config.advanced_filters_page_size,
+        tool_name="get_transactions_by_address",
+        next_call_base_params={
+            "chain_id": chain_id,
+            "address": address,
+            "age_from": age_from,
+            "age_to": age_to,
+            "methods": methods,
+        },
+        cursor_extractor=extract_advanced_filters_cursor_params,
+        force_pagination=has_more_pages and len(transformed_items) <= config.advanced_filters_page_size,
+    )
 
-    pagination = None
-    next_page_params = response_data.get("next_page_params")
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="get_transactions_by_address",
-                params={
-                    "chain_id": chain_id,
-                    "address": address,
-                    "age_from": age_from,
-                    "age_to": age_to,
-                    "methods": methods,
-                    "cursor": next_cursor,
-                },
-            )
-        )
+    # Convert to AdvancedFilterItem objects
+    validated_items = [AdvancedFilterItem.model_validate(item) for item in final_items]
 
-    return build_tool_response(data=result_data, pagination=pagination)
+    return build_tool_response(data=validated_items, pagination=pagination)
 
 
 async def get_token_transfers_by_address(
@@ -331,28 +416,23 @@ async def get_token_transfers_by_address(
 
     transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
 
+    sliced_items, pagination = create_items_pagination(
+        items=transformed_items,
+        page_size=config.advanced_filters_page_size,
+        tool_name="get_token_transfers_by_address",
+        next_call_base_params={
+            "chain_id": chain_id,
+            "address": address,
+            "age_from": age_from,
+            "age_to": age_to,
+            "token": token,
+        },
+        cursor_extractor=extract_advanced_filters_cursor_params,
+    )
     # All the fields returned by the API except the ones in `fields_to_remove` are added to the response
-    result_data = [AdvancedFilterItem.model_validate(item) for item in transformed_items]
+    sliced_items = [AdvancedFilterItem.model_validate(item) for item in sliced_items]
 
-    pagination = None
-    next_page_params = response_data.get("next_page_params")
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="get_token_transfers_by_address",
-                params={
-                    "chain_id": chain_id,
-                    "address": address,
-                    "age_from": age_from,
-                    "age_to": age_to,
-                    "token": token,
-                    "cursor": next_cursor,
-                },
-            )
-        )
-
-    return build_tool_response(data=result_data, pagination=pagination)
+    return build_tool_response(data=sliced_items, pagination=pagination)
 
 
 async def transaction_summary(
@@ -476,6 +556,7 @@ async def get_transaction_logs(
     Get comprehensive transaction logs.
     Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
     Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = f"/api/v2/transactions/{transaction_hash}/logs"
     params = {}
@@ -501,13 +582,14 @@ async def get_transaction_logs(
 
     original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
 
+    log_items_dicts: list[dict] = []
     # To preserve the LLM context, only specific fields are added to the response
-    log_items: list[TransactionLogItem] = []
     for item in original_items:
+        address_value = (
+            item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else item.get("address")
+        )
         curated_item = {
-            "address": item.get("address", {}).get("hash")
-            if isinstance(item.get("address"), dict)
-            else item.get("address"),
+            "address": address_value,
             "block_number": item.get("block_number"),
             "topics": item.get("topics"),
             "data": item.get("data"),
@@ -516,8 +598,7 @@ async def get_transaction_logs(
         }
         if item.get("data_truncated"):
             curated_item["data_truncated"] = True
-
-        log_items.append(TransactionLogItem(**curated_item))
+        log_items_dicts.append(curated_item)
 
     data_description = [
         "Items Structure:",
@@ -552,23 +633,15 @@ async def get_transaction_logs(
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 
-    # Since there could be more than one page of logs for the same transaction,
-    # the pagination information is extracted from API response and added explicitly
-    # to the tool response
-    pagination = None
-    next_page_params = response_data.get("next_page_params")
-    if next_page_params:
-        next_cursor = encode_cursor(next_page_params)
-        pagination = PaginationInfo(
-            next_call=NextCallInfo(
-                tool_name="get_transaction_logs",
-                params={
-                    "chain_id": chain_id,
-                    "transaction_hash": transaction_hash,
-                    "cursor": next_cursor,
-                },
-            )
-        )
+    sliced_items, pagination = create_items_pagination(
+        items=log_items_dicts,
+        page_size=config.logs_page_size,
+        tool_name="get_transaction_logs",
+        next_call_base_params={"chain_id": chain_id, "transaction_hash": transaction_hash},
+        cursor_extractor=extract_log_cursor_params,
+    )
+
+    log_items = [TransactionLogItem(**item) for item in sliced_items]
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
 
