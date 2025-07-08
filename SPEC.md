@@ -16,13 +16,20 @@ The Blockscout MCP Server supports two operational modes:
    - Automatically spawned and managed by MCP clients
    - Provides session-based interaction with progress tracking and context management
 
-2. **HTTP Streamable Mode**:
-   - Modern HTTP-based mode using the same MCP JSON-RPC 2.0 protocol over HTTP
-   - Stateless operation with JSON responses for improved scalability
-   - Convenient for testing with standard HTTP tools (curl, Postman, etc.) especially by AI agents and coding assistants
-   - Not yet universally supported by all MCP clients, but growing in adoption
+2. **HTTP Mode**:
+   - Enabled with the `--http` flag.
+   - By default, this mode provides a pure MCP-over-HTTP endpoint at `/mcp`, using the same JSON-RPC 2.0 protocol as stdio mode.
+   - It is stateless and uses JSON responses, making it convenient for testing and integration.
 
-Both modes provide identical functionality and tool capabilities, differing only in the transport mechanism.
+3. **Extended HTTP Mode (with REST API)**:
+   - Enabled by using the `--rest` flag in conjunction with `--http`.
+   - This mode extends the standard HTTP server to include additional, non-MCP endpoints:
+     - A simple landing page at `/`.
+     - A health check endpoint at `/health`.
+     - A versioned REST API under `/v1/` that exposes the same functionality as the MCP tools.
+   - This unified server approach allows both MCP clients and traditional REST clients to interact with the same application instance, ensuring consistency and avoiding code duplication.
+
+The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.
 
 ### Architecture and Data Flow
 
@@ -63,6 +70,45 @@ sequenceDiagram
     MCP-->>AI: Formatted & combined information
 ```
 
+### REST API Data Flow (Extended HTTP Mode)
+
+When the server runs in extended HTTP mode (`--http --rest`), it provides additional REST endpoints alongside the core MCP functionality:
+
+```mermaid
+sequenceDiagram
+    participant REST as REST Client
+    participant MCP as MCP Server
+    participant CS as Chainscout
+    participant BS as Blockscout Instance
+
+    Note over REST, MCP: Static Endpoints
+    REST->>MCP: GET /
+    MCP-->>REST: HTML Landing Page
+
+    REST->>MCP: GET /health
+    MCP-->>REST: {"status": "ok"}
+
+    Note over REST, MCP: REST API Endpoint (calls same tool function as MCP)
+    REST->>MCP: GET /v1/get_latest_block?chain_id=1
+    Note over MCP: REST wrapper calls get_latest_block() tool function
+    MCP->>CS: GET /api/chains/1
+    CS-->>MCP: Chain metadata (includes Blockscout URL)
+    MCP->>BS: GET /api/v2/blocks/latest
+    BS-->>MCP: Block data response
+    MCP-->>REST: JSON Response (ToolResponse format)
+```
+
+### Unified Server Architecture
+
+When running in the extended HTTP mode (`--http --rest`), the server operates as a single, unified FastAPI application. This design was chosen to maximize code reuse and simplify deployment.
+
+- **Single Entry Point**: One application serves all traffic, whether it's from an MCP client to `/mcp` or a REST client to `/v1/...`.
+- **Shared Business Logic**: The REST API endpoints are thin wrappers that directly call the same underlying tool functions used by the MCP server. This ensures that any bug fix or feature enhancement to a tool is immediately reflected in both interfaces.
+- **Mounted MCP Application**: The existing `FastMCP` streamable HTTP application is mounted as a sub-app within the main FastAPI instance. This allows it to handle all MCP-specific routing and logic at the `/mcp` path, while the main application handles the REST API and other web pages.
+- **Lifecycle Management**: The main FastAPI application manages the lifecycle of the MCP session manager, ensuring it is started and stopped correctly, which is critical for the stability of the mounted MCP sub-app.
+
+This architecture provides the flexibility of a multi-protocol server without the complexity of running multiple processes or duplicating code.
+
 ### Workflow Description
 
 1. **Instructions Retrieval**:
@@ -97,7 +143,15 @@ sequenceDiagram
 
 ### Key Architectural Decisions
 
-1. **Tool Selection and Context Optimization**:
+1. **Unified Server for MCP and REST**:
+   - To support both MCP and a traditional REST API without duplicating logic, the server is built as a single FastAPI application.
+   - The core MCP tool functions (e.g., `get_latest_block`) serve as the single source of truth for business logic.
+   - The REST API endpoints under `/v1/` are simple wrappers that call these tool functions.
+   - The standard MCP-over-HTTP server is mounted as a sub-application at the `/mcp` path.
+   - This approach ensures consistency between the two protocols, simplifies maintenance, and allows for a single deployment process.
+   - This extended functionality is opt-in via a `--rest` command-line flag to maintain the server's primary focus as an MCP-first application.
+
+2. **Tool Selection and Context Optimization**:
    - Not all Blockscout API endpoints are exposed as MCP tools
    - The number of tools is deliberately kept minimal to prevent diluting the LLM context
    - Too many tools make it difficult for the LLM to select the most appropriate one for a given user prompt
@@ -105,7 +159,7 @@ sequenceDiagram
    - Multiple MCP servers might be configured in a client application, with each server providing its own tool descriptions
    - Tool descriptions are limited to 1024 characters to minimize context consumption
 
-2. **The Standardized `ToolResponse` Model**
+3. **The Standardized `ToolResponse` Model**
 
    To provide unambiguous, machine-readable responses, the server enforces a standardized, structured response format for all tools. This moves away from less reliable string-based outputs and aligns with modern API best practices.
 
@@ -179,7 +233,7 @@ sequenceDiagram
       }
       ```
 
-3. **Response Processing and Context Optimization**:
+4. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
 
@@ -296,7 +350,7 @@ sequenceDiagram
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
 
-4. **Instructions Delivery Workaround**:
+5. **Instructions Delivery Workaround**:
    - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
    - The `__get_instructions__` tool serves as a workaround for this limitation
    - The tool's description forces the MCP Host to call it before any other tools in the session
