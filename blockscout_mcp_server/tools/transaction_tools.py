@@ -247,7 +247,7 @@ async def get_transactions_by_address(
     apply_cursor_to_params(cursor, query_params)
 
     # Calculate total steps:
-    # 1 (URL resolution) + 10 (max iterations in _fetch_filtered_transactions_with_smart_pagination) + 1 (finalization) 
+    # 1 (URL resolution) + 10 (max iterations in _fetch_filtered_transactions_with_smart_pagination) + 1 (finalization)
     tool_overall_total_steps = 12.0
 
     # Report start of operation
