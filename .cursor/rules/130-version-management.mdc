@@ -5,9 +5,10 @@ alwaysApply: false
 ---
 # MCP Server Version Management Rule
 
-## When updating the version of the MCP server, update the following files:
+## When updating the version of the MCP server, update the following files
 
 1. **`pyproject.toml`** - Update the `version` field in the `[project]` section:
+
    ```toml
    [project]
    name = "blockscout-mcp-server"
@@ -15,14 +16,36 @@ alwaysApply: false
    ```
 
 2. **`blockscout_mcp_server/__init__.py`** - Update the `__version__` variable:
+
    ```python
    """Blockscout MCP Server package."""
 
    __version__ = "X.Y.Z"  # <-- Update this line
    ```
 
-## Important Notes:
+## Important Notes
 
 - **Use the exact same version string** in both locations (e.g., "1.2.3")
 - **Follow semantic versioning** (MAJOR.MINOR.PATCH) when choosing version numbers
 - **Update both files simultaneously** to maintain consistency across the codebase
+
+## Why Dual-Location Approach?
+
+While modern Python packaging suggests using `importlib.metadata.version(__name__)` to make `pyproject.toml` the single source of truth, **we deliberately use the dual-location approach** for the following reasons:
+
+### **Reliability Across Environments**
+
+- **Local Development**: Works when running directly from source without installation
+- **Docker Containers**: Functions regardless of installation method
+- **Testing**: Reliable in various test environments and CI/CD pipelines
+- **Multiple Installation Methods**: Compatible with pip, uv, and other package managers
+
+### **Deployment Scenarios**
+
+For an MCP server that needs to work in various environments (local development, Docker, different installation methods), the dual-location approach ensures version information is always accessible without runtime dependencies or potential import failures.
+
+### **Trade-offs**
+
+- **Slight Maintenance Overhead**: Requires updating two files instead of one
+- **Drift Risk**: Mitigated by this rule ensuring both locations are updated simultaneously
+- **Consistency**: The version management rule ensures both locations stay in sync
