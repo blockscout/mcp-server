@@ -80,11 +80,11 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
 
         # Check the initial_params that should be passed to the smart pagination function
         expected_initial_params = {
-                "to_address_hashes_to_include": address,
-                "from_address_hashes_to_include": address,
-                "age_from": age_from,
-                "age_to": age_to,
-                "methods": methods,
+            "to_address_hashes_to_include": address,
+            "from_address_hashes_to_include": address,
+            "age_from": age_from,
+            "age_to": age_to,
+            "methods": methods,
         }
         assert call_kwargs["initial_params"] == expected_initial_params
 
@@ -147,20 +147,20 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
 
     # Mock the filtered items returned by smart pagination (ERC-20 transactions already filtered out)
     mock_filtered_items = [
-            {
-                "type": "call",
-                "from": {"hash": "0xfrom_hash_1"},
-                "to": {"hash": "0xto_hash_1"},
-                "value": "kept1",
-                "token": "should be removed",
-                "total": "should be removed",
-            },
-            {
-                "type": "creation",
-                "from": {"hash": "0xfrom_hash_3"},
-                "to": None,
-                "value": "kept2",
-            },
+        {
+            "type": "call",
+            "from": {"hash": "0xfrom_hash_1"},
+            "to": {"hash": "0xto_hash_1"},
+            "value": "kept1",
+            "token": "should be removed",
+            "total": "should be removed",
+        },
+        {
+            "type": "creation",
+            "from": {"hash": "0xfrom_hash_3"},
+            "to": None,
+            "value": "kept2",
+        },
     ]
     mock_has_more_pages = False
 
