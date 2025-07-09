@@ -89,7 +89,9 @@ def main_command(
 ):
     """
     Blockscout MCP Server.
+
     Runs in stdio mode by default. Use --http to enable HTTP Streamable mode.
+    Use --http --rest to enable the unified server with REST API endpoints.
     """
     if rest and not http:
         print("Error: --rest flag requires --http flag to be set.")

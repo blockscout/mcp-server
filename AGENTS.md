@@ -7,7 +7,7 @@ mcp-server/
 ├── blockscout_mcp_server/      # Main Python package for the server
 │   ├── __init__.py             # Package initializer
 │   ├── __main__.py             # Main entry point for `python -m ...`
-│   ├── asgi.py                 # Main ASGI application for all HTTP modes
+│   ├── asgi.py                 # Main ASGI application for the unified HTTP/REST mode
 │   ├── server.py               # MCP instance, tool registration, and CLI logic
 │   ├── config.py               # Configuration management
 │   ├── constants.py            # Centralized constants
@@ -145,8 +145,8 @@ mcp-server/
         * Serves as the entry point when the package is run as a script (`python -m blockscout_mcp_server`).
         * Imports the main execution function (e.g., `run_server()`) from `server.py` and calls it.
     * **`asgi.py`**:
-        * The main ASGI application assembler for all HTTP modes (`--http` and `--http --rest`).
-        * It initializes the main FastAPI application, manages the MCP session manager's lifecycle, and mounts the MCP-over-HTTP app at `/mcp`.
+        * The main ASGI application for the unified HTTP/REST mode (`--http --rest`).
+        * It initializes the main FastAPI application, manages the MCP session manager's lifecycle, and mounts the core MCP-over-HTTP app at `/mcp`.
     * **`models.py`**:
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
