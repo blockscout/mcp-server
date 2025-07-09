@@ -94,8 +94,9 @@ def main_command(
         else:
             print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
 
-        mcp.settings.stateless_http = True
-        mcp.settings.json_response = True
+        # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
+        mcp.settings.stateless_http = True  # Enable stateless mode
+        mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
         asgi_app = mcp.streamable_http_app()
         uvicorn.run(asgi_app, host=http_host, port=http_port)
     elif rest:
