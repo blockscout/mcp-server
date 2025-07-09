@@ -102,6 +102,7 @@ def main_command(
     elif rest:
         raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:
+        # This is the original behavior: run in stdio mode
         mcp.run()
 
 
