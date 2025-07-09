@@ -1,3 +1,4 @@
+import re
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -12,7 +13,9 @@ def test_rest_flag_without_http_fails():
 
     result = runner.invoke(cli_app, ["--rest"])
     assert result.exit_code != 0
-    assert "The --rest flag can only be used with the --http flag." in result.output
+    # Typer may add ANSI color codes to the error message; strip them for a stable assertion.
+    output_clean = re.sub(r"\x1b\[[0-9;]*[mK]", "", result.output)
+    assert "The --rest flag can only be used with the --http flag." in output_clean
 
 
 @patch("uvicorn.run")
