@@ -7,12 +7,12 @@ runner = CliRunner()
 
 
 def test_rest_flag_without_http_fails():
-    """Verify that using --rest without --http raises a SystemExit."""
+    """Verify that using --rest without --http raises a CLI error."""
     from blockscout_mcp_server.server import cli_app
 
     result = runner.invoke(cli_app, ["--rest"])
     assert result.exit_code != 0
-    assert "The --rest flag can only be used with the --http flag." in result.stdout
+    assert "The --rest flag can only be used with the --http flag." in result.output
 
 
 @patch("uvicorn.run")

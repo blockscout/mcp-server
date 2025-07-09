@@ -99,8 +99,7 @@ def main_command(
         asgi_app = mcp.streamable_http_app()
         uvicorn.run(asgi_app, host=http_host, port=http_port)
     elif rest:
-        print("Error: The --rest flag can only be used with the --http flag.")
-        raise typer.Exit(code=1)
+        raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:
         mcp.run()
 
