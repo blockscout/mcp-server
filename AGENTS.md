@@ -6,6 +6,10 @@
 mcp-server/
 ├── blockscout_mcp_server/      # Main Python package for the server
 │   ├── __init__.py             # Makes the directory a Python package
+│   ├── api/                    # REST API implementation
+│   │   ├── __init__.py         # Initializes the api sub-package
+│   │   ├── dependencies.py     # Dependency providers for the REST API
+│   │   └── routes.py           # REST API route definitions
 │   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
@@ -33,6 +37,7 @@ mcp-server/
 │   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
+│   ├── test_server.py            # Tests for server CLI and startup logic
 │   ├── test_models.py            # Tests for Pydantic response models
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── test_common.py            # Tests for shared utility functions

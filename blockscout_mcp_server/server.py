@@ -75,29 +75,32 @@ cli_app = typer.Typer()
 @cli_app.command()
 def main_command(
     http: Annotated[bool, typer.Option("--http", help="Run server in HTTP Streamable mode.")] = False,
+    rest: Annotated[bool, typer.Option("--rest", help="Enable REST API (requires --http).")] = False,
     http_host: Annotated[
         str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")
     ] = "127.0.0.1",
     http_port: Annotated[int, typer.Option("--http-port", help="Port for HTTP server if --http is used.")] = 8000,
 ):
-    """
-    Blockscout MCP Server.
-    Runs in stdio mode by default. Use --http to enable HTTP Streamable mode.
+    """Blockscout MCP Server. Runs in stdio mode by default.
+    Use --http to enable HTTP Streamable mode.
+    Use --http and --rest to enable the REST API.
     """
     if http:
-        print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
+        if rest:
+            print(f"Starting Blockscout MCP Server with REST API on {http_host}:{http_port}")
+            from blockscout_mcp_server.api.routes import register_api_routes
+
+            register_api_routes(mcp)
+        else:
+            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
-        # The FastMCP server has a 'settings' attribute that can be used for this.
         mcp.settings.stateless_http = True  # Enable stateless mode
         mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
-
-        # Get the ASGI application from our FastMCP instance
-        # This app is what uvicorn will serve.
         asgi_app = mcp.streamable_http_app()
-
-        # Run the ASGI app with uvicorn
         uvicorn.run(asgi_app, host=http_host, port=http_port)
+    elif rest:
+        raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:
         # This is the original behavior: run in stdio mode
         mcp.run()
