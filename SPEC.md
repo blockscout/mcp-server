@@ -8,7 +8,7 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 
 ### Operational Modes
 
-The Blockscout MCP Server supports two operational modes:
+The Blockscout MCP Server supports two primary operational modes:
 
 1. **Stdio Mode (Default)**:
    - Designed for integration with MCP hosts/clients (Claude Desktop, Cursor, MCP Inspector, etc.)
@@ -21,11 +21,14 @@ The Blockscout MCP Server supports two operational modes:
    - By default, this mode provides a pure MCP-over-HTTP endpoint at `/mcp`, using the same JSON-RPC 2.0 protocol as stdio mode.
    - It is stateless and uses JSON responses, making it convenient for testing and integration.
 
-3. **Extended HTTP Mode (with REST API)**:
+The HTTP mode can be optionally extended to serve additional web and REST API endpoints. This is disabled by default and can be enabled by providing the `--rest` flag at startup.
+
+3. **Extended HTTP Mode (with REST API and Web Pages)**:
    - Enabled by using the `--rest` flag in conjunction with `--http`.
    - This mode extends the standard HTTP server to include additional, non-MCP endpoints:
-     - A simple landing page at `/`.
+     - A simple landing page at `/` with human-readable instructions.
      - A health check endpoint at `/health`.
+     - A machine-readable policy file at `/llms.txt` for AI crawlers.
      - A versioned REST API under `/v1/` that exposes the same functionality as the MCP tools.
    - This unified server approach allows both MCP clients and traditional REST clients to interact with the same application instance, ensuring consistency and avoiding code duplication.
 
@@ -72,7 +75,7 @@ sequenceDiagram
 
 ### REST API Data Flow (Extended HTTP Mode)
 
-When the server runs in extended HTTP mode (`--http --rest`), it provides additional REST endpoints alongside the core MCP functionality:
+When the server runs in extended HTTP mode (`--http --rest`), it provides additional REST endpoints alongside the core MCP functionality. The REST endpoints are thin wrappers that call the same underlying tool functions used by the MCP server.
 
 ```mermaid
 sequenceDiagram
@@ -100,14 +103,13 @@ sequenceDiagram
 
 ### Unified Server Architecture
 
-When running in the extended HTTP mode (`--http --rest`), the server operates as a single, unified FastAPI application. This design was chosen to maximize code reuse and simplify deployment.
+The `FastMCP` server from the MCP Python SDK is built on top of FastAPI, which allows for the registration of custom routes. When running in the extended HTTP mode (`--http --rest`), the server leverages this capability to add non-MCP endpoints directly to the `FastMCP` instance.
 
-- **Single Entry Point**: One application serves all traffic, whether it's from an MCP client to `/mcp` or a REST client to `/v1/...`.
+- **Single Application Instance**: The `FastMCP` server itself serves all traffic, whether it's from an MCP client to `/mcp` or a REST client to `/v1/...`. There is no need to mount a separate application.
 - **Shared Business Logic**: The REST API endpoints are thin wrappers that directly call the same underlying tool functions used by the MCP server. This ensures that any bug fix or feature enhancement to a tool is immediately reflected in both interfaces.
-- **Mounted MCP Application**: The existing `FastMCP` streamable HTTP application is mounted as a sub-app within the main FastAPI instance. This allows it to handle all MCP-specific routing and logic at the `/mcp` path, while the main application handles the REST API and other web pages.
-- **Lifecycle Management**: The main FastAPI application manages the lifecycle of the MCP session manager, ensuring it is started and stopped correctly, which is critical for the stability of the mounted MCP sub-app.
+- **Centralized Routing**: All routes, both for MCP and the REST API, are handled by the single `FastMCP` application instance.
 
-This architecture provides the flexibility of a multi-protocol server without the complexity of running multiple processes or duplicating code.
+This architecture provides the flexibility of a multi-protocol server without the complexity of running multiple processes or duplicating code, all while using the built-in features of the MCP Python SDK.
 
 ### Workflow Description
 
@@ -143,11 +145,13 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 ### Key Architectural Decisions
 
-1. **Unified Server for MCP and REST**:
-   - To support both MCP and a traditional REST API without duplicating logic, the server is built as a single FastAPI application.
+1. **Unified Server via MCP SDK Extensibility**:
+   - To support both MCP and a traditional REST API without duplicating logic, the server leverages the extensibility of the `FastMCP` class from the MCP Python SDK. This is motivated by several integration scenarios:
+     - **Gateway Integration**: To enable easier integration with API gateways and marketplaces like Higress.
+     - **AI-Friendly Stop-Gap**: To provide an AI-friendly alternative to the raw Blockscout API.
+     - **Non-MCP Agent Support**: To allow agents without native MCP support to use the server's functionality.
    - The core MCP tool functions (e.g., `get_latest_block`) serve as the single source of truth for business logic.
-   - The REST API endpoints under `/v1/` are simple wrappers that call these tool functions.
-   - The standard MCP-over-HTTP server is mounted as a sub-application at the `/mcp` path.
+   - The REST API endpoints under `/v1/` are simple wrappers that call these tool functions. They are registered directly with the `FastMCP` instance using its `custom_route` method.
    - This approach ensures consistency between the two protocols, simplifies maintenance, and allows for a single deployment process.
    - This extended functionality is opt-in via a `--rest` command-line flag to maintain the server's primary focus as an MCP-first application.
 
