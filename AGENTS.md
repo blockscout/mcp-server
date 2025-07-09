@@ -5,12 +5,20 @@
 ```text
 mcp-server/
 ├── blockscout_mcp_server/      # Main Python package for the server
-│   ├── __init__.py             # Makes the directory a Python package
-│   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
-│   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
-│   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
-│   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
-│   ├── models.py               # Defines standardized Pydantic models for all tool responses
+│   ├── __init__.py             # Package initializer
+│   ├── __main__.py             # Main entry point for `python -m ...`
+│   ├── asgi.py                 # Main ASGI application for all HTTP modes
+│   ├── server.py               # MCP instance, tool registration, and CLI logic
+│   ├── config.py               # Configuration management
+│   ├── constants.py            # Centralized constants
+│   ├── models.py               # Pydantic models for tool responses
+│   ├── api/                    # Sub-package for REST API endpoints
+│   │   ├── __init__.py
+│   │   └── v1.py
+│   ├── web/                    # Sub-package for general web endpoints
+│   │   ├── __init__.py
+│   │   ├── health.py
+│   │   └── root.py
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities and common functionality for all tools
@@ -34,6 +42,7 @@ mcp-server/
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
 │   ├── test_models.py            # Tests for Pydantic response models
+│   ├── test_server.py           # Unit tests for the main server CLI logic
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
@@ -135,26 +144,24 @@ mcp-server/
     * **`__main__.py`**:
         * Serves as the entry point when the package is run as a script (`python -m blockscout_mcp_server`).
         * Imports the main execution function (e.g., `run_server()`) from `server.py` and calls it.
+    * **`asgi.py`**:
+        * The main ASGI application assembler for all HTTP modes (`--http` and `--http --rest`).
+        * It initializes the main FastAPI application, manages the MCP session manager's lifecycle, and mounts the MCP-over-HTTP app at `/mcp`.
     * **`models.py`**:
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
         * Includes specific data models for complex payloads, like the response from `__get_instructions__`.
     * **`server.py`**:
-        * The heart of the MCP server.
-        * Initializes a `FastMCP` instance using constants from `constants.py`.
+        * The core of the MCP logic.
+        * Initializes the `FastMCP` instance.
         * Imports all tool functions from the modules in the `tools/` sub-package.
-        * Registers each tool with the `FastMCP` instance using the `@mcp.tool()` decorator. This includes:
-            * Tool name (if different from the function name).
-            * Tool description (from the function's docstring or explicitly provided).
-            * Argument type hints and descriptions (using `typing.Annotated` and `pydantic.Field` for descriptions), which `FastMCP` uses to generate the input schema.
+        * Registers each tool with the `FastMCP` instance using the `@mcp.tool()` decorator.
         * Implements CLI argument parsing using `typer` with support for:
             * `--http`: Enable HTTP Streamable mode
+            * `--rest`: Enable REST API (requires `--http`)
             * `--http-host`: Host for HTTP server (default: 127.0.0.1)
             * `--http-port`: Port for HTTP server (default: 8000)
-        * Defines `run_server_cli()` function that:
-            * Parses CLI arguments and determines the mode (stdio or HTTP)
-            * For stdio mode: calls `mcp.run()` for stdin/stdout communication
-            * For HTTP mode: configures stateless HTTP with JSON responses and runs uvicorn server
+        * Defines the `run_server_cli()` function, which parses CLI arguments and launches the server in the appropriate mode (stdio, MCP-only HTTP, or unified HTTP/REST).
     * **`config.py`**:
         * Defines a Pydantic `BaseSettings` class to manage server configuration.
         * Loads configuration values (e.g., API keys, timeouts, cache settings) from environment variables.
@@ -164,6 +171,13 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
+    * **`api/` (Sub-package for REST API)**
+        * This package will contain the REST API endpoints.
+        * `v1.py` will define the routers for the version 1 API, which will be thin wrappers around the existing MCP tool functions.
+    * **`web/` (Sub-package for Web Endpoints)**
+        * This package will contain general web endpoints.
+        * `health.py` will define the `/health` check endpoint.
+        * `root.py` will define the `/` landing page endpoint.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:

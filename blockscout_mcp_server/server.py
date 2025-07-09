@@ -75,6 +75,13 @@ cli_app = typer.Typer()
 @cli_app.command()
 def main_command(
     http: Annotated[bool, typer.Option("--http", help="Run server in HTTP Streamable mode.")] = False,
+    rest: Annotated[
+        bool,
+        typer.Option(
+            "--rest",
+            help="Enable REST API alongside HTTP mode. Requires --http.",
+        ),
+    ] = False,
     http_host: Annotated[
         str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")
     ] = "127.0.0.1",
@@ -84,20 +91,22 @@ def main_command(
     Blockscout MCP Server.
     Runs in stdio mode by default. Use --http to enable HTTP Streamable mode.
     """
+    if rest and not http:
+        print("Error: --rest flag requires --http flag to be set.")
+        raise typer.Exit(code=1)
+
     if http:
-        print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
+        # Configure for HTTP mode regardless of --rest
+        mcp.settings.stateless_http = True
+        mcp.settings.json_response = True
 
-        # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
-        # The FastMCP server has a 'settings' attribute that can be used for this.
-        mcp.settings.stateless_http = True  # Enable stateless mode
-        mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
-
-        # Get the ASGI application from our FastMCP instance
-        # This app is what uvicorn will serve.
-        asgi_app = mcp.streamable_http_app()
-
-        # Run the ASGI app with uvicorn
-        uvicorn.run(asgi_app, host=http_host, port=http_port)
+        if rest:
+            print(f"Starting Blockscout MCP Server with REST API on {http_host}:{http_port}")
+            uvicorn.run("blockscout_mcp_server.asgi:app", host=http_host, port=http_port)
+        else:
+            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
+            asgi_app_original = mcp.streamable_http_app()
+            uvicorn.run(asgi_app_original, host=http_host, port=http_port)
     else:
         # This is the original behavior: run in stdio mode
         mcp.run()
