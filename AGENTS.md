@@ -61,6 +61,7 @@ mcp-server/
 │       └── test_transaction_tools_helpers.py # Tests for transaction helper functions
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
+├── API.md                      # Detailed documentation for the REST API
 ├── README.md                   # Project overview, setup, and usage instructions
 ├── SPEC.md                     # Technical specification and architecture documentation
 ├── TESTING.md                  # Testing instructions for HTTP mode with curl commands
@@ -76,6 +77,9 @@ mcp-server/
         * Includes detailed instructions for local setup (installing dependencies, setting environment variables) and running the server.
         * Contains instructions for building and running the server using Docker.
         * Lists all available tools and their functionalities.
+    * **`API.md`**:
+        * Provides detailed documentation for all REST API endpoints.
+        * Includes usage examples, parameter descriptions, and information on the standard response structure.
     * **`SPEC.md`**:
         * Contains technical specifications and detailed architecture documentation.
         * Outlines the system design, components interaction, and data flow.

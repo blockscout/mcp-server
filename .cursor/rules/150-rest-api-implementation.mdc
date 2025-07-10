@@ -27,3 +27,7 @@ All REST handlers **MUST** be decorated with the `@handle_validation_errors` dec
 ## 4. Route Registration
 
 All REST API endpoints **MUST** be registered under the `/v1/` path prefix in `register_api_routes` to ensure proper versioning. Use the helper function `_add_v1_tool_route` to register each tool wrapper. This ensures a consistent configuration and automatically applies the correct HTTP method and URL prefix.
+
+## 5. Documentation
+
+After creating or modifying a REST endpoint, you **MUST** update its documentation in `API.md` following the [API documentation guidelines](mdc:.cursor/rules/800-api-documentation-guidelines.mdc).

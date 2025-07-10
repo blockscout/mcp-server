@@ -1,0 +1,41 @@
+---
+description: Guidelines for updating the REST API documentation in API.md
+globs: API.md
+alwaysApply: false
+---
+# API Documentation Guidelines
+
+Whenever a new MCP tool is added or an existing one is modified, its corresponding REST API endpoint in `API.md` **MUST** be added or updated.
+
+## Endpoint Documentation Format
+
+Each endpoint documentation **MUST** follow this exact Markdown structure for consistency.
+
+````markdown
+### Tool Name (`tool_name`)
+
+A brief, one-sentence description of what the endpoint does.
+
+`GET /v1/tool_name`
+
+**Parameters**
+
+| Name                 | Type      | Required | Description                                      |
+| -------------------- | --------- | -------- | ------------------------------------------------ |
+| `chain_id`           | `string`  | Yes      | The ID of the blockchain.                        |
+| `some_required_param`| `string`  | Yes      | Description of this required parameter.          |
+| `optional_param`     | `boolean` | No       | Description of this optional parameter.          |
+| `cursor`             | `string`  | No       | The cursor for pagination from a previous response. |
+
+**Example Request**
+
+```bash
+curl "http://127.0.0.1:8000/v1/tool_name?chain_id=1&some_required_param=value&optional_param=true"
+```
+````
+
+**Key Points:**
+- The heading should be the human-readable tool name, with the function name in backticks.
+- The parameter table must clearly distinguish between required and optional parameters.
+- The `curl` example should demonstrate a realistic use case, including optional parameters where applicable.
+
