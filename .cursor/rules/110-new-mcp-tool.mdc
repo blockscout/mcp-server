@@ -108,8 +108,7 @@ When adding a new tool to the MCP server, you need to modify these files:
    - If you added a tool to an existing module, update the "Examples" section to include your new tool function
 
 5. **Expose the tool via the REST API**:
-   - Create a wrapper endpoint in `api/routes.py` following the
-     [REST API implementation guidelines](mdc:.cursor/rules/150-rest-api-implementation.mdc).
+   - Create a wrapper endpoint in `api/routes.py` following the [REST API implementation guidelines](mdc:.cursor/rules/150-rest-api-implementation.mdc).
    - Register the route so it is available under the `/v1/` prefix.
 
 ## Data Model Creation Guidelines

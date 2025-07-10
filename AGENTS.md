@@ -178,10 +178,10 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
-    * **API layer**:
-        * **`api/helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
-        * **`api/routes.py`**: Defines all REST API endpoints that wrap MCP tools.
-        * **`api/dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
+    * **`api/` (API layer)**:
+        * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
+        * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
+        * **`dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:
