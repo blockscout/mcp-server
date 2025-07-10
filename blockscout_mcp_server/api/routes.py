@@ -73,13 +73,6 @@ async def main_page(_: Request) -> Response:
     return HTMLResponse(INDEX_HTML_CONTENT)
 
 
-async def list_tools_rest(request: Request) -> Response:
-    """Return a list of all available tools and their schemas."""
-    mcp_instance = request.app.state.mcp_instance
-    tools_list = await mcp_instance.list_tools()
-    return JSONResponse([tool.model_dump() for tool in tools_list])
-
-
 @handle_validation_errors
 async def get_instructions_rest(_: Request) -> Response:
     """REST wrapper for the __get_instructions__ tool."""
@@ -229,6 +222,12 @@ def _add_v1_tool_route(mcp: FastMCP, path: str, handler: Callable[..., Any]) -> 
 
 def register_api_routes(mcp: FastMCP) -> None:
     """Registers all REST API routes."""
+
+    async def list_tools_rest(_: Request) -> Response:
+        """Return a list of all available tools and their schemas."""
+        tools_list = await mcp.list_tools()
+        return JSONResponse([tool.model_dump() for tool in tools_list])
+
     # These routes are not part of the OpenAPI schema for tools.
     mcp.custom_route("/health", methods=["GET"], include_in_schema=False)(health_check)
     mcp.custom_route("/llms.txt", methods=["GET"], include_in_schema=False)(serve_llms_txt)

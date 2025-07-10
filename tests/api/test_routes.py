@@ -21,7 +21,6 @@ def client(test_mcp_instance):
     """Provides an httpx client configured to talk to the test MCP instance."""
     register_api_routes(test_mcp_instance)
     asgi_app = test_mcp_instance.streamable_http_app()
-    asgi_app.state.mcp_instance = test_mcp_instance
     return AsyncClient(transport=ASGITransport(app=asgi_app), base_url="http://test")
 
 
