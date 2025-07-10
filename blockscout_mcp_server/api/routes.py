@@ -2,7 +2,6 @@
 
 import pathlib
 
-import anyio
 from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
@@ -12,6 +11,19 @@ BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 LLMS_TXT_PATH = BASE_DIR / "llms.txt"
 
+# Preload static content at module import
+try:
+    INDEX_HTML_CONTENT = (TEMPLATES_DIR / "index.html").read_text(encoding="utf-8")
+except OSError as exc:  # pragma: no cover - test will not cover missing file
+    INDEX_HTML_CONTENT = None
+    print(f"Warning: Failed to preload landing page content: {exc}")
+
+try:
+    LLMS_TXT_CONTENT = LLMS_TXT_PATH.read_text(encoding="utf-8")
+except OSError as exc:  # pragma: no cover - test will not cover missing file
+    LLMS_TXT_CONTENT = None
+    print(f"Warning: Failed to preload llms.txt content: {exc}")
+
 
 async def health_check(_: Request) -> Response:
     """Return a simple health status."""
@@ -20,23 +32,18 @@ async def health_check(_: Request) -> Response:
 
 async def serve_llms_txt(_: Request) -> Response:
     """Serve the llms.txt file."""
-    try:
-        content = await anyio.Path(LLMS_TXT_PATH).read_text(encoding="utf-8")
-    except OSError as exc:
-        message = f"Failed to read llms.txt: {exc}"
+    if LLMS_TXT_CONTENT is None:
+        message = "llms.txt content is not available."
         return PlainTextResponse(message, status_code=500)
-    return PlainTextResponse(content)
+    return PlainTextResponse(LLMS_TXT_CONTENT)
 
 
 async def main_page(_: Request) -> Response:
     """Serve the main landing page."""
-    file_path = TEMPLATES_DIR / "index.html"
-    try:
-        content = await anyio.Path(file_path).read_text(encoding="utf-8")
-    except OSError as exc:
-        message = f"Failed to read landing page: {exc}"
+    if INDEX_HTML_CONTENT is None:
+        message = "Landing page content is not available."
         return PlainTextResponse(message, status_code=500)
-    return HTMLResponse(content)
+    return HTMLResponse(INDEX_HTML_CONTENT)
 
 
 def register_api_routes(mcp: FastMCP) -> None:

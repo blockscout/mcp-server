@@ -1,0 +1,8 @@
+---
+description: Cache static web content at startup
+globs: blockscout_mcp_server/api/routes.py
+alwaysApply: false
+---
+# Static Content Caching
+
+When implementing API routes that serve static files (e.g., `index.html` or `llms.txt`), load these files once during module import or server startup and store their contents in module-level variables. Route handlers should return the cached data instead of reading from disk on each request. Provide fallback error handling if preloading fails so the server responds gracefully.
