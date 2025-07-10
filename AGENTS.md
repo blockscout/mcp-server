@@ -40,6 +40,8 @@ mcp-server/
 │   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
+│   ├── api/                      # Unit tests for the REST API
+│   │   └── test_routes.py        # Tests for static API route definitions
 │   ├── test_server.py            # Tests for server CLI and startup logic
 │   ├── test_models.py            # Tests for Pydantic response models
 │   └── tools/                  # Unit test modules for each tool implementation
