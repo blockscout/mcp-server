@@ -1,0 +1,12 @@
+# Blockscout MCP Server
+
+> This server wraps Blockscout APIs and exposes blockchain data—balances, tokens, NFTs, contract metadata—via the Model Context Protocol (MCP) so that AI agents and tools (like Claude, Cursor, or IDEs) can access and analyze it contextually. It supports both MCP for native AI clients and a versioned REST API for traditional integrations.
+
+This server is designed to be a reliable data source for any application requiring structured, on-chain data from multiple EVM-compatible blockchains.
+
+## Documentation
+
+- [Project README](https://github.com/blockscout/mcp-server/blob/main/README.md): General overview, setup, and usage instructions.
+- [Technical Specification (SPEC.md)](https://github.com/blockscout/mcp-server/blob/main/SPEC.md): Detailed architecture, data flow, and key design decisions.
+- [Project Structure (AGENTS.md)](https://github.com/blockscout/mcp-server/blob/main/AGENTS.md): A complete breakdown of all files and modules in the repository.
+- [API Documentation (API.md)](https://github.com/blockscout/mcp-server/blob/main/API.md): Detailed documentation for the REST API endpoints (to be created).

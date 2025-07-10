@@ -6,12 +6,15 @@
 mcp-server/
 ├── blockscout_mcp_server/      # Main Python package for the server
 │   ├── __init__.py             # Makes the directory a Python package
+│   ├── llms.txt                # Machine-readable guidance file for AI crawlers
 │   ├── api/                    # REST API implementation
 │   │   ├── __init__.py         # Initializes the api sub-package
 │   │   ├── dependencies.py     # Dependency providers for the REST API
 │   │   └── routes.py           # REST API route definitions
 │   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
+│   ├── templates/              # Static HTML templates for the web interface
+│   │   └── index.html          # Landing page for the REST API
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
