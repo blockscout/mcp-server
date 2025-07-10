@@ -217,39 +217,9 @@ Provides a human-readable summary of a transaction's purpose.
 curl "http://127.0.0.1:8000/v1/transaction_summary?chain_id=1&transaction_hash=0x..."
 ```
 
-### Address & Token Tools
+#### Get Transactions by Address (`get_transactions_by_address`)
 
-This section covers all other tools related to addresses, tokens, contracts, and search. The endpoints are listed alphabetically.
-
-*   **`get_address_by_ens_name`**: Converts an ENS name to its Ethereum address.
-*   **`get_address_info`**: Gets comprehensive information about an address.
-*   **`get_address_logs`**: Gets logs emitted by a specific address.
-*   **`get_contract_abi`**: Retrieves the ABI for a smart contract.
-*   **`get_token_transfers_by_address`**: Returns ERC-20 token transfers for an address.
-*   **`get_tokens_by_address`**: Returns ERC-20 token holdings for an address.
-*   **`get_transactions_by_address`**: Gets native currency transfers and contract interactions for an address.
-*   **`lookup_token_by_symbol`**: Searches for tokens by symbol or name.
-*   **`nft_tokens_by_address`**: Retrieves NFT tokens owned by an address.
-
-The parameters for these endpoints follow a consistent pattern. Please use the `/v1/tools` discovery endpoint to get the exact required and optional parameters for each.
-
-**Example: Get Address Info**
-
-`GET /v1/get_address_info`
-
-**Parameters**
-
-| Name       | Type     | Required | Description                  |
-| ---------- | -------- | -------- | ---------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.    |
-| `address`  | `string` | Yes      | The address to get info for. |
-
-**Example Request**
-```bash
-curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-```
-
-**Example: Get Transactions by Address (with optional params)**
+Gets native currency transfers and contract interactions for an address.
 
 `GET /v1/get_transactions_by_address`
 
@@ -267,4 +237,162 @@ curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF2696
 **Example Request**
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z"
+```
+
+#### Get Token Transfers by Address (`get_token_transfers_by_address`)
+
+Returns ERC-20 token transfers for an address.
+
+`GET /v1/get_token_transfers_by_address`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                                        |
+| ---------- | -------- | -------- | -------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+| `address`  | `string` | Yes      | The address to query.                              |
+| `age_from` | `string` | No       | Start date and time (ISO 8601 format).             |
+| `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
+| `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
+| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&token=0x..."
+```
+
+### Address Tools
+
+#### Get Address Info (`get_address_info`)
+
+Gets comprehensive information about an address, including balance and contract details.
+
+`GET /v1/get_address_info`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                  |
+| ---------- | -------- | -------- | ---------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.    |
+| `address`  | `string` | Yes      | The address to get info for. |
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+```
+
+#### Get Address Logs (`get_address_logs`)
+
+Gets event logs emitted by a specific address.
+
+`GET /v1/get_address_logs`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                                        |
+| ---------- | -------- | -------- | -------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+| `address`  | `string` | Yes      | The address that emitted the logs.                 |
+| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0x..."
+```
+
+### Token & NFT Tools
+
+#### Get Tokens by Address (`get_tokens_by_address`)
+
+Returns ERC-20 token holdings for an address.
+
+`GET /v1/get_tokens_by_address`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                                        |
+| ---------- | -------- | -------- | -------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+| `address`  | `string` | Yes      | The wallet address to query.                       |
+| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_tokens_by_address?chain_id=1&address=0x..."
+```
+
+#### Get NFT Tokens by Address (`nft_tokens_by_address`)
+
+Retrieves NFT tokens (ERC-721, etc.) owned by an address.
+
+`GET /v1/nft_tokens_by_address`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                                        |
+| ---------- | -------- | -------- | -------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+| `address`  | `string` | Yes      | The NFT owner's address.                           |
+| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/nft_tokens_by_address?chain_id=1&address=0x..."
+```
+
+### Search Tools
+
+#### Lookup Token by Symbol (`lookup_token_by_symbol`)
+
+Searches for tokens by their symbol or name.
+
+`GET /v1/lookup_token_by_symbol`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                       |
+| ---------- | -------- | -------- | --------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.         |
+| `symbol`   | `string` | Yes      | The token symbol to search for.   |
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/lookup_token_by_symbol?chain_id=1&symbol=WETH"
+```
+
+### Contract & Name Service Tools
+
+#### Get Contract ABI (`get_contract_abi`)
+
+Retrieves the Application Binary Interface (ABI) for a smart contract.
+
+`GET /v1/get_contract_abi`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                  |
+| ---------- | -------- | -------- | ---------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.    |
+| `address`  | `string` | Yes      | The smart contract address.  |
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
+```
+
+#### Get Address by ENS Name (`get_address_by_ens_name`)
+
+Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum address.
+
+`GET /v1/get_address_by_ens_name`
+
+**Parameters**
+
+| Name   | Type     | Required | Description                |
+| ------ | -------- | -------- | -------------------------- |
+| `name` | `string` | Yes      | The ENS name to resolve.   |
+
+**Example Request**
+```bash
+curl "http://127.0.0.1:8000/v1/get_address_by_ens_name?name=vitalik.eth"
 ```
