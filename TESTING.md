@@ -93,36 +93,38 @@ This verbose output will show you why specific tests were skipped (e.g., network
 
 This command is useful for periodically checking the health of our external dependencies or before deploying a new version.
 
-## Manual HTTP Testing
+## Manual End-to-End Testing
 
 ### Prerequisites for HTTP Testing
 
 - Docker or local Python environment with the server installed
 - `curl` command-line tool
 
-### Starting the Server in HTTP Mode
+### Starting the Server
 
-#### Using Docker
+To test the REST API, you must start the server with both the `--http` and `--rest` flags.
 
+**Using Local Installation:**
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0 --http-port 8080
+python -m blockscout_mcp_server --http --rest --http-port 8000
 ```
 
-#### Using Local Installation
-
+**Using Docker:**
 ```bash
-python -m blockscout_mcp_server --http --http-port 8080
+docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest --http --rest --http-host 0.0.0.0 --http-port 8000
 ```
 
-The server will start and listen on `http://127.0.0.1:8080`.
+The server will start and listen on `http://127.0.0.1:8000`.
 
-### Testing with curl
+### Testing MCP over HTTP
+
+These examples show how to interact with the server using the native MCP JSON-RPC protocol over HTTP. The MCP endpoint is available at `/mcp/`. **Note**: The trailing slash is required.
 
 #### 1. List Available Tools
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -130,7 +132,6 @@ curl --request POST \
     "id": 0,
     "method": "tools/list"
   }'
-```
 
 This will return a list of all available tools with their descriptions and input schemas.
 
@@ -138,7 +139,7 @@ This will return a list of all available tools with their descriptions and input
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -156,7 +157,7 @@ curl --request POST \
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -170,50 +171,9 @@ curl --request POST \
   }'
 ```
 
-#### 4. Get Latest Block Information
+#### Expected MCP Response Format
 
-```bash
-curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
-  --header 'Content-Type: application/json' \
-  --header 'Accept: application/json, text/event-stream' \
-  --data '{
-    "jsonrpc": "2.0",
-    "id": 3,
-    "method": "tools/call",
-    "params": {
-      "name": "get_latest_block",
-      "arguments": {
-        "chain_id": "1"
-      }
-    }
-  }'
-```
-
-#### 5. Get Address Information
-
-```bash
-curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
-  --header 'Content-Type: application/json' \
-  --header 'Accept: application/json, text/event-stream' \
-  --data '{
-    "jsonrpc": "2.0",
-    "id": 4,
-    "method": "tools/call",
-    "params": {
-      "name": "get_address_info",
-      "arguments": {
-        "chain_id": "1",
-        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-      }
-    }
-  }'
-```
-
-### Expected Response Format
-
-All responses follow the JSON-RPC 2.0 format:
+All MCP responses follow the JSON-RPC 2.0 format:
 
 ```json
 {
@@ -230,3 +190,46 @@ All responses follow the JSON-RPC 2.0 format:
   }
 }
 ```
+
+### Testing the REST API
+
+#### 1. Health Check
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+#### 2. Get Latest Block (Success Case)
+```bash
+curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
+```
+
+#### 3. Get Block Info (With Optional Parameter)
+```bash
+curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
+```
+
+#### 4. Get Block Info (Error Case - Missing Required Parameter)
+This request is missing the `number_or_hash` parameter and should return a 400 error.
+```bash
+curl -i "http://127.0.0.1:8000/v1/get_block_info?chain_id=1"
+```
+
+
+#### Expected REST API Response Format
+
+All successful REST API responses return a `200 OK` status with a JSON body that follows the standard `ToolResponse` structure:
+
+```json
+{
+  "data": { "...": "..." },
+  "data_description": null,
+  "notes": null,
+  "instructions": null,
+  "pagination": null
+}
+```
+
+- `data`: The main data payload, specific to each endpoint.
+- `data_description`, `notes`, `instructions`, `pagination`: Optional metadata fields that provide additional context.
+
+Error responses will have a different structure as described in `API.md`.

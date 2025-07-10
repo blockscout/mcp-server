@@ -34,6 +34,13 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 - **Apply** `.cursor/rules/300-ruff-lint-and-format.mdc` when identifying and fixing linting and formatting issues
 
+### Documentation Rules
+
+- **Apply** `.cursor/rules/800-api-documentation-guidelines.mdc` when updating `API.md`
+
 ### Meta Operations
 
 - **Must follow** `.cursor/rules/900-rules-maintenance.mdc` when creating, modifying, or deleting any rule files in `.cursor/rules/`
+
+#### Documentation Rules
+- **`800-api-documentation-guidelines.mdc`**: Apply this rule when adding or updating any REST API endpoint documentation in `API.md`.
