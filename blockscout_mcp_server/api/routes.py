@@ -2,6 +2,7 @@
 
 import pathlib
 
+import anyio
 from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
@@ -19,13 +20,22 @@ async def health_check(_: Request) -> Response:
 
 async def serve_llms_txt(_: Request) -> Response:
     """Serve the llms.txt file."""
-    content = LLMS_TXT_PATH.read_text(encoding="utf-8")
+    try:
+        content = await anyio.Path(LLMS_TXT_PATH).read_text(encoding="utf-8")
+    except OSError as exc:
+        message = f"Failed to read llms.txt: {exc}"
+        return PlainTextResponse(message, status_code=500)
     return PlainTextResponse(content)
 
 
 async def main_page(_: Request) -> Response:
     """Serve the main landing page."""
-    content = (TEMPLATES_DIR / "index.html").read_text(encoding="utf-8")
+    file_path = TEMPLATES_DIR / "index.html"
+    try:
+        content = await anyio.Path(file_path).read_text(encoding="utf-8")
+    except OSError as exc:
+        message = f"Failed to read landing page: {exc}"
+        return PlainTextResponse(message, status_code=500)
     return HTMLResponse(content)
 
 
