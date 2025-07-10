@@ -143,6 +143,7 @@ mcp-server/
 
 3. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
+    * **`llms.txt`**: Machine-readable guidance file for AI crawlers.
     * **`__main__.py`**:
         * Serves as the entry point when the package is run as a script (`python -m blockscout_mcp_server`).
         * Imports the main execution function (e.g., `run_server()`) from `server.py` and calls it.
@@ -166,6 +167,8 @@ mcp-server/
             * Parses CLI arguments and determines the mode (stdio or HTTP)
             * For stdio mode: calls `mcp.run()` for stdin/stdout communication
             * For HTTP mode: configures stateless HTTP with JSON responses and runs uvicorn server
+    * **`templates/`**:
+        * **`index.html`**: Landing page for the REST API.
     * **`config.py`**:
         * Defines a Pydantic `BaseSettings` class to manage server configuration.
         * Loads configuration values (e.g., API keys, timeouts, cache settings) from environment variables.
@@ -175,16 +178,16 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
+    * **API layer**:
+        * **`api/helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
+        * **`api/routes.py`**: Defines all REST API endpoints that wrap MCP tools.
+        * **`api/dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:
             * Provides shared utilities and common functionality for all MCP tools.
             * Handles API communication, chain resolution, pagination, data processing, and error handling.
             * Implements standardized patterns used across the tool ecosystem.
-        * **API layer**:
-            * **`api/helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
-            * **`api/routes.py`**: Defines all REST API endpoints that wrap MCP tools.
-            * **`api/dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.
