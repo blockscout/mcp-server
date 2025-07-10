@@ -107,6 +107,11 @@ When adding a new tool to the MCP server, you need to modify these files:
    - Add it both in the directory tree structure AND in the "Individual Tool Modules" examples section
    - If you added a tool to an existing module, update the "Examples" section to include your new tool function
 
+5. **Expose the tool via the REST API**:
+   - Create a wrapper endpoint in `api/routes.py` following the
+     [REST API implementation guidelines](mdc:.cursor/rules/150-rest-api-implementation.mdc).
+   - Register the route so it is available under the `/v1/` prefix.
+
 ## Data Model Creation Guidelines
 
 **All tools MUST return a strongly-typed `ToolResponse[YourDataModel]` instead of generic `ToolResponse[dict]`.** This ensures consistency, reliability, and better AI reasoning.

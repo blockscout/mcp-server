@@ -21,3 +21,9 @@ When adding or modifying tests for the REST API in `tests/api/test_routes.py`, f
   1. Success path with only the required parameters.
   2. Success path including optional parameters, if any.
   3. Failure path when a required parameter is missing, expecting HTTP `400`.
+
+### Naming Convention
+
+Name the test functions after the endpoint without the `_rest` suffix. For
+example, prefer `test_get_chains_list_success` over
+`test_get_chains_list_rest_success`.

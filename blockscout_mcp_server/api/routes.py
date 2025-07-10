@@ -225,6 +225,11 @@ def register_api_routes(mcp: FastMCP) -> None:
 
     async def list_tools_rest(_: Request) -> Response:
         """Return a list of all available tools and their schemas."""
+        # The FastMCP instance is needed to query registered tools. Defining this
+        # handler inside ``register_api_routes`` allows it to close over the
+        # specific ``mcp`` object instead of accessing ``request.app.state``.
+        # This reduces coupling to the underlying ASGI app and makes unit tests
+        # simpler because no custom state injection is required.
         tools_list = await mcp.list_tools()
         return JSONResponse([tool.model_dump() for tool in tools_list])
 
