@@ -9,7 +9,7 @@ dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "anyio>=4.0.0",  # For async task management and progress reporting,
-    "uvicorn>=0.23.1"  # For HTTP Streamable mode
+    "uvicorn>=0.23.1",  # For HTTP Streamable mode
 ]
 
 [project.scripts]

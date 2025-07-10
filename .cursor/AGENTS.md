@@ -18,6 +18,10 @@ AI agents should consult the appropriate rule files based on the context of thei
 - **Follow** `.cursor/rules/130-version-management.mdc` when updating the version of the MCP server
 - **Apply** `.cursor/rules/140-tool-description.mdc` rules to the tool's description field whenever creating a new MCP tool or updating an existing one
 
+### API Endpoints & Static Content
+
+- **Apply** `.cursor/rules/160-static-content-caching.mdc` when serving static files in API routes
+
 ### Testing & Development
 
 - **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)

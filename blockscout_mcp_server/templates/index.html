@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockscout MCP Server</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        h1, h2 { color: #333; }
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 0.5rem; }
+        a { color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Blockscout MCP Server</h1>
+    <p>
+        This server wraps Blockscout APIs and exposes blockchain data—balances, tokens, NFTs, contract metadata—via the Model Context Protocol (MCP) so that AI agents and tools (like Claude, Cursor, or IDEs) can access and analyze it contextually.
+    </p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>Contextual blockchain data access for AI tools</li>
+        <li>Multi-chain support via dynamic Blockscout instance URL resolution</li>
+        <li>Custom instructions for the MCP host to effectively use the server</li>
+        <li>Support for MCP progress notifications for multi-step tool operations</li>
+    </ul>
+
+    <h2>Available Endpoints</h2>
+    <ul>
+        <li><code>/mcp</code>: The primary endpoint for MCP communication (JSON-RPC 2.0).</li>
+        <li><code>/health</code>: A simple health check endpoint.</li>
+        <li><code>/llms.txt</code>: A machine-readable file for AI crawlers.</li>
+        <li><code>/v1/...</code>: Versioned REST API endpoints that mirror MCP tool functionality.</li>
+    </ul>
+
+    <h2>Available Tools (via MCP and REST API)</h2>
+    <ul>
+        <li><code>__get_instructions__</code>: Provides custom instructions for the MCP host.</li>
+        <li><code>get_chains_list</code>: Returns a list of all known chains.</li>
+        <li><code>get_address_by_ens_name</code>: Converts an ENS name to its Ethereum address.</li>
+        <li><code>lookup_token_by_symbol</code>: Searches for tokens by symbol.</li>
+        <li><code>get_contract_abi</code>: Retrieves the ABI for a smart contract.</li>
+        <li><code>get_address_info</code>: Gets comprehensive information about an address.</li>
+        <li><code>get_tokens_by_address</code>: Returns ERC20 token holdings for an address.</li>
+        <li><code>get_latest_block</code>: Returns the latest indexed block.</li>
+        <li><code>get_transactions_by_address</code>: Gets transactions for an address.</li>
+        <li><code>get_token_transfers_by_address</code>: Returns ERC-20 token transfers for an address.</li>
+        <li><code>transaction_summary</code>: Provides a human-readable transaction summary.</li>
+        <li><code>nft_tokens_by_address</code>: Retrieves NFT tokens owned by an address.</li>
+        <li><code>get_block_info</code>: Returns detailed block information.</li>
+        <li><code>get_transaction_info</code>: Gets comprehensive transaction information.</li>
+        <li><code>get_transaction_logs</code>: Returns transaction logs with decoded event data.</li>
+        <li><code>get_address_logs</code>: Gets logs emitted by a specific address.</li>
+    </ul>
+    <p>For more details, please refer to the project's <a href="https://github.com/blockscout/mcp-server">GitHub repository</a>.</p>
+</body>
+</html>
