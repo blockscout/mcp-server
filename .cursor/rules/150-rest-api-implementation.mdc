@@ -18,6 +18,8 @@ REST handler functions in `api/routes.py` **MUST** be named after the MCP tool t
 
 All request parameter extraction and validation **MUST** be handled by the `extract_and_validate_params` helper from `api/helpers.py`. This centralizes logic for required/optional parameters and type conversion.
 
+If a query parameter requires custom type conversion (e.g., converting "true"/"false" to `bool`), its name **MUST** be registered in the `PARAM_TYPES` dictionary in `api/helpers.py`.
+
 ## 3. Error Handling
 
 All REST handlers **MUST** be decorated with the `@handle_validation_errors` decorator from `api/helpers.py`. This ensures that any `ValueError` raised during parameter extraction (e.g., for a missing required parameter) is automatically converted into a standardized HTTP 400 Bad Request response with a JSON error message. Do not implement `try...except` blocks for validation errors within the handlers themselves.
