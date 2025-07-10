@@ -181,10 +181,11 @@ mcp-server/
             * Provides shared utilities and common functionality for all MCP tools.
             * Handles API communication, chain resolution, pagination, data processing, and error handling.
             * Implements standardized patterns used across the tool ecosystem.
+        * **API layer**:
+            * **`api/helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
+            * **`api/routes.py`**: Defines all REST API endpoints that wrap MCP tools.
+            * **`api/dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
-            * **`api/helpers.py`**: Provides shared utilities for REST API handlers, including parameter extraction and error handling.
-            * **`api/routes.py`**: Defines all REST API endpoints, which act as thin wrappers around the MCP tool functions.
-            * **`api/dependencies.py`**: Contains dependency providers for the REST API, such as a mock context for stateless calls.
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.
             * For Blockscout API tools, functions take `chain_id` as the first parameter followed by other arguments and a `ctx: Context` parameter for progress tracking.

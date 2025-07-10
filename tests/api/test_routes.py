@@ -59,7 +59,7 @@ async def test_routes_not_found_on_clean_app():
 
 
 @pytest.mark.asyncio
-async def test_list_tools_rest(client: AsyncClient, test_mcp_instance: FastMCP):
+async def test_list_tools_success(client: AsyncClient, test_mcp_instance: FastMCP):
     """Verify that the /v1/tools endpoint returns a list of tools."""
     test_mcp_instance.list_tools = AsyncMock(return_value=[])
     response = await client.get("/v1/tools")
@@ -70,7 +70,7 @@ async def test_list_tools_rest(client: AsyncClient, test_mcp_instance: FastMCP):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_latest_block", new_callable=AsyncMock)
-async def test_get_latest_block_rest_success(mock_tool, client: AsyncClient):
+async def test_get_latest_block_success(mock_tool, client: AsyncClient):
     """Test the happy path for a simple REST endpoint."""
     mock_tool.return_value = ToolResponse(data={"block_number": 123})
     response = await client.get("/v1/get_latest_block?chain_id=1")
@@ -80,7 +80,7 @@ async def test_get_latest_block_rest_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_latest_block_rest_missing_param(client: AsyncClient):
+async def test_get_latest_block_missing_param(client: AsyncClient):
     """Test that a 400 is returned if a required parameter is missing."""
     response = await client.get("/v1/get_latest_block")
     assert response.status_code == 400
@@ -89,7 +89,7 @@ async def test_get_latest_block_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_block_info", new_callable=AsyncMock)
-async def test_get_block_info_rest_with_optional_param(mock_tool, client: AsyncClient):
+async def test_get_block_info_with_optional_param(mock_tool, client: AsyncClient):
     """Test an endpoint with both required and optional boolean parameters."""
     mock_tool.return_value = ToolResponse(data={"block_number": 456})
     response = await client.get("/v1/get_block_info?chain_id=1&number_or_hash=latest&include_transactions=true")
@@ -105,7 +105,7 @@ async def test_get_block_info_rest_with_optional_param(mock_tool, client: AsyncC
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_block_info", new_callable=AsyncMock)
-async def test_get_block_info_rest_success(mock_tool, client: AsyncClient):
+async def test_get_block_info_success(mock_tool, client: AsyncClient):
     """Test get_block_info with only required params."""
     mock_tool.return_value = ToolResponse(data={"block_number": 789})
     response = await client.get("/v1/get_block_info?chain_id=1&number_or_hash=123")
@@ -115,7 +115,7 @@ async def test_get_block_info_rest_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_block_info_rest_missing_param(client: AsyncClient):
+async def test_get_block_info_missing_param(client: AsyncClient):
     """Missing number_or_hash parameter results in error."""
     response = await client.get("/v1/get_block_info?chain_id=1")
     assert response.status_code == 400
@@ -124,7 +124,7 @@ async def test_get_block_info_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.__get_instructions__", new_callable=AsyncMock)
-async def test_get_instructions_rest_success(mock_tool, client: AsyncClient):
+async def test_get_instructions_success(mock_tool, client: AsyncClient):
     """Test the /get_instructions endpoint."""
     mock_tool.return_value = ToolResponse(data={"msg": "hi"})
     response = await client.get("/v1/get_instructions")
@@ -135,7 +135,7 @@ async def test_get_instructions_rest_success(mock_tool, client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_by_ens_name", new_callable=AsyncMock)
-async def test_get_address_by_ens_name_rest_success(mock_tool, client: AsyncClient):
+async def test_get_address_by_ens_name_success(mock_tool, client: AsyncClient):
     """Test the /get_address_by_ens_name endpoint."""
     mock_tool.return_value = ToolResponse(data={"address": "0xabc"})
     response = await client.get("/v1/get_address_by_ens_name?name=test.eth")
@@ -145,7 +145,7 @@ async def test_get_address_by_ens_name_rest_success(mock_tool, client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_get_address_by_ens_name_rest_missing_param(client: AsyncClient):
+async def test_get_address_by_ens_name_missing_param(client: AsyncClient):
     """Test missing parameter handling for /get_address_by_ens_name."""
     response = await client.get("/v1/get_address_by_ens_name")
     assert response.status_code == 400
@@ -157,7 +157,7 @@ async def test_get_address_by_ens_name_rest_missing_param(client: AsyncClient):
     "blockscout_mcp_server.api.routes.get_transactions_by_address",
     new_callable=AsyncMock,
 )
-async def test_get_transactions_by_address_rest_success(mock_tool, client: AsyncClient):
+async def test_get_transactions_by_address_success(mock_tool, client: AsyncClient):
     """Test the /get_transactions_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data={"items": []})
     url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&cursor=foo"
@@ -177,7 +177,7 @@ async def test_get_transactions_by_address_rest_success(mock_tool, client: Async
     "blockscout_mcp_server.api.routes.get_transactions_by_address",
     new_callable=AsyncMock,
 )
-async def test_get_transactions_by_address_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_get_transactions_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works with required params only."""
     mock_tool.return_value = ToolResponse(data={"items": []})
     url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc"
@@ -188,7 +188,7 @@ async def test_get_transactions_by_address_rest_no_cursor(mock_tool, client: Asy
 
 
 @pytest.mark.asyncio
-async def test_get_transactions_by_address_rest_missing_param(client: AsyncClient):
+async def test_get_transactions_by_address_missing_param(client: AsyncClient):
     """Missing chain_id returns an error."""
     response = await client.get("/v1/get_transactions_by_address?address=0xabc")
     assert response.status_code == 400
@@ -200,7 +200,7 @@ async def test_get_transactions_by_address_rest_missing_param(client: AsyncClien
     "blockscout_mcp_server.api.routes.get_token_transfers_by_address",
     new_callable=AsyncMock,
 )
-async def test_get_token_transfers_by_address_rest_success(mock_tool, client: AsyncClient):
+async def test_get_token_transfers_by_address_success(mock_tool, client: AsyncClient):
     """Test /get_token_transfers_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data={"items": []})
     url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc&cursor=foo"
@@ -220,7 +220,7 @@ async def test_get_token_transfers_by_address_rest_success(mock_tool, client: As
     "blockscout_mcp_server.api.routes.get_token_transfers_by_address",
     new_callable=AsyncMock,
 )
-async def test_get_token_transfers_by_address_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_get_token_transfers_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works with required params only."""
     mock_tool.return_value = ToolResponse(data={"items": []})
     url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc"
@@ -231,7 +231,7 @@ async def test_get_token_transfers_by_address_rest_no_cursor(mock_tool, client: 
 
 
 @pytest.mark.asyncio
-async def test_get_token_transfers_by_address_rest_missing_param(client: AsyncClient):
+async def test_get_token_transfers_by_address_missing_param(client: AsyncClient):
     """Missing chain_id parameter."""
     response = await client.get("/v1/get_token_transfers_by_address?address=0xabc")
     assert response.status_code == 400
@@ -240,7 +240,7 @@ async def test_get_token_transfers_by_address_rest_missing_param(client: AsyncCl
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.lookup_token_by_symbol", new_callable=AsyncMock)
-async def test_lookup_token_by_symbol_rest_success(mock_tool, client: AsyncClient):
+async def test_lookup_token_by_symbol_success(mock_tool, client: AsyncClient):
     """Test /lookup_token_by_symbol endpoint."""
     mock_tool.return_value = ToolResponse(data={"address": "0xdef"})
     response = await client.get("/v1/lookup_token_by_symbol?chain_id=1&symbol=ABC")
@@ -250,7 +250,7 @@ async def test_lookup_token_by_symbol_rest_success(mock_tool, client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_lookup_token_by_symbol_rest_missing_param(client: AsyncClient):
+async def test_lookup_token_by_symbol_missing_param(client: AsyncClient):
     """Missing chain_id results in error."""
     response = await client.get("/v1/lookup_token_by_symbol?symbol=ABC")
     assert response.status_code == 400
@@ -259,7 +259,7 @@ async def test_lookup_token_by_symbol_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_contract_abi", new_callable=AsyncMock)
-async def test_get_contract_abi_rest_success(mock_tool, client: AsyncClient):
+async def test_get_contract_abi_success(mock_tool, client: AsyncClient):
     """Test /get_contract_abi endpoint."""
     mock_tool.return_value = ToolResponse(data={"abi": []})
     response = await client.get("/v1/get_contract_abi?chain_id=1&address=0xabc")
@@ -269,7 +269,7 @@ async def test_get_contract_abi_rest_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_contract_abi_rest_missing_param(client: AsyncClient):
+async def test_get_contract_abi_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/get_contract_abi?address=0xabc")
     assert response.status_code == 400
@@ -278,7 +278,7 @@ async def test_get_contract_abi_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_info", new_callable=AsyncMock)
-async def test_get_address_info_rest_success(mock_tool, client: AsyncClient):
+async def test_get_address_info_success(mock_tool, client: AsyncClient):
     """Test /get_address_info endpoint."""
     mock_tool.return_value = ToolResponse(data={"balance": "0"})
     response = await client.get("/v1/get_address_info?chain_id=1&address=0xabc")
@@ -288,7 +288,7 @@ async def test_get_address_info_rest_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_address_info_rest_missing_param(client: AsyncClient):
+async def test_get_address_info_missing_param(client: AsyncClient):
     """Missing chain_id parameter."""
     response = await client.get("/v1/get_address_info?address=0xabc")
     assert response.status_code == 400
@@ -297,7 +297,7 @@ async def test_get_address_info_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_tokens_by_address", new_callable=AsyncMock)
-async def test_get_tokens_by_address_rest_success(mock_tool, client: AsyncClient):
+async def test_get_tokens_by_address_success(mock_tool, client: AsyncClient):
     """Test /get_tokens_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_tokens_by_address?chain_id=1&address=0xabc&cursor=foo")
@@ -308,7 +308,7 @@ async def test_get_tokens_by_address_rest_success(mock_tool, client: AsyncClient
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_tokens_by_address", new_callable=AsyncMock)
-async def test_get_tokens_by_address_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_get_tokens_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works without optional cursor."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_tokens_by_address?chain_id=1&address=0xabc")
@@ -318,7 +318,7 @@ async def test_get_tokens_by_address_rest_no_cursor(mock_tool, client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_get_tokens_by_address_rest_missing_param(client: AsyncClient):
+async def test_get_tokens_by_address_missing_param(client: AsyncClient):
     """Missing chain_id returns error."""
     response = await client.get("/v1/get_tokens_by_address?address=0xabc")
     assert response.status_code == 400
@@ -327,7 +327,7 @@ async def test_get_tokens_by_address_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.transaction_summary", new_callable=AsyncMock)
-async def test_transaction_summary_rest_success(mock_tool, client: AsyncClient):
+async def test_transaction_summary_success(mock_tool, client: AsyncClient):
     """Test /transaction_summary endpoint."""
     mock_tool.return_value = ToolResponse(data={"summary": {}})
     response = await client.get("/v1/transaction_summary?chain_id=1&transaction_hash=0x123")
@@ -337,7 +337,7 @@ async def test_transaction_summary_rest_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_transaction_summary_rest_missing_param(client: AsyncClient):
+async def test_transaction_summary_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/transaction_summary?transaction_hash=0x123")
     assert response.status_code == 400
@@ -346,7 +346,7 @@ async def test_transaction_summary_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.nft_tokens_by_address", new_callable=AsyncMock)
-async def test_nft_tokens_by_address_rest_success(mock_tool, client: AsyncClient):
+async def test_nft_tokens_by_address_success(mock_tool, client: AsyncClient):
     """Test /nft_tokens_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/nft_tokens_by_address?chain_id=1&address=0xabc&cursor=foo")
@@ -357,7 +357,7 @@ async def test_nft_tokens_by_address_rest_success(mock_tool, client: AsyncClient
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.nft_tokens_by_address", new_callable=AsyncMock)
-async def test_nft_tokens_by_address_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_nft_tokens_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works without optional cursor."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/nft_tokens_by_address?chain_id=1&address=0xabc")
@@ -367,7 +367,7 @@ async def test_nft_tokens_by_address_rest_no_cursor(mock_tool, client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_nft_tokens_by_address_rest_missing_param(client: AsyncClient):
+async def test_nft_tokens_by_address_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/nft_tokens_by_address?address=0xabc")
     assert response.status_code == 400
@@ -376,7 +376,7 @@ async def test_nft_tokens_by_address_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_transaction_info", new_callable=AsyncMock)
-async def test_get_transaction_info_rest_success(mock_tool, client: AsyncClient):
+async def test_get_transaction_info_success(mock_tool, client: AsyncClient):
     """Test /get_transaction_info endpoint."""
     mock_tool.return_value = ToolResponse(data={"hash": "0x123"})
     url = "/v1/get_transaction_info?chain_id=1&transaction_hash=0x123&include_raw_input=true"
@@ -393,7 +393,7 @@ async def test_get_transaction_info_rest_success(mock_tool, client: AsyncClient)
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_transaction_info", new_callable=AsyncMock)
-async def test_get_transaction_info_rest_no_optional(mock_tool, client: AsyncClient):
+async def test_get_transaction_info_no_optional(mock_tool, client: AsyncClient):
     """Works without include_raw_input parameter."""
     mock_tool.return_value = ToolResponse(data={"hash": "0xabc"})
     response = await client.get("/v1/get_transaction_info?chain_id=1&transaction_hash=0xabc")
@@ -403,7 +403,7 @@ async def test_get_transaction_info_rest_no_optional(mock_tool, client: AsyncCli
 
 
 @pytest.mark.asyncio
-async def test_get_transaction_info_rest_missing_param(client: AsyncClient):
+async def test_get_transaction_info_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/get_transaction_info?transaction_hash=0x123")
     assert response.status_code == 400
@@ -412,7 +412,7 @@ async def test_get_transaction_info_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_transaction_logs", new_callable=AsyncMock)
-async def test_get_transaction_logs_rest_success(mock_tool, client: AsyncClient):
+async def test_get_transaction_logs_success(mock_tool, client: AsyncClient):
     """Test /get_transaction_logs endpoint."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_transaction_logs?chain_id=1&transaction_hash=0x123&cursor=foo")
@@ -423,7 +423,7 @@ async def test_get_transaction_logs_rest_success(mock_tool, client: AsyncClient)
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_transaction_logs", new_callable=AsyncMock)
-async def test_get_transaction_logs_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_get_transaction_logs_no_cursor(mock_tool, client: AsyncClient):
     """Works without optional cursor."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_transaction_logs?chain_id=1&transaction_hash=0x123")
@@ -433,7 +433,7 @@ async def test_get_transaction_logs_rest_no_cursor(mock_tool, client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_rest_missing_param(client: AsyncClient):
+async def test_get_transaction_logs_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/get_transaction_logs?transaction_hash=0x123")
     assert response.status_code == 400
@@ -442,7 +442,7 @@ async def test_get_transaction_logs_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_logs", new_callable=AsyncMock)
-async def test_get_address_logs_rest_success(mock_tool, client: AsyncClient):
+async def test_get_address_logs_success(mock_tool, client: AsyncClient):
     """Test /get_address_logs endpoint."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_address_logs?chain_id=1&address=0xabc&cursor=foo")
@@ -453,7 +453,7 @@ async def test_get_address_logs_rest_success(mock_tool, client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_logs", new_callable=AsyncMock)
-async def test_get_address_logs_rest_no_cursor(mock_tool, client: AsyncClient):
+async def test_get_address_logs_no_cursor(mock_tool, client: AsyncClient):
     """Works without optional cursor."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_address_logs?chain_id=1&address=0xabc")
@@ -463,7 +463,7 @@ async def test_get_address_logs_rest_no_cursor(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_address_logs_rest_missing_param(client: AsyncClient):
+async def test_get_address_logs_missing_param(client: AsyncClient):
     """Missing chain_id."""
     response = await client.get("/v1/get_address_logs?address=0xabc")
     assert response.status_code == 400
@@ -472,7 +472,7 @@ async def test_get_address_logs_rest_missing_param(client: AsyncClient):
 
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_chains_list", new_callable=AsyncMock)
-async def test_get_chains_list_rest_success(mock_tool, client: AsyncClient):
+async def test_get_chains_list_success(mock_tool, client: AsyncClient):
     """Test /get_chains_list endpoint."""
     mock_tool.return_value = ToolResponse(data=[])
     response = await client.get("/v1/get_chains_list")
