@@ -20,6 +20,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### API Endpoints & Static Content
 
+- **Apply** `.cursor/rules/150-rest-api-implementation.mdc` when implementing REST API endpoints that wrap MCP tools
 - **Apply** `.cursor/rules/160-static-content-caching.mdc` when serving static files in API routes
 
 ### Testing & Development
@@ -27,6 +28,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 - **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)
 - **Before modifying** any unit test files within `tests/tools/` or adding new unit tests, follow guidelines from `.cursor/rules/210-unit-testing-guidelines.mdc`
 - **Before working** with integration test files within `tests/integration/`, consult `.cursor/rules/220-integration-testing-guidelines.mdc`
+- **Apply** `.cursor/rules/230-api-route-tests.mdc` when editing `tests/api/test_routes.py`
 
 ### Code Quality & Formatting
 

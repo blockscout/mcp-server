@@ -1,0 +1,29 @@
+---
+description: Follow these instructions when implementing REST API endpoints that wrap MCP tools.
+globs: blockscout_mcp_server/api/routes.py
+alwaysApply: false
+---
+# REST API Implementation Guidelines
+
+When exposing an MCP tool function as a REST API endpoint, follow these conventions to ensure consistency, maintainability, and robustness.
+
+## 1. Naming Convention
+
+REST handler functions in `api/routes.py` **MUST** be named after the MCP tool they wrap, with an `_rest` suffix.
+
+- **Tool function:** `get_block_info()`
+- **REST handler:** `get_block_info_rest()`
+
+## 2. Parameter Handling
+
+All request parameter extraction and validation **MUST** be handled by the `extract_and_validate_params` helper from `api/helpers.py`. This centralizes logic for required/optional parameters and type conversion.
+
+If a query parameter requires custom type conversion (e.g., converting "true"/"false" to `bool`), its name **MUST** be registered in the `PARAM_TYPES` dictionary in `api/helpers.py`.
+
+## 3. Error Handling
+
+All REST handlers **MUST** be decorated with the `@handle_validation_errors` decorator from `api/helpers.py`. This ensures that any `ValueError` raised during parameter extraction (e.g., for a missing required parameter) is automatically converted into a standardized HTTP 400 Bad Request response with a JSON error message. Do not implement `try...except` blocks for validation errors within the handlers themselves.
+
+## 4. Route Registration
+
+All REST API endpoints **MUST** be registered under the `/v1/` path prefix in `register_api_routes` to ensure proper versioning. Use the helper function `_add_v1_tool_route` to register each tool wrapper. This ensures a consistent configuration and automatically applies the correct HTTP method and URL prefix.
