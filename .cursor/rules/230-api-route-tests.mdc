@@ -1,0 +1,15 @@
+---
+description: Guidelines for writing unit tests for REST API routes
+globs: tests/api/test_routes.py
+alwaysApply: false
+---
+# REST API Route Test Guidelines
+
+When adding or modifying tests for the REST API in `tests/api/test_routes.py`, follow these practices:
+
+- Create a `FastMCP` instance and register routes using `register_api_routes` before making requests.
+- Use `httpx.AsyncClient` with `ASGITransport` to call the routes.
+- Patch the wrapped tool functions with `unittest.mock.patch` and `AsyncMock` to avoid real network calls.
+- Assert that each endpoint returns the expected HTTP status and JSON content.
+- Verify that the patched tool was invoked exactly once with the expected arguments.
+- Include error-case tests to confirm a `400` response is returned when required query parameters are missing.
