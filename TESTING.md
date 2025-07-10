@@ -118,11 +118,13 @@ The server will start and listen on `http://127.0.0.1:8000`.
 
 ### Testing MCP over HTTP
 
+These examples show how to interact with the server using the native MCP JSON-RPC protocol over HTTP. The MCP endpoint is available at `/mcp/`. **Note**: The trailing slash is required.
+
 #### 1. List Available Tools
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -130,7 +132,6 @@ curl --request POST \
     "id": 0,
     "method": "tools/list"
   }'
-```
 
 This will return a list of all available tools with their descriptions and input schemas.
 
@@ -138,7 +139,7 @@ This will return a list of all available tools with their descriptions and input
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -156,7 +157,7 @@ curl --request POST \
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8080/mcp/ \
+  --url http://127.0.0.1:8000/mcp/ \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -168,6 +169,26 @@ curl --request POST \
       "arguments": {}
     }
   }'
+```
+
+#### Expected MCP Response Format
+
+All MCP responses follow the JSON-RPC 2.0 format:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Tool result content here"
+      }
+    ],
+    "isError": false
+  }
+}
 ```
 
 ### Testing the REST API
@@ -194,22 +215,21 @@ curl -i "http://127.0.0.1:8000/v1/get_block_info?chain_id=1"
 ```
 
 
-### Expected Response Format
+#### Expected REST API Response Format
 
-All responses follow the JSON-RPC 2.0 format:
+All successful REST API responses return a `200 OK` status with a JSON body that follows the standard `ToolResponse` structure:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Tool result content here"
-      }
-    ],
-    "isError": false
-  }
+  "data": { "...": "..." },
+  "data_description": null,
+  "notes": null,
+  "instructions": null,
+  "pagination": null
 }
 ```
+
+- `data`: The main data payload, specific to each endpoint.
+- `data_description`, `notes`, `instructions`, `pagination`: Optional metadata fields that provide additional context.
+
+Error responses will have a different structure as described in `API.md`.
