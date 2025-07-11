@@ -21,7 +21,7 @@ The Blockscout MCP Server supports two primary operational modes:
    - By default, this mode provides a pure MCP-over-HTTP endpoint at `/mcp`, using the same JSON-RPC 2.0 protocol as stdio mode.
    - It is stateless and uses JSON responses, making it convenient for testing and integration.
 
-The HTTP mode can be optionally extended to serve additional web and REST API endpoints. This is disabled by default and can be enabled by providing the `--rest` flag at startup.
+   The HTTP mode can be optionally extended to serve additional web and REST API endpoints. This is disabled by default and can be enabled by providing the `--rest` flag at startup.
 
 3. **Extended HTTP Mode (with REST API and Web Pages)**:
    - Enabled by using the `--rest` flag in conjunction with `--http`.

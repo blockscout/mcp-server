@@ -8,6 +8,11 @@
         body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
         h1, h2 { color: #333; }
         code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+        pre { background-color: #f8f9fa; padding: 1rem; border-radius: 6px; overflow-x: auto; border: 1px solid #e9ecef; }
+        pre code { background-color: transparent; padding: 0; }
+        .prompt-box { background-color: #f0f8ff; padding: 1rem; border-radius: 6px; border-left: 4px solid #007bff; margin: 1rem 0; }
+        .prompt-box p { margin: 0.5rem 0; }
+        .copy-hint { font-size: 0.85em; color: #666; margin-top: 0.5rem; }
         ul { padding-left: 20px; }
         li { margin-bottom: 0.5rem; }
         a { color: #007bff; }
@@ -23,9 +28,58 @@
     <ul>
         <li>Contextual blockchain data access for AI tools</li>
         <li>Multi-chain support via dynamic Blockscout instance URL resolution</li>
+        <li>Unified server architecture serving both MCP and REST API endpoints</li>
         <li>Custom instructions for the MCP host to effectively use the server</li>
-        <li>Support for MCP progress notifications for multi-step tool operations</li>
+        <li>Intelligent context optimization to conserve LLM tokens while preserving data accessibility</li>
+        <li>Smart response slicing to prevent context overflow with seamless pagination</li>
+        <li>Opaque cursor pagination using single strings instead of complex parameter sets</li>
+        <li>Automatic truncation of large data fields with clear indicators and access guidance</li>
+        <li>Enhanced observability with MCP progress notifications and comprehensive logging</li>
     </ul>
+
+    <h2>Configuration</h2>
+    
+    <h3>Claude Desktop Setup</h3>
+    <p>To use the official Blockscout MCP server with Claude Desktop, add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
+    <pre><code>{
+  "mcpServers": {
+    "blockscout": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "sparfenyuk/mcp-proxy:latest",
+        "--transport",
+        "streamablehttp",
+        "https://mcp.blockscout.com/mcp/"
+      ]
+    }
+  }
+}</code></pre>
+    
+    <p><strong>Suggested First Prompt:</strong> For optimal results, start your Claude Desktop conversation with:</p>
+    <div class="prompt-box">
+        <p>You are a senior analyst specializing in Ethereum-blockchain activities with almost ten years of experience. You have deep knowledge of Web3 applications and protocols.</p>
+        <p>Before responding to the user's request, prepare a short plan of the actions you will take to provide a complete response.</p>
+        <p>After executing each planned MCP-tool call, analyze the tool's output and write a concise summary explaining **how that output advances you toward the final result**.  
+        If the new information requires revising your original plan, state the revision explicitly and briefly explain why.</p>
+    </div>
+    <p class="copy-hint">You can copy this prompt and paste it into your Claude Desktop conversation.</p>
+
+    <h3>Gemini CLI Setup</h3>
+    <p>To configure the Blockscout MCP server with Gemini CLI, add the following to your <code>~/.gemini/settings.json</code> file:</p>
+    <pre><code>{
+  "mcpServers": {
+    "blockscout": {
+      "httpUrl": "https://mcp.blockscout.com/mcp/",
+      "timeout": 180000
+    }
+  }
+}</code></pre>
+    
+    <p>For detailed Gemini CLI MCP server configuration instructions, see the <a href="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md">official documentation</a>.</p>
+    <p><strong>Note:</strong> Consider adding system prompts from <code>GEMINI.md</code> for enhanced blockchain analysis capabilities.</p>
 
     <h2>Available Endpoints</h2>
     <ul>
