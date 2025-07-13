@@ -53,21 +53,6 @@ def extract_and_validate_params(request: Request, required: list[str], optional:
     return params
 
 
-def handle_validation_errors(
-    func: Callable[[Request], Awaitable[Response]],
-) -> Callable[[Request], Awaitable[Response]]:
-    """Decorator to catch ValueErrors and return a 400 Bad Request response."""
-
-    @wraps(func)
-    async def wrapper(request: Request) -> Response:
-        try:
-            return await func(request)
-        except ValueError as e:
-            return JSONResponse({"error": str(e)}, status_code=400)
-
-    return wrapper
-
-
 def handle_rest_errors(
     func: Callable[[Request], Awaitable[Response]],
 ) -> Callable[[Request], Awaitable[Response]]:
