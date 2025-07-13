@@ -20,7 +20,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### API Endpoints & Static Content
 
-- **Apply** `.cursor/rules/150-rest-api-implementation.mdc` when implementing REST API endpoints that wrap MCP tools, including use of the `handle_rest_errors` decorator for consistent JSON error handling
+- **Apply** `.cursor/rules/150-rest-api-implementation.mdc` when implementing REST API endpoints that wrap MCP tools
 - **Apply** `.cursor/rules/160-static-content-caching.mdc` when serving static files in API routes
 
 ### Testing & Development
