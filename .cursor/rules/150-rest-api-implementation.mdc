@@ -22,7 +22,7 @@ If a query parameter requires custom type conversion (e.g., converting "true"/"f
 
 ## 3. Error Handling
 
-All REST handlers **MUST** be decorated with the `@handle_validation_errors` decorator from `api/helpers.py`. This ensures that any `ValueError` raised during parameter extraction (e.g., for a missing required parameter) is automatically converted into a standardized HTTP 400 Bad Request response with a JSON error message. Do not implement `try...except` blocks for validation errors within the handlers themselves.
+All REST handlers **MUST** be decorated with the `@handle_rest_errors` decorator from `api/helpers.py`. This decorator captures common runtime errors—including `ValueError`, `httpx.HTTPStatusError`, and timeout exceptions—and converts them into JSON responses with an appropriate HTTP status code. Do not implement custom `try...except` blocks inside the handlers.
 
 ## 4. Route Registration
 

@@ -46,7 +46,7 @@ All endpoints under `/v1/` return a consistent JSON object that wraps the tool's
   ```json
   {"error": "Missing required query parameter: 'chain_id'"}
   ```
-- **Server-Side Errors (HTTP 500)**: Indicate a problem on the server or with an upstream service (e.g., Blockscout API is unreachable). The response is a `500 Internal Server Error`, often with a plain text message.
+- **Other Errors**: Runtime exceptions are converted into JSON responses. HTTP errors from downstream services return their status codes (for example `404 Not Found`), timeouts result in `504 Gateway Timeout`, and unexpected issues return `500 Internal Server Error`.
 
 ### Pagination
 
