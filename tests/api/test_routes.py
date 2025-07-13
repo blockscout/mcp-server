@@ -1,7 +1,8 @@
 """Tests for the REST API routes."""
 
-from unittest.mock import ANY, AsyncMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
@@ -479,3 +480,29 @@ async def test_get_chains_list_success(mock_tool, client: AsyncClient):
     assert response.status_code == 200
     assert response.json()["data"] == []
     mock_tool.assert_called_once_with(ctx=ANY)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "side_effect, status",
+    [
+        (
+            httpx.HTTPStatusError(
+                "Not Found",
+                request=MagicMock(),
+                response=MagicMock(status_code=404),
+            ),
+            404,
+        ),
+        (httpx.TimeoutException("timeout"), 504),
+        (ValueError("bad input"), 400),
+    ],
+)
+@patch("blockscout_mcp_server.api.routes.get_latest_block", new_callable=AsyncMock)
+async def test_error_handling(mock_tool, client: AsyncClient, side_effect, status):
+    """Generic error handling for the REST API."""
+    mock_tool.side_effect = side_effect
+    response = await client.get("/v1/get_latest_block?chain_id=1")
+    assert response.status_code == status
+    assert response.json() == {"error": str(side_effect)}
+    mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)

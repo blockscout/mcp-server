@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any
 
+import httpx
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -63,5 +64,28 @@ def handle_validation_errors(
             return await func(request)
         except ValueError as e:
             return JSONResponse({"error": str(e)}, status_code=400)
+
+    return wrapper
+
+
+def handle_rest_errors(
+    func: Callable[[Request], Awaitable[Response]],
+) -> Callable[[Request], Awaitable[Response]]:
+    """Decorator to handle common REST API errors and return JSON responses."""
+
+    @wraps(func)
+    async def wrapper(request: Request) -> Response:
+        try:
+            return await func(request)
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, status_code=400)
+        except httpx.HTTPStatusError as e:
+            return JSONResponse({"error": str(e)}, status_code=e.response.status_code)
+        except (httpx.TimeoutException, TimeoutError) as e:
+            return JSONResponse({"error": str(e)}, status_code=504)
+        except RuntimeError as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+        except Exception as e:  # pragma: no cover - generic catch-all
+            return JSONResponse({"error": str(e)}, status_code=500)
 
     return wrapper

@@ -11,7 +11,7 @@ from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, R
 from blockscout_mcp_server.api.dependencies import get_mock_context
 from blockscout_mcp_server.api.helpers import (
     extract_and_validate_params,
-    handle_validation_errors,
+    handle_rest_errors,
 )
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
@@ -73,14 +73,14 @@ async def main_page(_: Request) -> Response:
     return HTMLResponse(INDEX_HTML_CONTENT)
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_instructions_rest(_: Request) -> Response:
     """REST wrapper for the __get_instructions__ tool."""
     tool_response = await __get_instructions__(ctx=get_mock_context())
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_block_info_rest(request: Request) -> Response:
     """REST wrapper for the get_block_info tool."""
     params = extract_and_validate_params(
@@ -92,7 +92,7 @@ async def get_block_info_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_latest_block_rest(request: Request) -> Response:
     """REST wrapper for the get_latest_block tool."""
     params = extract_and_validate_params(request, required=["chain_id"], optional=[])
@@ -100,7 +100,7 @@ async def get_latest_block_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_address_by_ens_name_rest(request: Request) -> Response:
     """REST wrapper for the get_address_by_ens_name tool."""
     params = extract_and_validate_params(request, required=["name"], optional=[])
@@ -108,7 +108,7 @@ async def get_address_by_ens_name_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_transactions_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_transactions_by_address tool."""
     params = extract_and_validate_params(
@@ -120,7 +120,7 @@ async def get_transactions_by_address_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_token_transfers_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_token_transfers_by_address tool."""
     params = extract_and_validate_params(
@@ -132,7 +132,7 @@ async def get_token_transfers_by_address_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def lookup_token_by_symbol_rest(request: Request) -> Response:
     """REST wrapper for the lookup_token_by_symbol tool."""
     params = extract_and_validate_params(request, required=["chain_id", "symbol"], optional=[])
@@ -140,7 +140,7 @@ async def lookup_token_by_symbol_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_contract_abi_rest(request: Request) -> Response:
     """REST wrapper for the get_contract_abi tool."""
     params = extract_and_validate_params(request, required=["chain_id", "address"], optional=[])
@@ -148,7 +148,7 @@ async def get_contract_abi_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_address_info_rest(request: Request) -> Response:
     """REST wrapper for the get_address_info tool."""
     params = extract_and_validate_params(request, required=["chain_id", "address"], optional=[])
@@ -156,7 +156,7 @@ async def get_address_info_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_tokens_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_tokens_by_address tool."""
     params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
@@ -164,7 +164,7 @@ async def get_tokens_by_address_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def transaction_summary_rest(request: Request) -> Response:
     """REST wrapper for the transaction_summary tool."""
     params = extract_and_validate_params(request, required=["chain_id", "transaction_hash"], optional=[])
@@ -172,7 +172,7 @@ async def transaction_summary_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def nft_tokens_by_address_rest(request: Request) -> Response:
     """REST wrapper for the nft_tokens_by_address tool."""
     params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
@@ -180,7 +180,7 @@ async def nft_tokens_by_address_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_transaction_info_rest(request: Request) -> Response:
     """REST wrapper for the get_transaction_info tool."""
     params = extract_and_validate_params(
@@ -192,7 +192,7 @@ async def get_transaction_info_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_transaction_logs_rest(request: Request) -> Response:
     """REST wrapper for the get_transaction_logs tool."""
     params = extract_and_validate_params(request, required=["chain_id", "transaction_hash"], optional=["cursor"])
@@ -200,7 +200,7 @@ async def get_transaction_logs_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_address_logs_rest(request: Request) -> Response:
     """REST wrapper for the get_address_logs tool."""
     params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
@@ -208,7 +208,7 @@ async def get_address_logs_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
-@handle_validation_errors
+@handle_rest_errors
 async def get_chains_list_rest(_: Request) -> Response:
     """REST wrapper for the get_chains_list tool."""
     tool_response = await get_chains_list(ctx=get_mock_context())
