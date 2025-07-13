@@ -27,6 +27,42 @@ GENERAL_RULES = [
         "and you receive a paginated response, continue calling the pagination tool calls "
         "until you have gathered all available data or reached a reasonable limit."
     ),
+    (
+        "TIME-BASED QUERIES: When users ask for blockchain data with time constraints "
+        "(before/after/between specific dates), "
+        "start with transaction-level tools that support time filtering (`get_transactions_by_address`, "
+        "`get_token_transfers_by_address`) rather than trying to filter other data types directly. "
+        "Use `age_from` and `age_to` parameters to filter transactions by time, "
+        "then retrieve associated data (logs, token transfers, etc.) from those specific transactions."
+    ),
+    (
+        "BLOCK TIME ESTIMATION: When no direct time filtering is available and you need to navigate "
+        "to a specific time period, "
+        "use mathematical block time estimation instead of brute-force iteration. "
+        "For known chains, use established patterns "
+        "(Ethereum ~12s, Polygon ~2s, Base ~2s, etc.). For unknown chains or improved accuracy, use adaptive sampling: "
+        "1. Sample 2-3 widely-spaced blocks to calculate initial average block time "
+        "2. Calculate approximate target: target_block ≈ current_block - "
+        "(time_difference_in_seconds / average_block_time) "
+        "3. As you gather new block data, refine your estimates using local patterns "
+        "(detect if recent segments have different timing) "
+        "4. Self-correct: if block 1800000→1700000 shows different timing than 1900000→1800000, "
+        "use the more relevant local segment "
+        "This adaptive approach works on any blockchain and automatically handles network upgrades or timing changes."
+    ),
+    (
+        "EFFICIENCY OPTIMIZATION: When direct tools don't exist for your query, be creative and strategic: "
+        "1. Assess the 'distance' - if you need data from far back in time, use block estimation first "
+        "2. Avoid excessive iteration - if you find yourself making >5 sequential calls for timestamps, "
+        "switch to estimation "
+        "3. Use adaptive sampling - check a few data points to understand timing patterns, "
+        "then adjust your strategy as you learn "
+        "4. Learn continuously - refine your understanding of network patterns as new data becomes available "
+        "5. Detect pattern changes - if your estimates become less accurate, "
+        "recalibrate using more recent data segments "
+        "6. Combine approaches - use estimation to get close, then fine-tune with iteration, "
+        "always learning from each step"
+    ),
 ]
 
 RECOMMENDED_CHAINS = [
