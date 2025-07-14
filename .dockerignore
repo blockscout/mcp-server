@@ -71,3 +71,9 @@ htmlcov/
 
 # local documents
 temp/
+
+# dxt build
+dxt/_build/
+
+# MacOS
+.DS_Store
