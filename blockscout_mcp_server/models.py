@@ -41,15 +41,36 @@ class ChainInfo(BaseModel):
 
 
 # --- Model for __get_instructions__ Data Payload ---
+class ChainIdGuidance(BaseModel):
+    """A structured representation of chain ID guidance combining rules and recommendations."""
+
+    rules: str = Field(description="Rules for chain ID selection and usage.")
+    recommended_chains: list[ChainInfo] = Field(
+        description="A list of popular chains with their names and IDs, useful for quick lookups."
+    )
+
+
 class InstructionsData(BaseModel):
     """A structured representation of the server's operational instructions."""
 
     version: str = Field(description="The version of the Blockscout MCP server.")
-    general_rules: list[str] = Field(
-        description="A list of general operational rules for interacting with this server."
+    error_handling_rules: str = Field(
+        description="Rules for handling network errors and retries."
     )
-    recommended_chains: list[ChainInfo] = Field(
-        description="A list of popular chains with their names and IDs, useful for quick lookups."
+    chain_id_guidance: ChainIdGuidance = Field(
+        description="Comprehensive guidance for chain ID selection and usage."
+    )
+    pagination_rules: str = Field(
+        description="Rules for handling paginated responses and data retrieval."
+    )
+    time_based_query_rules: str = Field(
+        description="Rules for executing time-based blockchain queries efficiently."
+    )
+    block_time_estimation_rules: str = Field(
+        description="Rules for mathematical block time estimation and navigation."
+    )
+    efficiency_optimization_rules: str = Field(
+        description="Rules for optimizing query strategies and performance."
     )
 
 

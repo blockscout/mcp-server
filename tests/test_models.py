@@ -34,14 +34,24 @@ def test_tool_response_simple_data():
 
 def test_tool_response_complex_data():
     """Test ToolResponse with a nested Pydantic model as data."""
+    from blockscout_mcp_server.models import ChainIdGuidance
+
+    chain_id_guidance = ChainIdGuidance(
+        rules="Chain ID rule",
+        recommended_chains=[ChainInfo(name="TestChain", chain_id="123")],
+    )
     instructions_data = InstructionsData(
         version="1.0.0",
-        general_rules=["Rule 1"],
-        recommended_chains=[ChainInfo(name="TestChain", chain_id="123")],
+        error_handling_rules="Error rule",
+        chain_id_guidance=chain_id_guidance,
+        pagination_rules="Pagination rule",
+        time_based_query_rules="Time rule",
+        block_time_estimation_rules="Block rule",
+        efficiency_optimization_rules="Efficiency rule",
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
-    assert response.data.recommended_chains[0].name == "TestChain"
+    assert response.data.chain_id_guidance.recommended_chains[0].name == "TestChain"
 
 
 def test_tool_response_with_all_fields():
@@ -85,15 +95,43 @@ def test_chain_info():
     assert chain.chain_id == "1"
 
 
+def test_chain_id_guidance():
+    """Test ChainIdGuidance model."""
+    from blockscout_mcp_server.models import ChainIdGuidance
+
+    chains = [ChainInfo(name="Ethereum", chain_id="1"), ChainInfo(name="Base", chain_id="8453")]
+    guidance = ChainIdGuidance(rules="Chain ID rules here", recommended_chains=chains)
+    assert guidance.rules == "Chain ID rules here"
+    assert len(guidance.recommended_chains) == 2
+    assert guidance.recommended_chains[0].name == "Ethereum"
+    assert guidance.recommended_chains[1].chain_id == "8453"
+
+
 def test_instructions_data():
     """Test InstructionsData model."""
+    from blockscout_mcp_server.models import ChainIdGuidance
+
     chains = [ChainInfo(name="Ethereum", chain_id="1"), ChainInfo(name="Polygon", chain_id="137")]
-    instructions = InstructionsData(version="2.0.0", general_rules=["Rule 1", "Rule 2"], recommended_chains=chains)
+    chain_id_guidance = ChainIdGuidance(rules="Chain rules", recommended_chains=chains)
+    instructions = InstructionsData(
+        version="2.0.0",
+        error_handling_rules="Error rules",
+        chain_id_guidance=chain_id_guidance,
+        pagination_rules="Pagination rules",
+        time_based_query_rules="Time rules",
+        block_time_estimation_rules="Block rules",
+        efficiency_optimization_rules="Efficiency rules",
+    )
     assert instructions.version == "2.0.0"
-    assert len(instructions.general_rules) == 2
-    assert len(instructions.recommended_chains) == 2
-    assert instructions.recommended_chains[0].name == "Ethereum"
-    assert instructions.recommended_chains[1].chain_id == "137"
+    assert instructions.error_handling_rules == "Error rules"
+    assert instructions.chain_id_guidance.rules == "Chain rules"
+    assert len(instructions.chain_id_guidance.recommended_chains) == 2
+    assert instructions.chain_id_guidance.recommended_chains[0].name == "Ethereum"
+    assert instructions.chain_id_guidance.recommended_chains[1].chain_id == "137"
+    assert instructions.pagination_rules == "Pagination rules"
+    assert instructions.time_based_query_rules == "Time rules"
+    assert instructions.block_time_estimation_rules == "Block rules"
+    assert instructions.efficiency_optimization_rules == "Efficiency rules"
 
 
 def test_tool_response_serialization():

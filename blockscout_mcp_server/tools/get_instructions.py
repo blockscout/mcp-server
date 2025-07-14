@@ -1,11 +1,17 @@
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
-    GENERAL_RULES,
+    BLOCK_TIME_ESTIMATION_RULES,
+    CHAIN_ID_RULES,
+    EFFICIENCY_OPTIMIZATION_RULES,
+    ERROR_HANDLING_RULES,
+    PAGINATION_RULES,
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
+    TIME_BASED_QUERY_RULES,
 )
 from blockscout_mcp_server.models import (
+    ChainIdGuidance,
     ChainInfo,
     InstructionsData,
     ToolResponse,
@@ -30,10 +36,19 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
     )
 
     # Construct the structured data payload
+    chain_id_guidance = ChainIdGuidance(
+        rules=CHAIN_ID_RULES,
+        recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
+    )
+    
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
-        general_rules=GENERAL_RULES,
-        recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
+        error_handling_rules=ERROR_HANDLING_RULES,
+        chain_id_guidance=chain_id_guidance,
+        pagination_rules=PAGINATION_RULES,
+        time_based_query_rules=TIME_BASED_QUERY_RULES,
+        block_time_estimation_rules=BLOCK_TIME_ESTIMATION_RULES,
+        efficiency_optimization_rules=EFFICIENCY_OPTIMIZATION_RULES,
     )
 
     # Report completion

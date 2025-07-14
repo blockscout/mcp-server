@@ -5,10 +5,15 @@ import uvicorn
 from mcp.server.fastmcp import FastMCP
 
 from blockscout_mcp_server.constants import (
-    GENERAL_RULES,
+    BLOCK_TIME_ESTIMATION_RULES,
+    CHAIN_ID_RULES,
+    EFFICIENCY_OPTIMIZATION_RULES,
+    ERROR_HANDLING_RULES,
+    PAGINATION_RULES,
     RECOMMENDED_CHAINS,
     SERVER_NAME,
     SERVER_VERSION,
+    TIME_BASED_QUERY_RULES,
 )
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
@@ -35,13 +40,35 @@ chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for cha
 composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
-{GENERAL_RULES[0]}
+<error_handling_rules>
+{ERROR_HANDLING_RULES.strip()}
+</error_handling_rules>
 
-{GENERAL_RULES[1]}
-- {GENERAL_RULES[2]}
-- {GENERAL_RULES[3]}
-- Here is the list of IDs of most popular chains:
+<chain_id_guidance>
+<rules>
+{CHAIN_ID_RULES.strip()}
+</rules>
+<recommended_chains>
+Here is the list of IDs of most popular chains:
 {chains_list_str}
+</recommended_chains>
+</chain_id_guidance>
+
+<pagination_rules>
+{PAGINATION_RULES.strip()}
+</pagination_rules>
+
+<time_based_query_rules>
+{TIME_BASED_QUERY_RULES.strip()}
+</time_based_query_rules>
+
+<block_time_estimation_rules>
+{BLOCK_TIME_ESTIMATION_RULES.strip()}
+</block_time_estimation_rules>
+
+<efficiency_optimization_rules>
+{EFFICIENCY_OPTIMIZATION_RULES.strip()}
+</efficiency_optimization_rules>
 """
 
 mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)

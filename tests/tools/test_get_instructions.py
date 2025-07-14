@@ -11,12 +11,22 @@ async def test_get_instructions_success(mock_ctx):
     """Verify __get_instructions__ returns a structured ToolResponse[InstructionsData]."""
     # ARRANGE
     mock_version = "1.2.3"
-    mock_rules = ["Rule 1.", "Rule 2."]
+    mock_error_rules = "Error handling rule."
+    mock_chain_rules = "Chain ID rule."
+    mock_pagination_rules = "Pagination rule."
+    mock_time_rules = "Time-based query rule."
+    mock_block_rules = "Block time estimation rule."
+    mock_efficiency_rules = "Efficiency optimization rule."
     mock_chains = [{"name": "TestChain", "chain_id": "999"}]
 
     with (
         patch("blockscout_mcp_server.tools.get_instructions.SERVER_VERSION", mock_version),
-        patch("blockscout_mcp_server.tools.get_instructions.GENERAL_RULES", mock_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.ERROR_HANDLING_RULES", mock_error_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.CHAIN_ID_RULES", mock_chain_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.PAGINATION_RULES", mock_pagination_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.TIME_BASED_QUERY_RULES", mock_time_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
+        patch("blockscout_mcp_server.tools.get_instructions.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
         patch("blockscout_mcp_server.tools.get_instructions.RECOMMENDED_CHAINS", mock_chains),
     ):
         # ACT
@@ -27,10 +37,15 @@ async def test_get_instructions_success(mock_ctx):
         assert isinstance(result.data, InstructionsData)
 
         assert result.data.version == mock_version
-        assert result.data.general_rules == mock_rules
-        assert len(result.data.recommended_chains) == 1
-        assert result.data.recommended_chains[0].name == "TestChain"
-        assert result.data.recommended_chains[0].chain_id == "999"
+        assert result.data.error_handling_rules == mock_error_rules
+        assert result.data.chain_id_guidance.rules == mock_chain_rules
+        assert len(result.data.chain_id_guidance.recommended_chains) == 1
+        assert result.data.chain_id_guidance.recommended_chains[0].name == "TestChain"
+        assert result.data.chain_id_guidance.recommended_chains[0].chain_id == "999"
+        assert result.data.pagination_rules == mock_pagination_rules
+        assert result.data.time_based_query_rules == mock_time_rules
+        assert result.data.block_time_estimation_rules == mock_block_rules
+        assert result.data.efficiency_optimization_rules == mock_efficiency_rules
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
