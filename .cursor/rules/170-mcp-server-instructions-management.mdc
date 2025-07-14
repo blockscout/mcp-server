@@ -1,0 +1,98 @@
+---
+description: Guidelines for adding or modifying MCP server custom instructions groups
+globs: 
+alwaysApply: false
+---
+
+# MCP Server Instructions Management
+
+## Overview
+
+The MCP server uses a structured approach for managing custom instructions that are provided to AI agents. Instructions are organized into logical groups (error handling, pagination, time-based queries, etc.) to improve maintainability and LLM comprehension.
+
+**Why This Approach**: The structured design separates concerns, makes rules human-readable, provides semantic meaning to LLMs through XML tags, and eliminates fragile index-based access patterns.
+
+## Instructions Group Management Workflow
+
+### Step 1: Update `constants.py`
+
+**For New Groups:** Add new multiline string constant  
+**For Existing Groups:** Edit existing constant content
+
+```python
+CATEGORY_RULES = """
+Your instructions here...
+Multiple lines are supported and encouraged for readability.
+"""
+```
+
+### Step 2: Update `models.py`
+
+**For New Groups:** Add new field to `InstructionsData` model  
+**For Existing Groups:** Update field description (if scope changed)
+
+```python
+class InstructionsData(BaseModel):
+    # ... existing fields ...
+    category_rules: str = Field(
+        description="Clear description of what this category covers"
+    )
+```
+
+### Step 3: Update `get_instructions.py`
+
+**For New Groups:** Add field to `InstructionsData` constructor  
+**For Existing Groups:** No changes needed
+
+```python
+instructions_data = InstructionsData(
+    version=SERVER_VERSION,
+    # ... existing fields ...
+    category_rules=CATEGORY_RULES,
+)
+```
+
+### Step 4: Update `server.py`
+
+**For New Groups:** Add new XML-tagged section to `composed_instructions`  
+**For Existing Groups:** Update XML tag name (if category renamed)
+
+```xml
+<category_rules>
+{instructions_data.category_rules}
+</category_rules>
+```
+
+### Step 5: Update Tests
+
+**Both:** Update mocks and assertions
+
+- `tests/tools/test_get_instructions.py`: Add/update mock for constant
+- `tests/test_models.py`: Update model validation tests
+
+## Special Case: Chain ID Guidance
+
+Chain ID guidance uses a nested structure with both rules and recommended chains:
+
+**Update `constants.py`:** Edit `CHAIN_ID_RULES` constant  
+**Update `models.py`:** No changes needed to `ChainIdGuidance` model  
+**Update `server.py`:** Uses nested XML structure
+
+```xml
+<chain_id_guidance>
+<rules>
+{instructions_data.chain_id_guidance.rules}
+</rules>
+<recommended_chains>
+{chains_list_str}
+</recommended_chains>
+</chain_id_guidance>
+```
+
+## Key Principles
+
+1. **Multiline Strings**: Use `"""` for all rule constants to maintain readability
+2. **Descriptive Field Names**: Field names should clearly indicate the category purpose
+3. **XML Tags**: Use semantic XML tags in server composition for LLM comprehension
+4. **Structured Data**: Keep `recommended_chains` as structured data, not text
+5. **Consistent Testing**: Always update related tests when modifying structure

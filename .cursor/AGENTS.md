@@ -17,6 +17,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 - **Apply** `.cursor/rules/120-mcp-tool-arguments.mdc` rules to the tool's parameters list whenever modifying existing MCP tool functions
 - **Follow** `.cursor/rules/130-version-management.mdc` when updating the version of the MCP server
 - **Apply** `.cursor/rules/140-tool-description.mdc` rules to the tool's description field whenever creating a new MCP tool or updating an existing one
+- **Follow** `.cursor/rules/170-mcp-server-instructions-management.mdc` when adding new MCP server instruction groups or modifying existing ones
 
 ### API Endpoints & Static Content
 
@@ -36,11 +37,8 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### Documentation Rules
 
-- **Apply** `.cursor/rules/800-api-documentation-guidelines.mdc` when updating `API.md`
+- **Apply** `.cursor/rules/800-api-documentation-guidelines.mdc` when adding or updating any REST API endpoint documentation in `API.md`.
 
 ### Meta Operations
 
 - **Must follow** `.cursor/rules/900-rules-maintenance.mdc` when creating, modifying, or deleting any rule files in `.cursor/rules/`
-
-#### Documentation Rules
-- **`800-api-documentation-guidelines.mdc`**: Apply this rule when adding or updating any REST API endpoint documentation in `API.md`.
