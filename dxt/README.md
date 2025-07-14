@@ -51,6 +51,11 @@ The reasons for this are:
     npm install mcp-remote@0.1.18
     dxt pack . blockscout-mcp.dxt
     dxt sign blockscout-mcp.dxt --self-signed
+    ```
+
+4. Verify the extension:
+
+    ```shell
     dxt verify blockscout-mcp.dxt 
     dxt info blockscout-mcp.dxt
     ```

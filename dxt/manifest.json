@@ -6,7 +6,8 @@
   "description": "Contextual blockchain activity analysis via Blockscout APIs",
   "long_description": "This extension enables contextual blockchain activity analysis with multi-chain support, intelligent context optimization, smart response slicing, and seamless pagination. The server exposes blockchain data including balances, tokens, NFTs, contract metadata, transactions, and logs via MCP for comprehensive blockchain analysis. This extension acts as a proxy to the official Blockscout MCP server.",
   "author": {
-    "name": "Blockscout"
+    "name": "Blockscout",
+    "url": "https://blockscout.com"
   },
   "repository": {
     "type": "git",
