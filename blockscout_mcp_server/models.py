@@ -54,24 +54,12 @@ class InstructionsData(BaseModel):
     """A structured representation of the server's operational instructions."""
 
     version: str = Field(description="The version of the Blockscout MCP server.")
-    error_handling_rules: str = Field(
-        description="Rules for handling network errors and retries."
-    )
-    chain_id_guidance: ChainIdGuidance = Field(
-        description="Comprehensive guidance for chain ID selection and usage."
-    )
-    pagination_rules: str = Field(
-        description="Rules for handling paginated responses and data retrieval."
-    )
-    time_based_query_rules: str = Field(
-        description="Rules for executing time-based blockchain queries efficiently."
-    )
-    block_time_estimation_rules: str = Field(
-        description="Rules for mathematical block time estimation and navigation."
-    )
-    efficiency_optimization_rules: str = Field(
-        description="Rules for optimizing query strategies and performance."
-    )
+    error_handling_rules: str = Field(description="Rules for handling network errors and retries.")
+    chain_id_guidance: ChainIdGuidance = Field(description="Comprehensive guidance for chain ID selection and usage.")
+    pagination_rules: str = Field(description="Rules for handling paginated responses and data retrieval.")
+    time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
+    block_time_estimation_rules: str = Field(description="Rules for mathematical block time estimation and navigation.")
+    efficiency_optimization_rules: str = Field(description="Rules for optimizing query strategies and performance.")
 
 
 # --- Model for get_contract_abi Data Payload ---

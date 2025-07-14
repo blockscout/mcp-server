@@ -40,7 +40,7 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
         rules=CHAIN_ID_RULES,
         recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
     )
-    
+
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
         error_handling_rules=ERROR_HANDLING_RULES,
