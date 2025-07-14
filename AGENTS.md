@@ -59,6 +59,10 @@ mcp-server/
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
 │       ├── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
 │       └── test_transaction_tools_helpers.py # Tests for transaction helper functions
+├── dxt/                        # Desktop Extension (.dxt) package for Claude Desktop
+│   ├── README.md               # DXT-specific documentation and packaging instructions
+│   ├── manifest.json           # Extension manifest with metadata and tool definitions
+│   └── blockscout.png          # Extension icon file
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── API.md                      # Detailed documentation for the REST API
@@ -127,7 +131,18 @@ mcp-server/
             * `BLOCKSCOUT_LOGS_PAGE_SIZE`: Page size for address logs queries (default: 10).
             * `BLOCKSCOUT_ADVANCED_FILTERS_PAGE_SIZE`: Page size for advanced filter queries (default: 10).
 
-2. **`tests/` (Test Suite)**
+2. **`dxt/` (Desktop Extension Package)**
+    * This directory contains the Desktop Extension (.dxt) package for Claude Desktop integration.
+    * **`README.md`**:
+        * Provides comprehensive documentation for the DXT specification and architecture.
+        * Contains detailed packaging instructions for building the extension.
+    * **`manifest.json`**:
+        * Defines the extension manifest with metadata including name, version, description, and author information.
+        * Specifies the server configuration using Node.js with mcp-remote proxy.
+        * Lists all available tools with their names and descriptions for Claude Desktop integration.
+        * Includes keywords, license, and repository information.
+
+3. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
     * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. It includes tests for each tool module and for shared utilities in `test_common.py`.
         * Each test file corresponds to a tool module and provides comprehensive test coverage:
@@ -145,7 +160,7 @@ mcp-server/
         * **Tool-level tests** in `test_*_integration.py` validate that our tools extract and structure data correctly from live responses.
       All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
-3. **`blockscout_mcp_server/` (Main Python Package)**
+4. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
     * **`llms.txt`**: Machine-readable guidance file for AI crawlers.
     * **`__main__.py`**:

@@ -23,6 +23,87 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 - Standardized ToolResponse model with structured JSON responses and follow-up instructions
 - Enhanced observability with MCP progress notifications and periodic updates for long-running operations
 
+## Configuring MCP Clients
+
+### Using the Claude Desktop Extension (.dxt) - Recommended
+
+The easiest way to use the Blockscout MCP server with Claude Desktop is through the official Desktop Extension. This provides a seamless, one-click installation experience.
+
+**Installation:**
+
+1. Download the latest `blockscout-mcp.dxt` file from the [releases page](https://github.com/blockscout/mcp-server/releases)
+2. Open Claude Desktop
+3. Drag and drop the `.dxt` file directly into the Claude Desktop window
+4. The extension will be automatically installed and ready to use
+
+### Using the Official Blockscout MCP Server
+
+The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides a reliable, always-updated service.
+
+**Claude Desktop Setup:**
+
+1. Open Claude Desktop and click on Settings
+2. Navigate to the "Developer" section
+3. Click "Edit Config"
+4. Open the file `claude_desktop_config.json` and configure the server:
+
+    ```json
+    {
+      "mcpServers": {
+        "blockscout": {
+          "command": "docker",
+          "args": [
+            "run",
+            "--rm",
+            "-i",
+            "sparfenyuk/mcp-proxy:latest",
+            "--transport",
+            "streamablehttp",
+            "https://mcp.blockscout.com/mcp/"
+          ]
+        }
+      }
+    }
+    ```
+
+5. Save the file and restart Claude Desktop
+6. When chatting with Claude, you can now enable the Blockscout MCP Server to allow Claude to access blockchain data
+
+**Gemini CLI Setup:**
+
+1. Add the following configuration to your `~/.gemini/settings.json` file:
+
+    ```json
+    {
+      "mcpServers": {
+        "blockscout": {
+          "httpUrl": "https://mcp.blockscout.com/mcp/",
+          "timeout": 180000
+        }
+      }
+    }
+    ```
+
+2. For detailed Gemini CLI MCP server configuration instructions, see the [official documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
+
+### Local Development Setup (For Developers)
+
+If you want to run the server locally for development purposes:
+
+```json
+{
+  "mcpServers": {
+    "blockscout": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "ghcr.io/blockscout/mcp-server:latest"
+      ]
+    }
+  }
+}
+```
+
 ## Technical details
 
 Refer to [SPEC.md](SPEC.md) for the technical details.
@@ -75,7 +156,7 @@ Which 10 most recent logs were emitted by `0xFe89cc7aBB2C4183683ab71653C4cdc9B02
 before `Nov 08 2024 04:21:35 AM (-06:00 UTC)`?
 ```
 
-## Installation & Usage
+## Development & Deployment
 
 ### Local Installation
 
@@ -173,76 +254,6 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest --http --rest 
 **Note:** When running in HTTP mode with Docker, use `--http-host 0.0.0.0` to bind to all interfaces so the server is accessible from outside the container.
 
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
-
-### Configuring MCP Clients
-
-#### Using the Official Blockscout MCP Server (Recommended)
-
-The easiest way to use the Blockscout MCP server is through the official cloud-hosted instance at `https://mcp.blockscout.com/mcp/`.
-
-**Claude Desktop Setup:**
-
-1. Open Claude Desktop and click on Settings
-2. Navigate to the "Developer" section
-3. Click "Edit Config"
-4. Open the file `claude_desktop_config.json` and configure the server:
-
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "command": "docker",
-          "args": [
-            "run",
-            "--rm",
-            "-i",
-            "sparfenyuk/mcp-proxy:latest",
-            "--transport",
-            "streamablehttp",
-            "https://mcp.blockscout.com/mcp/"
-          ]
-        }
-      }
-    }
-    ```
-
-5. Save the file and restart Claude Desktop
-6. When chatting with Claude, you can now enable the Blockscout MCP Server to allow Claude to access blockchain data
-
-**Gemini CLI Setup:**
-
-1. Add the following configuration to your `~/.gemini/settings.json` file:
-
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "httpUrl": "https://mcp.blockscout.com/mcp/",
-          "timeout": 180000
-        }
-      }
-    }
-    ```
-
-2. For detailed Gemini CLI MCP server configuration instructions, see the [official documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
-
-#### Local Development Setup (For Developers)
-
-If you want to run the server locally for development purposes:
-
-```json
-{
-  "mcpServers": {
-    "blockscout": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "ghcr.io/blockscout/mcp-server:latest"
-      ]
-    }
-  }
-}
-```
 
 ## License
 
