@@ -25,4 +25,4 @@ services:
       mcp-server:
         condition: service_healthy
     environment:
-      - MCP_SERVER_URL=http://mcp-server:8080 
+      - MCP_SERVER_URL=http://mcp-server:8080
