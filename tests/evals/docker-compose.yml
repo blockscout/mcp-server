@@ -1,0 +1,28 @@
+services:
+  mcp-server:
+    image: ghcr.io/blockscout/mcp-server:latest
+    command: python -m blockscout_mcp_server --http --rest --http-host 0.0.0.0 --http-port 8080
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  evaluation:
+    image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.1.12
+    command: gemini --yolo
+    volumes:
+      - ~/.gemini:/home/node/.gemini
+      - .:/workspace/mcp-server-evals
+    working_dir: /workspace/mcp-server-evals
+    stdin_open: true
+    tty: true
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8080 

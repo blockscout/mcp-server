@@ -1,0 +1,10 @@
+{
+  "contextFileName": ["GEMINI.md"],
+  "theme": "ANSI",
+  "mcpServers": {
+    "blockscout": {
+      "httpUrl": "${MCP_SERVER_URL}/mcp/",
+      "timeout": 180000
+    }
+  }
+}
