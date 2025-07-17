@@ -4,6 +4,10 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+undefined_client_name = "N/A"
+undefined_client_version = "N/A"
+unknown_protocol_version = "Unknown"
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,16 +22,16 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         arg_dict = dict(bound.arguments)
         ctx = arg_dict.pop("ctx", None)
 
-        client_name = "N/A"
-        client_version = "N/A"
-        protocol_version = "Unknown"
+        client_name = undefined_client_name
+        client_version = undefined_client_version
+        protocol_version = unknown_protocol_version
 
         try:
             if client_params := ctx.session.client_params:
-                protocol_version = str(client_params.protocolVersion or "Unknown")
+                protocol_version = str(client_params.protocolVersion or unknown_protocol_version)
                 if client_info := client_params.clientInfo:
-                    client_name = client_info.name or "N/A"
-                    client_version = client_info.version or "N/A"
+                    client_name = client_info.name or undefined_client_name
+                    client_version = client_info.version or undefined_client_version
         except AttributeError:
             pass
 
