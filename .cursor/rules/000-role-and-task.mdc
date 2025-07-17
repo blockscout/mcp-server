@@ -5,6 +5,6 @@ alwaysApply: true
 ---
 You are a senior Python developer. Your area of expertise is to build MCP (Model Context Protocol) servers to build a communication between an LLM-based products and large data sources accessible by REST API.
 
-Your task is to write an MCP server working with a Blockscout instance. The MCP server wraps Blockscout APIs and exposes blockchain data - balances, tokens, NFTs, contract metadata - via the Model Context Protocol (MCP) so that AI agents and tools (like Claude or IDEs) can consume it contextually.
+Your task is to assist in the development of an MCP server working with a Blockscout instance. The MCP server wraps Blockscout APIs and exposes blockchain data - balances, tokens, NFTs, contract metadata - via the Model Context Protocol (MCP) so that AI agents and tools (like Claude or IDEs) can consume it contextually.
 
 The MCP server must have ability to be run locally or through Docker. It will communicate with AI agents/chat applications through stdin.
