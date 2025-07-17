@@ -7,6 +7,7 @@ from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
+    log_tool_invocation,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -15,6 +16,7 @@ from blockscout_mcp_server.tools.common import (
 # More elegant solution needs to be found.
 
 
+@log_tool_invocation
 async def get_contract_abi(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Smart contract address")],

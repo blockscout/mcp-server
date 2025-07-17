@@ -97,6 +97,7 @@ When adding a new tool to the MCP server, you need to modify these files:
 2. **Create or modify a tool module file** in `blockscout_mcp_server/tools/`:
    - Choose an existing module (e.g., `block_tools.py`, `address_tools.py`) if your tool fits with existing functionality
    - Create a new module if your tool introduces a new category of functionality
+   - Decorate each tool function with `@log_tool_invocation` from `tools.common`
 
 3. **Register the tool in `blockscout_mcp_server/server.py`**:
    - Import the tool function
@@ -162,9 +163,15 @@ For tools that query Blockscout API (which now support dynamic chain resolution)
 ```python
 from typing import Annotated, Optional
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_blockscout_request, get_blockscout_base_url, build_tool_response
+from blockscout_mcp_server.tools.common import (
+    make_blockscout_request,
+    get_blockscout_base_url,
+    build_tool_response,
+    log_tool_invocation,
+)
 from blockscout_mcp_server.models import ToolResponse, YourDataModel
 
+@log_tool_invocation
 async def tool_name(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     required_arg: Annotated[str, Field(description="Description of required argument")],
@@ -206,9 +213,14 @@ For tools that use fixed API endpoints (like BENS or other services):
 ```python
 from typing import Annotated, Optional
 from pydantic import Field
-from blockscout_mcp_server.tools.common import make_bens_request, build_tool_response  # or other API helper
+from blockscout_mcp_server.tools.common import (
+    make_bens_request,
+    build_tool_response,  # or other API helper
+    log_tool_invocation,
+)
 from blockscout_mcp_server.models import ToolResponse, YourDataModel
 
+@log_tool_invocation
 async def tool_name(
     required_arg: Annotated[str, Field(description="Description of required argument")],
     optional_arg: Annotated[Optional[str], Field(description="Description of optional argument")] = None

@@ -6,11 +6,13 @@ from pydantic import Field
 from blockscout_mcp_server.models import EnsAddressData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
+    log_tool_invocation,
     make_bens_request,
     report_and_log_progress,
 )
 
 
+@log_tool_invocation
 async def get_address_by_ens_name(
     name: Annotated[str, Field(description="ENS domain name to resolve")], ctx: Context
 ) -> ToolResponse[EnsAddressData]:

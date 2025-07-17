@@ -207,6 +207,7 @@ mcp-server/
             * Provides shared utilities and common functionality for all MCP tools.
             * Handles API communication, chain resolution, pagination, data processing, and error handling.
             * Implements standardized patterns used across the tool ecosystem.
+            * Includes logging helpers such as the `@log_tool_invocation` decorator.
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.

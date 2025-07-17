@@ -7,6 +7,7 @@ from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
+    log_tool_invocation,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -15,6 +16,7 @@ from blockscout_mcp_server.tools.common import (
 TOKEN_RESULTS_LIMIT = 7
 
 
+@log_tool_invocation
 async def lookup_token_by_symbol(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     symbol: Annotated[str, Field(description="Token symbol or name to search for")],

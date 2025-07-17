@@ -8,11 +8,13 @@ from blockscout_mcp_server.models import BlockInfoData, LatestBlockData, ToolRes
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
+    log_tool_invocation,
     make_blockscout_request,
     report_and_log_progress,
 )
 
 
+@log_tool_invocation
 async def get_block_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     number_or_hash: Annotated[str, Field(description="Block number or hash")],
@@ -96,6 +98,7 @@ async def get_block_info(
     return build_tool_response(data=block_data, notes=notes)
 
 
+@log_tool_invocation
 async def get_latest_block(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")], ctx: Context
 ) -> ToolResponse[LatestBlockData]:

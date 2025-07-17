@@ -21,6 +21,7 @@ from blockscout_mcp_server.tools.common import (
     extract_advanced_filters_cursor_params,
     extract_log_cursor_params,
     get_blockscout_base_url,
+    log_tool_invocation,
     make_blockscout_request,
     make_request_with_periodic_progress,
     report_and_log_progress,
@@ -207,6 +208,7 @@ async def _fetch_filtered_transactions_with_smart_pagination(
     return accumulated_items, has_more_pages
 
 
+@log_tool_invocation
 async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
@@ -320,6 +322,7 @@ async def get_transactions_by_address(
     return build_tool_response(data=validated_items, pagination=pagination)
 
 
+@log_tool_invocation
 async def get_token_transfers_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either transfer initiator or transfer receiver")],
@@ -435,6 +438,7 @@ async def get_token_transfers_by_address(
     return build_tool_response(data=sliced_items, pagination=pagination)
 
 
+@log_tool_invocation
 async def transaction_summary(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
@@ -480,6 +484,7 @@ async def transaction_summary(
     return build_tool_response(data=summary_data)
 
 
+@log_tool_invocation
 async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],
@@ -543,6 +548,7 @@ async def get_transaction_info(
     return build_tool_response(data=transaction_data, notes=notes)
 
 
+@log_tool_invocation
 async def get_transaction_logs(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],

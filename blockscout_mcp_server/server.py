@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 import typer
@@ -33,6 +34,11 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transaction_logs,
     get_transactions_by_address,
     transaction_summary,
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # Compose the instructions string for the MCP server constructor
