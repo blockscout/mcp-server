@@ -1,0 +1,9 @@
+{
+  "contextFileName": ["GEMINI.md", "AGENTS.md", "SPEC.md", "TESTING.md"],
+  "urlTemplate": "https://github.com/blockscout/mcp-server/issues/new?title={title}&body={info}",
+  "checkpointing": {
+    "enabled": true
+  },
+  "theme": "ANSI",
+  "mcpServers": {}
+}
