@@ -36,11 +36,6 @@ from blockscout_mcp_server.tools.transaction_tools import (
     transaction_summary,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-
 # Compose the instructions string for the MCP server constructor
 chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
 composed_instructions = f"""
@@ -118,6 +113,10 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
     if http:
         if rest:
             print(f"Starting Blockscout MCP Server with REST API on {http_host}:{http_port}")
