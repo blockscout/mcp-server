@@ -7,10 +7,10 @@ from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
-    log_tool_invocation,
     make_blockscout_request,
     report_and_log_progress,
 )
+from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 # The contracts sources are not returned by MCP tools as they consume too much context.
 # More elegant solution needs to be found.

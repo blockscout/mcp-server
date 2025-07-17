@@ -6,10 +6,10 @@ from pydantic import Field
 from blockscout_mcp_server.models import EnsAddressData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    log_tool_invocation,
     make_bens_request,
     report_and_log_progress,
 )
+from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation

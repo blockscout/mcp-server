@@ -24,11 +24,11 @@ from blockscout_mcp_server.tools.common import (
     encode_cursor,
     extract_log_cursor_params,
     get_blockscout_base_url,
-    log_tool_invocation,
     make_blockscout_request,
     make_metadata_request,
     report_and_log_progress,
 )
+from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation

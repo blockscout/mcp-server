@@ -22,6 +22,7 @@ mcp-server/
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities and common functionality for all tools
+│       ├── decorators.py       # Logging decorators like @log_tool_invocation
 │       ├── get_instructions.py # Implements the __get_instructions__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
@@ -55,6 +56,7 @@ mcp-server/
 │       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
 │       ├── test_ens_tools.py         # Tests for ENS-related tools (get_address_by_ens_name)
 │       ├── test_get_instructions.py  # Tests for instruction tool (__get_instructions__)
+│       ├── test_decorators.py       # Tests for logging decorators
 │       ├── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
 │       ├── test_transaction_tools_2.py # Extended tests for transaction tools (get_transaction_info, get_transaction_logs)
@@ -208,6 +210,8 @@ mcp-server/
             * Handles API communication, chain resolution, pagination, data processing, and error handling.
             * Implements standardized patterns used across the tool ecosystem.
             * Includes logging helpers such as the `@log_tool_invocation` decorator.
+        * **`decorators.py`**:
+            * Contains the `log_tool_invocation` decorator and other logging helpers.
         * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
             * Each file will group logically related tools.
             * Each tool will be implemented as an `async` Python function.

@@ -1,6 +1,4 @@
 import base64
-import functools
-import inspect
 import json
 import logging
 import time
@@ -19,22 +17,6 @@ from blockscout_mcp_server.constants import (
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 
 logger = logging.getLogger(__name__)
-
-
-def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
-    """Log the tool name and arguments when it is invoked."""
-    sig = inspect.signature(func)
-
-    @functools.wraps(func)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        bound = sig.bind_partial(*args, **kwargs)
-        bound.apply_defaults()
-        arg_dict = dict(bound.arguments)
-        arg_dict.pop("ctx", None)
-        logger.info("Tool invoked: %s with args: %s", func.__name__, arg_dict)
-        return await func(*args, **kwargs)
-
-    return wrapper
 
 
 class ChainNotFoundError(ValueError):

@@ -7,10 +7,10 @@ from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
-    log_tool_invocation,
     make_blockscout_request,
     report_and_log_progress,
 )
+from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 # Maximum number of token results returned by lookup_token_by_symbol
 TOKEN_RESULTS_LIMIT = 7

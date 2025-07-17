@@ -18,9 +18,9 @@ from blockscout_mcp_server.models import (
 )
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    log_tool_invocation,
     report_and_log_progress,
 )
+from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 # It is very important to keep the tool description in such form to force the LLM to call this tool first

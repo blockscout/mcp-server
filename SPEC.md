@@ -415,9 +415,24 @@ sequenceDiagram
 
 #### Enhanced Observability with Logging
 
-While `report_progress` is the standard for UI feedback, many MCP clients do not yet render progress notifications but do capture log messages. To provide essential real-time feedback for development and debugging, the server now systematically pairs every progress notification with a corresponding `info` log message.
+The server implements two complementary forms of logging to aid both MCP clients and server operators.
+
+#### 1. Client-Facing Progress Logging
+
+While `report_progress` is the standard for UI feedback, many MCP clients do not yet render progress notifications but do capture log messages sent via `ctx.info`. To provide essential real-time feedback for development and debugging, the server systematically pairs every progress notification with a corresponding `info` log message sent to the client.
 
 This is achieved via a centralized `report_and_log_progress` helper function. This dual-reporting mechanism ensures that:
 
-1. **Compliant clients** can use the structured `progress` notifications to build rich UIs.
-2. **All other clients** receive human-readable log entries (e.g., `Progress: 1.0/2.0 - Step complete`), eliminating the "black box" effect during long-running operations and improving debuggability.
+1.  **Compliant clients** can use the structured `progress` notifications to build rich UIs.
+2.  **All other clients** receive human-readable log entries (e.g., `Progress: 1.0/2.0 - Step complete`), eliminating the "black box" effect during long-running operations and improving debuggability.
+
+#### 2. Server-Side Tool Invocation Auditing
+
+In addition to progress reporting, the server maintains a detailed audit log of all tool invocations for operational monitoring and debugging.
+
+Implemented via the `@log_tool_invocation` decorator, these logs capture:
+- The name of the tool that was called.
+- The arguments provided to the tool.
+- The identity of the MCP client that initiated the call, including its **name**, **version**, and the **MCP protocol version** it is using.
+
+This provides a clear audit trail, helping to diagnose issues that may be specific to certain client versions or protocol implementations. For stateless calls, such as those from the REST API where no client is present, this information is gracefully omitted.
