@@ -174,7 +174,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
    - `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
    - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues. This field includes guidance on how to retrieve full data if it has been truncated.
-   - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps. When pagination is available, the server automatically appends pagination instructions to motivate LLMs to fetch additional pages.
+   - `instructions`: `list[str] | InstructionsData | None` - Optional guidance for the AI agent. For legacy clients this is a list of XML strings. Modern clients receive a structured `InstructionsData` object. Pagination hints may also be appended.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
    This approach provides immense benefits, including clarity for the AI, improved testability, and a consistent, predictable API contract.
@@ -360,6 +360,21 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The tool's description forces the MCP Host to call it before any other tools in the session
    - These custom instructions are crucial for providing the LLM with blockchain-specific context
    - Instructions could include information about chain IDs, common error handling patterns, and examples of how to reason about blockchain data and DeFi protocols
+
+#### Version-Aware Instruction Delivery
+
+The `__get_instructions__` tool tailors its response based on the client's MCP protocol version.
+
+**Protocol Version Detection**
+- Inspect `ctx.session.client_params.protocolVersion` when available
+- Versions `>= 2025-06-18` are treated as modern clients
+- Older or missing versions default to legacy behavior
+
+**Response Format Selection**
+1. **Modern Clients**: return an empty `data` object and place a structured `InstructionsData` in the `instructions` field
+2. **Legacy Clients**: return an empty `data` object and provide XML-formatted instruction strings in `instructions`
+
+This approach maximizes compliance with instructions across a wide range of agents.
 
 ### Performance Optimizations and User Experience
 

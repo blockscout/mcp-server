@@ -81,3 +81,6 @@ LOG_DATA_TRUNCATION_LIMIT = 514
 # The maximum length for a transaction's input data field before it's truncated.
 # 514 = '0x' prefix + 512 hex characters (256 bytes).
 INPUT_DATA_TRUNCATION_LIMIT = 514
+
+# Protocol version threshold for modern MCP client features
+MODERN_PROTOCOL_VERSION_THRESHOLD = "2025-06-18"
