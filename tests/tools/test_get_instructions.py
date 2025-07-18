@@ -2,7 +2,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from blockscout_mcp_server.models import InstructionsData, ToolResponse
+from blockscout_mcp_server.models import (
+    EmptyData,
+    InstructionsData,
+    ToolResponse,
+)
 from blockscout_mcp_server.tools.get_instructions import (
     __get_instructions__,
     is_modern_protocol_version,
@@ -42,7 +46,7 @@ async def test_get_instructions_modern_client(mock_ctx):
 
         # ASSERT
         assert isinstance(result, ToolResponse)
-        assert result.data == {}
+        assert isinstance(result.data, EmptyData)
         assert isinstance(result.instructions, InstructionsData)
         assert result.instructions.version == mock_version
         assert result.instructions.error_handling_rules == mock_error_rules
@@ -84,7 +88,7 @@ async def test_get_instructions_legacy_client(mock_ctx):
 
     result = await __get_instructions__(ctx=mock_ctx)
 
-    assert result.data == {}
+    assert isinstance(result.data, EmptyData)
     assert isinstance(result.instructions, list)
     assert any("<error_handling_rules>" in s for s in result.instructions)
 
@@ -94,6 +98,6 @@ async def test_get_instructions_rest_api(mock_ctx):
     """No protocol version behaves like legacy client."""
     result = await __get_instructions__(ctx=mock_ctx)
 
-    assert result.data == {}
+    assert isinstance(result.data, EmptyData)
     assert isinstance(result.instructions, list)
     assert any("<chain_id_guidance>" in s for s in result.instructions)

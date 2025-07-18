@@ -8,6 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field
 T = TypeVar("T")
 
 
+# --- Model for Empty Data Payload ---
+class EmptyData(BaseModel):
+    """Represents an empty data payload."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
 # --- Models for Pagination ---
 class NextCallInfo(BaseModel):
     """A structured representation of the tool call required to get the next page."""

@@ -16,6 +16,7 @@ from blockscout_mcp_server.constants import (
 from blockscout_mcp_server.models import (
     ChainIdGuidance,
     ChainInfo,
+    EmptyData,
     InstructionsData,
     ToolResponse,
 )
@@ -39,7 +40,7 @@ def is_modern_protocol_version(version: str | None) -> bool:
 # It is very important to keep the tool description in such form to force the LLM to call this tool first
 # before calling any other tool. Altering of the description could provide opportunity to LLM to skip this tool.
 @log_tool_invocation
-async def __get_instructions__(ctx: Context) -> ToolResponse[dict]:
+async def __get_instructions__(ctx: Context) -> ToolResponse[EmptyData]:
     """
     This tool MUST be called BEFORE any other tool.
     Without calling it, the MCP server will not work as expected.
@@ -94,4 +95,4 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[dict]:
         message="Server instructions ready.",
     )
 
-    return build_tool_response(data={}, instructions=instructions_content)
+    return build_tool_response(data=EmptyData(), instructions=instructions_content)
