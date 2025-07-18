@@ -34,10 +34,10 @@ All endpoints under `/v1/` return a consistent JSON object that wraps the tool's
 }
 ```
 
-- `data`: The main data payload of the response. Its structure is specific to each endpoint.
+- `data`: The main response payload. For instruction-only responses (like `__get_instructions__`), this may be an empty object `{}` to minimize token usage while placing essential content in the `instructions` field.
 - `data_description`: (Optional) A list of strings explaining the structure or fields of the `data` payload.
 - `notes`: (Optional) A list of important warnings or contextual notes, such as data truncation alerts.
-- `instructions`: (Optional) A list of suggested follow-up actions for an AI agent.
+- `instructions`: Optional guidance for AI agents. The `__get_instructions__` tool provides operational rules in this field, using different formats (structured objects vs. XML strings) based on client protocol version to maximize compliance.
 - `pagination`: (Optional) An object containing information to retrieve the next page of results.
 
 ### Error Handling

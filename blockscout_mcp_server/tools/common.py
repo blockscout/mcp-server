@@ -14,7 +14,12 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
 )
-from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
+from blockscout_mcp_server.models import (
+    InstructionsData,
+    NextCallInfo,
+    PaginationInfo,
+    ToolResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -428,7 +433,7 @@ def build_tool_response(
     data: Any,
     data_description: list[str] | None = None,
     notes: list[str] | None = None,
-    instructions: list[str] | None = None,
+    instructions: list[str] | InstructionsData | None = None,
     pagination: PaginationInfo | None = None,
 ) -> ToolResponse[Any]:
     """
@@ -445,7 +450,13 @@ def build_tool_response(
         A ToolResponse instance.
     """
     # Automatically add pagination instructions when pagination is present
-    final_instructions = list(instructions) if instructions is not None else []
+    if instructions is None:
+        final_instructions = []
+    elif isinstance(instructions, list):
+        final_instructions = list(instructions)
+    else:
+        # InstructionsData should bypass list processing
+        final_instructions = instructions
 
     if pagination:
         pagination_instructions = [

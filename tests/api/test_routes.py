@@ -127,10 +127,11 @@ async def test_get_block_info_missing_param(client: AsyncClient):
 @patch("blockscout_mcp_server.api.routes.__get_instructions__", new_callable=AsyncMock)
 async def test_get_instructions_success(mock_tool, client: AsyncClient):
     """Test the /get_instructions endpoint."""
-    mock_tool.return_value = ToolResponse(data={"msg": "hi"})
+    mock_tool.return_value = ToolResponse(data={}, instructions=["<rule>"])
     response = await client.get("/v1/get_instructions")
     assert response.status_code == 200
-    assert response.json()["data"] == {"msg": "hi"}
+    assert response.json()["data"] == {}
+    assert isinstance(response.json()["instructions"], list)
     mock_tool.assert_called_once_with(ctx=ANY)
 
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
@@ -5,6 +7,7 @@ from blockscout_mcp_server.constants import (
     CHAIN_ID_RULES,
     EFFICIENCY_OPTIMIZATION_RULES,
     ERROR_HANDLING_RULES,
+    MODERN_PROTOCOL_VERSION_THRESHOLD,
     PAGINATION_RULES,
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
@@ -23,10 +26,20 @@ from blockscout_mcp_server.tools.common import (
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
+def is_modern_protocol_version(version: str | None) -> bool:
+    """Return True if protocol version meets modern threshold."""
+    if not isinstance(version, str) or not version:
+        return False
+    try:
+        return datetime.fromisoformat(version) >= datetime.fromisoformat(MODERN_PROTOCOL_VERSION_THRESHOLD)
+    except ValueError:
+        return False
+
+
 # It is very important to keep the tool description in such form to force the LLM to call this tool first
 # before calling any other tool. Altering of the description could provide opportunity to LLM to skip this tool.
 @log_tool_invocation
-async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
+async def __get_instructions__(ctx: Context) -> ToolResponse[dict]:
     """
     This tool MUST be called BEFORE any other tool.
     Without calling it, the MCP server will not work as expected.
@@ -56,6 +69,23 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
         efficiency_optimization_rules=EFFICIENCY_OPTIMIZATION_RULES,
     )
 
+    # Determine client protocol version
+    protocol_version = None
+    try:
+        if hasattr(ctx, "session") and ctx.session and ctx.session.client_params:
+            protocol_version = ctx.session.client_params.protocolVersion
+    except AttributeError:
+        protocol_version = None
+
+    if is_modern_protocol_version(protocol_version):
+        instructions_content = instructions_data
+    else:
+        from blockscout_mcp_server.formatting.instruction_formatters import (
+            format_all_instructions_as_xml_strings,
+        )
+
+        instructions_content = format_all_instructions_as_xml_strings()
+
     # Report completion
     await report_and_log_progress(
         ctx,
@@ -64,4 +94,4 @@ async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
         message="Server instructions ready.",
     )
 
-    return build_tool_response(data=instructions_data)
+    return build_tool_response(data={}, instructions=instructions_content)

@@ -295,9 +295,11 @@ class ToolResponse(BaseModel, Generic[T]):
         ),
     )
 
-    instructions: list[str] | None = Field(
+    instructions: list[str] | InstructionsData | None = Field(
         None,
-        description="A list of suggested follow-up actions or instructions for the LLM to plan its next steps.",
+        description=(
+            "A list of suggested follow-up actions or structured instructions for the LLM to plan its next steps."
+        ),
     )
 
     pagination: PaginationInfo | None = Field(

@@ -23,7 +23,7 @@ mcp-server/
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities and common functionality for all tools
 │       ├── decorators.py       # Logging decorators like @log_tool_invocation
-│       ├── get_instructions.py # Implements the __get_instructions__ tool
+│       ├── get_instructions.py # Implements the __get_instructions__ tool (version-aware instructions)
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
@@ -146,6 +146,10 @@ mcp-server/
 
 3. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
+    * **`tests/formatting/`**: Tests for the formatting module
+        * **`__init__.py`**: Marks formatting tests as a sub-package
+        * **`test_xml_formatters.py`**: Unit tests for individual XML formatting functions
+        * **`test_instruction_formatters.py`**: Unit tests for combined instruction formatting functions
     * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. It includes tests for each tool module and for shared utilities in `test_common.py`.
         * Each test file corresponds to a tool module and provides comprehensive test coverage:
             * **Success scenarios**: Testing normal operation with valid inputs and API responses.
@@ -199,6 +203,10 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
+    * **`formatting/`**: Sub-package for XML formatting utilities
+        * **`__init__.py`**: Initializes the formatting sub-package
+        * **`xml_formatters.py`**: Individual XML formatting functions for instruction content
+        * **`instruction_formatters.py`**: Combined instruction formatting functions used by both server.py and get_instructions.py
     * **`api/` (API layer)**:
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
@@ -226,7 +234,7 @@ mcp-server/
                 3. It processes the JSON response from Blockscout.
                 4. It transforms this response into the desired output format.
             * Examples:
-                * `get_instructions.py`: Implements `__get_instructions__`, returning special server instructions and popular chain IDs.
+                * `get_instructions.py`: Implements `__get_instructions__`, returning version-aware server instructions and popular chain IDs.
                 * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
