@@ -278,6 +278,21 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     - **Final Tool Response (JSON):**
 
+      ```json
+      {
+        "data": [...],
+        "pagination": {
+          "next_call": {
+            "tool_name": "get_transaction_logs",
+            "params": {
+              "chain_id": "1",
+              "hash": "0x...",
+              "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0"
+            }
+          }
+        }
+      }
+      ```
 
     **c) Response Slicing and Context-Aware Pagination:**
     To prevent overwhelming the LLM with long lists of items (e.g., token holdings, transaction logs), the server implements a response slicing strategy. This conserves context while ensuring all data remains accessible through robust pagination.
