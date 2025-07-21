@@ -45,7 +45,7 @@ sequenceDiagram
     participant BS as Blockscout Instance
     participant Metadata as Metadata Service
 
-    AI->>MCP: __get_instructions__
+    AI->>MCP: __unlock_blockchain_analysis__
     MCP-->>AI: Custom instructions
 
     AI->>MCP: get_address_by_ens_name
@@ -114,7 +114,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 ### Workflow Description
 
 1. **Instructions Retrieval**:
-   - MCP Host requests custom instructions via `__get_instructions__`
+   - MCP Host requests custom instructions via `__unlock_blockchain_analysis__`
    - MCP Server provides context-specific guidance
 
 2. **ENS Resolution**:
@@ -354,12 +354,33 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
 
-5. **Instructions Delivery Workaround**:
-   - Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), current MCP Host implementations (e.g., Claude Desktop) do not reliably use these instructions
-   - The `__get_instructions__` tool serves as a workaround for this limitation
-   - The tool's description forces the MCP Host to call it before any other tools in the session
-   - These custom instructions are crucial for providing the LLM with blockchain-specific context
-   - Instructions could include information about chain IDs, common error handling patterns, and examples of how to reason about blockchain data and DeFi protocols
+### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
+
+#### The Initial Problem: Bypassed Server Instructions
+
+Although the MCP specification defines an `instructions` field in the initialization response (per [MCP lifecycle](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle#initialization)), empirical testing with various MCP Host implementations (e.g., Claude Desktop) revealed that these server-level instructions are not reliably processed or adhered to by the AI agent. This creates a significant challenge, as the agent lacks the essential context and operational rules needed to interact with the blockchain data tools effectively.
+
+#### The First-Generation Workaround: `__get_instructions__`
+
+To mitigate this, the server initially implemented a tool named `__get_instructions__`. The tool's description was designed to be highly persuasive, instructing the agent that it was a mandatory first step.
+
+However, further testing showed this approach was insufficient. LLMs often treated the tool as optional guidance—akin to a "Read Me" file—rather than a non-negotiable prerequisite. Despite increasingly forceful descriptions, agents would frequently skip this step in their eagerness to answer the user's prompt directly, leading to suboptimal or incorrect tool usage.
+
+#### The Revised Strategy: From Persuasion to Structural Guidance
+
+The core issue was identified as a flaw in the interaction design: we were trying to *persuade* the agent with natural language instead of *structurally guiding* its behavior. The solution was to change the tool's fundamental identifier—its name—to create a more powerful and unambiguous signal.
+
+The tool was renamed to `__unlock_blockchain_analysis__`.
+
+This name was chosen deliberately for several reasons based on observed LLM behavior:
+
+1.  **Creates a Strong Semantic Imperative**: The verb "unlock" implies a necessary, state-changing action that must be performed before other operations can succeed. It reframes the tool from an optional piece of information to a functional prerequisite.
+
+2.  **Aligns with LLM's Sequential Processing**: LLMs are trained on vast amounts of code and documentation that follow a clear `initialize -> execute` or `setup -> run` pattern. The `unlock -> analyze` narrative fits this ingrained sequential model, making it a natural and logical first step for the agent to take.
+
+3.  **Provides a Coherent and Compelling Narrative**: The name, combined with a description stating that other tools are "locked," creates a simple and powerful story for the agent: "To begin my work, I must first call the `__unlock_blockchain_analysis__` tool." This is far more effective than the ambiguous `__get_instructions__` which lacks a clear call to action.
+
+This revised strategy, which combines the action-oriented name with a direct and explicit description, has proven to be significantly more effective at ensuring the agent performs the critical initialization step. While the probabilistic nature of LLMs means no single change can guarantee 100% compliance, this approach of structural guidance has yielded far more consistent and reliable behavior than attempts at mere persuasion.
 
 ### Performance Optimizations and User Experience
 

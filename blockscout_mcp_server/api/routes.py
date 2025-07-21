@@ -23,7 +23,7 @@ from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_b
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
-from blockscout_mcp_server.tools.get_instructions import __get_instructions__
+from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
@@ -75,8 +75,15 @@ async def main_page(_: Request) -> Response:
 
 @handle_rest_errors
 async def get_instructions_rest(_: Request) -> Response:
-    """REST wrapper for the __get_instructions__ tool."""
-    tool_response = await __get_instructions__(ctx=get_mock_context())
+    """REST wrapper for the __unlock_blockchain_analysis__ tool."""
+    tool_response = await __unlock_blockchain_analysis__(ctx=get_mock_context())
+    return JSONResponse(tool_response.model_dump())
+
+
+@handle_rest_errors
+async def unlock_blockchain_analysis_rest(_: Request) -> Response:
+    """REST wrapper for the __unlock_blockchain_analysis__ tool."""
+    tool_response = await __unlock_blockchain_analysis__(ctx=get_mock_context())
     return JSONResponse(tool_response.model_dump())
 
 
@@ -241,6 +248,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     # Version 1 of the REST API
     _add_v1_tool_route(mcp, "/tools", list_tools_rest)
     _add_v1_tool_route(mcp, "/get_instructions", get_instructions_rest)
+    _add_v1_tool_route(mcp, "/unlock_blockchain_analysis", unlock_blockchain_analysis_rest)
     _add_v1_tool_route(mcp, "/get_block_info", get_block_info_rest)
     _add_v1_tool_route(mcp, "/get_latest_block", get_latest_block_rest)
     _add_v1_tool_route(mcp, "/get_address_by_ens_name", get_address_by_ens_name_rest)

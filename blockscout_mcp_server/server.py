@@ -26,7 +26,7 @@ from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_b
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
-from blockscout_mcp_server.tools.get_instructions import __get_instructions__
+from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
 from blockscout_mcp_server.tools.transaction_tools import (
     get_token_transfers_by_address,
@@ -79,7 +79,7 @@ mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
 # The description will be taken from the function's docstring
 # The arguments (name, type, description) will be inferred from type hints
 # TODO: structured_output is disabled for all tools so far to preserve the LLM context since it adds to the `list/tools` response ~20K tokens.  # noqa: E501
-mcp.tool(structured_output=False)(__get_instructions__)
+mcp.tool(structured_output=False)(__unlock_blockchain_analysis__)
 mcp.tool(structured_output=False)(get_block_info)
 mcp.tool(structured_output=False)(get_latest_block)
 mcp.tool(structured_output=False)(get_address_by_ens_name)

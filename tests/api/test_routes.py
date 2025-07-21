@@ -124,13 +124,24 @@ async def test_get_block_info_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.__get_instructions__", new_callable=AsyncMock)
+@patch("blockscout_mcp_server.api.routes.__unlock_blockchain_analysis__", new_callable=AsyncMock)
 async def test_get_instructions_success(mock_tool, client: AsyncClient):
     """Test the /get_instructions endpoint."""
     mock_tool.return_value = ToolResponse(data={"msg": "hi"})
     response = await client.get("/v1/get_instructions")
     assert response.status_code == 200
     assert response.json()["data"] == {"msg": "hi"}
+    mock_tool.assert_called_once_with(ctx=ANY)
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.__unlock_blockchain_analysis__", new_callable=AsyncMock)
+async def test_unlock_blockchain_analysis_success(mock_tool, client: AsyncClient):
+    """Test the /unlock_blockchain_analysis endpoint."""
+    mock_tool.return_value = ToolResponse(data={"msg": "unlocked"})
+    response = await client.get("/v1/unlock_blockchain_analysis")
+    assert response.status_code == 200
+    assert response.json()["data"] == {"msg": "unlocked"}
     mock_tool.assert_called_once_with(ctx=ANY)
 
 

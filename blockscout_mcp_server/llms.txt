@@ -37,7 +37,7 @@ GET /v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=7d
 
 All tools are available via both MCP and REST API interfaces:
 
-1. **`__get_instructions__`** - Provides custom instructions for the MCP host (MCP only)
+1. **`__unlock_blockchain_analysis__`** - Provides custom instructions for the MCP host (MCP only)
 2. **`get_chains_list`** - Returns a list of all known chains
 3. **`get_address_by_ens_name`** - Converts an ENS name to its Ethereum address
 4. **`lookup_token_by_symbol`** - Searches for tokens by symbol or name
@@ -103,7 +103,7 @@ All tools are available via both MCP and REST API interfaces:
 
 ## Best Practices for AI Agents
 
-1. **Start with Instructions:** Always call `__get_instructions__` first in MCP sessions
+1. **Start with Instructions:** Always call `__unlock_blockchain_analysis__` first in MCP sessions
 2. **Use Pagination:** Continue fetching pages for comprehensive analysis
 3. **Handle Truncation:** Check for `*_truncated` flags and fetch full data when needed
 4. **Chain Selection:** Use `get_chains_list` to understand available networks

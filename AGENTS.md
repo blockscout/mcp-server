@@ -23,7 +23,7 @@ mcp-server/
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities and common functionality for all tools
 │       ├── decorators.py       # Logging decorators like @log_tool_invocation
-│       ├── get_instructions.py # Implements the __get_instructions__ tool
+│       ├── initialization_tools.py # Implements the __unlock_blockchain_analysis__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
@@ -55,7 +55,7 @@ mcp-server/
 │       ├── test_chains_tools.py      # Tests for chain-related tools (get_chains_list)
 │       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
 │       ├── test_ens_tools.py         # Tests for ENS-related tools (get_address_by_ens_name)
-│       ├── test_get_instructions.py  # Tests for instruction tool (__get_instructions__)
+│       ├── test_initialization_tools.py  # Tests for instruction tool (__unlock_blockchain_analysis__)
 │       ├── test_decorators.py       # Tests for logging decorators
 │       ├── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
 │       ├── test_transaction_tools.py # Tests for transaction tools (get_transactions_by_address, transaction_summary)
@@ -171,7 +171,7 @@ mcp-server/
     * **`models.py`**:
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
-        * Includes specific data models for complex payloads, like the response from `__get_instructions__`.
+        * Includes specific data models for complex payloads, like the response from `__unlock_blockchain_analysis__`.
     * **`server.py`**:
         * The heart of the MCP server.
         * Initializes a `FastMCP` instance using constants from `constants.py`.
@@ -198,7 +198,7 @@ mcp-server/
         * Defines centralized constants used throughout the application, including data truncation limits.
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
-        * Used by both server.py and tools like get_instructions.py to maintain a single source of truth.
+        * Used by both server.py and tools like initialization_tools.py to maintain a single source of truth.
     * **`api/` (API layer)**:
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
@@ -226,7 +226,7 @@ mcp-server/
                 3. It processes the JSON response from Blockscout.
                 4. It transforms this response into the desired output format.
             * Examples:
-                * `get_instructions.py`: Implements `__get_instructions__`, returning special server instructions and popular chain IDs.
+                * `initialization_tools.py`: Implements `__unlock_blockchain_analysis__`, returning special server instructions and popular chain IDs.
                 * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.

@@ -91,11 +91,12 @@ curl "http://127.0.0.1:8000/v1/tools"
 
 ### General Tools
 
-#### Get Instructions (`__get_instructions__`)
+#### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Provides custom instructions and operational guidance for using the server.
+Provides custom instructions and operational guidance for using the server. This is a mandatory first step.
 
-`GET /v1/get_instructions`
+`GET /v1/unlock_blockchain_analysis`
+`GET /v1/get_instructions` (legacy)
 
 **Parameters**
 
@@ -103,7 +104,7 @@ Provides custom instructions and operational guidance for using the server.
 
 **Example Request**
 ```bash
-curl "http://127.0.0.1:8000/v1/get_instructions"
+curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
 ```
 
 #### Get Chains List (`get_chains_list`)

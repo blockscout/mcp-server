@@ -32,7 +32,7 @@ class LatestBlockData(BaseModel):
     timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
 
 
-# --- Model for __get_instructions__ Data Payload ---
+# --- Model for __unlock_blockchain_analysis__ Data Payload ---
 class ChainInfo(BaseModel):
     """Represents a blockchain with its essential identifiers."""
 
@@ -40,7 +40,7 @@ class ChainInfo(BaseModel):
     chain_id: str = Field(description="The unique identifier for the chain.")
 
 
-# --- Model for __get_instructions__ Data Payload ---
+# --- Model for __unlock_blockchain_analysis__ Data Payload ---
 class ChainIdGuidance(BaseModel):
     """A structured representation of chain ID guidance combining rules and recommendations."""
 

@@ -3,12 +3,12 @@ from unittest.mock import patch
 import pytest
 
 from blockscout_mcp_server.models import InstructionsData, ToolResponse
-from blockscout_mcp_server.tools.get_instructions import __get_instructions__
+from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 
 
 @pytest.mark.asyncio
-async def test_get_instructions_success(mock_ctx):
-    """Verify __get_instructions__ returns a structured ToolResponse[InstructionsData]."""
+async def test_unlock_blockchain_analysis_success(mock_ctx):
+    """Verify __unlock_blockchain_analysis__ returns a structured ToolResponse[InstructionsData]."""
     # ARRANGE
     mock_version = "1.2.3"
     mock_error_rules = "Error handling rule."
@@ -20,17 +20,17 @@ async def test_get_instructions_success(mock_ctx):
     mock_chains = [{"name": "TestChain", "chain_id": "999"}]
 
     with (
-        patch("blockscout_mcp_server.tools.get_instructions.SERVER_VERSION", mock_version),
-        patch("blockscout_mcp_server.tools.get_instructions.ERROR_HANDLING_RULES", mock_error_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.CHAIN_ID_RULES", mock_chain_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.PAGINATION_RULES", mock_pagination_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.TIME_BASED_QUERY_RULES", mock_time_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
-        patch("blockscout_mcp_server.tools.get_instructions.RECOMMENDED_CHAINS", mock_chains),
+        patch("blockscout_mcp_server.tools.initialization_tools.SERVER_VERSION", mock_version),
+        patch("blockscout_mcp_server.tools.initialization_tools.ERROR_HANDLING_RULES", mock_error_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.CHAIN_ID_RULES", mock_chain_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.PAGINATION_RULES", mock_pagination_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.TIME_BASED_QUERY_RULES", mock_time_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
+        patch("blockscout_mcp_server.tools.initialization_tools.RECOMMENDED_CHAINS", mock_chains),
     ):
         # ACT
-        result = await __get_instructions__(ctx=mock_ctx)
+        result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
 
         # ASSERT
         assert isinstance(result, ToolResponse)

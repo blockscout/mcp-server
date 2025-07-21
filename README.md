@@ -118,7 +118,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 
 ## Tool Descriptions
 
-1. `__get_instructions__()` - Provides custom instructions for the MCP host to use the server. This tool is required since the field `instructions` of the MCP server initialization response is not used by the MCP host so far (tested on Claude Desktop).
+1. `__unlock_blockchain_analysis__()` - Provides custom instructions for the MCP host to use the server. This is a mandatory first step before using other tools.
 2. `get_chains_list()` - Returns a list of all known chains.
 3. `get_address_by_ens_name(name)` - Converts an ENS domain name to its corresponding Ethereum address.
 4. `lookup_token_by_symbol(chain_id, symbol)` - Searches for token addresses by symbol or name, returning multiple potential matches.

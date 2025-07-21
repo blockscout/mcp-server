@@ -32,8 +32,8 @@
   },
   "tools": [
     {
-      "name": "__get_instructions__",
-      "description": "Provides custom instructions for the MCP host"
+      "name": "__unlock_blockchain_analysis__",
+      "description": "Provides custom instructions for the MCP host. This is a mandatory first step."
     },
     {
       "name": "get_chains_list",

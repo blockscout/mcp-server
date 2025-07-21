@@ -147,7 +147,7 @@ curl --request POST \
     "id": 1,
     "method": "tools/call",
     "params": {
-      "name": "__get_instructions__",
+      "name": "__unlock_blockchain_analysis__",
       "arguments": {}
     }
   }'

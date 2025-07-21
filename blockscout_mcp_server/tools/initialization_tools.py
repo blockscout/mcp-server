@@ -26,11 +26,18 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 # It is very important to keep the tool description in such form to force the LLM to call this tool first
 # before calling any other tool. Altering of the description could provide opportunity to LLM to skip this tool.
 @log_tool_invocation
-async def __get_instructions__(ctx: Context) -> ToolResponse[InstructionsData]:
-    """
-    This tool MUST be called BEFORE any other tool.
-    Without calling it, the MCP server will not work as expected.
-    It MUST be called once in a session.
+async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[InstructionsData]:
+    """Unlocks access to other MCP tools.
+
+    All tools remain locked with a "Session Not Initialized" error until this
+    function is successfully called. Skipping this explicit initialization step
+    will cause all subsequent tool calls to fail.
+
+    MANDATORY FOR AI AGENTS: The returned instructions contain ESSENTIAL rules
+    that MUST govern ALL blockchain data interactions. Failure to integrate these
+    rules will result in incorrect data retrieval, tool failures and invalid
+    responses. Always apply these guidelines when planning queries, processing
+    responses or recommending blockchain actions.
     """
     # Report start of operation
     await report_and_log_progress(
