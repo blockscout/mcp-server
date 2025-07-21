@@ -442,9 +442,16 @@ async def test_get_transaction_logs_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_address_logs_returns_deprecation_notice(client: AsyncClient):
-    """Test that the deprecated /get_address_logs endpoint returns a 410 Gone status and a deprecation notice."""
-    response = await client.get("/v1/get_address_logs?chain_id=1&address=0xabc")
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/v1/get_address_logs",
+        "/v1/get_address_logs?chain_id=1&address=0xabc",
+    ],
+)
+async def test_get_address_logs_returns_deprecation_notice(client: AsyncClient, url: str):
+    """Deprecated /get_address_logs always returns a static 410 response."""
+    response = await client.get(url)
     assert response.status_code == 410
     json_response = response.json()
     assert json_response["data"] == {"status": "deprecated"}

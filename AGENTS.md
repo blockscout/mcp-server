@@ -50,6 +50,7 @@ mcp-server/
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
 │       ├── test_address_tools_2.py   # Extended tests for nft_tokens_by_address
+│       ├── test_address_logs.py      # Tests for get_address_logs
 │       ├── test_block_tools.py       # Tests for block-related tools (get_latest_block, get_block_info)
 │       ├── test_chains_tools.py      # Tests for chain-related tools (get_chains_list)
 │       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
