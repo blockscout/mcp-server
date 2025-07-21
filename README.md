@@ -133,7 +133,6 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 13. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
 14. `get_transaction_info(chain_id, hash, include_raw_input=False)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
 15. `get_transaction_logs(chain_id, hash, cursor=None)` - Returns transaction logs with decoded event data.
-16. `get_address_logs(chain_id, address, cursor=None)` - Gets logs emitted by a specific address with decoded event data.
 
 ## Example Prompts for AI Agents
 

@@ -10,12 +10,12 @@ from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, R
 
 from blockscout_mcp_server.api.dependencies import get_mock_context
 from blockscout_mcp_server.api.helpers import (
+    create_deprecation_response,
     extract_and_validate_params,
     handle_rest_errors,
 )
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
-    get_address_logs,
     get_tokens_by_address,
     nft_tokens_by_address,
 )
@@ -201,11 +201,9 @@ async def get_transaction_logs_rest(request: Request) -> Response:
 
 
 @handle_rest_errors
-async def get_address_logs_rest(request: Request) -> Response:
-    """REST wrapper for the get_address_logs tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
-    tool_response = await get_address_logs(**params, ctx=get_mock_context())
-    return JSONResponse(tool_response.model_dump())
+async def get_address_logs_rest(_: Request) -> Response:
+    """REST wrapper for the get_address_logs tool. This endpoint is deprecated."""
+    return create_deprecation_response()
 
 
 @handle_rest_errors

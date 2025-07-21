@@ -281,9 +281,9 @@ Gets comprehensive information about an address, including balance and contract 
 curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 ```
 
-#### Get Address Logs (`get_address_logs`)
+#### Get Address Logs (Deprecated) (`get_address_logs`)
 
-Gets event logs emitted by a specific address.
+This endpoint is deprecated and always returns a static notice.
 
 `GET /v1/get_address_logs`
 
@@ -297,7 +297,20 @@ Gets event logs emitted by a specific address.
 
 **Example Request**
 ```bash
-curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0x..."
+curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0xabc"
+```
+
+**Example Response**
+```json
+{
+  "data": {"status": "deprecated"},
+  "notes": [
+    "This endpoint is deprecated and will be removed in a future version.",
+    "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `get_transaction_logs` for each relevant transaction hash."
+  ],
+  "pagination": null,
+  "instructions": null
+}
 ```
 
 ### Token & NFT Tools

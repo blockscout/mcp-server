@@ -27,7 +27,7 @@ mcp-server/
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
 │       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
-│       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address, get_address_logs)
+│       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address)
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, get_transaction_info)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
@@ -50,7 +50,6 @@ mcp-server/
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_address_tools.py     # Tests for address-related tools (get_address_info, get_tokens_by_address)
 │       ├── test_address_tools_2.py   # Extended tests for nft_tokens_by_address
-│       ├── test_address_logs.py      # Tests for get_address_logs
 │       ├── test_block_tools.py       # Tests for block-related tools (get_latest_block, get_block_info)
 │       ├── test_chains_tools.py      # Tests for chain-related tools (get_chains_list)
 │       ├── test_contract_tools.py    # Tests for contract-related tools (get_contract_abi)
@@ -231,6 +230,6 @@ mcp-server/
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
-                * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)`, `get_address_logs(chain_id, address, cursor=None)` with robust, cursor-based pagination.
+                * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)` with robust, cursor-based pagination.
                 * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)`, `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)`, `get_transaction_info(chain_id, hash, include_raw_input=False)`, `transaction_summary(chain_id, hash)`, `get_transaction_logs(chain_id, hash, cursor=None)`, etc.

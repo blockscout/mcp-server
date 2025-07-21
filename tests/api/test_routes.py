@@ -442,33 +442,13 @@ async def test_get_transaction_logs_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.get_address_logs", new_callable=AsyncMock)
-async def test_get_address_logs_success(mock_tool, client: AsyncClient):
-    """Test /get_address_logs endpoint."""
-    mock_tool.return_value = ToolResponse(data=[])
-    response = await client.get("/v1/get_address_logs?chain_id=1&address=0xabc&cursor=foo")
-    assert response.status_code == 200
-    assert response.json()["data"] == []
-    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", cursor="foo", ctx=ANY)
-
-
-@pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.get_address_logs", new_callable=AsyncMock)
-async def test_get_address_logs_no_cursor(mock_tool, client: AsyncClient):
-    """Works without optional cursor."""
-    mock_tool.return_value = ToolResponse(data=[])
+async def test_get_address_logs_returns_deprecation_notice(client: AsyncClient):
+    """Test that the deprecated /get_address_logs endpoint returns a 410 Gone status and a deprecation notice."""
     response = await client.get("/v1/get_address_logs?chain_id=1&address=0xabc")
-    assert response.status_code == 200
-    assert response.json()["data"] == []
-    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", ctx=ANY)
-
-
-@pytest.mark.asyncio
-async def test_get_address_logs_missing_param(client: AsyncClient):
-    """Missing chain_id."""
-    response = await client.get("/v1/get_address_logs?address=0xabc")
-    assert response.status_code == 400
-    assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
+    assert response.status_code == 410
+    json_response = response.json()
+    assert json_response["data"] == {"status": "deprecated"}
+    assert "This endpoint is deprecated" in json_response["notes"][0]
 
 
 @pytest.mark.asyncio

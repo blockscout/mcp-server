@@ -18,7 +18,6 @@ from blockscout_mcp_server.constants import (
 )
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
-    get_address_logs,
     get_tokens_by_address,
     nft_tokens_by_address,
 )
@@ -93,7 +92,6 @@ mcp.tool(structured_output=False)(transaction_summary)
 mcp.tool(structured_output=False)(nft_tokens_by_address)
 mcp.tool(structured_output=False)(get_transaction_info)
 mcp.tool(structured_output=False)(get_transaction_logs)
-mcp.tool(structured_output=False)(get_address_logs)
 mcp.tool(structured_output=False)(get_chains_list)
 
 # Create a Typer application for our CLI

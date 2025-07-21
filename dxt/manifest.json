@@ -90,10 +90,6 @@
     {
       "name": "get_transaction_logs",
       "description": "Returns transaction logs with decoded event data"
-    },
-    {
-      "name": "get_address_logs",
-      "description": "Gets logs emitted by a specific address"
     }
   ],
   "keywords": [
