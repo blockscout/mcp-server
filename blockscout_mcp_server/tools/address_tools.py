@@ -292,7 +292,7 @@ async def nft_tokens_by_address(
     return build_tool_response(data=nft_holdings, pagination=pagination)
 
 
-# Note: This tool has been deprecated from the MCP interface as of v0.5.1.
+# Note: This tool has been deprecated from the MCP interface as of v0.6.0.
 # It was found to be frequently misused by LLMs, which preferred it over the
 # more efficient workflow of using `get_transactions_by_address` (with time filters)
 # followed by `get_transaction_logs`.
