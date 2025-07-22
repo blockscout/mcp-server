@@ -37,7 +37,7 @@ GET /v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=7d
 
 All tools are available via both MCP and REST API interfaces:
 
-1. **`__unlock_blockchain_analysis__`** - Provides custom instructions for the MCP host (MCP only)
+1. **`__unlock_blockchain_analysis__`** (MCP) / `/v1/unlock_blockchain_analysis` (REST) - Provides custom instructions for the MCP host. This is a mandatory first step.
 2. **`get_chains_list`** - Returns a list of all known chains
 3. **`get_address_by_ens_name`** - Converts an ENS name to its Ethereum address
 4. **`lookup_token_by_symbol`** - Searches for tokens by symbol or name

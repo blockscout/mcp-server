@@ -76,6 +76,10 @@ async def main_page(_: Request) -> Response:
 @handle_rest_errors
 async def get_instructions_rest(_: Request) -> Response:
     """REST wrapper for the __unlock_blockchain_analysis__ tool."""
+    # NOTE: This endpoint exists solely for backward compatibility. It duplicates
+    # ``unlock_blockchain_analysis_rest`` instead of delegating to it because the
+    # old route will be removed soon and another wrapper would add needless
+    # indirection.
     tool_response = await __unlock_blockchain_analysis__(ctx=get_mock_context())
     return JSONResponse(tool_response.model_dump())
 
