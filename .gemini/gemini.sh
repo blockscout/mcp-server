@@ -1,13 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+source .gemini/.env
+
 # Root dir for Gemini CLI
 WORKSPACE_DIR="/workspace/bs-mcp-server"
 
 CURRENT_DIR="$(pwd)"
 
 GEMINI_CLI_SANDBOX_IMAGE="us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox"
-GEMINI_CLI_SANDBOX_VERSION="0.1.12"
+GEMINI_CLI_SANDBOX_VERSION=${GEMINI_CLI_VERSION}
 GEMINI_CLI_SANDBOX=${GEMINI_CLI_SANDBOX_IMAGE}:${GEMINI_CLI_SANDBOX_VERSION}
 
 docker run --rm -it \
