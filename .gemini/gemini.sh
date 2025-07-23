@@ -1,7 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-source .gemini/.env
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "${SCRIPT_DIR}/.env" ] || {
+  echo "ERROR: ${SCRIPT_DIR}/.env not found" >&2
+  exit 1
+}
+source "${SCRIPT_DIR}/.env"
 
 # Root dir for Gemini CLI
 WORKSPACE_DIR="/workspace/bs-mcp-server"
@@ -17,4 +22,3 @@ docker run --rm -it \
   -v "${CURRENT_DIR}":"${WORKSPACE_DIR}" -w "${WORKSPACE_DIR}" \
   -v "${CURRENT_DIR}"/temp:/workspace/temp \
   ${GEMINI_CLI_SANDBOX}
-
