@@ -1,4 +1,3 @@
-import logging
 from typing import Annotated
 
 import typer
@@ -16,6 +15,7 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
 )
+from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     get_tokens_by_address,
@@ -94,6 +94,10 @@ mcp.tool(structured_output=False)(get_transaction_info)
 mcp.tool(structured_output=False)(get_transaction_logs)
 mcp.tool(structured_output=False)(get_chains_list)
 
+
+# Initialize logging and override the rich formatter defined in the FastMCP
+replace_rich_handlers_with_standard()
+
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
 
@@ -111,10 +115,6 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
     if http:
         if rest:
             print(f"Starting Blockscout MCP Server with REST API on {http_host}:{http_port}")
