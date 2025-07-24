@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 
@@ -37,15 +37,25 @@ class MockProblematicHandler:
     """Mock handler that causes errors during inspection."""
 
     def __init__(self):
-        # Missing __name__ attribute to trigger AttributeError
-        pass
+        # Create a class that reliably raises AttributeError for __name__ access
+        self._problematic_class = self._create_problematic_class()
+
+    def _create_problematic_class(self):
+        """Create a class that reliably raises AttributeError when accessing attributes."""
+
+        class ProblematicClass:
+            def __getattr__(self, name):
+                if name == "__name__":
+                    raise AttributeError("'ProblematicClass' object has no attribute '__name__'")
+                elif name == "__module__":
+                    raise AttributeError("'ProblematicClass' object has no attribute '__module__'")
+                raise AttributeError(f"'ProblematicClass' object has no attribute '{name}'")
+
+        return ProblematicClass()
 
     @property
     def __class__(self):
-        # Return object that will cause AttributeError when accessing __name__
-        mock_class = Mock()
-        del mock_class.__name__  # Remove __name__ to trigger AttributeError
-        return mock_class
+        return self._problematic_class
 
 
 class TestReplaceRichHandlersWithStandard:
@@ -58,6 +68,14 @@ class TestReplaceRichHandlersWithStandard:
 
     def teardown_method(self):
         """Clean up test environment after each test."""
+        # Clear handlers from all loggers to prevent interference
+        for logger_name in list(logging.Logger.manager.loggerDict.keys()):
+            logger = logging.getLogger(logger_name)
+            logger.handlers.clear()
+
+        # Also clear root logger handlers
+        logging.getLogger().handlers.clear()
+
         # Restore original logger manager state
         logging.Logger.manager.loggerDict.clear()
         logging.Logger.manager.loggerDict.update(self.original_logger_dict)
@@ -346,8 +364,10 @@ class TestReplaceRichHandlersWithStandard:
         assert len(test_logger.handlers) == 1
         assert isinstance(test_logger.handlers[0], logging.StreamHandler)
 
-    def test_no_replacement_message_when_no_rich_handlers(self):
+    def test_no_replacement_message_when_no_rich_handlers(self, caplog):
         """Test that function works correctly when no Rich handlers are found."""
+        caplog.set_level(logging.INFO)
+
         test_logger = logging.getLogger("test_no_rich")
         non_rich_handler = MockNonRichHandler()
         test_logger.addHandler(non_rich_handler)
@@ -357,3 +377,6 @@ class TestReplaceRichHandlersWithStandard:
         # Non-Rich handler should remain unchanged
         assert non_rich_handler in test_logger.handlers
         assert len(test_logger.handlers) == 1
+
+        # Should not log replacement message
+        assert "Replaced" not in caplog.text
