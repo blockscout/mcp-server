@@ -295,15 +295,6 @@ This architecture provides the flexibility of a multi-protocol server without th
       ```
 
     **c) Response Slicing and Context-Aware Pagination:**
-    To prevent overwhelming the LLM with long lists of items (e.g., token holdings, transaction logs), the server implements a response slicing strategy. This conserves context while ensuring all data remains accessible through robust pagination.
-
-    - **Mechanism**: The server fetches a full page of data from the Blockscout API (typically 50 items) but returns only a smaller, configurable slice to the client (e.g., 10 items). If the original response contained more items than the slice size, pagination is initiated.
-    - **Cursor Generation**: Instead of using the `next_page_params` directly from the Blockscout API (which would skip most of the fetched items), the server generates a new pagination cursor based on the **last item of the returned slice**. This ensures the next request starts exactly where the previous one left off, providing seamless continuity.
-    - **Configuration**: The size of the slice returned to the client is configurable via environment variables (e.g., `BLOCKSCOUT_NFT_PAGE_SIZE`), allowing for fine-tuning of context usage.
-
-    This strategy combines the network efficiency of fetching larger data chunks from the backend with the context efficiency of providing smaller, digestible responses to the AI.
-
-    **c) Response Slicing and Context-Aware Pagination:**
 
     To prevent overwhelming the LLM with long lists of items (e.g., token holdings, transaction logs), the server implements a response slicing strategy. This conserves context while ensuring all data remains accessible through robust pagination.
 
@@ -437,6 +428,19 @@ sequenceDiagram
 #### Enhanced Observability with Logging
 
 The server implements two complementary forms of logging to aid both MCP clients and server operators.
+
+#### Production-Ready Logging Configuration
+
+The server addresses a fundamental logging issue with the MCP Python SDK, which uses Rich formatting by default. While Rich provides attractive multi-line, indented console output for development, it creates problematic logs for production environments.
+
+The server employs a post-initialization handler replacement strategy:
+
+1. Allow the MCP SDK to initialize normally with its Rich handlers
+2. Scan all loggers to identify Rich handlers by class name and module
+3. Replace Rich handlers with standard `StreamHandler` instances using clean formatting
+4. Preserve all other logging behavior and configuration
+
+This configuration is applied during server startup, ensuring clean single-line log output across all operational modes.
 
 #### 1. Client-Facing Progress Logging
 

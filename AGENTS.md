@@ -18,6 +18,7 @@ mcp-server/
 │   │   └── index.html          # Landing page for the REST API
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
+│   ├── logging_utils.py        # Logging utilities for production-ready log formatting
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
@@ -199,6 +200,9 @@ mcp-server/
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
         * Used by both server.py and tools like initialization_tools.py to maintain a single source of truth.
+    * **`logging_utils.py`**:
+        * Provides utilities for configuring production-ready logging.
+        * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
     * **`api/` (API layer)**:
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
