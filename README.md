@@ -71,7 +71,7 @@ The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides
 
 **Cursor Setup:**
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D)
+Use [this deeplink](cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D) to install the Blockscout MCP server in Cursor.
 
 **Gemini CLI Setup:**
 
