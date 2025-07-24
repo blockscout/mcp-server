@@ -40,7 +40,27 @@
     <h2>Configuration</h2>
     
     <h3>Claude Desktop Setup</h3>
-    <p>To use the official Blockscout MCP server with Claude Desktop, add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
+    <p>You have two options to use the official Blockscout MCP server with Claude Desktop:</p>
+    
+    <h4>Option 1: Desktop Extension (DXT) - Recommended</h4>
+    <p><strong>Best for:</strong> Easy installation and automatic updates</p>
+    <p>Download and install the pre-built Desktop Extension (.dxt file):</p>
+    <ol>
+        <li>Download the latest <code>blockscout-mcp.dxt</code> from the <a href="https://github.com/blockscout/mcp-server/releases">GitHub releases</a></li>
+        <li>Double-click the .dxt file to install it in Claude Desktop</li>
+        <li>The extension will automatically connect to the hosted Blockscout MCP service</li>
+    </ol>
+    <p><strong>Benefits:</strong></p>
+    <ul>
+        <li>One-click installation with no command-line setup required</li>
+        <li>Automatic access to the latest features without manual updates</li>
+        <li>No Docker or technical dependencies needed</li>
+        <li>Uses the stable hosted service at <code>https://mcp.blockscout.com/</code></li>
+    </ul>
+    
+    <h4>Option 2: Docker Proxy</h4>
+    <p><strong>Best for:</strong> Users comfortable with command-line tools and custom configurations</p>
+    <p>Add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
     <pre><code>{
   "mcpServers": {
     "blockscout": {
@@ -66,6 +86,9 @@
         If the new information requires revising your original plan, state the revision explicitly and briefly explain why.</p>
     </div>
     <p class="copy-hint">You can copy this prompt and paste it into your Claude Desktop conversation.</p>
+
+    <h3>Cursor Setup</h3>
+    <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add Blockscout MCP server to Cursor" height="32" /></a>
 
     <h3>Gemini CLI Setup</h3>
     <p>To configure the Blockscout MCP server with Gemini CLI, add the following to your <code>~/.gemini/settings.json</code> file:</p>

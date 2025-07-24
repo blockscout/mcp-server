@@ -11,8 +11,9 @@
 
 **Configuration:**
 - **Cloud instance:** `https://mcp.blockscout.com/mcp/`
-- **Claude Desktop:** Use `sparfenyuk/mcp-proxy:latest` with streamable HTTP transport
-- **Gemini CLI:** Direct HTTP URL with 180-second timeout
+- **Claude Desktop (DXT Extension):** Download and install `blockscout-mcp.dxt` from GitHub releases for one-click setup
+- **Claude Desktop (Docker):** Use `sparfenyuk/mcp-proxy:latest` with streamable HTTP transport
+- **Cursor and Gemini CLI:** Direct HTTP URL with 180-second timeout
 
 **Key Tools:** `get_address_info`, `get_transactions_by_address`, `get_tokens_by_address`, `transaction_summary`
 
@@ -61,6 +62,7 @@ All tools are available via both MCP and REST API interfaces:
 - Want progress tracking for long-running operations
 - Prefer guided pagination with automatic instructions
 - Need session-based context management
+- **Claude Desktop users:** Use DXT extension for easiest setup, or Docker proxy for custom configurations
 
 ### Use REST API When:
 - Generating code for different programming languages

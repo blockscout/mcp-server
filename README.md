@@ -69,6 +69,10 @@ The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides
 5. Save the file and restart Claude Desktop
 6. When chatting with Claude, you can now enable the Blockscout MCP Server to allow Claude to access blockchain data
 
+**Cursor Setup:**
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D)
+
 **Gemini CLI Setup:**
 
 1. Add the following configuration to your `~/.gemini/settings.json` file:
