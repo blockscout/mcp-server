@@ -42,17 +42,33 @@ All endpoints under `/v1/` return a consistent JSON object that wraps the tool's
 
 ### Error Handling
 
-- **Client-Side Errors (HTTP 400)**: Occur when the request is invalid (e.g., a required parameter is missing). The response is a `400 Bad Request` with a JSON body:
-  ```json
-  {"error": "Missing required query parameter: 'chain_id'"}
-  ```
-- **Other Errors**: Runtime exceptions are converted into JSON responses. HTTP errors from downstream services return their status codes (for example `404 Not Found`), timeouts result in `504 Gateway Timeout`, and unexpected issues return `500 Internal Server Error`.
+All error responses, regardless of the HTTP status code, return a JSON object with a consistent structure.
+
+#### Error Response Structure
+
+```json
+{
+  "error": "A descriptive error message"
+}
+```
+
+#### Error Categories
+
+- **Client-Side Errors (`4xx` status codes)**: These errors indicate a problem with the request itself. Common examples include:
+  - **Validation Errors (`400 Bad Request`)**: Occur when a required parameter is missing or a parameter value is invalid.
+  - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
+
+- **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
+  - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.
+  - **Downstream Timeouts (`504 Gateway Timeout`)**: Occur when a request to an external service (like a Blockscout API) times out.
+  - **Other Downstream Errors**: The server may also pass through other `4xx` or `5xx` status codes from downstream services.
 
 ### Pagination
 
 For endpoints that return large datasets, the response will include a `pagination` object. To fetch the next page, you **must** use the `tool_name` and `params` from the `next_call` object to construct your next request. The `cursor` is an opaque string that contains all necessary information for the server.
 
 **Example Pagination Object:**
+
 ```json
 {
   "pagination": {
@@ -85,6 +101,7 @@ Retrieves a list of all available tools and their MCP schemas.
 *None*
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/tools"
 ```
@@ -103,6 +120,7 @@ Provides custom instructions and operational guidance for using the server. This
 *None*
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
 ```
@@ -118,6 +136,7 @@ Returns a list of all known blockchain chains and their IDs.
 *None*
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_chains_list"
 ```
@@ -137,6 +156,7 @@ Returns the latest indexed block number and timestamp for a chain.
 | `chain_id` | `string` | Yes      | The ID of the blockchain. |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
 ```
@@ -156,6 +176,7 @@ Returns detailed information for a specific block.
 | `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
 ```
@@ -177,6 +198,7 @@ Gets comprehensive information for a single transaction.
 | `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
 ```
@@ -196,6 +218,7 @@ Returns the event logs for a specific transaction, with decoded data if availabl
 | `cursor`           | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
 ```
@@ -214,6 +237,7 @@ Provides a human-readable summary of a transaction's purpose.
 | `transaction_hash` | `string` | Yes      | The hash of the transaction. |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/transaction_summary?chain_id=1&transaction_hash=0x..."
 ```
@@ -236,6 +260,7 @@ Gets native currency transfers and contract interactions for an address.
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z"
 ```
@@ -258,6 +283,7 @@ Returns ERC-20 token transfers for an address.
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&token=0x..."
 ```
@@ -278,6 +304,7 @@ Gets comprehensive information about an address, including balance and contract 
 | `address`  | `string` | Yes      | The address to get info for. |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 ```
@@ -297,11 +324,13 @@ This endpoint is deprecated and always returns a static notice.
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0xabc"
 ```
 
 **Example Response**
+
 ```json
 {
   "data": {"status": "deprecated"},
@@ -331,6 +360,7 @@ Returns ERC-20 token holdings for an address.
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_tokens_by_address?chain_id=1&address=0x..."
 ```
@@ -350,6 +380,7 @@ Retrieves NFT tokens (ERC-721, etc.) owned by an address.
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/nft_tokens_by_address?chain_id=1&address=0x..."
 ```
@@ -370,6 +401,7 @@ Searches for tokens by their symbol or name.
 | `symbol`   | `string` | Yes      | The token symbol to search for.   |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/lookup_token_by_symbol?chain_id=1&symbol=WETH"
 ```
@@ -390,6 +422,7 @@ Retrieves the Application Binary Interface (ABI) for a smart contract.
 | `address`  | `string` | Yes      | The smart contract address.  |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
 ```
@@ -407,6 +440,7 @@ Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum addre
 | `name` | `string` | Yes      | The ENS name to resolve.   |
 
 **Example Request**
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_address_by_ens_name?name=vitalik.eth"
 ```
