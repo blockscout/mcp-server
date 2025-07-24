@@ -3,6 +3,10 @@
 import logging
 import sys
 
+# Pre-define module logger to avoid circular dependencies during logging system manipulation
+# This logger is created before any handler manipulation occurs, ensuring safe error reporting
+_module_logger = logging.getLogger(__name__)
+
 
 def replace_rich_handlers_with_standard() -> None:
     """Replace any Rich logging handlers with standard StreamHandlers.
@@ -10,6 +14,11 @@ def replace_rich_handlers_with_standard() -> None:
     This function scans all existing loggers and replaces Rich handlers
     with standard Python logging StreamHandlers to prevent multi-line
     log formatting that's not suitable for production environments.
+
+    Note: Uses defensive logging practices to avoid circular dependencies.
+    Since this function manipulates the logging system itself, it uses a
+    pre-defined module logger and fallback mechanisms to ensure safe error
+    reporting even if the logging system is in an inconsistent state.
     """
     # Standard log format that matches our desired output
     formatter = logging.Formatter(
@@ -45,8 +54,11 @@ def replace_rich_handlers_with_standard() -> None:
             except (AttributeError, TypeError, ValueError) as e:
                 # If handler has unexpected attributes or missing properties, skip it gracefully
                 # This ensures we continue processing other handlers even if one is problematic
-                logger = logging.getLogger(__name__)
-                logger.debug(f"Skipping handler inspection due to error: {e}")
+                try:
+                    _module_logger.debug(f"Skipping handler inspection due to error: {e}")
+                except Exception:
+                    # Fallback if logging system is unstable - use direct stderr output
+                    print(f"Warning: Skipping handler inspection due to error: {e}", file=sys.stderr)
                 continue
 
         # Replace Rich handlers with standard StreamHandlers
@@ -69,11 +81,17 @@ def replace_rich_handlers_with_standard() -> None:
                 # - ValueError: Invalid handler state or configuration
                 # - OSError: Permission issues or file system problems
                 # - RuntimeError: Threading issues or handler state conflicts
-                error_logger = logging.getLogger(__name__)
-                error_logger.warning(f"Failed to replace Rich handler {rich_handler}: {e}")
+                try:
+                    _module_logger.warning(f"Failed to replace Rich handler {rich_handler}: {e}")
+                except Exception:
+                    # Fallback if logging system is unstable - use direct stderr output
+                    print(f"Warning: Failed to replace Rich handler {rich_handler}: {e}", file=sys.stderr)
                 continue
 
     if handlers_replaced > 0:
-        # Use the new standard logger to report success
-        logger = logging.getLogger(__name__)
-        logger.info(f"Replaced {handlers_replaced} Rich logging handlers with standard handlers")
+        # Use the pre-defined module logger to report success
+        try:
+            _module_logger.info(f"Replaced {handlers_replaced} Rich logging handlers with standard handlers")
+        except Exception:
+            # Fallback if logging system is unstable - use direct stderr output
+            print(f"Info: Replaced {handlers_replaced} Rich logging handlers with standard handlers", file=sys.stderr)
