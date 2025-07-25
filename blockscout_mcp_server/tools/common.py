@@ -19,6 +19,12 @@ from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolRespo
 logger = logging.getLogger(__name__)
 
 
+def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
+    """Return an AsyncClient pre-configured for Blockscout tooling."""
+
+    return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
+
+
 class ChainNotFoundError(ValueError):
     """Exception raised when a chain ID cannot be found or resolved to a Blockscout URL."""
 
@@ -67,7 +73,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
     # 3. Direct access to handle JSON parsing errors
     # 4. Chain-specific context in error messages
     try:
-        async with httpx.AsyncClient(timeout=config.chainscout_timeout, follow_redirects=True) as client:
+        async with _create_httpx_client(timeout=config.chainscout_timeout) as client:
             response = await client.get(chain_api_url)
         response.raise_for_status()
         chain_data = response.json()
@@ -115,7 +121,7 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
-    async with httpx.AsyncClient(timeout=config.bs_timeout, follow_redirects=True) as client:
+    async with _create_httpx_client(timeout=config.bs_timeout) as client:
         if params is None:
             params = {}
         if config.bs_api_key:
@@ -142,7 +148,7 @@ async def make_bens_request(api_path: str, params: dict | None = None) -> dict:
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
-    async with httpx.AsyncClient(timeout=config.bens_timeout, follow_redirects=True) as client:
+    async with _create_httpx_client(timeout=config.bens_timeout) as client:
         url = f"{config.bens_url}{api_path}"
         response = await client.get(url, params=params)
         response.raise_for_status()
@@ -164,7 +170,7 @@ async def make_chainscout_request(api_path: str, params: dict | None = None) -> 
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
-    async with httpx.AsyncClient(timeout=config.chainscout_timeout, follow_redirects=True) as client:
+    async with _create_httpx_client(timeout=config.chainscout_timeout) as client:
         url = f"{config.chainscout_url}{api_path}"
         response = await client.get(url, params=params)
         response.raise_for_status()
@@ -186,7 +192,7 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
-    async with httpx.AsyncClient(timeout=config.metadata_timeout, follow_redirects=True) as client:
+    async with _create_httpx_client(timeout=config.metadata_timeout) as client:
         url = f"{config.metadata_url}{api_path}"
         response = await client.get(url, params=params)
         response.raise_for_status()
