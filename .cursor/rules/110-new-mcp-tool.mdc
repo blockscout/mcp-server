@@ -63,6 +63,10 @@ If your new tool needs to access an API endpoint that is different from the exis
            return response.json()
    ```
 
+   The `_create_httpx_client` helper automatically enables
+   `follow_redirects=True` to handle HTTP redirects consistently across
+   all tools. Use this helper whenever creating a new `httpx.AsyncClient`.
+
 3. **Update environment configuration files**:
    - Add to `.env.example`:
 

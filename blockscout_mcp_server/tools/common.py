@@ -20,7 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
-    """Return an AsyncClient pre-configured for Blockscout tooling."""
+    """Return an AsyncClient pre-configured for Blockscout tooling.
+
+    Args:
+        timeout: The timeout value (in seconds) for the HTTP client.
+
+    Returns:
+        An instance of httpx.AsyncClient with the specified timeout and
+        `follow_redirects` set to ``True``.
+
+    Note:
+        The client is created with ``follow_redirects=True`` so all requests
+        automatically handle HTTP redirects.
+    """
 
     return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
 
