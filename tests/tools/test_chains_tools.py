@@ -15,14 +15,38 @@ async def test_get_chains_list_success(mock_ctx):
     # 1. ARRANGE: Set up our mocks and test data.
 
     # This is the fake JSON data we want our mocked API call to return.
-    mock_api_response = [
-        {"name": "Ethereum", "chainid": "1"},
-        {"name": "Polygon PoS", "chainid": "137"},
-    ]
+    mock_api_response = {
+        "1": {
+            "name": "Ethereum",
+            "isTestnet": False,
+            "nativeCurrency": "ETH",
+            "ecosystem": "Ethereum",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
+        },
+        "137": {
+            "name": "Polygon PoS",
+            "isTestnet": False,
+            "nativeCurrency": "POL",
+            "ecosystem": "Polygon",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
+        },
+    }
 
     expected_data = [
-        ChainInfo(name="Ethereum", chain_id="1"),
-        ChainInfo(name="Polygon PoS", chain_id="137"),
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+        ),
+        ChainInfo(
+            name="Polygon PoS",
+            chain_id="137",
+            is_testnet=False,
+            native_currency="POL",
+            ecosystem="Polygon",
+        ),
     ]
 
     # Use `patch` to replace the real `make_chainscout_request` with our mock.
@@ -39,7 +63,7 @@ async def test_get_chains_list_success(mock_ctx):
         # 3. ASSERT: Check if the function behaved as expected.
 
         # Was the API helper called correctly?
-        mock_request.assert_called_once_with(api_path="/api/chains/list")
+        mock_request.assert_called_once_with(api_path="/api/chains")
 
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
@@ -57,7 +81,7 @@ async def test_get_chains_list_empty_response(mock_ctx):
     # ARRANGE
 
     # Empty response
-    mock_api_response = []
+    mock_api_response = {}
     expected_data: list[ChainInfo] = []
 
     with patch(
@@ -69,7 +93,7 @@ async def test_get_chains_list_empty_response(mock_ctx):
         result = await get_chains_list(ctx=mock_ctx)
 
         # ASSERT
-        mock_request.assert_called_once_with(api_path="/api/chains/list")
+        mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
@@ -96,7 +120,7 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
         result = await get_chains_list(ctx=mock_ctx)
 
         # ASSERT
-        mock_request.assert_called_once_with(api_path="/api/chains/list")
+        mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
@@ -111,18 +135,40 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
     # ARRANGE
 
     # Mix of valid and invalid chain entries
-    mock_api_response = [
-        {"name": "Ethereum", "chainid": "1"},  # Valid
-        {"name": "Incomplete Chain"},  # Missing chainid
-        {"chainid": "137"},  # Missing name
-        {"name": "Polygon PoS", "chainid": "137"},  # Valid
-        {},  # Empty entry
-    ]
+    mock_api_response = {
+        "1": {
+            "name": "Ethereum",
+            "isTestnet": False,
+            "nativeCurrency": "ETH",
+            "ecosystem": "Ethereum",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
+        },
+        "invalid": {"name": "Incomplete Chain"},
+        "137": {
+            "name": "Polygon PoS",
+            "isTestnet": False,
+            "nativeCurrency": "POL",
+            "ecosystem": "Polygon",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
+        },
+        "empty": {},
+    }
 
-    # Only valid entries should appear in output
     expected_data = [
-        ChainInfo(name="Ethereum", chain_id="1"),
-        ChainInfo(name="Polygon PoS", chain_id="137"),
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+        ),
+        ChainInfo(
+            name="Polygon PoS",
+            chain_id="137",
+            is_testnet=False,
+            native_currency="POL",
+            ecosystem="Polygon",
+        ),
     ]
 
     with patch(
@@ -134,7 +180,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
         result = await get_chains_list(ctx=mock_ctx)
 
         # ASSERT
-        mock_request.assert_called_once_with(api_path="/api/chains/list")
+        mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
         assert mock_ctx.report_progress.call_count == 2
@@ -163,7 +209,7 @@ async def test_get_chains_list_api_error(mock_ctx):
             await get_chains_list(ctx=mock_ctx)
 
         # Verify mock was called as expected before the exception
-        mock_request.assert_called_once_with(api_path="/api/chains/list")
+        mock_request.assert_called_once_with(api_path="/api/chains")
         # Progress should have been reported once (at start) before the error
         assert mock_ctx.report_progress.call_count == 1
         assert mock_ctx.info.call_count == 1

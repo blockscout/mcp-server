@@ -37,7 +37,7 @@
     },
     {
       "name": "get_chains_list",
-      "description": "Returns a list of all known blockchain chains"
+      "description": "Lists available chains with testnet flag, native currency, and ecosystem"
     },
     {
       "name": "get_address_by_ens_name",

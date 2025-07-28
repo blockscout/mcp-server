@@ -60,16 +60,69 @@ as you learn
 """
 
 RECOMMENDED_CHAINS = [
-    {"name": "Ethereum", "chain_id": "1"},
-    {"name": "Polygon PoS", "chain_id": "137"},
-    {"name": "Base", "chain_id": "8453"},
-    {"name": "Arbitrum One", "chain_id": "42161"},
-    {"name": "OP Mainnet", "chain_id": "10"},
-    {"name": "ZkSync Era", "chain_id": "324"},
-    {"name": "Polygon zkEVM", "chain_id": "1101"},
-    {"name": "Gnosis", "chain_id": "100"},
-    {"name": "Celo", "chain_id": "42220"},
-    {"name": "Scroll", "chain_id": "534352"},
+    {
+        "name": "Ethereum",
+        "chain_id": "1",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": "Ethereum",
+    },
+    {
+        "name": "Polygon PoS",
+        "chain_id": "137",
+        "is_testnet": False,
+        "native_currency": "POL",
+        "ecosystem": "Polygon",
+    },
+    {
+        "name": "Base",
+        "chain_id": "8453",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": ["Ethereum", "Superchain"],
+    },
+    {
+        "name": "Arbitrum One Nitro",
+        "chain_id": "42161",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": "Arbitrum",
+    },
+    {
+        "name": "OP Mainnet",
+        "chain_id": "10",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": ["Optimism", "Superchain"],
+    },
+    {
+        "name": "ZkSync Era",
+        "chain_id": "324",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": "zkSync",
+    },
+    {
+        "name": "Gnosis",
+        "chain_id": "100",
+        "is_testnet": False,
+        "native_currency": "XDAI",
+        "ecosystem": "Gnosis",
+    },
+    {
+        "name": "Celo",
+        "chain_id": "42220",
+        "is_testnet": False,
+        "native_currency": "CELO",
+        "ecosystem": "Ethereum",
+    },
+    {
+        "name": "Scroll",
+        "chain_id": "534352",
+        "is_testnet": False,
+        "native_currency": "ETH",
+        "ecosystem": "Ethereum",
+    },
 ]
 
 SERVER_NAME = "blockscout-mcp-server"

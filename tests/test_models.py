@@ -38,7 +38,15 @@ def test_tool_response_complex_data():
 
     chain_id_guidance = ChainIdGuidance(
         rules="Chain ID rule",
-        recommended_chains=[ChainInfo(name="TestChain", chain_id="123")],
+        recommended_chains=[
+            ChainInfo(
+                name="TestChain",
+                chain_id="123",
+                is_testnet=False,
+                native_currency="TST",
+                ecosystem="Test",
+            )
+        ],
     )
     instructions_data = InstructionsData(
         version="1.0.0",
@@ -90,7 +98,13 @@ def test_pagination_info():
 
 def test_chain_info():
     """Test ChainInfo model."""
-    chain = ChainInfo(name="Ethereum", chain_id="1")
+    chain = ChainInfo(
+        name="Ethereum",
+        chain_id="1",
+        is_testnet=False,
+        native_currency="ETH",
+        ecosystem="Ethereum",
+    )
     assert chain.name == "Ethereum"
     assert chain.chain_id == "1"
 
@@ -99,7 +113,22 @@ def test_chain_id_guidance():
     """Test ChainIdGuidance model."""
     from blockscout_mcp_server.models import ChainIdGuidance
 
-    chains = [ChainInfo(name="Ethereum", chain_id="1"), ChainInfo(name="Base", chain_id="8453")]
+    chains = [
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+        ),
+        ChainInfo(
+            name="Base",
+            chain_id="8453",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem=["Ethereum", "Superchain"],
+        ),
+    ]
     guidance = ChainIdGuidance(rules="Chain ID rules here", recommended_chains=chains)
     assert guidance.rules == "Chain ID rules here"
     assert len(guidance.recommended_chains) == 2
@@ -111,7 +140,22 @@ def test_instructions_data():
     """Test InstructionsData model."""
     from blockscout_mcp_server.models import ChainIdGuidance
 
-    chains = [ChainInfo(name="Ethereum", chain_id="1"), ChainInfo(name="Polygon", chain_id="137")]
+    chains = [
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+        ),
+        ChainInfo(
+            name="Polygon",
+            chain_id="137",
+            is_testnet=False,
+            native_currency="POL",
+            ecosystem="Polygon",
+        ),
+    ]
     chain_id_guidance = ChainIdGuidance(rules="Chain rules", recommended_chains=chains)
     instructions = InstructionsData(
         version="2.0.0",

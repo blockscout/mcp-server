@@ -19,6 +19,7 @@ mcp-server/
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   ├── logging_utils.py        # Logging utilities for production-ready log formatting
+│   ├── cache.py               # Simple in-memory cache for chain data
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
@@ -203,6 +204,8 @@ mcp-server/
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
+    * **`cache.py`**:
+        * Encapsulates in-memory caching of chain data with TTL management.
     * **`api/` (API layer)**:
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.

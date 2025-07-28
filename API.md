@@ -127,7 +127,7 @@ curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
 
 #### Get Chains List (`get_chains_list`)
 
-Returns a list of all known blockchain chains and their IDs.
+Returns a list of all known blockchain chains, including whether each is a testnet, its native currency, and ecosystem.
 
 `GET /v1/get_chains_list`
 

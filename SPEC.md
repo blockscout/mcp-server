@@ -56,6 +56,7 @@ sequenceDiagram
     AI->>MCP: get_chains_list
     MCP->>CS: Request available chains
     CS-->>MCP: List of chains
+    MCP->>MCP: Cache chain metadata
     MCP-->>AI: Formatted chains list
 
     Note over AI: Host selects chain_id as per the user's initial prompt
@@ -124,7 +125,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 3. **Chain Selection**:
    - MCP Host requests available chains via `get_chains_list`
-   - MCP Server retrieves chain data from Chainscout
+   - MCP Server retrieves chain data from Chainscout and stores it in the `ChainCache`
    - MCP Host selects appropriate chain based on user needs
 
 4. **Optimized Data Retrieval with Concurrent API Calls**:

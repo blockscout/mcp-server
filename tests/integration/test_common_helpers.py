@@ -19,7 +19,7 @@ async def test_make_chainscout_request_for_chains_list():
     """
     # 1. ARRANGE
     # The only arrangement needed is to define the API path we want to test.
-    api_path = "/api/chains/list"
+    api_path = "/api/chains"
 
     # 2. ACT
     # This will make a REAL network request.
@@ -27,15 +27,13 @@ async def test_make_chainscout_request_for_chains_list():
 
     # 3. ASSERT
     # We can't know the exact chains, but we can check the response structure.
-    assert isinstance(response_data, list)
-    assert len(response_data) > 0  # We expect at least one chain
+    assert isinstance(response_data, dict)
+    assert len(response_data) > 0
 
-    # Check the structure of the first chain in the list.
-    first_chain = response_data[0]
+    first_key = next(iter(response_data))
+    first_chain = response_data[first_key]
     assert "name" in first_chain
-    assert "chainid" in first_chain
     assert isinstance(first_chain["name"], str)
-    assert isinstance(first_chain["chainid"], str)  # Chainscout returns chainid as a string
 
 
 @pytest.mark.integration
@@ -77,7 +75,7 @@ async def test_make_bens_request_for_ens_lookup():
     [
         ("1", "https://eth.blockscout.com"),
         ("137", "https://polygon.blockscout.com"),
-        ("10", "https://optimism.blockscout.com"),
+        ("10", "https://explorer.optimism.io"),
         ("8453", "https://base.blockscout.com"),
     ],
 )

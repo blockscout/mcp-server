@@ -9,6 +9,7 @@ import anyio
 import httpx
 from mcp.server.fastmcp import Context
 
+from blockscout_mcp_server.cache import ChainCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -43,10 +44,8 @@ class ChainNotFoundError(ValueError):
     pass
 
 
-# Cache: chain_id -> (blockscout_url_or_none, expiry_timestamp)
-# Note: This cache is simple and not thread-safe for concurrent writes for the same new key.
-# This is acceptable for the typical MCP server use case (local, one server per client).
-_chain_cache: dict[str, tuple[str | None, float]] = {}
+# Shared cache instance for chain data
+chain_cache = ChainCache()
 
 
 async def get_blockscout_base_url(chain_id: str) -> str:
@@ -64,7 +63,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
         ChainNotFoundError: If no Blockscout instance is found for the chain
     """
     current_time = time.time()
-    cached_entry = _chain_cache.get(chain_id)
+    cached_entry = chain_cache.get(chain_id)
 
     if cached_entry:
         cached_url, expiry_timestamp = cached_entry
@@ -75,7 +74,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
                 )
             return cached_url
         else:
-            _chain_cache.pop(chain_id, None)  # Cache expired
+            chain_cache.invalidate(chain_id)  # Cache expired
 
     chain_api_url = f"{config.chainscout_url}/api/chains/{chain_id}"
 
@@ -91,30 +90,22 @@ async def get_blockscout_base_url(chain_id: str) -> str:
         chain_data = response.json()
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            _chain_cache[chain_id] = (None, current_time + config.chain_cache_ttl_seconds)
+            chain_cache.set_failure(chain_id)
             raise ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.") from e
         raise ChainNotFoundError(f"Error fetching data for chain ID '{chain_id}' from Chainscout: {e}") from e
     except (httpx.RequestError, json.JSONDecodeError) as e:
         raise ChainNotFoundError(f"Could not retrieve or parse data for chain ID '{chain_id}' from Chainscout.") from e
 
     if not chain_data or "explorers" not in chain_data:
-        _chain_cache[chain_id] = (None, current_time + config.chain_cache_ttl_seconds)
+        chain_cache.set_failure(chain_id)
         raise ChainNotFoundError(f"No explorer data found for chain ID '{chain_id}' on Chainscout.")
 
-    blockscout_url = None
-    for explorer in chain_data.get("explorers", []):
-        if isinstance(explorer, dict) and explorer.get("hostedBy") == "blockscout":
-            blockscout_url = explorer.get("url")
-            if blockscout_url:
-                break
-
-    expiry = current_time + config.chain_cache_ttl_seconds
+    chain_cache.set(chain_id, chain_data)
+    cached = chain_cache.get(chain_id)
+    blockscout_url = cached[0] if cached else None
     if blockscout_url:
-        _chain_cache[chain_id] = (blockscout_url, expiry)
-        return blockscout_url.rstrip("/")
-    else:
-        _chain_cache[chain_id] = (None, expiry)
-        raise ChainNotFoundError(f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown.")
+        return blockscout_url
+    raise ChainNotFoundError(f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown.")
 
 
 async def make_blockscout_request(base_url: str, api_path: str, params: dict | None = None) -> dict:

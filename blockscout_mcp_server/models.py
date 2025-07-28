@@ -38,6 +38,11 @@ class ChainInfo(BaseModel):
 
     name: str = Field(description="The common name of the blockchain (e.g., 'Ethereum').")
     chain_id: str = Field(description="The unique identifier for the chain.")
+    is_testnet: bool = Field(description="Indicates if the chain is a testnet.")
+    native_currency: str | None = Field(description="The native currency symbol of the chain (e.g., 'ETH').")
+    ecosystem: str | list[str] | None = Field(
+        description="The ecosystem the chain belongs to, if applicable (e.g., 'Ethereum')."
+    )
 
 
 # --- Model for __unlock_blockchain_analysis__ Data Payload ---

@@ -17,7 +17,15 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     mock_time_rules = "Time-based query rule."
     mock_block_rules = "Block time estimation rule."
     mock_efficiency_rules = "Efficiency optimization rule."
-    mock_chains = [{"name": "TestChain", "chain_id": "999"}]
+    mock_chains = [
+        {
+            "name": "TestChain",
+            "chain_id": "999",
+            "is_testnet": False,
+            "native_currency": "TST",
+            "ecosystem": "Test",
+        }
+    ]
 
     with (
         patch("blockscout_mcp_server.tools.initialization_tools.SERVER_VERSION", mock_version),
