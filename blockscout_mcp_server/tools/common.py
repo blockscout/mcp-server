@@ -38,6 +38,16 @@ def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
 
 
+def find_blockscout_url(chain_data: dict) -> str | None:
+    """Return the Blockscout-hosted explorer URL from chain data."""
+    for explorer in chain_data.get("explorers", []):
+        if isinstance(explorer, dict) and explorer.get("hostedBy") == "blockscout":
+            url = explorer.get("url")
+            if url:
+                return url.rstrip("/")
+    return None
+
+
 class ChainNotFoundError(ValueError):
     """Exception raised when a chain ID cannot be found or resolved to a Blockscout URL."""
 
@@ -100,9 +110,9 @@ async def get_blockscout_base_url(chain_id: str) -> str:
         chain_cache.set_failure(chain_id)
         raise ChainNotFoundError(f"No explorer data found for chain ID '{chain_id}' on Chainscout.")
 
-    chain_cache.set(chain_id, chain_data)
-    cached = chain_cache.get(chain_id)
-    blockscout_url = cached[0] if cached else None
+    blockscout_url = find_blockscout_url(chain_data)
+    chain_cache.set(chain_id, blockscout_url)
+
     if blockscout_url:
         return blockscout_url
     raise ChainNotFoundError(f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown.")

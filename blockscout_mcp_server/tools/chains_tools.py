@@ -1,10 +1,10 @@
 from mcp.server.fastmcp import Context
 
-from blockscout_mcp_server.cache import find_blockscout_url
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     chain_cache,
+    find_blockscout_url,
     make_chainscout_request,
     report_and_log_progress,
 )
@@ -38,13 +38,16 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
     chains: list[ChainInfo] = []
     if isinstance(response_data, dict):
         filtered: dict[str, dict] = {}
+        url_map: dict[str, str] = {}
         for chain_id, chain in response_data.items():
             if not isinstance(chain, dict):
                 continue
-            if find_blockscout_url(chain):
+            url = find_blockscout_url(chain)
+            if url:
                 filtered[chain_id] = chain
+                url_map[chain_id] = url
 
-        chain_cache.bulk_set(filtered)
+        chain_cache.bulk_set(url_map)
 
         for chain_id, chain in filtered.items():
             if chain.get("name"):

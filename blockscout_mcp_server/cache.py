@@ -1,17 +1,6 @@
 import time
-from typing import Any
 
 from blockscout_mcp_server.config import config
-
-
-def find_blockscout_url(chain_data: dict) -> str | None:
-    """Iterates through explorers to find the one hosted by Blockscout."""
-    for explorer in chain_data.get("explorers", []):
-        if isinstance(explorer, dict) and explorer.get("hostedBy") == "blockscout":
-            url = explorer.get("url")
-            if url:
-                return url.rstrip("/")
-    return None
 
 
 class ChainCache:
@@ -23,9 +12,8 @@ class ChainCache:
         """Retrieves an entry from the cache."""
         return self._cache.get(chain_id)
 
-    def set(self, chain_id: str, chain_data: dict[str, Any]) -> None:
-        """Processes and caches a single chain's data."""
-        blockscout_url = find_blockscout_url(chain_data)
+    def set(self, chain_id: str, blockscout_url: str | None) -> None:
+        """Cache the URL (or lack thereof) for a single chain."""
         expiry = time.time() + config.chain_cache_ttl_seconds
         self._cache[chain_id] = (blockscout_url, expiry)
 
@@ -34,11 +22,10 @@ class ChainCache:
         expiry = time.time() + config.chain_cache_ttl_seconds
         self._cache[chain_id] = (None, expiry)
 
-    def bulk_set(self, chains_data: dict[str, Any]) -> None:
-        """Caches the data from a bulk /api/chains response."""
-        for chain_id, chain_data in chains_data.items():
-            if isinstance(chain_data, dict):
-                self.set(chain_id, chain_data)
+    def bulk_set(self, chain_urls: dict[str, str | None]) -> None:
+        """Caches URLs from a bulk /api/chains response."""
+        for chain_id, url in chain_urls.items():
+            self.set(chain_id, url)
 
     def invalidate(self, chain_id: str) -> None:
         """Remove an entry from the cache if present."""

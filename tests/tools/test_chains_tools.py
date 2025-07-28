@@ -91,8 +91,7 @@ async def test_get_chains_list_caches_filtered_chains(mock_ctx):
 
             mock_cache.bulk_set.assert_called_once()
             cached = mock_cache.bulk_set.call_args.args[0]
-            assert "1" in cached
-            assert "999" not in cached
+            assert cached == {"1": "https://eth"}
 
 
 @pytest.mark.asyncio
