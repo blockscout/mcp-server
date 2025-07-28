@@ -52,6 +52,8 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
                     ChainInfo(
                         name=chain["name"],
                         chain_id=chain_id,
+                        # Chainscout /api/chains uses camelCase field names;
+                        # map them defensively in case of schema changes.
                         is_testnet=chain.get("isTestnet", False),
                         native_currency=chain.get("nativeCurrency"),
                         ecosystem=chain.get("ecosystem"),

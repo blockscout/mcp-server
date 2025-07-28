@@ -74,6 +74,28 @@ async def test_get_chains_list_success(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_get_chains_list_caches_filtered_chains(mock_ctx):
+    """Verify that get_chains_list caches only chains with Blockscout explorers."""
+    mock_api_response = {
+        "1": {"name": "Ethereum", "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}]},
+        "999": {"name": "No Blockscout", "explorers": [{"hostedBy": "other", "url": "https://other"}]},
+    }
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        with patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_cache:
+            mock_request.return_value = mock_api_response
+
+            await get_chains_list(ctx=mock_ctx)
+
+            mock_cache.bulk_set.assert_called_once()
+            cached = mock_cache.bulk_set.call_args.args[0]
+            assert "1" in cached
+            assert "999" not in cached
+
+
+@pytest.mark.asyncio
 async def test_get_chains_list_empty_response(mock_ctx):
     """
     Verify that get_chains_list handles empty API responses gracefully.
