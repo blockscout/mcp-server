@@ -48,8 +48,12 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert result.data.error_handling_rules == mock_error_rules
         assert result.data.chain_id_guidance.rules == mock_chain_rules
         assert len(result.data.chain_id_guidance.recommended_chains) == 1
-        assert result.data.chain_id_guidance.recommended_chains[0].name == "TestChain"
-        assert result.data.chain_id_guidance.recommended_chains[0].chain_id == "999"
+        first_chain = result.data.chain_id_guidance.recommended_chains[0]
+        assert first_chain.name == "TestChain"
+        assert first_chain.chain_id == "999"
+        assert first_chain.is_testnet is False
+        assert first_chain.native_currency == "TST"
+        assert first_chain.ecosystem == "Test"
         assert result.data.pagination_rules == mock_pagination_rules
         assert result.data.time_based_query_rules == mock_time_rules
         assert result.data.block_time_estimation_rules == mock_block_rules
