@@ -19,14 +19,14 @@ async def test_get_chains_list_success(mock_ctx):
         "1": {
             "name": "Ethereum",
             "isTestnet": False,
-            "nativeCurrency": "ETH",
+            "native_currency": "ETH",
             "ecosystem": "Ethereum",
             "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
         },
         "137": {
             "name": "Polygon PoS",
             "isTestnet": False,
-            "nativeCurrency": "POL",
+            "native_currency": "POL",
             "ecosystem": "Polygon",
             "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
         },
@@ -160,7 +160,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
         "1": {
             "name": "Ethereum",
             "isTestnet": False,
-            "nativeCurrency": "ETH",
+            "native_currency": "ETH",
             "ecosystem": "Ethereum",
             "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
         },
@@ -168,7 +168,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
         "137": {
             "name": "Polygon PoS",
             "isTestnet": False,
-            "nativeCurrency": "POL",
+            "native_currency": "POL",
             "ecosystem": "Polygon",
             "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
         },
