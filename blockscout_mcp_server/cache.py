@@ -1,3 +1,5 @@
+"""Simple in-memory cache for chain metadata."""
+
 import time
 
 from blockscout_mcp_server.config import config
@@ -6,6 +8,10 @@ from blockscout_mcp_server.config import config
 class ChainCache:
     def __init__(self) -> None:
         # Cache: chain_id -> (blockscout_url_or_none, expiry_timestamp)
+        # Note: this simple dict is not thread-safe when multiple threads try
+        # to write the same new key concurrently. For the HTTP server in
+        # streamable mode we run a single-thread event loop, so the risk is low.
+        # TODO: implement a thread-safe cache for official deployments.
         self._cache: dict[str, tuple[str | None, float]] = {}
 
     def get(self, chain_id: str) -> tuple[str | None, float] | None:
