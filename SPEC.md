@@ -238,7 +238,14 @@ This architecture provides the flexibility of a multi-protocol server without th
       }
       ```
 
-4. **Response Processing and Context Optimization**:
+4. **Blockscout-Hosted Chain Filtering**:
+
+   The `get_chains_list` tool intentionally returns only chains that are hosted
+   by the Blockscout team. This ensures a consistent feature set, stable service
+   levels, and the ability to authenticate requests from the MCP server. Chains
+   without an official Blockscout instance are omitted.
+
+5. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
 

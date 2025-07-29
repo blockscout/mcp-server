@@ -24,12 +24,12 @@ async def test_get_chains_list_integration(mock_ctx):
     assert eth_chain.native_currency == "ETH"
     assert eth_chain.ecosystem == "Ethereum"
 
-    polygon_chain = next((chain for chain in result.data if chain.name == "Polygon PoS"), None)
-    assert polygon_chain is not None
-    assert polygon_chain.chain_id == "137"
-    assert polygon_chain.is_testnet is False
-    assert polygon_chain.native_currency == "POL"
-    assert polygon_chain.ecosystem == "Polygon"
+    op_chain = next((chain for chain in result.data if chain.name == "OP Mainnet"), None)
+    assert op_chain is not None
+    assert op_chain.chain_id == "10"
+    assert op_chain.is_testnet is False
+    assert op_chain.native_currency == "ETH"
+    assert op_chain.ecosystem == ["Optimism", "Superchain"]
 
 
 @pytest.mark.integration
