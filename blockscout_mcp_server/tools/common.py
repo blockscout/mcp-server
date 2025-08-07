@@ -9,7 +9,7 @@ import anyio
 import httpx
 from mcp.server.fastmcp import Context
 
-from blockscout_mcp_server.cache import ChainCache
+from blockscout_mcp_server.cache import ChainCache, ChainsListCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -56,6 +56,7 @@ class ChainNotFoundError(ValueError):
 
 # Shared cache instance for chain data
 chain_cache = ChainCache()
+chains_list_cache = ChainsListCache()
 
 
 async def get_blockscout_base_url(chain_id: str) -> str:

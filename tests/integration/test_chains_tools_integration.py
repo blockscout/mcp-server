@@ -1,10 +1,21 @@
+import asyncio
 import time
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.common import chain_cache, get_blockscout_base_url
+from blockscout_mcp_server.tools.common import chain_cache, chains_list_cache, get_blockscout_base_url
+
+
+@pytest.fixture(autouse=True)
+def clear_chains_list_cache():
+    chains_list_cache.chains_snapshot = None
+    chains_list_cache.expiry_timestamp = 0.0
+    yield
+    chains_list_cache.chains_snapshot = None
+    chains_list_cache.expiry_timestamp = 0.0
 
 
 @pytest.mark.integration
@@ -44,3 +55,15 @@ async def test_get_chains_list_warms_cache(mock_ctx):
     expected_url = await get_blockscout_base_url("1")
     assert cached_url == expected_url
     assert expiry > time.time()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
+    monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
+    await get_chains_list(ctx=mock_ctx)
+    first_expiry = chain_cache.get("1")[1]
+    await asyncio.sleep(1.1)
+    await get_chains_list(ctx=mock_ctx)
+    second_expiry = chain_cache.get("1")[1]
+    assert second_expiry > first_expiry

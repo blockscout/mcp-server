@@ -5,6 +5,16 @@ import pytest
 
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
+from blockscout_mcp_server.tools.common import chains_list_cache
+
+
+@pytest.fixture(autouse=True)
+def clear_chains_list_cache():
+    chains_list_cache.chains_snapshot = None
+    chains_list_cache.expiry_timestamp = 0.0
+    yield
+    chains_list_cache.chains_snapshot = None
+    chains_list_cache.expiry_timestamp = 0.0
 
 
 @pytest.mark.asyncio
