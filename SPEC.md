@@ -126,7 +126,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 3. **Chain Selection**:
    - MCP Host requests available chains via `get_chains_list`
    - MCP Server retrieves chain data from Chainscout.
-   - The snapshot is cached in-process with a TTL (`chains_list_ttl_seconds`, default 300s).
+   - The snapshot is cached in-process with a TTL (`chains_list_ttl_seconds`, default 300s, configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
    - The per-chain `ChainCache` is warmed via `bulk_set` on each refresh.
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs

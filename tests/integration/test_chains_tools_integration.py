@@ -1,5 +1,6 @@
 import asyncio
 import time
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -55,6 +56,19 @@ async def test_get_chains_list_warms_cache(mock_ctx):
     expected_url = await get_blockscout_base_url("1")
     assert cached_url == expected_url
     assert expiry > time.time()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_chains_list_cache_hit_skips_network(mock_ctx, monkeypatch):
+    monkeypatch.setattr(config, "chains_list_ttl_seconds", 60)
+    await get_chains_list(ctx=mock_ctx)
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request:
+        await get_chains_list(ctx=mock_ctx)
+        mock_request.assert_not_called()
 
 
 @pytest.mark.integration
