@@ -71,7 +71,9 @@ class InstructionsData(BaseModel):
 class ContractAbiData(BaseModel):
     """A structured representation of a smart contract's ABI."""
 
-    abi: list | None = Field(description="The Application Binary Interface (ABI) of the smart contract.")
+    abi: list[dict[str, Any]] | None = Field(
+        description="The Application Binary Interface (ABI) of the smart contract."
+    )
 
 
 class ContractReadData(BaseModel):

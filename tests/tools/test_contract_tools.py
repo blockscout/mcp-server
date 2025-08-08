@@ -1,4 +1,5 @@
 # tests/tools/test_contract_tools.py
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -291,7 +292,7 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
 async def test_read_contract_success(mock_ctx):
     chain_id = "1"
     address = "0x0000000000000000000000000000000000000abc"
-    abi: list = []
+    abi: list[dict[str, Any]] = []
     function_name = "balanceOf"
     expected = 123
 
