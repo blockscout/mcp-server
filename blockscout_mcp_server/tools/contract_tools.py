@@ -87,13 +87,12 @@ async def read_contract(
     chain_id: Annotated[str, Field(description="The ID of the blockchain to operate on.")],
     address: Annotated[str, Field(description="The address of the smart contract to call.")],
     abi: Annotated[
-        list[dict[str, Any]],
+        dict[str, Any],
         Field(
             description=(
                 "The JSON ABI for the specific function being called. This should be "
-                "a list containing a single dictionary that defines the function's "
-                "name, inputs, and outputs. The function ABI can be obtained using the "
-                "`get_contract_abi` tool."
+                "a dictionary that defines the function's name, inputs, and outputs. "
+                "The function ABI can be obtained using the `get_contract_abi` tool."
             )
         ),
     ],
@@ -149,7 +148,7 @@ async def read_contract(
       "params": {
         "chain_id": "1",
         "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        "abi": [{
+        "abi": {
           "constant": true,
           "inputs": [{"name": "_owner", "type": "address"}],
           "name": "balanceOf",
@@ -157,7 +156,7 @@ async def read_contract(
           "payable": false,
           "stateMutability": "view",
           "type": "function"
-        }],
+        },
         "function_name": "balanceOf",
         "args": ["0xF977814e90dA44bFA03b6295A0616a897441aceC"]
       }
@@ -176,9 +175,7 @@ async def read_contract(
         total=2.0,
         message="Connected. Executing function call...",
     )
-    contract = w3.eth.contract(address=to_checksum_address(address), abi=abi)
-    if len(abi) != 1:
-        raise ValueError(f"ABI must contain exactly one function definition, got {len(abi)}")
+    contract = w3.eth.contract(address=to_checksum_address(address), abi=[abi])
     fn = contract.get_function_by_name(function_name)
     if isinstance(fn, list):
         raise ValueError(f"Function name '{function_name}' is overloaded; use get_function_by_signature(...) instead.")

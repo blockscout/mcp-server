@@ -137,7 +137,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 13. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
 14. `get_transaction_info(chain_id, hash, include_raw_input=False)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
 15. `get_transaction_logs(chain_id, hash, cursor=None)` - Returns transaction logs with decoded event data.
-16. `read_contract(chain_id, address, abi, function_name, args=None, block='latest')` - Executes a read-only smart contract function and returns its result.
+16. `read_contract(chain_id, address, abi, function_name, args=None, block='latest')` - Executes a read-only smart contract function and returns its result. The `abi` argument is a JSON object describing the specific function's signature.
 
 ## Example Prompts for AI Agents
 

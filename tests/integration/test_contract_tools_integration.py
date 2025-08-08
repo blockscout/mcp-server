@@ -24,17 +24,15 @@ async def test_get_contract_abi_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_integration(mock_ctx):
     address = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-    abi = [
-        {
-            "constant": True,
-            "inputs": [{"name": "_owner", "type": "address"}],
-            "name": "balanceOf",
-            "outputs": [{"name": "balance", "type": "uint256"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function",
-        }
-    ]
+    abi = {
+        "constant": True,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
     owner = "0xF977814e90dA44bFA03b6295A0616a897441aceC"
     try:
         result = await read_contract(
@@ -59,30 +57,28 @@ async def test_read_contract_integration(mock_ctx):
 async def test_read_contract_decodes_tuple_result(mock_ctx):
     """Verify that tuple-based return values are decoded correctly."""
     address = "0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6"
-    abi = [
-        {
-            "inputs": [],
-            "name": "buffer",
-            "outputs": [
-                {"internalType": "uint64", "name": "bufferBlocks", "type": "uint64"},
-                {"internalType": "uint64", "name": "max", "type": "uint64"},
-                {"internalType": "uint64", "name": "threshold", "type": "uint64"},
-                {"internalType": "uint64", "name": "prevBlockNumber", "type": "uint64"},
-                {
-                    "internalType": "uint64",
-                    "name": "replenishRateInBasis",
-                    "type": "uint64",
-                },
-                {
-                    "internalType": "uint64",
-                    "name": "prevSequencedBlockNumber",
-                    "type": "uint64",
-                },
-            ],
-            "stateMutability": "view",
-            "type": "function",
-        }
-    ]
+    abi = {
+        "inputs": [],
+        "name": "buffer",
+        "outputs": [
+            {"internalType": "uint64", "name": "bufferBlocks", "type": "uint64"},
+            {"internalType": "uint64", "name": "max", "type": "uint64"},
+            {"internalType": "uint64", "name": "threshold", "type": "uint64"},
+            {"internalType": "uint64", "name": "prevBlockNumber", "type": "uint64"},
+            {
+                "internalType": "uint64",
+                "name": "replenishRateInBasis",
+                "type": "uint64",
+            },
+            {
+                "internalType": "uint64",
+                "name": "prevSequencedBlockNumber",
+                "type": "uint64",
+            },
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    }
     try:
         result = await read_contract(
             chain_id="1",

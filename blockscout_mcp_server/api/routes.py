@@ -172,6 +172,8 @@ async def read_contract_rest(request: Request) -> Response:
         params["abi"] = json.loads(params["abi"])
     except json.JSONDecodeError as e:
         raise ValueError("Invalid JSON for 'abi'") from e
+    if not isinstance(params["abi"], dict):
+        raise ValueError("'abi' must be a JSON object")
     if "args" in params:
         try:
             params["args"] = json.loads(params["args"])
