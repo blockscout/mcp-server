@@ -10,35 +10,54 @@ from blockscout_mcp_server.models import ChainInfo
 
 class ChainCache:
     def __init__(self) -> None:
-        # Cache: chain_id -> (blockscout_url_or_none, expiry_timestamp)
-        # Note: this simple dict is not thread-safe when multiple threads try
-        # to write the same new key concurrently. For the HTTP server in
-        # streamable mode we run a single-thread event loop, so the risk is low.
-        # TODO: implement a thread-safe cache for official deployments.
         self._cache: dict[str, tuple[str | None, float]] = {}
+        self._locks_lock = anyio.Lock()
+        self._locks: dict[str, anyio.Lock] = {}
+
+    async def _get_or_create_lock(self, chain_id: str) -> anyio.Lock:
+        """Get or create a lock for a specific chain."""
+        if lock := self._locks.get(chain_id):
+            return lock
+        async with self._locks_lock:
+            if lock := self._locks.get(chain_id):
+                return lock
+            new_lock = anyio.Lock()
+            self._locks[chain_id] = new_lock
+            return new_lock
 
     def get(self, chain_id: str) -> tuple[str | None, float] | None:
-        """Retrieves an entry from the cache."""
+        """Retrieve an entry from the cache."""
         return self._cache.get(chain_id)
 
-    def set(self, chain_id: str, blockscout_url: str | None) -> None:
+    async def set(self, chain_id: str, blockscout_url: str | None) -> None:
         """Cache the URL (or lack thereof) for a single chain."""
         expiry = time.time() + config.chain_cache_ttl_seconds
-        self._cache[chain_id] = (blockscout_url, expiry)
+        chain_lock = await self._get_or_create_lock(chain_id)
+        async with chain_lock:
+            self._cache[chain_id] = (blockscout_url, expiry)
 
-    def set_failure(self, chain_id: str) -> None:
-        """Caches a failure to find a chain."""
+    async def set_failure(self, chain_id: str) -> None:
+        """Cache a failure to find a chain."""
+        await self.set(chain_id, None)
+
+    async def bulk_set(self, chain_urls: dict[str, str | None]) -> None:
+        """Cache URLs from a bulk /api/chains response concurrently."""
         expiry = time.time() + config.chain_cache_ttl_seconds
-        self._cache[chain_id] = (None, expiry)
 
-    def bulk_set(self, chain_urls: dict[str, str | None]) -> None:
-        """Caches URLs from a bulk /api/chains response."""
-        for chain_id, url in chain_urls.items():
-            self.set(chain_id, url)
+        async def _set_with_expiry(chain_id: str, url: str | None) -> None:
+            chain_lock = await self._get_or_create_lock(chain_id)
+            async with chain_lock:
+                self._cache[chain_id] = (url, expiry)
 
-    def invalidate(self, chain_id: str) -> None:
+        async with anyio.create_task_group() as tg:
+            for chain_id, url in chain_urls.items():
+                tg.start_soon(_set_with_expiry, chain_id, url)
+
+    async def invalidate(self, chain_id: str) -> None:
         """Remove an entry from the cache if present."""
-        self._cache.pop(chain_id, None)
+        chain_lock = await self._get_or_create_lock(chain_id)
+        async with chain_lock:
+            self._cache.pop(chain_id, None)
 
 
 class ChainsListCache:

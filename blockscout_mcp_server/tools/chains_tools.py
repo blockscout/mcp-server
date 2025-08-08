@@ -49,7 +49,7 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
                             filtered[chain_id] = chain
                             url_map[chain_id] = url
 
-                    chain_cache.bulk_set(url_map)
+                    await chain_cache.bulk_set(url_map)
 
                     for chain_id, chain in filtered.items():
                         if chain.get("name"):
