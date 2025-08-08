@@ -84,15 +84,79 @@ def _convert_json_args(args: list[Any]) -> list[Any]:
 
 @log_tool_invocation
 async def read_contract(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    address: Annotated[str, Field(description="Smart contract address")],
-    abi: Annotated[list, Field(description="ABI of the contract")],
-    function_name: Annotated[str, Field(description="Name of the function to call")],
+    chain_id: Annotated[str, Field(description="The ID of the blockchain to operate on.")],
+    address: Annotated[str, Field(description="The address of the smart contract to call.")],
+    abi: Annotated[
+        list[dict[str, Any]],
+        Field(
+            description=(
+                "The JSON ABI for the specific function being called. This should be "
+                "a list containing a single dictionary that defines the function's "
+                "name, inputs, and outputs. The function ABI can be obtained using the "
+                "`get_contract_abi` tool."
+            )
+        ),
+    ],
+    function_name: Annotated[
+        str,
+        Field(
+            description=(
+                "The symbolic name of the function to be called. This must match the `name` field in the provided ABI."
+            )
+        ),
+    ],
+    args: Annotated[
+        list[Any] | None,
+        Field(
+            description=(
+                "A list of arguments to pass to the function. The order and types must "
+                "match the function's definition in the ABI. Defaults to an empty list "
+                "if omitted."
+            )
+        ),
+    ] = None,
+    block: Annotated[
+        str | int,
+        Field(
+            description=(
+                "The block identifier to read the contract state from. Can be a block "
+                "number (e.g., 19000000) or a string tag (e.g., 'latest', 'pending'). "
+                "Defaults to 'latest'."
+            )
+        ),
+    ] = "latest",
+    *,
     ctx: Context,
-    args: Annotated[list[Any] | None, Field(description="Function arguments", default=None)] = None,
-    block: Annotated[str | int, Field(description="Block identifier", default="latest")] = "latest",
 ) -> ToolResponse[ContractReadData]:
-    """Execute a read-only smart contract function and return its result."""
+    """
+        Calls a read-only (view/pure) function of a smart contract and returns the
+        decoded result.
+
+        This tool provides a direct way to query the state of a smart contract
+        without needing to parse raw blockchain data. It is useful for tasks like
+        checking balances, reading configuration values, or verifying ownership.
+
+        Example:
+        To check the USDT balance of an address on Ethereum Mainnet, you would use the following arguments:
+    {
+      "tool_name": "read_contract",
+      "params": {
+        "chain_id": "1",
+        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "abi": [{
+          "constant": true,
+          "inputs": [{"name": "_owner", "type": "address"}],
+          "name": "balanceOf",
+          "outputs": [{"name": "balance", "type": "uint256"}],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        }],
+        "function_name": "balanceOf",
+        "args": ["0xF977814e90dA44bFA03b6295A0616a897441aceC"]
+      }
+    }
+    """
     await report_and_log_progress(
         ctx,
         progress=0.0,
