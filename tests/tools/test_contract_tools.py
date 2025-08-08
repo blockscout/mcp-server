@@ -292,8 +292,8 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
 async def test_read_contract_success(mock_ctx):
     chain_id = "1"
     address = "0x0000000000000000000000000000000000000abc"
-    abi: list[dict[str, Any]] = []
     function_name = "balanceOf"
+    abi: list[dict[str, Any]] = [{"name": function_name, "type": "function", "inputs": [], "outputs": []}]
     expected = 123
 
     fn_result = MagicMock()
@@ -331,6 +331,7 @@ async def test_read_contract_success(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_chain_not_found(mock_ctx):
     chain_id = "999"
+    abi = [{"name": "foo", "type": "function", "inputs": [], "outputs": []}]
     with patch(
         "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
         new_callable=AsyncMock,
@@ -340,7 +341,7 @@ async def test_read_contract_chain_not_found(mock_ctx):
             await read_contract(
                 chain_id=chain_id,
                 address="0x0000000000000000000000000000000000000abc",
-                abi=[],
+                abi=abi,
                 function_name="foo",
                 ctx=mock_ctx,
             )
@@ -350,6 +351,7 @@ async def test_read_contract_chain_not_found(mock_ctx):
 
 @pytest.mark.asyncio
 async def test_read_contract_contract_error(mock_ctx):
+    abi = [{"name": "foo", "type": "function", "inputs": [], "outputs": []}]
     fn_result = MagicMock()
     fn_result.call = AsyncMock(side_effect=ContractLogicError("boom"))
     fn_mock = MagicMock(return_value=fn_result)
@@ -367,7 +369,7 @@ async def test_read_contract_contract_error(mock_ctx):
             await read_contract(
                 chain_id="1",
                 address="0x0000000000000000000000000000000000000abc",
-                abi=[],
+                abi=abi,
                 function_name="foo",
                 ctx=mock_ctx,
             )
@@ -376,6 +378,7 @@ async def test_read_contract_contract_error(mock_ctx):
 
 @pytest.mark.asyncio
 async def test_read_contract_default_args(mock_ctx):
+    abi = [{"name": "foo", "type": "function", "inputs": [], "outputs": []}]
     fn_result = MagicMock()
     fn_result.call = AsyncMock(return_value=0)
     fn_mock = MagicMock(return_value=fn_result)
@@ -392,7 +395,7 @@ async def test_read_contract_default_args(mock_ctx):
         await read_contract(
             chain_id="1",
             address="0x0000000000000000000000000000000000000abc",
-            abi=[],
+            abi=abi,
             function_name="foo",
             ctx=mock_ctx,
         )
@@ -400,3 +403,26 @@ async def test_read_contract_default_args(mock_ctx):
     fn_mock.assert_called_once_with()
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
     assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_abi_length_error(mock_ctx):
+    abi = [
+        {"name": "a", "type": "function", "inputs": [], "outputs": []},
+        {"name": "b", "type": "function", "inputs": [], "outputs": []},
+    ]
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = MagicMock()
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        with pytest.raises(ValueError):
+            await read_contract(
+                chain_id="1",
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name="a",
+                ctx=mock_ctx,
+            )

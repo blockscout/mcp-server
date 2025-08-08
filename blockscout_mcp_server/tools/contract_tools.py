@@ -177,6 +177,8 @@ async def read_contract(
         message="Connected. Executing function call...",
     )
     contract = w3.eth.contract(address=to_checksum_address(address), abi=abi)
+    if len(abi) != 1:
+        raise ValueError(f"ABI must contain exactly one function definition, got {len(abi)}")
     fn = contract.get_function_by_name(function_name)
     if isinstance(fn, list):
         raise ValueError(f"Function name '{function_name}' is overloaded; use get_function_by_signature(...) instead.")

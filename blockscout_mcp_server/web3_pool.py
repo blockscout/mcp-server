@@ -65,11 +65,15 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
         A dedicated helper lets us share the implementation between pooled and
         fallback sessions while keeping tight control over timeouts.
         """
+        headers = dict(self._request_kwargs.get("headers", {}))
+        headers.setdefault("Content-Type", "application/json")
+        headers.setdefault("Accept", "application/json")
+        timeout = aiohttp.ClientTimeout(total=self._request_kwargs.get("timeout", config.rpc_request_timeout))
         async with session.post(
             self.endpoint_uri,
             json=rpc_dict,
-            headers={"Content-Type": "application/json"},
-            timeout=aiohttp.ClientTimeout(total=config.rpc_request_timeout),
+            headers=headers,
+            timeout=timeout,
         ) as response:
             response.raise_for_status()
             return await response.json()
@@ -78,7 +82,9 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
         # Blockscout strictly requires ``params`` to be JSON arrays, so normalize
         # iterables or single values into a list.
         if not isinstance(params, list):
-            if hasattr(params, "__iter__") and not isinstance(params, str | bytes | dict):
+            if hasattr(params, "__iter__") and not isinstance(  # noqa: UP038
+                params, (str, bytes, dict)
+            ):
                 params = list(params)
             else:
                 params = [params] if params is not None else []
@@ -113,7 +119,10 @@ class Web3Pool:
         self._sessions: dict[tuple[str, tuple[tuple[str, str], ...]], aiohttp.ClientSession] = {}
 
     async def get(self, chain_id: str, headers: dict[str, str] | None = None) -> AsyncWeb3:
-        hdr_items = tuple(sorted((headers or DEFAULT_HEADERS).items()))
+        combined_headers = dict(DEFAULT_HEADERS)
+        if headers:
+            combined_headers.update(headers)
+        hdr_items = tuple(sorted(combined_headers.items()))
         key = (chain_id, hdr_items)
         if key in self._pool:
             return self._pool[key]
@@ -123,7 +132,10 @@ class Web3Pool:
 
         provider = AsyncHTTPProviderBlockscout(
             endpoint_uri=endpoint,
-            request_kwargs={"headers": dict(hdr_items), "timeout": config.rpc_request_timeout},
+            request_kwargs={
+                "headers": dict(hdr_items),
+                "timeout": config.rpc_request_timeout,
+            },
         )
         w3 = AsyncWeb3(provider)
 
