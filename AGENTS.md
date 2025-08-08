@@ -20,6 +20,7 @@ mcp-server/
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   ├── logging_utils.py        # Logging utilities for production-ready log formatting
 │   ├── cache.py                # Simple in-memory cache for chain data
+│   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
 │   └── tools/                  # Sub-package for tool implementations
 │       ├── __init__.py         # Initializes the tools sub-package
@@ -207,6 +208,9 @@ mcp-server/
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
     * **`cache.py`**:
         * Encapsulates in-memory caching of chain data with TTL management.
+    * **`web3_pool.py`**:
+        * Manages pooled `AsyncWeb3` instances with shared `aiohttp` sessions.
+        * Provides a custom provider to ensure Blockscout RPC compatibility and connection reuse.
     * **`api/` (API layer)**:
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
