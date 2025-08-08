@@ -28,7 +28,6 @@ class ServerConfig(BaseSettings):
 
     # RPC connection pool configuration
     rpc_request_timeout: float = 60.0
-    rpc_pool_total_conn: int = 200
     rpc_pool_per_host: int = 50
 
     # Base name used in the User-Agent header sent to Blockscout RPC

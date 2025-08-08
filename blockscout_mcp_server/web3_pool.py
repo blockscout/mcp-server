@@ -7,10 +7,9 @@ calls we avoid repeated TCP handshakes and control concurrency via environment
 variables:
 
 * ``BLOCKSCOUT_RPC_REQUEST_TIMEOUT`` – seconds before an RPC call times out
-* ``BLOCKSCOUT_RPC_POOL_TOTAL_CONN`` – maximum total open HTTP connections
-* ``BLOCKSCOUT_RPC_POOL_PER_HOST`` – maximum connections per individual host
+* ``BLOCKSCOUT_RPC_POOL_PER_HOST`` – maximum open HTTP connections
 
-Increase these limits for high-throughput deployments or relax them to conserve
+Increase this limit for high-throughput deployments or relax it to conserve
 resources on constrained hosts. Extend the timeout if the remote Blockscout
 instance is slow or under heavy load. The ``BLOCKSCOUT_MCP_USER_AGENT`` variable
 customizes the leading part of the ``User-Agent`` header; the server version is
@@ -129,7 +128,11 @@ class Web3Pool:
         w3 = AsyncWeb3(provider)
 
         session = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(limit=config.rpc_pool_total_conn, limit_per_host=config.rpc_pool_per_host)
+            # The connector speaks to a single host so ``limit`` matches ``limit_per_host``.
+            connector=aiohttp.TCPConnector(
+                limit=config.rpc_pool_per_host,
+                limit_per_host=config.rpc_pool_per_host,
+            )
         )
         provider.set_pooled_session(session)
 
