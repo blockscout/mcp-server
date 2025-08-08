@@ -4,6 +4,7 @@ import pytest
 
 from blockscout_mcp_server.models import ContractAbiData, ContractReadData, ToolResponse
 from blockscout_mcp_server.tools.contract_tools import get_contract_abi, read_contract
+from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 
 @pytest.mark.integration
@@ -46,6 +47,58 @@ async def test_read_contract_integration(mock_ctx):
         )
     except (aiohttp.ClientError, httpx.HTTPError, OSError) as e:
         pytest.skip(f"Network connectivity issue: {e}")
+    finally:
+        await WEB3_POOL.close()
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractReadData)
     assert isinstance(result.data.result, int)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_read_contract_decodes_tuple_result(mock_ctx):
+    """Verify that tuple-based return values are decoded correctly."""
+    address = "0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6"
+    abi = [
+        {
+            "inputs": [],
+            "name": "buffer",
+            "outputs": [
+                {"internalType": "uint64", "name": "bufferBlocks", "type": "uint64"},
+                {"internalType": "uint64", "name": "max", "type": "uint64"},
+                {"internalType": "uint64", "name": "threshold", "type": "uint64"},
+                {"internalType": "uint64", "name": "prevBlockNumber", "type": "uint64"},
+                {
+                    "internalType": "uint64",
+                    "name": "replenishRateInBasis",
+                    "type": "uint64",
+                },
+                {
+                    "internalType": "uint64",
+                    "name": "prevSequencedBlockNumber",
+                    "type": "uint64",
+                },
+            ],
+            "stateMutability": "view",
+            "type": "function",
+        }
+    ]
+    try:
+        result = await read_contract(
+            chain_id="1",
+            address=address,
+            abi=abi,
+            function_name="buffer",
+            args=[],
+            ctx=mock_ctx,
+        )
+    except (aiohttp.ClientError, httpx.HTTPError, OSError) as e:
+        pytest.skip(f"Network connectivity issue: {e}")
+    finally:
+        await WEB3_POOL.close()
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, ContractReadData)
+    assert isinstance(result.data.result, list | tuple)
+    assert len(result.data.result) == 6
+    for value in result.data.result:
+        assert isinstance(value, int)
