@@ -1,4 +1,21 @@
-"""Async Web3 connection pool optimized for Blockscout RPC."""
+"""Async Web3 connection pool optimized for Blockscout RPC.
+
+The custom provider in this module normalizes JSON-RPC parameters and enforces
+non-zero request IDs. Blockscout rejects requests with ``id=0`` and parameters
+that are not JSON arrays. By reusing a shared ``aiohttp.ClientSession`` across
+calls we avoid repeated TCP handshakes and control concurrency via environment
+variables:
+
+* ``BLOCKSCOUT_RPC_REQUEST_TIMEOUT`` – seconds before an RPC call times out
+* ``BLOCKSCOUT_RPC_POOL_TOTAL_CONN`` – maximum total open HTTP connections
+* ``BLOCKSCOUT_RPC_POOL_PER_HOST`` – maximum connections per individual host
+
+Increase these limits for high-throughput deployments or relax them to conserve
+resources on constrained hosts. Extend the timeout if the remote Blockscout
+instance is slow or under heavy load. The ``BLOCKSCOUT_MCP_USER_AGENT`` variable
+customizes the leading part of the ``User-Agent`` header; the server version is
+appended automatically.
+"""
 
 from __future__ import annotations
 
@@ -9,36 +26,58 @@ import aiohttp
 from web3 import AsyncWeb3
 from web3.providers.rpc import AsyncHTTPProvider
 
+from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import SERVER_VERSION
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 
-DEFAULT_HEADERS = {"User-Agent": "Blockscout MCP/0.1"}
-REQUEST_TIMEOUT_SECONDS = 60
-POOL_TOTAL_CONN = 200
-POOL_PER_HOST = 50
+DEFAULT_HEADERS = {
+    "User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION} (+pool)",
+}
 
 
 class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
-    """Custom provider with Blockscout-specific adaptations."""
+    """Custom provider with Blockscout-specific adaptations.
+
+    ``web3.py``'s stock provider doesn't cooperate well with Blockscout's
+    JSON-RPC implementation. Blockscout rejects requests with ``id=0`` and
+    expects ``params`` to be JSON arrays. The standard provider also manages
+    its own ``aiohttp`` sessions, which can reset request IDs when reused.
+
+    This subclass keeps its own ``request_counter`` starting at ``1`` and
+    overrides :meth:`make_request` to normalize parameters and inject the
+    sequential ID. The :meth:`set_pooled_session` method allows an externally
+    managed ``aiohttp.ClientSession`` to be reused for all requests, enabling
+    connection pooling and fine-grained timeout control.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        # Start IDs at 1 because Blockscout rejects JSON-RPC requests with id=0
         self.request_counter = count(1)
+        # Will be populated by Web3Pool to enable connection reuse
         self.pooled_session: aiohttp.ClientSession | None = None
 
     def set_pooled_session(self, session: aiohttp.ClientSession) -> None:
         self.pooled_session = session
 
     async def _make_http_request(self, session: aiohttp.ClientSession, rpc_dict: dict[str, Any]) -> dict[str, Any]:
+        """Perform the HTTP request using the given session.
+
+        A dedicated helper lets us share the implementation between pooled and
+        fallback sessions while keeping tight control over timeouts.
+        """
         async with session.post(
             self.endpoint_uri,
             json=rpc_dict,
             headers={"Content-Type": "application/json"},
-            timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS),
+            timeout=aiohttp.ClientTimeout(total=config.rpc_request_timeout),
         ) as response:
             response.raise_for_status()
             return await response.json()
 
     async def make_request(self, method: str, params: Any) -> dict[str, Any]:  # type: ignore[override]
+        # Blockscout strictly requires ``params`` to be JSON arrays, so normalize
+        # iterables or single values into a list.
         if not isinstance(params, list):
             if hasattr(params, "__iter__") and not isinstance(params, str | bytes | dict):
                 params = list(params)
@@ -52,6 +91,8 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
             "id": next(self.request_counter),
         }
 
+        # Prefer the shared session for connection pooling. Fallback to a new
+        # session only if the pooled one is unavailable.
         if self.pooled_session and not self.pooled_session.closed:
             return await self._make_http_request(self.pooled_session, rpc_dict)
 
@@ -60,7 +101,13 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
 
 
 class Web3Pool:
-    """Manage pooled AsyncWeb3 instances with shared sessions."""
+    """Manage pooled ``AsyncWeb3`` instances with shared sessions.
+
+    Each unique combination of chain and headers gets its own ``AsyncWeb3``
+    instance backed by a shared ``aiohttp.ClientSession``. Reusing these
+    connections avoids the overhead of establishing new TCP handshakes for
+    every contract call.
+    """
 
     def __init__(self) -> None:
         self._pool: dict[tuple[str, tuple[tuple[str, str], ...]], AsyncWeb3] = {}
@@ -77,12 +124,12 @@ class Web3Pool:
 
         provider = AsyncHTTPProviderBlockscout(
             endpoint_uri=endpoint,
-            request_kwargs={"headers": dict(hdr_items), "timeout": REQUEST_TIMEOUT_SECONDS},
+            request_kwargs={"headers": dict(hdr_items), "timeout": config.rpc_request_timeout},
         )
         w3 = AsyncWeb3(provider)
 
         session = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(limit=POOL_TOTAL_CONN, limit_per_host=POOL_PER_HOST)
+            connector=aiohttp.TCPConnector(limit=config.rpc_pool_total_conn, limit_per_host=config.rpc_pool_per_host)
         )
         provider.set_pooled_session(session)
 

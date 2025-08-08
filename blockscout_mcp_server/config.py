@@ -26,5 +26,13 @@ class ServerConfig(BaseSettings):
     logs_page_size: int = 10
     advanced_filters_page_size: int = 10
 
+    # RPC connection pool configuration
+    rpc_request_timeout: float = 60.0
+    rpc_pool_total_conn: int = 200
+    rpc_pool_per_host: int = 50
+
+    # Base name used in the User-Agent header sent to Blockscout RPC
+    mcp_user_agent: str = "Blockscout MCP"
+
 
 config = ServerConfig()

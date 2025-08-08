@@ -132,6 +132,12 @@ async def read_contract(
         Calls a read-only (view/pure) function of a smart contract and returns the
         decoded result.
 
+        The call is executed via a shared ``AsyncWeb3`` instance from
+        :mod:`blockscout_mcp_server.web3_pool`. The underlying provider
+        normalizes JSON-RPC parameters, enforces non-zero request IDs, and
+        reuses a pooled ``aiohttp.ClientSession`` so repeated contract reads do
+        not incur new TCP handshakes.
+
         This tool provides a direct way to query the state of a smart contract
         without needing to parse raw blockchain data. It is useful for tasks like
         checking balances, reading configuration values, or verifying ownership.
