@@ -172,6 +172,10 @@ cd mcp-server
 uv pip install -e . # or `pip install -e .`
 ```
 
+To customize the leading part of the `User-Agent` header used for RPC requests,
+set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
+"Blockscout MCP"). The server version is appended automatically.
+
 ### Running the Server
 
 The server runs in `stdio` mode by default:
