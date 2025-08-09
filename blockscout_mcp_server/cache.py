@@ -25,8 +25,16 @@ class ChainCache:
             self._locks[chain_id] = new_lock
             return new_lock
 
+    @property
+    def _lock_keys(self) -> set[str]:
+        """Return a snapshot of chain IDs with initialized locks."""
+        return set(self._locks.keys())
+
     def get(self, chain_id: str) -> tuple[str | None, float] | None:
-        """Retrieve an entry from the cache."""
+        """Retrieve an entry without validating expiry (no locking).
+
+        Returns ``(url_or_none, expiry_monotonic)`` or ``None``.
+        """
         return self._cache.get(chain_id)
 
     async def set(self, chain_id: str, blockscout_url: str | None) -> None:

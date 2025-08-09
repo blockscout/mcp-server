@@ -73,5 +73,7 @@ async def test_chain_cache_creates_distinct_locks():
     cache = ChainCache()
     await cache.set("1", "https://a")
     await cache.set("2", "https://b")
-    assert "1" in cache._locks and "2" in cache._locks
-    assert cache._locks["1"] is not cache._locks["2"]
+    assert {"1", "2"} <= cache._lock_keys
+    lock1 = await cache._get_or_create_lock("1")
+    lock2 = await cache._get_or_create_lock("2")
+    assert lock1 is not lock2
