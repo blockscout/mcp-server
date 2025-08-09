@@ -6,6 +6,13 @@ from blockscout_mcp_server.cache import ChainCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import find_blockscout_url
 
+pytestmark = pytest.mark.anyio
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
 
 def test_find_blockscout_url_success():
     chain_data = {
@@ -22,40 +29,49 @@ def test_find_blockscout_url_no_match():
     assert find_blockscout_url(chain_data) is None
 
 
-@pytest.mark.asyncio
+def fake_monotonic_factory(value: float):
+    def _fake() -> float:
+        return value
+
+    return _fake
+
+
 async def test_chain_cache_basic_flow():
     cache = ChainCache()
-    with patch("time.time", return_value=1000):
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(1000)):
         await cache.set("1", "https://a")
     assert cache.get("1") == ("https://a", 1000 + config.chain_cache_ttl_seconds)
 
 
-@pytest.mark.asyncio
 async def test_chain_cache_set_failure():
     cache = ChainCache()
-    with patch("time.time", return_value=2000):
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(2000)):
         await cache.set_failure("2")
     assert cache.get("2") == (None, 2000 + config.chain_cache_ttl_seconds)
 
 
-@pytest.mark.asyncio
 async def test_chain_cache_bulk_set():
     cache = ChainCache()
-    chain_urls = {
-        "1": "https://a",
-        "2": "https://b",
-    }
-    with patch("time.time", return_value=3000):
+    chain_urls = {"1": "https://a", "2": "https://b"}
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(3000)):
         await cache.bulk_set(chain_urls)
     assert cache.get("1") == ("https://a", 3000 + config.chain_cache_ttl_seconds)
     assert cache.get("2") == ("https://b", 3000 + config.chain_cache_ttl_seconds)
 
 
-@pytest.mark.asyncio
 async def test_chain_cache_invalidate():
     cache = ChainCache()
-    with patch("time.time", return_value=4000):
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(4000)):
         await cache.set("1", "https://a")
     assert cache.get("1") == ("https://a", 4000 + config.chain_cache_ttl_seconds)
     await cache.invalidate("1")
+    await cache.invalidate("1")
     assert cache.get("1") is None
+
+
+async def test_chain_cache_creates_distinct_locks():
+    cache = ChainCache()
+    await cache.set("1", "https://a")
+    await cache.set("2", "https://b")
+    assert "1" in cache._locks and "2" in cache._locks
+    assert cache._locks["1"] is not cache._locks["2"]

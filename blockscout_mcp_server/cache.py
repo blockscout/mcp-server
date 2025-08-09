@@ -31,7 +31,7 @@ class ChainCache:
 
     async def set(self, chain_id: str, blockscout_url: str | None) -> None:
         """Cache the URL (or lack thereof) for a single chain."""
-        expiry = time.time() + config.chain_cache_ttl_seconds
+        expiry = time.monotonic() + config.chain_cache_ttl_seconds
         chain_lock = await self._get_or_create_lock(chain_id)
         async with chain_lock:
             self._cache[chain_id] = (blockscout_url, expiry)
@@ -42,7 +42,7 @@ class ChainCache:
 
     async def bulk_set(self, chain_urls: dict[str, str | None]) -> None:
         """Cache URLs from a bulk /api/chains response concurrently."""
-        expiry = time.time() + config.chain_cache_ttl_seconds
+        expiry = time.monotonic() + config.chain_cache_ttl_seconds
 
         async def _set_with_expiry(chain_id: str, url: str | None) -> None:
             chain_lock = await self._get_or_create_lock(chain_id)

@@ -73,7 +73,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
     Raises:
         ChainNotFoundError: If no Blockscout instance is found for the chain
     """
-    current_time = time.time()
+    current_time = time.monotonic()
     cached_entry = chain_cache.get(chain_id)
 
     if cached_entry:
