@@ -47,14 +47,14 @@ async def test_get_chains_list_uses_cache_within_ttl(mock_ctx, monkeypatch):
         patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
     ):
         mock_request.return_value = mock_api_response
-        mock_chain_cache.bulk_set = MagicMock()
+        mock_chain_cache.bulk_set = AsyncMock()
 
         result1 = await get_chains_list(ctx=mock_ctx)
         fake_now += 1
         result2 = await get_chains_list(ctx=mock_ctx)
 
         mock_request.assert_called_once_with(api_path="/api/chains")
-        mock_chain_cache.bulk_set.assert_called_once()
+        mock_chain_cache.bulk_set.assert_awaited_once()
         assert result1.data == result2.data
 
 
@@ -89,14 +89,14 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         ) as mock_request,
         patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
     ):
-        mock_chain_cache.bulk_set = MagicMock()
+        mock_chain_cache.bulk_set = AsyncMock()
 
         result1 = await get_chains_list(ctx=mock_ctx)
         fake_now += 3
         result2 = await get_chains_list(ctx=mock_ctx)
 
         assert mock_request.call_count == 2
-        assert mock_chain_cache.bulk_set.call_count == 2
+        assert mock_chain_cache.bulk_set.await_count == 2
         assert result1.data != result2.data
 
 
@@ -126,7 +126,7 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
         ) as mock_request,
         patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
     ):
-        mock_chain_cache.bulk_set = MagicMock()
+        mock_chain_cache.bulk_set = AsyncMock()
 
         await get_chains_list(ctx=mock_ctx)
         fake_now += 3
@@ -134,7 +134,7 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
             await get_chains_list(ctx=mock_ctx)
 
         assert mock_request.call_count == 2
-        assert mock_chain_cache.bulk_set.call_count == 1
+        assert mock_chain_cache.bulk_set.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -166,12 +166,12 @@ async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypat
         ) as mock_request,
         patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
     ):
-        mock_chain_cache.bulk_set = MagicMock()
+        mock_chain_cache.bulk_set = AsyncMock()
 
         results = await asyncio.gather(get_chains_list(ctx=mock_ctx), get_chains_list(ctx=mock_ctx))
 
         assert mock_request.call_count == 1
-        assert mock_chain_cache.bulk_set.call_count == 1
+        assert mock_chain_cache.bulk_set.await_count == 1
         assert results[0].data == results[1].data
 
 

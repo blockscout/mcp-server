@@ -55,7 +55,7 @@ async def test_get_chains_list_warms_cache(mock_ctx):
     cached_url, expiry = cached_entry
     expected_url = await get_blockscout_base_url("1")
     assert cached_url == expected_url
-    assert expiry > time.time()
+    assert expiry > time.monotonic()
 
 
 @pytest.mark.integration
