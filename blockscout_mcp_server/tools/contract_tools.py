@@ -1,9 +1,10 @@
 from typing import Annotated, Any
 
-from eth_utils import to_checksum_address
+from eth_utils import decode_hex, to_checksum_address
 from mcp.server.fastmcp import Context
 from pydantic import Field
 from web3.exceptions import ContractLogicError
+from web3.utils.abi import check_if_arguments_can_be_encoded
 
 from blockscout_mcp_server.models import ContractAbiData, ContractReadData, ToolResponse
 from blockscout_mcp_server.tools.common import (
@@ -65,21 +66,31 @@ async def get_contract_abi(
     return build_tool_response(data=abi_data)
 
 
-def _convert_json_args(args: list[Any]) -> list[Any]:
-    out: list[Any] = []
-    for a in args:
-        if isinstance(a, list):
-            out.append(_convert_json_args(a))
-        elif isinstance(a, str):
-            if a.startswith(("0x", "0X")):
-                out.append(a)
-            elif a.isdigit():
-                out.append(int(a))
-            else:
-                out.append(a)
-        else:
-            out.append(a)
-    return out
+def _convert_json_args(obj: Any) -> Any:
+    """
+    Convert JSON-like arguments to proper Python types with deep recursion.
+
+    - Recurses into lists and dicts
+    - Attempts to apply EIP-55 checksum to address-like strings
+    - Hex strings (0x...) remain as strings if not addresses
+    - Numeric strings become integers
+    - Other strings remain as strings
+    """
+    if isinstance(obj, list):
+        return [_convert_json_args(item) for item in obj]
+    if isinstance(obj, dict):
+        return {k: _convert_json_args(v) for k, v in obj.items()}
+    if isinstance(obj, str):
+        try:
+            return to_checksum_address(obj)
+        except Exception:
+            pass
+        if obj.startswith(("0x", "0X")):
+            return obj
+        if obj.isdigit():
+            return int(obj)
+        return obj
+    return obj
 
 
 @log_tool_invocation
@@ -168,6 +179,18 @@ async def read_contract(
         total=2.0,
         message=f"Preparing contract call {function_name} on {address}...",
     )
+    py_args = _convert_json_args(args or [])
+
+    def _for_check(a: Any) -> Any:
+        if isinstance(a, list):
+            return [_for_check(i) for i in a]
+        if isinstance(a, str) and a.startswith(("0x", "0X")) and len(a) != 42:
+            return decode_hex(a)
+        return a
+
+    check_args = [_for_check(a) for a in py_args]
+    if not check_if_arguments_can_be_encoded(abi, *check_args):
+        raise ValueError(f"Arguments {py_args} cannot be encoded for function '{function_name}'")
     w3 = await WEB3_POOL.get(chain_id)
     await report_and_log_progress(
         ctx,
@@ -176,10 +199,10 @@ async def read_contract(
         message="Connected. Executing function call...",
     )
     contract = w3.eth.contract(address=to_checksum_address(address), abi=[abi])
-    fn = contract.get_function_by_name(function_name)
-    if isinstance(fn, list):
-        raise ValueError(f"Function name '{function_name}' is overloaded; use get_function_by_signature(...) instead.")
-    py_args = _convert_json_args(args or [])
+    try:
+        fn = contract.get_function_by_name(function_name)
+    except ValueError as e:
+        raise ValueError(f"Function name '{function_name}' is not found in provided ABI") from e
     try:
         result = await fn(*py_args).call(block_identifier=block)
     except ContractLogicError as e:

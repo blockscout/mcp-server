@@ -293,7 +293,12 @@ async def test_read_contract_success(mock_ctx):
     chain_id = "1"
     address = "0x0000000000000000000000000000000000000abc"
     function_name = "balanceOf"
-    abi: dict[str, Any] = {"name": function_name, "type": "function", "inputs": [], "outputs": []}
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [{"name": "owner", "type": "uint256"}],
+        "outputs": [],
+    }
     expected = 123
 
     fn_result = MagicMock()
