@@ -444,3 +444,26 @@ Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum addre
 ```bash
 curl "http://127.0.0.1:8000/v1/get_address_by_ens_name?name=vitalik.eth"
 ```
+
+### Read Contract (`read_contract`)
+
+Executes a read-only smart contract function and returns its result.
+
+`GET /v1/read_contract`
+
+**Parameters**
+
+| Name           | Type     | Required | Description                                     |
+| -------------- | -------- | -------- | ----------------------------------------------- |
+| `chain_id`     | `string` | Yes      | The ID of the blockchain.                       |
+| `address`      | `string` | Yes      | Smart contract address.                         |
+| `abi`          | `string` | Yes      | JSON-encoded function ABI dictionary.           |
+| `function_name`| `string` | Yes      | Name of the function to call.                   |
+| `args`         | `string` | No       | JSON-encoded array of function arguments.       |
+| `block`        | `string` | No       | Block identifier or number (`latest` by default). |
+
+**Example Request**
+
+```bash
+curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee523a2206206994597C13D831ec7&function_name=balanceOf&abi=%7B%22constant%22%3Atrue%2C%22inputs%22%3A%5B%7B%22name%22%3A%22_owner%22%2C%22type%22%3A%22address%22%7D%5D%2C%22name%22%3A%22balanceOf%22%2C%22outputs%22%3A%5B%7B%22name%22%3A%22balance%22%2C%22type%22%3A%22uint256%22%7D%5D%2C%22payable%22%3Afalse%2C%22stateMutability%22%3A%22view%22%2C%22type%22%3A%22function%22%7D&args=%5B%220xF977814e90dA44bFA03b6295A0616a897441aceC%22%5D"
+```

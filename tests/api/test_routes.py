@@ -289,6 +289,43 @@ async def test_get_contract_abi_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.read_contract", new_callable=AsyncMock)
+async def test_read_contract_success(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"result": 1})
+    url = "/v1/read_contract?chain_id=1&address=0xabc&abi=%7B%7D&function_name=foo"
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json()["data"] == {"result": 1}
+    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", abi={}, function_name="foo", ctx=ANY)
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.read_contract", new_callable=AsyncMock)
+async def test_read_contract_with_optional(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"result": 2})
+    url = "/v1/read_contract?chain_id=1&address=0xabc&abi=%7B%7D&function_name=foo&args=%5B1%5D&block=5"
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json()["data"] == {"result": 2}
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        address="0xabc",
+        abi={},
+        function_name="foo",
+        args=[1],
+        block=5,
+        ctx=ANY,
+    )
+
+
+@pytest.mark.asyncio
+async def test_read_contract_missing_param(client: AsyncClient):
+    response = await client.get("/v1/read_contract?chain_id=1&address=0xabc&function_name=foo")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'abi'"}
+
+
+@pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_info", new_callable=AsyncMock)
 async def test_get_address_info_success(mock_tool, client: AsyncClient):
     """Test /get_address_info endpoint."""

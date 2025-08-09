@@ -53,6 +53,7 @@ All tools are available via both MCP and REST API interfaces:
 13. **`get_block_info`** - Returns detailed block information
 14. **`get_transaction_info`** - Gets comprehensive transaction information
 15. **`get_transaction_logs`** - Returns transaction logs with decoded event data
+16. **`read_contract`** - Executes a read-only smart contract function
 
 ## When to Use Each Interface
 

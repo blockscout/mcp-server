@@ -90,6 +90,10 @@
     {
       "name": "get_transaction_logs",
       "description": "Returns transaction logs with decoded event data"
+    },
+    {
+      "name": "read_contract",
+      "description": "Executes a read-only smart contract function"
     }
   ],
   "keywords": [

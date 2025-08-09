@@ -23,7 +23,7 @@ from blockscout_mcp_server.tools.address_tools import (
 )
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi
+from blockscout_mcp_server.tools.contract_tools import get_contract_abi, read_contract
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
@@ -34,6 +34,7 @@ from blockscout_mcp_server.tools.transaction_tools import (
     get_transactions_by_address,
     transaction_summary,
 )
+from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
 chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
@@ -73,6 +74,7 @@ Here is the list of IDs of most popular chains:
 
 mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
 
+
 # Register the tools
 # The name of each tool will be its function name
 # The description will be taken from the function's docstring
@@ -86,6 +88,7 @@ mcp.tool(structured_output=False)(get_transactions_by_address)
 mcp.tool(structured_output=False)(get_token_transfers_by_address)
 mcp.tool(structured_output=False)(lookup_token_by_symbol)
 mcp.tool(structured_output=False)(get_contract_abi)
+mcp.tool(structured_output=False)(read_contract)
 mcp.tool(structured_output=False)(get_address_info)
 mcp.tool(structured_output=False)(get_tokens_by_address)
 mcp.tool(structured_output=False)(transaction_summary)
@@ -128,6 +131,7 @@ def main_command(
         mcp.settings.stateless_http = True  # Enable stateless mode
         mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
         asgi_app = mcp.streamable_http_app()
+        asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
         uvicorn.run(asgi_app, host=http_host, port=http_port)
     elif rest:
         raise typer.BadParameter("The --rest flag can only be used with the --http flag.")

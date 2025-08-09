@@ -71,7 +71,15 @@ class InstructionsData(BaseModel):
 class ContractAbiData(BaseModel):
     """A structured representation of a smart contract's ABI."""
 
-    abi: list | None = Field(description="The Application Binary Interface (ABI) of the smart contract.")
+    abi: list[dict[str, Any]] | None = Field(
+        description="The Application Binary Interface (ABI) of the smart contract."
+    )
+
+
+class ContractReadData(BaseModel):
+    """Result of a read-only smart contract function call."""
+
+    result: Any = Field(description="Return value from the contract function call.")
 
 
 # --- Model for lookup_token_by_symbol Data Payload ---

@@ -238,8 +238,14 @@ This architecture provides the flexibility of a multi-protocol server without th
           }
         }
       }
-      }
-      ```
+    }
+    ```
+
+4. **Async Web3 Connection Pool**:
+   - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to interact with Blockscout's JSON-RPC interface.
+   - Connection pooling reuses TCP connections, reducing latency and resource usage.
+   - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
+   - A shared `aiohttp` session enforces global and per-host connection limits to prevent overload.
 
 4. **Blockscout-Hosted Chain Filtering**:
 

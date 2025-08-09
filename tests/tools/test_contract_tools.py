@@ -1,11 +1,14 @@
 # tests/tools/test_contract_tools.py
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from web3.exceptions import ContractLogicError
 
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi
+from blockscout_mcp_server.tools.common import ChainNotFoundError
+from blockscout_mcp_server.tools.contract_tools import get_contract_abi, read_contract
 
 
 def assert_contract_abi_response(result: ToolResponse, expected_abi) -> None:
@@ -283,3 +286,125 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
         assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_success(mock_ctx):
+    chain_id = "1"
+    address = "0x0000000000000000000000000000000000000abc"
+    function_name = "balanceOf"
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [{"name": "owner", "type": "uint256"}],
+        "outputs": [],
+    }
+    expected = 123
+
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=expected)
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ) as mock_get:
+        result = await read_contract(
+            chain_id=chain_id,
+            address=address,
+            abi=abi,
+            function_name=function_name,
+            args=["1"],
+            block="latest",
+            ctx=mock_ctx,
+        )
+
+    mock_get.assert_called_once_with(chain_id)
+    contract_mock.get_function_by_name.assert_called_once_with(function_name)
+    fn_mock.assert_called_once_with(1)
+    fn_result.call.assert_awaited_once_with(block_identifier="latest")
+    assert result.data.result == expected
+    assert mock_ctx.report_progress.call_count == 3
+    assert mock_ctx.info.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_chain_not_found(mock_ctx):
+    chain_id = "999"
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        side_effect=ChainNotFoundError("not found"),
+    ) as mock_get:
+        with pytest.raises(ChainNotFoundError):
+            await read_contract(
+                chain_id=chain_id,
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name="foo",
+                ctx=mock_ctx,
+            )
+    mock_get.assert_called_once_with(chain_id)
+    assert mock_ctx.report_progress.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_read_contract_contract_error(mock_ctx):
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(side_effect=ContractLogicError("boom"))
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        with pytest.raises(RuntimeError):
+            await read_contract(
+                chain_id="1",
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name="foo",
+                ctx=mock_ctx,
+            )
+    assert mock_ctx.report_progress.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_read_contract_default_args(mock_ctx):
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=0)
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi=abi,
+            function_name="foo",
+            ctx=mock_ctx,
+        )
+
+    fn_mock.assert_called_once_with()
+    fn_result.call.assert_awaited_once_with(block_identifier="latest")
+    assert mock_ctx.report_progress.call_count == 3
