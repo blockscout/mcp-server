@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from unittest.mock import patch
 
+import anyio
 import pytest
 
 from blockscout_mcp_server.cache import ChainCache
@@ -29,7 +31,7 @@ def test_find_blockscout_url_no_match():
     assert find_blockscout_url(chain_data) is None
 
 
-def fake_monotonic_factory(value: float):
+def fake_monotonic_factory(value: float) -> Callable[[], float]:
     def _fake() -> float:
         return value
 
@@ -59,6 +61,15 @@ async def test_chain_cache_bulk_set():
     assert cache.get("2") == ("https://b", 3000 + config.chain_cache_ttl_seconds)
 
 
+async def test_chain_cache_bulk_set_handles_none():
+    cache = ChainCache()
+    chain_urls = {"1": "https://a", "2": None}
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(3500)):
+        await cache.bulk_set(chain_urls)
+    assert cache.get("1") == ("https://a", 3500 + config.chain_cache_ttl_seconds)
+    assert cache.get("2") == (None, 3500 + config.chain_cache_ttl_seconds)
+
+
 async def test_chain_cache_invalidate():
     cache = ChainCache()
     with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(4000)):
@@ -83,3 +94,30 @@ async def test_chain_cache_creates_distinct_locks():
     lock1 = await cache._get_or_create_lock("1")
     lock2 = await cache._get_or_create_lock("2")
     assert lock1 is not lock2
+
+
+async def test_chain_cache_bulk_set_allows_progress_for_unlocked_chains():
+    cache = ChainCache()
+    lock1 = await cache._get_or_create_lock("1")
+    await lock1.acquire()
+
+    async def run_bulk() -> None:
+        await cache.bulk_set({"1": "https://a", "2": "https://b"})
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(run_bulk)
+        for _ in range(50):
+            if cache.get("2") is not None:
+                break
+            await anyio.sleep(0)
+        assert cache.get("2")[0] == "https://b"
+        lock1.release()
+
+    assert cache.get("1")[0] == "https://a"
+
+
+async def test_chain_cache_same_chain_uses_same_lock():
+    cache = ChainCache()
+    lock1 = await cache._get_or_create_lock("1")
+    lock2 = await cache._get_or_create_lock("1")
+    assert lock1 is lock2
