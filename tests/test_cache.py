@@ -69,6 +69,12 @@ async def test_chain_cache_invalidate():
     assert cache.get("1") is None
 
 
+async def test_chain_cache_invalidate_missing_chain_does_not_create_lock():
+    cache = ChainCache()
+    await cache.invalidate("1")
+    assert "1" not in cache._lock_keys
+
+
 async def test_chain_cache_creates_distinct_locks():
     cache = ChainCache()
     await cache.set("1", "https://a")

@@ -63,6 +63,8 @@ class ChainCache:
 
     async def invalidate(self, chain_id: str) -> None:
         """Remove an entry from the cache if present."""
+        if chain_id not in self._cache:
+            return
         chain_lock = await self._get_or_create_lock(chain_id)
         async with chain_lock:
             self._cache.pop(chain_id, None)
