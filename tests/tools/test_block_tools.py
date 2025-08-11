@@ -177,7 +177,7 @@ async def test_get_block_info_with_txs_success(mock_ctx):
     chain_id = "1"
     number_or_hash = "19000000"
     mock_base_url = "https://eth.blockscout.com"
-    mock_block_response = {"height": 19000000, "transaction_count": 2}
+    mock_block_response = {"height": 19000000, "transactions_count": 2}
     mock_txs_response = {"items": [{"hash": "0xtx1"}, {"hash": "0xtx2"}]}
 
     async def mock_request_side_effect(base_url, api_path, params=None):

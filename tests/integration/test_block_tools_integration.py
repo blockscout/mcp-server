@@ -44,7 +44,7 @@ async def test_get_block_info_with_transactions_integration(mock_ctx):
     hashes = result.data.transaction_hashes
 
     assert details["height"] == 1000000
-    assert details["transaction_count"] == 2
+    assert details["transactions_count"] == 2
     assert isinstance(hashes, list)
     assert len(hashes) == 2
     assert all(tx.startswith("0x") for tx in hashes)
@@ -63,6 +63,6 @@ async def test_get_block_info_with_no_transactions_integration(mock_ctx):
     hashes = result.data.transaction_hashes
 
     assert details["height"] == 100
-    assert details["transaction_count"] == 0
+    assert details["transactions_count"] == 0
     assert isinstance(hashes, list)
     assert len(hashes) == 0
