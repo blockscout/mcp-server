@@ -73,7 +73,7 @@ _Note: Docker is required for this setup_
 
 **Cursor Setup:**
 
-Use [this deeplink](cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D) to install the Blockscout MCP server in Cursor.
+Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwLCJoZWFkZXJzIjp7fX0%3D) to install the Blockscout MCP server in Cursor.
 
 **Gemini CLI Setup:**
 
