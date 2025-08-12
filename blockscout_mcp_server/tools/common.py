@@ -160,14 +160,14 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         # Retry transient transport errors (e.g., incomplete chunked reads).
         # Do not retry server/client status errors to avoid hiding real failures.
         last_error: Exception | None = None
-        for attempt in range(3):
+        for attempt in range(config.bs_request_max_retries):
             try:
                 response = await client.get(url, params=params)
                 response.raise_for_status()  # Raise an exception for HTTP errors
                 return response.json()
             except httpx.RequestError as e:
                 last_error = e
-                if attempt == 2:
+                if attempt == (config.bs_request_max_retries - 1):
                     break
                 # Exponential backoff on transient transport issues
                 await anyio.sleep(0.5 * (2**attempt))

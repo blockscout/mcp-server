@@ -371,6 +371,9 @@ This architecture provides the flexibility of a multi-protocol server without th
    - Does not retry on `httpx.HTTPStatusError` (4xx/5xx responses)
    - Uses short exponential backoff between attempts (0.5s, then 1.0s)
 
+   Configuration:
+   - The maximum number of retry attempts is configurable via the environment variable `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` (default: `3`).
+
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool

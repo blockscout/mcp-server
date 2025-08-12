@@ -7,6 +7,7 @@ class ServerConfig(BaseSettings):
 
     bs_api_key: str = ""  # Default to empty, can be set via env
     bs_timeout: float = 120.0  # Default timeout in seconds
+    bs_request_max_retries: int = 3  # Conservative retries for transient transport errors
 
     bens_url: str = "https://bens.services.blockscout.com"  # Add this now for Phase 2
     bens_timeout: float = 30.0  # Default timeout for BENS requests
