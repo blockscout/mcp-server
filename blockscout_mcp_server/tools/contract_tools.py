@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, Any
 
 from eth_utils import decode_hex, to_checksum_address
@@ -95,8 +96,8 @@ def _convert_json_args(obj: Any) -> Any:
 
 @log_tool_invocation
 async def read_contract(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain to operate on.")],
-    address: Annotated[str, Field(description="The address of the smart contract to call.")],
+    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
+    address: Annotated[str, Field(description="Smart contract address")],
     abi: Annotated[
         dict[str, Any],
         Field(
@@ -119,9 +120,11 @@ async def read_contract(
         list[Any] | None,
         Field(
             description=(
-                "A list of arguments to pass to the function. The order and types must "
-                "match the function's definition in the ABI. Defaults to an empty list "
-                "if omitted."
+                "A JSON array of arguments (not a string). "
+                'Example: ["0xabc..."] is correct; "[\\"0xabc...\\"]" is incorrect. '
+                "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
+                "Numbers: use integers (not quoted); Bytes: keep as 0x-hex strings. If no arguments, "
+                "pass [] or omit this field."
             )
         ),
     ] = None,
@@ -130,8 +133,7 @@ async def read_contract(
         Field(
             description=(
                 "The block identifier to read the contract state from. Can be a block "
-                "number (e.g., 19000000) or a string tag (e.g., 'latest', 'pending'). "
-                "Defaults to 'latest'."
+                "number (e.g., 19000000) or a string tag (e.g., 'latest'). Defaults to 'latest'."
             )
         ),
     ] = "latest",
@@ -139,18 +141,10 @@ async def read_contract(
     ctx: Context,
 ) -> ToolResponse[ContractReadData]:
     """
-        Calls a read-only (view/pure) function of a smart contract and returns the
+        Calls a smart contract function (view/pure, or non-view/pure simulated via eth_call) and returns the
         decoded result.
 
-        The call is executed via a shared ``AsyncWeb3`` instance from
-        :mod:`blockscout_mcp_server.web3_pool`. The underlying provider
-        normalizes JSON-RPC parameters, enforces non-zero request IDs, and
-        reuses a pooled ``aiohttp.ClientSession`` so repeated contract reads do
-        not incur new TCP handshakes.
-
-        This tool provides a direct way to query the state of a smart contract
-        without needing to parse raw blockchain data. It is useful for tasks like
-        checking balances, reading configuration values, or verifying ownership.
+        This tool provides a direct way to query the state of a smart contract.
 
         Example:
         To check the USDT balance of an address on Ethereum Mainnet, you would use the following arguments:
@@ -179,7 +173,24 @@ async def read_contract(
         total=2.0,
         message=f"Preparing contract call {function_name} on {address}...",
     )
+
+    # Normalize args that might be provided as a JSON-encoded string
+    if isinstance(args, str):
+        try:
+            parsed = json.loads(args)
+        except Exception as exc:  # noqa: BLE001
+            raise ValueError(
+                '`args` must be a JSON array (e.g., ["0x..."]). Received a string that is not valid JSON.'
+            ) from exc
+        if not isinstance(parsed, list):
+            raise ValueError("`args` must be a JSON array, not a JSON object or scalar.")
+        args = parsed
+
     py_args = _convert_json_args(args or [])
+
+    # Normalize block if it is a decimal string
+    if isinstance(block, str) and block.isdigit():
+        block = int(block)
 
     def _for_check(a: Any) -> Any:
         if isinstance(a, list):
@@ -207,6 +218,9 @@ async def read_contract(
         result = await fn(*py_args).call(block_identifier=block)
     except ContractLogicError as e:
         raise RuntimeError(f"Contract call failed: {e}") from e
+    except Exception as e:  # noqa: BLE001
+        # Surface unexpected errors with context to the caller
+        raise RuntimeError(f"Contract call errored: {type(e).__name__}: {e}") from e
     await report_and_log_progress(
         ctx,
         progress=2.0,
