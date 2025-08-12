@@ -1,0 +1,9 @@
+---
+description: Bump dxt manifest version when server or tools change
+globs: dxt/manifest.json
+alwaysApply: false
+---
+# DXT Manifest Version Rule
+
+- When you change the `server` field (any nested value) or modify the `tools` list (add/remove/reorder/update any tool), bump the `version` in `dxt/manifest.json`. Do not change `dxt_version`.
+- Use semantic versioning for `version` (MAJOR.MINOR.PATCH). Prefer PATCH for routine tweaks, MINOR for new tools or new server capabilities, MAJOR for breaking changes.
