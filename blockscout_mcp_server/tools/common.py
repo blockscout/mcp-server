@@ -134,6 +134,20 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
     Raises:
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
+        httpx.RequestError: For transport-level errors after final retry
+
+    Retry behavior:
+        This helper performs a small, conservative retry for transient, transport-level
+        failures (e.g., incomplete chunked reads) that can occur with upstream
+        infrastructure. The policy intentionally:
+
+        - Applies only to idempotent GET requests (this function is GET-only)
+        - Retries up to 3 attempts on httpx.RequestError (not on HTTPStatusError)
+        - Uses short exponential backoff (0.5s, 1.0s)
+
+        Rationale: Integration and production traffic can occasionally hit flaky
+        network conditions. Centralizing minimal retries here improves robustness
+        for all tools and REST endpoints without masking persistent API errors.
     """
     async with _create_httpx_client(timeout=config.bs_timeout) as client:
         if params is None:
@@ -142,9 +156,23 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
             params["apikey"] = config.bs_api_key
 
         url = f"{base_url.rstrip('/')}/{api_path.lstrip('/')}"
-        response = await client.get(url, params=params)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        return response.json()
+
+        # Retry transient transport errors (e.g., incomplete chunked reads).
+        # Do not retry server/client status errors to avoid hiding real failures.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = await client.get(url, params=params)
+                response.raise_for_status()  # Raise an exception for HTTP errors
+                return response.json()
+            except httpx.RequestError as e:
+                last_error = e
+                if attempt == 2:
+                    break
+                # Exponential backoff on transient transport issues
+                await anyio.sleep(0.5 * (2**attempt))
+        assert last_error is not None
+        raise last_error
 
 
 async def make_bens_request(api_path: str, params: dict | None = None) -> dict:

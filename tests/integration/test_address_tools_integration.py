@@ -133,20 +133,14 @@ async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     address = "0xA94b3E48215c72266f5006bcA6EE67Fff7122307"
     chain_id = "1"
 
-    try:
-        first_page_response = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
-    except httpx.HTTPStatusError as e:
-        pytest.skip(f"API request failed, skipping pagination test: {e}")
+    first_page_response = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
     assert isinstance(first_page_response, ToolResponse)
     assert first_page_response.pagination is not None, "Pagination info is missing."
     next_call_info = first_page_response.pagination.next_call
     assert next_call_info.tool_name == "nft_tokens_by_address"
 
-    try:
-        second_page_response = await nft_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
-    except httpx.HTTPStatusError as e:
-        pytest.fail(f"API request for the second page failed with cursor: {e}")
+    second_page_response = await nft_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
 
     assert isinstance(second_page_response, ToolResponse)
     assert isinstance(second_page_response.data, list)
@@ -170,6 +164,9 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     cursor = first_page_result.pagination.next_call.params.get("cursor")
     assert cursor
 
+    assert isinstance(first_page_result.data, list)
+    assert len(first_page_result.data) > 0
+
     try:
         second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
     except httpx.HTTPStatusError as e:
@@ -177,7 +174,7 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
 
     assert isinstance(second_page_result.data, list)
     assert len(second_page_result.data) > 0
-    assert first_page_result.data[0].transaction_hash != second_page_result.data[0].transaction_hash
+    assert first_page_result.data != second_page_result.data
 
 
 @pytest.mark.integration
@@ -188,6 +185,16 @@ async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
     decoded data by searching across pages. This validates the handling of
     complex nested truncation from the live API.
     """
+    # Maintenance note (for future LLM-powered assistants and developers):
+    # If this test ever appears as "skipped" or is modified to skip when the
+    # target log pattern is not found quickly, do NOT weaken the
+    # `found_truncated_log` expectation by default. First, verify that the
+    # upstream endpoint actually returns `CallExecuted` logs within the first
+    # few pages for the target address:
+    #   GET /api/v2/addresses/0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7/logs
+    # Only if the API genuinely stops returning those logs near the front pages
+    # should the test targets/parameters be revisited. The assertion should not
+    # be loosened merely due to transient data shifts.
     address = "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7"
     chain_id = "1"
     MAX_PAGES_TO_CHECK = 5

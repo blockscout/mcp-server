@@ -247,14 +247,14 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
    - A shared `aiohttp` session enforces global and per-host connection limits to prevent overload.
 
-4. **Blockscout-Hosted Chain Filtering**:
+5. **Blockscout-Hosted Chain Filtering**:
 
    The `get_chains_list` tool intentionally returns only chains that are hosted
    by the Blockscout team. This ensures a consistent feature set, stable service
    levels, and the ability to authenticate requests from the MCP server. Chains
    without an official Blockscout instance are omitted.
 
-5. **Response Processing and Context Optimization**:
+6. **Response Processing and Context Optimization**:
 
    The server employs a comprehensive strategy to **conserve LLM context** by intelligently processing API responses before forwarding them to the MCP Host. This prevents overwhelming the LLM context window with excessive blockchain data, ensuring efficient tool selection and reasoning.
 
@@ -361,6 +361,17 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **`raw_input` Truncation**: If the raw hexadecimal input string exceeds `INPUT_DATA_TRUNCATION_LIMIT`, it is shortened. A new flag, `raw_input_truncated: true`, is added to the response to signal this.
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
+
+7. **HTTP Request Robustness**
+
+   Blockscout HTTP requests are centralized via the helper `make_blockscout_request`. To improve resilience against transient, transport-level issues observed in real-world usage (for example, incomplete chunked reads), the helper employs a small and conservative retry policy:
+
+   - Applies only to idempotent GETs (this function is GET-only)
+   - Retries up to 3 attempts on `httpx.RequestError` (transport errors)
+   - Does not retry on `httpx.HTTPStatusError` (4xx/5xx responses)
+   - Uses short exponential backoff between attempts (0.5s, then 1.0s)
+
+   This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
