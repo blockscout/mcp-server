@@ -108,7 +108,7 @@ async def get_tokens_by_address(
     **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = f"/api/v2/addresses/{address}/tokens"
-    params = {"tokens": "ERC-20"}
+    params = {"type": "ERC-20"}
 
     # Add pagination parameters if provided via cursor
     apply_cursor_to_params(cursor, params)

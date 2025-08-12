@@ -96,10 +96,11 @@ async def test_get_chains_list_caches_filtered_chains(mock_ctx):
     ) as mock_request:
         with patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_cache:
             mock_request.return_value = mock_api_response
+            mock_cache.bulk_set = AsyncMock()
 
             await get_chains_list(ctx=mock_ctx)
 
-            mock_cache.bulk_set.assert_called_once()
+            mock_cache.bulk_set.assert_awaited_once()
             cached = mock_cache.bulk_set.call_args.args[0]
             assert cached == {"1": "https://eth"}
 

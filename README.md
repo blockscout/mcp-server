@@ -31,16 +31,18 @@ The easiest way to use the Blockscout MCP server with Claude Desktop is through 
 
 **Installation:**
 
-1. Download the latest `blockscout-mcp.dxt` file from the [releases page](https://github.com/blockscout/mcp-server/releases)
-2. Open Claude Desktop
-3. Drag and drop the `.dxt` file directly into the Claude Desktop window
-4. The extension will be automatically installed and ready to use
+1. Download the latest `blockscout-mcp.dxt` file from the [releases page](https://github.com/blockscout/mcp-server/releases).
+2. Open Claude Desktop.
+3. Double click to open the `.dxt` file to automatically install the extension.
+4. Check Settings -> Extensions if you experience any issues. You can also drag and drop .DXT files into the extensions window to view and install.
 
 ### Using the Official Blockscout MCP Server
 
 The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides a reliable, always-updated service.
 
 **Claude Desktop Setup:**
+
+_Note: Docker is required for this setup_
 
 1. Open Claude Desktop and click on Settings
 2. Navigate to the "Developer" section

@@ -73,7 +73,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
     Raises:
         ChainNotFoundError: If no Blockscout instance is found for the chain
     """
-    current_time = time.time()
+    current_time = time.monotonic()
     cached_entry = chain_cache.get(chain_id)
 
     if cached_entry:
@@ -85,7 +85,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
                 )
             return cached_url
         else:
-            chain_cache.invalidate(chain_id)  # Cache expired
+            await chain_cache.invalidate(chain_id)  # Cache expired
 
     chain_api_url = f"{config.chainscout_url}/api/chains/{chain_id}"
 
@@ -101,18 +101,18 @@ async def get_blockscout_base_url(chain_id: str) -> str:
         chain_data = response.json()
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            chain_cache.set_failure(chain_id)
+            await chain_cache.set_failure(chain_id)
             raise ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.") from e
         raise ChainNotFoundError(f"Error fetching data for chain ID '{chain_id}' from Chainscout: {e}") from e
     except (httpx.RequestError, json.JSONDecodeError) as e:
         raise ChainNotFoundError(f"Could not retrieve or parse data for chain ID '{chain_id}' from Chainscout.") from e
 
     if not chain_data or "explorers" not in chain_data:
-        chain_cache.set_failure(chain_id)
+        await chain_cache.set_failure(chain_id)
         raise ChainNotFoundError(f"No explorer data found for chain ID '{chain_id}' on Chainscout.")
 
     blockscout_url = find_blockscout_url(chain_data)
-    chain_cache.set(chain_id, blockscout_url)
+    await chain_cache.set(chain_id, blockscout_url)
 
     if blockscout_url:
         return blockscout_url

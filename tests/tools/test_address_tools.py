@@ -73,7 +73,7 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -147,7 +147,7 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -212,7 +212,7 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
 
         # Verify that all pagination parameters were passed to the API
         expected_params = {
-            "tokens": "ERC-20",
+            "type": "ERC-20",
             "fiat_value": fiat_value,
             "id": id_param,
             "items_count": items_count,
@@ -275,7 +275,7 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -333,7 +333,7 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -382,7 +382,7 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
         # Verify mocks were called as expected before the exception
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"tokens": "ERC-20"}
+            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
         # Progress should have been reported twice (start + after chain URL resolution) before the error
         assert mock_ctx.report_progress.call_count == 2
