@@ -1,0 +1,15 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+### Terminal Path Usage
+
+- Working directory: `/workspaces/bs-mcp-server`. Do not `cd` into `bs-mcp-server`.
+- Paths: Use repo-root relative paths. Do not prefix with `bs-mcp-server/`.
+- Examples:
+  - Ruff: `ruff check tests/` (not `ruff check bs-mcp-server/tests/`)
+  - Pytest: `pytest -m integration -v tests/integration/test_contract_tools_integration.py` (not `pytest bs-mcp-server/tests/...`)
+- Absolute paths are acceptable when needed, e.g., `ruff check /workspaces/bs-mcp-server/tests/...`.
+- If unsure, run `pwd` once; avoid repetitive `cd`.
