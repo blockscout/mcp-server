@@ -105,11 +105,13 @@ This command is useful for periodically checking the health of our external depe
 To test the REST API, you must start the server with both the `--http` and `--rest` flags.
 
 **Using Local Installation:**
+
 ```bash
 python -m blockscout_mcp_server --http --rest --http-port 8000
 ```
 
 **Using Docker:**
+
 ```bash
 docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest --http --rest --http-host 0.0.0.0 --http-port 8000
 ```
@@ -194,31 +196,36 @@ All MCP responses follow the JSON-RPC 2.0 format:
 ### Testing the REST API
 
 #### 1. Health Check
+
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
 #### 2. Get Latest Block (Success Case)
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
 ```
 
 #### 3. Get Block Info (With Optional Parameter)
+
 ```bash
 curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
 ```
 
 #### 4. Get Block Info (Error Case - Missing Required Parameter)
+
 This request is missing the `number_or_hash` parameter and should return a 400 error.
+
 ```bash
 curl -i "http://127.0.0.1:8000/v1/get_block_info?chain_id=1"
 ```
 
 #### 5. Read Contract
+
 ```bash
 curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee523a2206206994597C13D831ec7&function_name=balanceOf&abi=%7B%22constant%22%3Atrue%2C%22inputs%22%3A%5B%7B%22name%22%3A%22_owner%22%2C%22type%22%3A%22address%22%7D%5D%2C%22name%22%3A%22balanceOf%22%2C%22outputs%22%3A%5B%7B%22name%22%3A%22balance%22%2C%22type%22%3A%22uint256%22%7D%5D%2C%22payable%22%3Afalse%2C%22stateMutability%22%3A%22view%22%2C%22type%22%3A%22function%22%7D&args=%5B%220xF977814e90dA44bFA03b6295A0616a897441aceC%22%5D"
 ```
-
 
 #### Expected REST API Response Format
 
