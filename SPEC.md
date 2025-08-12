@@ -262,6 +262,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - Raw Blockscout API responses are never forwarded directly to the MCP Host
    - All responses are processed to extract only tool-relevant data
    - Large datasets (e.g., token lists with hundreds of entries) are filtered and formatted to include only essential information
+   - Contract source code is not returned by tools to conserve context; when contract metadata is needed, only the ABI may be returned (sources are omitted).
 
    **Specific Optimizations:**
 
@@ -493,3 +494,42 @@ Implemented via the `@log_tool_invocation` decorator, these logs capture:
 - The identity of the MCP client that initiated the call, including its **name**, **version**, and the **MCP protocol version** it is using.
 
 This provides a clear audit trail, helping to diagnose issues that may be specific to certain client versions or protocol implementations. For stateless calls, such as those from the REST API where no client is present, this information is gracefully omitted.
+
+### Smart Contract Interaction Tools
+
+This server exposes a tool for on-chain smart contract read-only state access. It uses the JSON-RPC `eth_call` semantics under the hood and aligns with the standardized `ToolResponse` model.
+
+- **read_contract**: Executes a read-only contract call by encoding inputs per ABI and invoking `eth_call` (also used to simulate non-view/pure functions without changing state).
+
+#### read_contract
+
+- **RPC used**: `eth_call`.
+- **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding. This leverages Web3's well-tested argument handling and return value decoding.
+- **ABI requirement**: Accepts the ABI of the specific function variant to call (a single ABI object for that function signature). This avoids ambiguity when contracts overload function names.
+- **Function name**: The `function_name` parameter must match the `name` field in the provided function ABI. Although redundant, it is kept intentionally to improve LLM tool-selection behavior and may be removed later.
+- **Arguments**: The `args` parameter is a JSON array. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
+  - Addresses can be provided as 0x-prefixed strings; the tool normalizes and applies EIP-55 checksum internally.
+  - Numeric strings are coerced to integers.
+  - Bytes values should be provided as 0x-hex strings; nested hex strings are handled.
+  - Deep recursion is applied for lists and dicts to normalize all nested values.
+- **Block parameter**: Optional `block` (default: `latest`). Accepts a block number (integer or decimal string) or a tag such as `latest`.
+- **Other eth_call params**: Not supported/passed. No `from`, `gas`, `gasPrice`, `value`, etc., are set by this tool.
+
+#### Tested coverage and examples
+
+- Complex input and output handling for nested ABIv2 types is validated against the contract `tests/integration/Web3PyTestContract.sol` deployed on Sepolia at `0xD9a3039cfC70aF84AC9E566A2526fD3b683B995B`.
+
+#### LLM guidance
+
+- Tool and argument descriptions explicitly instruct LLMs to:
+  - Provide arguments as a JSON array (not a quoted string)
+  - Provide 0x-prefixed address strings
+  - Supply integers for numeric values (not quoted) when possible; numeric strings will be coerced
+  - Keep bytes as 0x-hex strings
+- These instructions improve the likelihood of valid `eth_call` preparation and encoding.
+
+#### Limitations
+
+- Write operations are not supported; `eth_call` does not change state.
+- No caller context (`from`) or gas simulation tuning is provided.
+- Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.

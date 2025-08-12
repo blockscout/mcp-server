@@ -162,6 +162,12 @@ Which 10 most recent logs were emitted by `0xFe89cc7aBB2C4183683ab71653C4cdc9B02
 before `Nov 08 2024 04:21:35 AM (-06:00 UTC)`?
 ```
 
+```plaintext
+What is the most recent transaction made to queue a proposal on `0x323A76393544d5ecca80cd6ef2A560C6a395b7E3`
+in the Ethereum mainnet? What is the proposal ID? What are the current vote
+statistics for this proposal?
+```
+
 ## Development & Deployment
 
 ### Local Installation
