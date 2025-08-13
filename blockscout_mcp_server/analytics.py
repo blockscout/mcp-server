@@ -31,6 +31,27 @@ _is_http_mode_enabled: bool = False
 _mp_client: Any | None = None
 
 
+def _get_header_case_insensitive(headers: Any, key: str, default: str | None = None) -> str | None:
+    """Return header value in a case-insensitive way.
+
+    Supports both Starlette's case-insensitive Headers and plain dicts used in tests.
+    """
+    try:
+        # Works for Starlette Headers (case-insensitive) and dicts (case-sensitive)
+        value = headers.get(key, default)
+        if value not in (None, default):
+            return value
+        # Fallback: manual scan for plain dicts or other mappings
+        items = getattr(headers, "items", None)
+        if callable(items):
+            for k, v in items():
+                if isinstance(k, str) and k.lower() == key.lower():
+                    return v
+    except Exception:  # pragma: no cover - defensive
+        pass
+    return default
+
+
 def set_http_mode(is_http: bool) -> None:
     """Enable or disable HTTP mode for analytics gating."""
     global _is_http_mode_enabled
@@ -76,16 +97,18 @@ def _extract_request_ip(ctx: Any) -> str:
         if request is not None:
             headers = request.headers or {}
             # Prefer proxy-forwarded headers
-            xff = headers.get("x-forwarded-for") or headers.get("X-Forwarded-For")
+            xff = _get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
             if xff:
                 # left-most IP per standard
                 ip = xff.split(",")[0].strip()
-            elif headers.get("x-real-ip") or headers.get("X-Real-IP"):
-                ip = headers.get("x-real-ip") or headers.get("X-Real-IP") or ""
             else:
-                client = getattr(request, "client", None)
-                if client and getattr(client, "host", None):
-                    ip = client.host
+                x_real_ip = _get_header_case_insensitive(headers, "x-real-ip", "") or ""
+                if x_real_ip:
+                    ip = x_real_ip
+                else:
+                    client = getattr(request, "client", None)
+                    if client and getattr(client, "host", None):
+                        ip = client.host
     except Exception:  # pragma: no cover - tolerate all shapes
         pass
     return ip

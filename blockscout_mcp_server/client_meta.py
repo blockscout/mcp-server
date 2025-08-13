@@ -44,14 +44,10 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
                 if getattr(client_info, "version", None):
                     client_version = client_info.version
         # Read User-Agent from HTTP request (if present)
-        try:
-            request = getattr(getattr(ctx, "request_context", None), "request", None)
-            if request is not None:
-                headers = request.headers or {}
-                ua = headers.get("user-agent") or headers.get("User-Agent") or ""
-                user_agent = ua
-        except Exception:  # pragma: no cover
-            pass
+        request = getattr(getattr(ctx, "request_context", None), "request", None)
+        if request is not None:
+            headers = request.headers or {}
+            user_agent = headers.get("user-agent", "")
         # If client name is still undefined, fallback to User-Agent
         if client_name == UNDEFINED_CLIENT_NAME and user_agent:
             client_name = user_agent
