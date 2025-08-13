@@ -1,9 +1,10 @@
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ServerConfig(BaseSettings):
-    model_config = ConfigDict(env_prefix="BLOCKSCOUT_")  # e.g., BLOCKSCOUT_BS_URL
+    # Load environment variables from a local .env file (current working directory)
+    # and require the BLOCKSCOUT_ prefix for all settings
+    model_config = SettingsConfigDict(env_prefix="BLOCKSCOUT_", env_file=".env")
 
     bs_api_key: str = ""  # Default to empty, can be set via env
     bs_timeout: float = 120.0  # Default timeout in seconds
@@ -33,6 +34,10 @@ class ServerConfig(BaseSettings):
 
     # Base name used in the User-Agent header sent to Blockscout RPC
     mcp_user_agent: str = "Blockscout MCP"
+
+    # Analytics configuration
+    mixpanel_token: str = ""
+    mixpanel_api_host: str = ""  # Optional custom API host (e.g., EU region)
 
 
 config = ServerConfig()

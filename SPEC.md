@@ -493,7 +493,37 @@ Implemented via the `@log_tool_invocation` decorator, these logs capture:
 - The arguments provided to the tool.
 - The identity of the MCP client that initiated the call, including its **name**, **version**, and the **MCP protocol version** it is using.
 
+If the client name cannot be determined from the MCP session parameters, the server falls back to the HTTP `User-Agent` header as the client identifier.
+
 This provides a clear audit trail, helping to diagnose issues that may be specific to certain client versions or protocol implementations. For stateless calls, such as those from the REST API where no client is present, this information is gracefully omitted.
+
+#### 3. Mixpanel Analytics for Tool Invocation
+
+To gain insight into tool usage patterns, the server can optionally report tool invocations to Mixpanel.
+
+- Activation (opt-in only):
+  - Enabled exclusively in HTTP modes (MCP-over-HTTP and REST).
+  - Requires `BLOCKSCOUT_MIXPANEL_TOKEN` to be set; otherwise analytics are disabled.
+
+- Integration point:
+  - Tracking is centralized in `blockscout_mcp_server/analytics.py` and invoked from the shared `@log_tool_invocation` decorator so every tool is tracked consistently without altering tool implementations.
+
+- Tracked properties (per event):
+  - Client IP address derived from the HTTP request, preferring proxy headers when present: `X-Forwarded-For` (first value), then `X-Real-IP`, otherwise connection `client.host`.
+  - MCP client name (or the HTTP `User-Agent` when the client name is unavailable).
+  - MCP client version.
+  - MCP protocol version.
+  - Tool arguments (currently sent as-is, without truncation).
+  - Call source: whether the tool was invoked by MCP or via the REST API.
+
+- Anonymous identity (distinct_id) (as per Mixpanel's [documentation](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#server-side-identity-management)):
+  - A stable `distinct_id` is generated to anonymously identify unique users.
+  - The fingerprint is the concatenation of: namespace URL (`"https://blockscout.com/mcp/"`), client IP, client name, and client version.
+  - This provides stable identification even when multiple clients share the same name/version (e.g., Claude Desktop), because their IPs differ.
+
+- REST API support and source attribution:
+  - The REST context mock is extended with a request context wrapper so analytics can extract IP and headers consistently (see `blockscout_mcp_server/api/dependencies.py`).
+  - A `call_source` field is introduced on the REST mock context and set to `"rest"`, allowing analytics to reliably distinguish REST API calls from MCP tool calls without coupling to specific URL paths.
 
 ### Smart Contract Interaction Tools
 

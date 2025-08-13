@@ -4,9 +4,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-UNDEFINED_CLIENT_NAME = "N/A"
-UNDEFINED_CLIENT_VERSION = "N/A"
-UNKNOWN_PROTOCOL_VERSION = "Unknown"
+from blockscout_mcp_server import analytics
+from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +21,22 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         arg_dict = dict(bound.arguments)
         ctx = arg_dict.pop("ctx", None)
 
-        client_name = UNDEFINED_CLIENT_NAME
-        client_version = UNDEFINED_CLIENT_VERSION
-        protocol_version = UNKNOWN_PROTOCOL_VERSION
+        # Extract client metadata consistently using shared helper
+        meta = extract_client_meta_from_ctx(ctx)
+        client_name = meta.name
+        client_version = meta.version
+        protocol_version = meta.protocol
 
+        # Track analytics (no-op if disabled)
         try:
-            if client_params := ctx.session.client_params:
-                protocol_version = str(client_params.protocolVersion or UNKNOWN_PROTOCOL_VERSION)
-                if client_info := client_params.clientInfo:
-                    client_name = client_info.name or UNDEFINED_CLIENT_NAME
-                    client_version = client_info.version or UNDEFINED_CLIENT_VERSION
-        except AttributeError:
+            analytics.track_tool_invocation(
+                ctx,
+                func.__name__,
+                arg_dict,
+                client_meta=meta,
+            )
+        except Exception:
+            # Defensive: tracking must never break tool execution
             pass
 
         log_message = (

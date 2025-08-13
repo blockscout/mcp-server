@@ -19,6 +19,8 @@ mcp-server/
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   ├── logging_utils.py        # Logging utilities for production-ready log formatting
+│   ├── analytics.py            # Centralized Mixpanel analytics for tool invocations (HTTP mode only)
+│   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -206,6 +208,17 @@ mcp-server/
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
+    * **`analytics.py`**:
+        * Centralized Mixpanel analytics for MCP tool invocations.
+        * Enabled only in HTTP mode when `BLOCKSCOUT_MIXPANEL_TOKEN` is set.
+        * Generates deterministic `distinct_id` based on client IP, name, and version fingerprint.
+        * Tracks tool invocations with client metadata, protocol version, and call source (MCP vs REST).
+        * Includes IP geolocation metadata for Mixpanel and graceful error handling to avoid breaking tool execution.
+    * **`client_meta.py`**:
+        * Shared utilities for extracting client metadata (name, version, protocol, user_agent) from MCP Context.
+        * Provides `ClientMeta` dataclass and `extract_client_meta_from_ctx()` function.
+        * Falls back to User-Agent header when MCP client name is unavailable.
+        * Ensures consistent sentinel defaults ("N/A", "Unknown") across logging and analytics modules.
     * **`cache.py`**:
         * Encapsulates in-memory caching of chain data with TTL management.
     * **`web3_pool.py`**:
