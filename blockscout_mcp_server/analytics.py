@@ -17,9 +17,16 @@ from typing import Any
 try:
     # Import lazily; tests will mock this
     from mixpanel import Consumer, Mixpanel
-except ImportError:  # pragma: no cover - import errors covered by no-op behavior in tests
-    Consumer = object  # type: ignore[assignment]
-    Mixpanel = object  # type: ignore[assignment]
+except ImportError:  # pragma: no cover
+
+    class _MissingMixpanel:  # noqa: D401 - simple placeholder
+        """Placeholder that raises if Mixpanel is actually used."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401 - simple placeholder
+            raise ImportError("Mixpanel library is not installed. Please install 'mixpanel' to use analytics features.")
+
+    Consumer = _MissingMixpanel  # type: ignore[assignment]
+    Mixpanel = _MissingMixpanel  # type: ignore[assignment]
 
 from blockscout_mcp_server.client_meta import (
     ClientMeta,
