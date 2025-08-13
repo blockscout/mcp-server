@@ -15,7 +15,12 @@ def test_determine_call_source_default_mcp_when_no_marker():
 
 
 def test_determine_call_source_mcp_when_session_present():
-    # Even with no explicit marker, presence of client_params should be treated as mcp
+    # No explicit marker still defaults to 'mcp' regardless of session presence
     session = SimpleNamespace(client_params=SimpleNamespace())
     ctx = SimpleNamespace(session=session)
+    assert _determine_call_source(ctx) == "mcp"
+
+
+def test_determine_call_source_empty_string_defaults_to_mcp():
+    ctx = SimpleNamespace(call_source="")
     assert _determine_call_source(ctx) == "mcp"
