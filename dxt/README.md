@@ -21,6 +21,35 @@ The reasons for this are:
 
 ## Packaging instructions
 
+### Automated Build (Recommended)
+
+For automated building using the provided build script:
+
+**Production mode (default):**
+
+```shell
+docker run --rm -it -v "$(pwd)"/dxt:/workspace -w /workspace node:20-slim bash -c "./build.sh"
+# or explicitly:
+docker run --rm -it -v "$(pwd)"/dxt:/workspace -w /workspace node:20-slim bash -c "./build.sh prod"
+```
+
+**Development mode:**
+
+```shell
+docker run --rm -it -v "$(pwd)"/dxt:/workspace -w /workspace node:20-slim bash -c "./build.sh dev"
+```
+
+#### Build Modes
+
+- **Production (`prod`)**: Uses `manifest.json` and connects to the official `https://mcp.blockscout.com/mcp/` server. Creates `blockscout-mcp.dxt`.
+- **Development (`dev`)**: Uses `manifest-dev.json` with configurable URL and creates `blockscout-mcp-dev.dxt`. Users can configure the Blockscout MCP server URL during installation in Claude Desktop.
+
+This will automatically handle all the steps below and create the extension at `dxt/_build/blockscout-mcp[--dev].dxt`.
+
+### Manual Build
+
+For manual building or if you prefer step-by-step control:
+
 1. This step is optional and required only if there is no local Node.js installation.
 
     For the project directory run:
