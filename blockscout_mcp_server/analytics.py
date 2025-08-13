@@ -17,7 +17,7 @@ from typing import Any
 try:
     # Import lazily; tests will mock this
     from mixpanel import Consumer, Mixpanel
-except Exception:  # pragma: no cover - import errors covered by no-op behavior in tests
+except ImportError:  # pragma: no cover - import errors covered by no-op behavior in tests
     Consumer = object  # type: ignore[assignment]
     Mixpanel = object  # type: ignore[assignment]
 
