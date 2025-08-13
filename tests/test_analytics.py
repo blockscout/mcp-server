@@ -22,13 +22,13 @@ class DummyCtx:
 
 
 @pytest.fixture(autouse=True)
-def reset_mode_and_client():
+def reset_mode_and_client(monkeypatch):
     analytics.set_http_mode(False)
     # Ensure private module state is reset between tests
-    analytics._mp_client = None  # type: ignore[attr-defined]
+    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
     yield
     analytics.set_http_mode(False)
-    analytics._mp_client = None  # type: ignore[attr-defined]
+    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
 
 
 def test_noop_when_not_http_mode(monkeypatch):
