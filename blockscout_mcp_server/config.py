@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ServerConfig(BaseSettings):
     # Load environment variables from a local .env file (current working directory)
     # and require the BLOCKSCOUT_ prefix for all settings
-    model_config = SettingsConfigDict(env_prefix="BLOCKSCOUT_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="BLOCKSCOUT_", env_file=".env", env_file_encoding="utf-8")
 
     bs_api_key: str = ""  # Default to empty, can be set via env
     bs_timeout: float = 120.0  # Default timeout in seconds
