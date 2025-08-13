@@ -1,11 +1,18 @@
 """Dependencies for the REST API, such as mock context providers."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - typing-only import
+    from starlette.requests import Request
+
 
 class _RequestContextWrapper:
     """Lightweight wrapper to mimic MCP's request_context shape for analytics."""
 
-    def __init__(self, request) -> None:  # type: ignore[no-untyped-def]
-        self.request = request
+    def __init__(self, request: Request) -> None:
+        self.request: Request = request
 
 
 class MockCtx:
@@ -18,7 +25,7 @@ class MockCtx:
     analytics can extract connection fingerprint data.
     """
 
-    def __init__(self, request=None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, request: Request | None = None) -> None:
         self.request_context = _RequestContextWrapper(request) if request is not None else None
         # Mark source explicitly so analytics can distinguish REST from MCP without path coupling
         self.call_source = "rest"
@@ -32,6 +39,6 @@ class MockCtx:
         pass
 
 
-def get_mock_context(request=None) -> MockCtx:  # type: ignore[no-untyped-def]
+def get_mock_context(request: Request | None = None) -> MockCtx:
     """Dependency provider to get a mock context for stateless REST calls."""
     return MockCtx(request=request)

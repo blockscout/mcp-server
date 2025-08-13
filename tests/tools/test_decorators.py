@@ -9,7 +9,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @pytest.mark.asyncio
-async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureFixture) -> None:
+async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureFixture, mock_ctx: Context) -> None:
     # Arrange
     caplog.set_level(logging.INFO, logger="blockscout_mcp_server.tools.decorators")
 
@@ -28,7 +28,6 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
         return a
 
     # Act
-    mock_ctx = MagicMock()
     await dummy_tool(7, ctx=mock_ctx)
 
     # Assert
@@ -56,7 +55,7 @@ async def test_log_tool_invocation_decorator(caplog: pytest.LogCaptureFixture, m
 
 
 @pytest.mark.asyncio
-async def test_log_tool_invocation_mcp_context(caplog: pytest.LogCaptureFixture) -> None:
+async def test_log_tool_invocation_mcp_context(caplog: pytest.LogCaptureFixture, mock_ctx: Context) -> None:
     """Verify that client info is logged correctly from a full MCP context."""
     caplog.set_level(logging.INFO, logger="blockscout_mcp_server.tools.decorators")
 
@@ -70,11 +69,9 @@ async def test_log_tool_invocation_mcp_context(caplog: pytest.LogCaptureFixture)
         capabilities=types.ClientCapabilities(),
         clientInfo=types.Implementation(name="test-client", version="1.2.3"),
     )
+    mock_ctx.session = mock_session
 
-    full_mock_ctx = MagicMock()
-    full_mock_ctx.session = mock_session
-
-    await dummy_tool(1, ctx=full_mock_ctx)
+    await dummy_tool(1, ctx=mock_ctx)
 
     log_text = caplog.text
     assert "Tool invoked: dummy_tool" in log_text
