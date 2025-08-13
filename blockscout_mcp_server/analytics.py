@@ -173,5 +173,3 @@ def track_tool_invocation(
             mp.track(distinct_id, tool_name, properties)
     except Exception as exc:  # pragma: no cover - do not break tool flow
         logger.debug("Mixpanel tracking failed for %s: %s", tool_name, exc)
-
-

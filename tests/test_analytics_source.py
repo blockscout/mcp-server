@@ -19,5 +19,3 @@ def test_determine_call_source_mcp_when_session_present():
     session = SimpleNamespace(client_params=SimpleNamespace())
     ctx = SimpleNamespace(session=session)
     assert _determine_call_source(ctx) == "mcp"
-
-

@@ -59,5 +59,3 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
         pass
 
     return ClientMeta(name=client_name, version=client_version, protocol=protocol, user_agent=user_agent)
-
-

@@ -36,5 +36,3 @@ def test_build_distinct_id_stable():
     # Changing any component changes the result
     c = _build_distinct_id("1.2.3.4", "client", "1.1")
     assert c != a
-
-

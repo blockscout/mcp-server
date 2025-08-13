@@ -72,5 +72,3 @@ def test_tracks_with_headers(monkeypatch):
         assert args[2]["tool_args"] == {"x": 2}
         assert args[2]["protocol_version"] == "2024-11-05"
         assert kwargs.get("meta") == {"ip": "203.0.113.5"}
-
-

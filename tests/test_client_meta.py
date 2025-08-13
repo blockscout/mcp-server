@@ -36,5 +36,3 @@ def test_extract_client_meta_partial():
     assert meta.name == UNDEFINED_CLIENT_NAME
     assert meta.version == "0.1.0"
     assert meta.protocol == UNKNOWN_PROTOCOL_VERSION
-
-
