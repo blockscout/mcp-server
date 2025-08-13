@@ -21,7 +21,11 @@ except Exception:  # pragma: no cover - import errors covered by no-op behavior 
     Consumer = object  # type: ignore[assignment]
     Mixpanel = object  # type: ignore[assignment]
 
-from blockscout_mcp_server.client_meta import ClientMeta, extract_client_meta_from_ctx
+from blockscout_mcp_server.client_meta import (
+    ClientMeta,
+    extract_client_meta_from_ctx,
+    get_header_case_insensitive,
+)
 from blockscout_mcp_server.config import config
 
 logger = logging.getLogger(__name__)
@@ -29,27 +33,6 @@ logger = logging.getLogger(__name__)
 
 _is_http_mode_enabled: bool = False
 _mp_client: Any | None = None
-
-
-def _get_header_case_insensitive(headers: Any, key: str, default: str | None = None) -> str | None:
-    """Return header value in a case-insensitive way.
-
-    Supports both Starlette's case-insensitive Headers and plain dicts used in tests.
-    """
-    try:
-        # Works for Starlette Headers (case-insensitive) and dicts (case-sensitive)
-        value = headers.get(key, default)
-        if value not in (None, default):
-            return value
-        # Fallback: manual scan for plain dicts or other mappings
-        items = getattr(headers, "items", None)
-        if callable(items):
-            for k, v in items():
-                if isinstance(k, str) and k.lower() == key.lower():
-                    return v
-    except Exception:  # pragma: no cover - defensive
-        pass
-    return default
 
 
 def set_http_mode(is_http: bool) -> None:
@@ -97,12 +80,12 @@ def _extract_request_ip(ctx: Any) -> str:
         if request is not None:
             headers = request.headers or {}
             # Prefer proxy-forwarded headers
-            xff = _get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
+            xff = get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
             if xff:
                 # left-most IP per standard
                 ip = xff.split(",")[0].strip()
             else:
-                x_real_ip = _get_header_case_insensitive(headers, "x-real-ip", "") or ""
+                x_real_ip = get_header_case_insensitive(headers, "x-real-ip", "") or ""
                 if x_real_ip:
                     ip = x_real_ip
                 else:

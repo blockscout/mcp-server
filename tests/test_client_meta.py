@@ -5,6 +5,7 @@ from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_VERSION,
     UNKNOWN_PROTOCOL_VERSION,
     extract_client_meta_from_ctx,
+    get_header_case_insensitive,
 )
 
 
@@ -36,3 +37,23 @@ def test_extract_client_meta_partial():
     assert meta.name == UNDEFINED_CLIENT_NAME
     assert meta.version == "0.1.0"
     assert meta.protocol == UNKNOWN_PROTOCOL_VERSION
+
+
+def test_extract_client_meta_uses_user_agent_when_name_missing():
+    # No clientInfo; user agent present in HTTP request
+    headers = {"User-Agent": "ua-test/9.9.9"}
+    request = SimpleNamespace(headers=headers)
+    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+
+    meta = extract_client_meta_from_ctx(ctx)
+    assert meta.name == "ua-test/9.9.9"
+    assert meta.version == UNDEFINED_CLIENT_VERSION
+    assert meta.protocol == UNKNOWN_PROTOCOL_VERSION
+
+
+def test_get_header_case_insensitive_with_dict():
+    headers = {"User-Agent": "ua-test/1.0", "X-Real-IP": "1.2.3.4"}
+    assert get_header_case_insensitive(headers, "user-agent") == "ua-test/1.0"
+    assert get_header_case_insensitive(headers, "USER-AGENT") == "ua-test/1.0"
+    assert get_header_case_insensitive(headers, "x-real-ip") == "1.2.3.4"
+    assert get_header_case_insensitive(headers, "missing", "default") == "default"

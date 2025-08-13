@@ -18,6 +18,28 @@ class ClientMeta:
     user_agent: str
 
 
+def get_header_case_insensitive(headers: Any, key: str, default: str = "") -> str:
+    """Return a header value in a case-insensitive way.
+
+    Works with Starlette's `Headers` (already case-insensitive) and plain dicts.
+    """
+    try:
+        value = headers.get(key, None)  # type: ignore[call-arg]
+        if value is not None:
+            return value
+    except Exception:  # pragma: no cover - tolerate any mapping shape
+        pass
+    try:
+        lower_key = key.lower()
+        items = headers.items() if hasattr(headers, "items") else []  # type: ignore[assignment]
+        for k, v in items:  # type: ignore[assignment]
+            if isinstance(k, str) and k.lower() == lower_key:
+                return v
+    except Exception:  # pragma: no cover - tolerate any mapping shape
+        pass
+    return default
+
+
 def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
     """Extract client meta (name, version, protocol, user_agent) from an MCP Context.
 
@@ -47,7 +69,7 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
         request = getattr(getattr(ctx, "request_context", None), "request", None)
         if request is not None:
             headers = request.headers or {}
-            user_agent = headers.get("user-agent", "")
+            user_agent = get_header_case_insensitive(headers, "user-agent", "")
         # If client name is still undefined, fallback to User-Agent
         if client_name == UNDEFINED_CLIENT_NAME and user_agent:
             client_name = user_agent
