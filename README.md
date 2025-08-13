@@ -257,13 +257,13 @@ docker pull ghcr.io/blockscout/mcp-server:latest
 To run the Docker container in HTTP mode with port mapping:
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest --http --http-host 0.0.0.0
+docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
 ```
 
 With custom port:
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/blockscout/mcp-server:latest --http --http-host 0.0.0.0 --http-port 8080
+docker run --rm -p 8080:8080 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0 --http-port 8080
 ```
 
 **HTTP Mode with REST API:**
@@ -271,7 +271,7 @@ docker run --rm -p 8080:8080 ghcr.io/blockscout/mcp-server:latest --http --http-
 To run with the REST API enabled:
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest --http --rest --http-host 0.0.0.0
+docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --rest --http-host 0.0.0.0
 ```
 
 **Note:** When running in HTTP mode with Docker, use `--http-host 0.0.0.0` to bind to all interfaces so the server is accessible from outside the container.
