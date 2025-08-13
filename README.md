@@ -144,13 +144,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 ## Example Prompts for AI Agents
 
 ```plaintext
-On which popular networks is `ens.eth` deployed as a contract?
-```
-
-```plaintext
-What are the usual activities performed by `ens.eth` on the Ethereum Mainnet?
-Since it is a contract, what is the most used functionality of this contract?
-Which address interacts with the contract the most?
+Is any approval set for OP token on Optimism chain by `zeaver.eth`?
 ```
 
 ```plaintext
@@ -163,9 +157,22 @@ before `Nov 08 2024 04:21:35 AM (-06:00 UTC)`?
 ```
 
 ```plaintext
-What is the most recent transaction made to queue a proposal on `0x323A76393544d5ecca80cd6ef2A560C6a395b7E3`
-in the Ethereum mainnet? What is the proposal ID? What are the current vote
-statistics for this proposal?
+Tell me more about the transaction `0xf8a55721f7e2dcf85690aaf81519f7bc820bc58a878fa5f81b12aef5ccda0efb`
+on Redstone rollup.
+```
+
+```plaintext
+Is there any blacklisting functionality of USDT token on Arbitrum One?
+```
+
+```plaintext
+What is the latest block on Gnosis Chain and who is the block minter?
+Were any funds moved from this minter recently?
+```
+
+```plaintext
+When the most recent reward distribution of Kinto token was made to the wallet
+`0x7D467D99028199D99B1c91850C4dea0c82aDDF52` in Kinto chain?
 ```
 
 ## Development & Deployment
