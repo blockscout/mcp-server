@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "blockscout-mcp",
   "display_name": "Blockscout",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Contextual blockchain activity analysis via Blockscout APIs",
   "long_description": "This extension enables contextual blockchain activity analysis with multi-chain support, intelligent context optimization, smart response slicing, and seamless pagination. The server exposes blockchain data including balances, tokens, NFTs, contract metadata, transactions, and logs via MCP for comprehensive blockchain analysis. This extension acts as a proxy to the official Blockscout MCP server.",
   "author": {
@@ -25,7 +25,8 @@
       "args": [
         "${__dirname}/node_modules/mcp-remote/dist/proxy.js",
         "https://mcp.blockscout.com/mcp/",
-        "--transport", "http-only"
+        "--transport", "http-only",
+        "--header", "Blockscout-MCP-Intermediary: ClaudeDesktop"
       ],
       "env": {}
     }
