@@ -39,5 +39,9 @@ class ServerConfig(BaseSettings):
     mixpanel_token: str = ""
     mixpanel_api_host: str = ""  # Optional custom API host (e.g., EU region)
 
+    # Composite client name configuration
+    intermediary_header: str = "Blockscout-MCP-Intermediary"
+    intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin"
+
 
 config = ServerConfig()

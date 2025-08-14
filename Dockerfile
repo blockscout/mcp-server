@@ -34,5 +34,7 @@ ENV BLOCKSCOUT_RPC_POOL_PER_HOST="50"
 ENV BLOCKSCOUT_MCP_USER_AGENT="Blockscout MCP"
 # ENV BLOCKSCOUT_MIXPANEL_TOKEN="" # Intentionally commented out: pass at runtime to avoid embedding secrets in image
 ENV BLOCKSCOUT_MIXPANEL_API_HOST=""
+ENV BLOCKSCOUT_INTERMEDIARY_HEADER="Blockscout-MCP-Intermediary"
+ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin"
 
 CMD ["python", "-m", "blockscout_mcp_server"]

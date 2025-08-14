@@ -72,3 +72,71 @@ def test_tracks_with_headers(monkeypatch):
         assert args[2]["tool_args"] == {"x": 2}
         assert args[2]["protocol_version"] == "2024-11-05"
         assert kwargs.get("meta") == {"ip": "203.0.113.5"}
+
+
+def test_tracks_with_intermediary_header(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {
+        "x-forwarded-for": "203.0.113.5",
+        "user-agent": "pytest-UA",
+        "Blockscout-MCP-Intermediary": "ClaudeDesktop",
+    }
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="node", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["client_name"] == "node/ClaudeDesktop"
+
+
+def test_tracks_with_invalid_intermediary(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {
+        "x-forwarded-for": "203.0.113.5",
+        "user-agent": "pytest-UA",
+        "Blockscout-MCP-Intermediary": "Unknown",
+    }
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="node", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["client_name"] == "node"
+
+
+def test_tracks_with_intermediary_and_user_agent_fallback(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {
+        "x-forwarded-for": "203.0.113.5",
+        "user-agent": "pytest-UA",
+        "Blockscout-MCP-Intermediary": "HigressPlugin",
+    }
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="", client_version="")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["client_name"] == "pytest-UA/HigressPlugin"
+
+
+def test_tracks_with_intermediary_no_client_or_user_agent(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {"Blockscout-MCP-Intermediary": "ClaudeDesktop"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="", client_version="")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["client_name"] == "N/A/ClaudeDesktop"

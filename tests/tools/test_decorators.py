@@ -1,4 +1,5 @@
 import logging
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import mcp.types as types
@@ -77,3 +78,26 @@ async def test_log_tool_invocation_mcp_context(caplog: pytest.LogCaptureFixture,
     assert "Tool invoked: dummy_tool" in log_text
     assert "with args: {'a': 1}" in log_text
     assert "(Client: test-client, Version: 1.2.3, Protocol: 2024-11-05)" in log_text
+
+
+@pytest.mark.asyncio
+async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFixture, mock_ctx: Context) -> None:
+    caplog.set_level(logging.INFO, logger="blockscout_mcp_server.tools.decorators")
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    headers = {"Blockscout-MCP-Intermediary": "HigressPlugin"}
+    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    mock_ctx.session = MagicMock()
+    mock_ctx.session.client_params = types.InitializeRequestParams(
+        protocolVersion="2024-11-05",
+        capabilities=types.ClientCapabilities(),
+        clientInfo=types.Implementation(name="test-client", version="1.2.3"),
+    )
+
+    await dummy_tool(1, ctx=mock_ctx)
+
+    log_text = caplog.text
+    assert "(Client: test-client/HigressPlugin, Version: 1.2.3, Protocol: 2024-11-05)" in log_text
