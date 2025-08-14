@@ -51,17 +51,20 @@ def _parse_intermediary_header(value: str, allowlist_raw: str) -> str:
     """
     if not value:
         return ""
-    first_value = next((v.strip() for v in value.split(",") if v.strip()), "")
+    first_value = next(
+        (stripped for v in value.split(",") if (stripped := v.strip())),
+        "",
+    )
     if not first_value:
         return ""
-    normalized = " ".join(first_value.strip().split())
+    normalized = " ".join(first_value.split())
     if len(normalized) > 16:
         return ""
     if "/" in normalized:
         return ""
     if any(ord(c) < 32 or ord(c) == 127 for c in normalized):
         return ""
-    allowlist = [v.strip().lower() for v in allowlist_raw.split(",") if v.strip()]
+    allowlist = [stripped.lower() for v in allowlist_raw.split(",") if (stripped := v.strip())]
     if normalized.lower() not in allowlist:
         return ""
     return normalized
