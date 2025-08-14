@@ -72,7 +72,7 @@ def _parse_intermediary_header(value: str, allowlist_raw: str) -> str:
 
 def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
     """Extract client meta (name, version, protocol, user_agent) from an MCP Context.
-    
+
     - name: MCP client name. If unavailable, defaults to "N/A" constant or falls back to user agent.
             If an intermediary HTTP header is present, it is appended to the client name.
     - version: MCP client version. If unavailable, defaults to "N/A" constant.
