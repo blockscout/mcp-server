@@ -24,6 +24,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
             "is_testnet": False,
             "native_currency": "TST",
             "ecosystem": "Test",
+            "settlement_layer_chain_id": "1",
         }
     ]
 
@@ -54,6 +55,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert first_chain.is_testnet is False
         assert first_chain.native_currency == "TST"
         assert first_chain.ecosystem == "Test"
+        assert first_chain.settlement_layer_chain_id == "1"
         assert result.data.pagination_rules == mock_pagination_rules
         assert result.data.time_based_query_rules == mock_time_rules
         assert result.data.block_time_estimation_rules == mock_block_rules

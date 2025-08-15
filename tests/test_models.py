@@ -104,9 +104,11 @@ def test_chain_info():
         is_testnet=False,
         native_currency="ETH",
         ecosystem="Ethereum",
+        settlement_layer_chain_id=None,
     )
     assert chain.name == "Ethereum"
     assert chain.chain_id == "1"
+    assert chain.settlement_layer_chain_id is None
 
 
 def test_chain_id_guidance():
@@ -120,6 +122,7 @@ def test_chain_id_guidance():
             is_testnet=False,
             native_currency="ETH",
             ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
         ),
         ChainInfo(
             name="Base",
@@ -127,6 +130,7 @@ def test_chain_id_guidance():
             is_testnet=False,
             native_currency="ETH",
             ecosystem=["Ethereum", "Superchain"],
+            settlement_layer_chain_id="1",
         ),
     ]
     guidance = ChainIdGuidance(rules="Chain ID rules here", recommended_chains=chains)
@@ -147,6 +151,7 @@ def test_instructions_data():
             is_testnet=False,
             native_currency="ETH",
             ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
         ),
         ChainInfo(
             name="Polygon",
@@ -154,6 +159,7 @@ def test_instructions_data():
             is_testnet=False,
             native_currency="POL",
             ecosystem="Polygon",
+            settlement_layer_chain_id=None,
         ),
     ]
     chain_id_guidance = ChainIdGuidance(rules="Chain rules", recommended_chains=chains)

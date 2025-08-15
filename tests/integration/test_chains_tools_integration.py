@@ -35,6 +35,7 @@ async def test_get_chains_list_integration(mock_ctx):
     assert eth_chain.is_testnet is False
     assert eth_chain.native_currency == "ETH"
     assert eth_chain.ecosystem == "Ethereum"
+    assert eth_chain.settlement_layer_chain_id is None
 
     op_chain = next((chain for chain in result.data if chain.name == "OP Mainnet"), None)
     assert op_chain is not None
@@ -42,6 +43,7 @@ async def test_get_chains_list_integration(mock_ctx):
     assert op_chain.is_testnet is False
     assert op_chain.native_currency == "ETH"
     assert op_chain.ecosystem == ["Optimism", "Superchain"]
+    assert op_chain.settlement_layer_chain_id == "1"
 
 
 @pytest.mark.integration

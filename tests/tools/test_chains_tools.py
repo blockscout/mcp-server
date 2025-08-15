@@ -38,6 +38,7 @@ async def test_get_chains_list_success(mock_ctx):
             "isTestnet": False,
             "native_currency": "POL",
             "ecosystem": "Polygon",
+            "settlementLayerChainId": "1",
             "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
         },
     }
@@ -49,6 +50,7 @@ async def test_get_chains_list_success(mock_ctx):
             is_testnet=False,
             native_currency="ETH",
             ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
         ),
         ChainInfo(
             name="Polygon PoS",
@@ -56,6 +58,7 @@ async def test_get_chains_list_success(mock_ctx):
             is_testnet=False,
             native_currency="POL",
             ecosystem="Polygon",
+            settlement_layer_chain_id="1",
         ),
     ]
 
@@ -193,6 +196,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
             is_testnet=False,
             native_currency="ETH",
             ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
         ),
         ChainInfo(
             name="Polygon PoS",
@@ -200,6 +204,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
             is_testnet=False,
             native_currency="POL",
             ecosystem="Polygon",
+            settlement_layer_chain_id=None,
         ),
     ]
 

@@ -61,6 +61,7 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
                                     is_testnet=chain.get("isTestnet", False),
                                     native_currency=chain.get("native_currency"),
                                     ecosystem=chain.get("ecosystem"),
+                                    settlement_layer_chain_id=chain.get("settlementLayerChainId"),
                                 )
                             )
 

@@ -43,6 +43,10 @@ class ChainInfo(BaseModel):
     ecosystem: str | list[str] | None = Field(
         description="The ecosystem the chain belongs to, if applicable (e.g., 'Ethereum')."
     )
+    settlement_layer_chain_id: str | None = Field(
+        default=None,
+        description="The L1 chain ID where this rollup settles, if applicable.",
+    )
 
 
 # --- Model for __unlock_blockchain_analysis__ Data Payload ---

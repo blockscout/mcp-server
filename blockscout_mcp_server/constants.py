@@ -66,6 +66,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": "Ethereum",
+        "settlement_layer_chain_id": None,
     },
     {
         "name": "Polygon PoS",
@@ -73,6 +74,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "POL",
         "ecosystem": "Polygon",
+        "settlement_layer_chain_id": None,
     },
     {
         "name": "Base",
@@ -80,6 +82,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": ["Ethereum", "Superchain"],
+        "settlement_layer_chain_id": "1",
     },
     {
         "name": "Arbitrum One Nitro",
@@ -87,6 +90,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": "Arbitrum",
+        "settlement_layer_chain_id": "1",
     },
     {
         "name": "OP Mainnet",
@@ -94,6 +98,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": ["Optimism", "Superchain"],
+        "settlement_layer_chain_id": "1",
     },
     {
         "name": "ZkSync Era",
@@ -101,6 +106,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": "zkSync",
+        "settlement_layer_chain_id": "1",
     },
     {
         "name": "Gnosis",
@@ -108,6 +114,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "XDAI",
         "ecosystem": "Gnosis",
+        "settlement_layer_chain_id": None,
     },
     {
         "name": "Celo",
@@ -115,6 +122,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "CELO",
         "ecosystem": "Ethereum",
+        "settlement_layer_chain_id": None,
     },
     {
         "name": "Scroll",
@@ -122,6 +130,7 @@ RECOMMENDED_CHAINS = [
         "is_testnet": False,
         "native_currency": "ETH",
         "ecosystem": "Ethereum",
+        "settlement_layer_chain_id": "1",
     },
 ]
 
