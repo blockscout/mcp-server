@@ -38,6 +38,11 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
     ) as mock_fetch:
         result = await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)
     mock_fetch.assert_awaited_once_with("1", "0xabc", mock_ctx)
+    mock_ctx.report_progress.assert_awaited_once()
+    assert (
+        mock_ctx.report_progress.await_args_list[0].kwargs["message"]
+        == "Starting to fetch contract metadata for 0xabc on chain 1..."
+    )
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractMetadata)
     assert result.data.source_code_tree_structure == ["A.sol"]
@@ -52,6 +57,11 @@ async def test_inspect_contract_file_content_mode_success(mock_ctx):
         return_value=contract,
     ):
         result = await inspect_contract_code(chain_id="1", address="0xabc", file_name="A.sol", ctx=mock_ctx)
+    mock_ctx.report_progress.assert_awaited_once()
+    assert (
+        mock_ctx.report_progress.await_args_list[0].kwargs["message"]
+        == "Starting to fetch source code for 'A.sol' of contract 0xabc on chain 1..."
+    )
     assert result.data == "pragma"
 
 
@@ -65,6 +75,11 @@ async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
     ):
         with pytest.raises(ValueError):
             await inspect_contract_code(chain_id="1", address="0xabc", file_name="B.sol", ctx=mock_ctx)
+    mock_ctx.report_progress.assert_awaited_once()
+    assert (
+        mock_ctx.report_progress.await_args_list[0].kwargs["message"]
+        == "Starting to fetch source code for 'B.sol' of contract 0xabc on chain 1..."
+    )
 
 
 @pytest.mark.asyncio
@@ -101,6 +116,9 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_awaited_once()
     mock_set.assert_awaited_once()
+    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.report_progress.await_args_list[0].kwargs["message"] == "Resolved Blockscout instance URL."
+    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
 
 
 @pytest.mark.asyncio
@@ -121,6 +139,7 @@ async def test_fetch_and_process_cache_hit(mock_ctx):
     assert result is cached
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_not_called()
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -156,6 +175,7 @@ async def test_process_logic_single_solidity_file(mock_ctx):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
     mock_set.assert_awaited_once()
+    assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -191,6 +211,7 @@ async def test_process_logic_multi_file_missing_main_path(mock_ctx):
     ):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert set(result.metadata["source_code_tree_structure"]) == {"Main.sol", "B.sol"}
+    assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -240,6 +261,7 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
             vyper = await _fetch_and_process_contract("1", "0x2", mock_ctx)
     assert set(multi.metadata["source_code_tree_structure"]) == {"A.sol", "B.sol"}
     assert vyper.metadata["source_code_tree_structure"] == ["VyperC.vy"]
+    assert mock_ctx.report_progress.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -276,6 +298,7 @@ async def test_process_logic_unverified_contract(mock_ctx):
     assert result.source_files == {}
     assert result.metadata["source_code_tree_structure"] == []
     assert result.metadata["name"] == "0xabc"
+    assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -288,3 +311,8 @@ async def test_inspect_contract_propagates_api_error(mock_ctx):
     ):
         with pytest.raises(httpx.HTTPStatusError):
             await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)
+    mock_ctx.report_progress.assert_awaited_once()
+    assert (
+        mock_ctx.report_progress.await_args_list[0].kwargs["message"]
+        == "Starting to fetch contract metadata for 0xabc on chain 1..."
+    )

@@ -34,8 +34,20 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         return cached
 
     base_url = await get_blockscout_base_url(chain_id)
+    await report_and_log_progress(
+        ctx,
+        progress=1.0,
+        total=2.0,
+        message="Resolved Blockscout instance URL.",
+    )
     api_path = f"/api/v2/smart-contracts/{normalized_address}"
     raw_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    await report_and_log_progress(
+        ctx,
+        progress=2.0,
+        total=2.0,
+        message="Successfully fetched contract data.",
+    )
     raw_data.setdefault("name", normalized_address)
     for key in [
         "language",
@@ -119,6 +131,16 @@ async def inspect_contract_code(
     ctx: Context,
 ) -> ToolResponse[ContractMetadata | str]:
     """Inspects a verified contract's source code or metadata."""
+    if file_name is None:
+        start_msg = f"Starting to fetch contract metadata for {address} on chain {chain_id}..."
+    else:
+        start_msg = f"Starting to fetch source code for '{file_name}' of contract {address} on chain {chain_id}..."
+    await report_and_log_progress(
+        ctx,
+        progress=0.0,
+        total=2.0,
+        message=start_msg,
+    )
 
     processed = await _fetch_and_process_contract(chain_id, address, ctx)
     if file_name is None:
