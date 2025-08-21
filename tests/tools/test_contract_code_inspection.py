@@ -243,6 +243,42 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_process_logic_unverified_contract(mock_ctx):
+    api_response = {
+        "creation_bytecode": "0x",
+        "creation_status": "success",
+        "deployed_bytecode": "0x",
+        "implementations": [],
+        "proxy_type": "unknown",
+    }
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=api_response,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+            return_value="https://base",
+        ),
+    ):
+        result = await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
+    assert result.source_files == {}
+    assert result.metadata["source_code_tree_structure"] == []
+    assert result.metadata["name"] == "0xabc"
+
+
+@pytest.mark.asyncio
 async def test_inspect_contract_propagates_api_error(mock_ctx):
     error = httpx.HTTPStatusError("err", request=MagicMock(), response=MagicMock(status_code=404))
     with patch(
