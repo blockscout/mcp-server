@@ -144,10 +144,10 @@ async def test_inspect_contract_code_route_success(mock_tool, client: AsyncClien
 )
 async def test_inspect_contract_code_route_with_file(mock_tool, client: AsyncClient):
     """Test inspect_contract_code in file mode."""
-    mock_tool.return_value = ToolResponse(data="pragma solidity ^0.8.0;")
+    mock_tool.return_value = ToolResponse(data={"file_content": "pragma solidity ^0.8.0;"})
     response = await client.get("/v1/inspect_contract_code?chain_id=1&address=0xabc&file_name=Test.sol")
     assert response.status_code == 200
-    assert response.json()["data"] == "pragma solidity ^0.8.0;"
+    assert response.json()["data"] == {"file_content": "pragma solidity ^0.8.0;"}
     mock_tool.assert_called_once_with(chain_id="1", address="0xabc", file_name="Test.sol", ctx=ANY)
 
 

@@ -570,8 +570,9 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 
 This tool lets agents explore verified contract sources without flooding the
 LLM context. When invoked without `file_name`, it returns structured metadata
-and a list of source file paths. Supplying `file_name` returns the raw contents
-of that file.
+and a list of source file paths along with instructions for fetching
+individual files. Supplying `file_name` returns a `ContractSourceFile` object
+whose `file_content` contains the raw source of that file.
 
 - **Caching**: Processed contracts are cached in-memory with LRU eviction and
   TTL expiry to minimize repeat API calls.

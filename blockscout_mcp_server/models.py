@@ -98,6 +98,13 @@ class ContractMetadata(BaseModel):
     constructor_args_truncated: bool = Field(default=False, description="Indicates if constructor_args was truncated.")
 
 
+# --- Model for inspect_contract_code File Payload ---
+class ContractSourceFile(BaseModel):
+    """Container for a single contract source file."""
+
+    file_content: str = Field(description="The raw source code of the file.")
+
+
 # --- Model for get_contract_abi Data Payload ---
 class ContractAbiData(BaseModel):
     """A structured representation of a smart contract's ABI."""

@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.cache import CachedContract
-from blockscout_mcp_server.models import ContractMetadata, ToolResponse
+from blockscout_mcp_server.models import ContractMetadata, ContractSourceFile, ToolResponse
 from blockscout_mcp_server.tools.contract_tools import (
     _fetch_and_process_contract,
     inspect_contract_code,
@@ -46,6 +46,12 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractMetadata)
     assert result.data.source_code_tree_structure == ["A.sol"]
+    assert result.instructions == [
+        (
+            "To retrieve a specific file's contents, call this tool again with the "
+            "'file_name' argument using one of the values from 'source_code_tree_structure'."
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -62,7 +68,8 @@ async def test_inspect_contract_file_content_mode_success(mock_ctx):
         mock_ctx.report_progress.await_args_list[0].kwargs["message"]
         == "Starting to fetch source code for 'A.sol' of contract 0xabc on chain 1..."
     )
-    assert result.data == "pragma"
+    assert isinstance(result.data, ContractSourceFile)
+    assert result.data.file_content == "pragma"
 
 
 @pytest.mark.asyncio

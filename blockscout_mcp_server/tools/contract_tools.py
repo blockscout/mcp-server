@@ -12,6 +12,7 @@ from blockscout_mcp_server.models import (
     ContractAbiData,
     ContractMetadata,
     ContractReadData,
+    ContractSourceFile,
     ToolResponse,
 )
 from blockscout_mcp_server.tools.common import (
@@ -129,7 +130,7 @@ async def inspect_contract_code(
     ] = None,
     *,
     ctx: Context,
-) -> ToolResponse[ContractMetadata | str]:
+) -> ToolResponse[ContractMetadata | ContractSourceFile]:
     """Inspects a verified contract's source code or metadata."""
     if file_name is None:
         start_msg = f"Starting to fetch contract metadata for {address} on chain {chain_id}..."
@@ -145,13 +146,21 @@ async def inspect_contract_code(
     processed = await _fetch_and_process_contract(chain_id, address, ctx)
     if file_name is None:
         metadata = ContractMetadata.model_validate(processed.metadata)
-        return build_tool_response(data=metadata)
+        instructions = None
+        if processed.source_files:
+            instructions = [
+                (
+                    "To retrieve a specific file's contents, call this tool again with the "
+                    "'file_name' argument using one of the values from 'source_code_tree_structure'."
+                )
+            ]
+        return build_tool_response(data=metadata, instructions=instructions)
     if file_name not in processed.source_files:
         available = ", ".join(processed.source_files.keys())
         raise ValueError(
             f"File '{file_name}' not found in the source code for this contract. Available files: {available}"
         )
-    return build_tool_response(data=processed.source_files[file_name])
+    return build_tool_response(data=ContractSourceFile(file_content=processed.source_files[file_name]))
 
 
 @log_tool_invocation

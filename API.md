@@ -430,7 +430,10 @@ curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
 #### Inspect Contract Code (`inspect_contract_code`)
 
 Returns contract metadata or the content of a specific source file for a
-verified smart contract.
+verified smart contract. When `file_name` is omitted, the response includes
+instructions on how to fetch individual files. When `file_name` is provided,
+the source code is returned in a `ContractSourceFile` object containing
+`file_content`.
 
 `GET /v1/inspect_contract_code`
 

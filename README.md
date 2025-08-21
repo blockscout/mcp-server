@@ -129,7 +129,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 3. `get_address_by_ens_name(name)` - Converts an ENS domain name to its corresponding Ethereum address.
 4. `lookup_token_by_symbol(chain_id, symbol)` - Searches for token addresses by symbol or name, returning multiple potential matches.
 5. `get_contract_abi(chain_id, address)` - Retrieves the ABI (Application Binary Interface) for a smart contract.
-6. `inspect_contract_code(chain_id, address, file_name=None)` - Returns contract metadata or the contents of a specified source file for verified contracts.
+6. `inspect_contract_code(chain_id, address, file_name=None)` - Returns contract metadata or a `ContractSourceFile` object containing the contents of a specified source file for verified contracts.
 7. `get_address_info(chain_id, address)` - Gets comprehensive information about an address including balance, ENS association, contract status, token details, and public tags.
 8. `get_tokens_by_address(chain_id, address, cursor=None)` - Returns detailed ERC20 token holdings for an address with enriched metadata and market data.
 9. `get_latest_block(chain_id)` - Returns the latest indexed block number and timestamp.

@@ -373,7 +373,7 @@ async def test_inspect_single_file_solidity_contract(mock_ctx):
         content = await inspect_contract_code(chain_id="1", address=address, file_name=file_name, ctx=mock_ctx)
     except (aiohttp.ClientError, httpx.HTTPError, OSError) as e:
         pytest.skip(f"Network connectivity issue: {e}")
-    assert "pragma solidity" in content.data
+    assert "pragma solidity" in content.data.file_content
 
 
 @pytest.mark.integration
