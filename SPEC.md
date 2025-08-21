@@ -363,6 +363,22 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
 
+    **g) Contract Source Code and ABI Separation:**
+
+    To prevent LLM context overflow when exploring smart contracts, the server implements a strategic separation between ABI retrieval and source code inspection through dedicated tools with optimized access patterns.
+
+    - **Separate ABI Tool**: The `get_contract_abi` tool provides only the contract's ABI without source code, as ABI information alone is sufficient for most contract interaction scenarios. This avoids the significant context consumption that would result from combining ABI with potentially large source code in a single response.
+
+    - **Two-Phase Source Code Inspection**: The `inspect_contract_code` tool uses a deliberate two-phase approach for source exploration:
+      - **Phase 1 (Metadata Overview)**: When called without a specific `file_name`, the tool returns contract metadata (excluding ABI to avoid duplication) and a structured source file tree. This gives the LLM a complete overview of the contract's file organization without consuming excessive context.
+      - **Phase 2 (Selective File Reading)**: The LLM can then make targeted requests for specific files of interest (e.g., main contract logic) while potentially skipping standard interfaces (e.g., ERC20 implementations) that don't require inspection.
+
+    - **Constructor Arguments Truncation**: When constructor arguments in metadata exceed size limits, they are truncated using the same strategy as described in "Transaction Input Data Truncation".
+
+    - **Smart File Naming**: For single-file contracts (including flattened contracts), the server ensures a consistent file tree structure. When metadata doesn't provide a file name (common in Solidity contracts), the server constructs one using the pattern `<contract_name>.sol` for Solidity. For Vyper contracts, the file name is usually specified in the metadata.
+
+    - **Response Caching**: Since contract source exploration often involves multiple sequential requests for the same contract, the server implements in-memory caching of Blockscout API responses with LRU eviction and TTL expiry. This minimizes redundant API calls and improves response times for multi-file contract inspection workflows.
+
 7. **HTTP Request Robustness**
 
    Blockscout HTTP requests are centralized via the helper `make_blockscout_request`. To improve resilience against transient, transport-level issues observed in real-world usage (for example, incomplete chunked reads), the helper employs a small and conservative retry policy:
@@ -565,20 +581,3 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - Write operations are not supported; `eth_call` does not change state.
 - No caller context (`from`) or gas simulation tuning is provided.
 - Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.
-
-### inspect_contract_code
-
-This tool lets agents explore verified contract sources without flooding the
-LLM context. When invoked without `file_name`, it returns structured metadata
-and a list of source file paths along with instructions for fetching
-individual files. Supplying `file_name` returns a `ContractSourceFile` object
-whose `file_content` contains the raw source of that file.
-
-- **Caching**: Processed contracts are cached in-memory with LRU eviction and
-  TTL expiry to minimize repeat API calls.
-- **File tree logic**: For multi-file contracts, all sources are indexed by
-  path. Single-file Solidity contracts with empty `file_path` use
-  `<name>.sol`, while Vyper contracts default to `<name>.vy`.
-- **Constructor args**: Raw and decoded constructor arguments are truncated
-  when exceeding the input-size limit, setting a `constructor_args_truncated`
-  flag in the metadata.
