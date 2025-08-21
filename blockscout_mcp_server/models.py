@@ -75,6 +75,8 @@ class InstructionsData(BaseModel):
 class ContractMetadata(BaseModel):
     """Detailed metadata for a verified smart contract."""
 
+    # Allow extra fields to preserve language-specific and contract-specific metadata
+    # from Blockscout API that varies by verification status and contract type
     model_config = ConfigDict(extra="allow")
 
     name: str = Field(description="The name of the contract.")
