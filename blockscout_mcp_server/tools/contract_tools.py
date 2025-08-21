@@ -26,6 +26,18 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 
+def _determine_file_path(raw_data: dict[str, Any]) -> str:
+    """Determine the appropriate file path for a contract source file based on language."""
+    file_path = raw_data.get("file_path")
+    if not file_path or file_path == ".sol":
+        language = raw_data.get("language", "").lower()
+        if language == "solidity":
+            file_path = f"{raw_data.get('name', 'Contract')}.sol"
+        else:
+            file_path = f"{raw_data.get('name', 'Contract')}.vy"
+    return file_path
+
+
 async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context) -> CachedContract:
     """Fetch contract data from cache or Blockscout API."""
 
@@ -67,26 +79,14 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     source_files: dict[str, str] = {}
     if raw_data.get("source_code"):
         if raw_data.get("additional_sources"):
-            main_file_path = raw_data.get("file_path")
-            if not main_file_path or main_file_path == ".sol":
-                language = raw_data.get("language", "").lower()
-                if language == "solidity":
-                    main_file_path = f"{raw_data.get('name', 'Contract')}.sol"
-                else:
-                    main_file_path = f"{raw_data.get('name', 'Contract')}.vy"
+            main_file_path = _determine_file_path(raw_data)
             source_files[main_file_path] = raw_data.get("source_code")
             for item in raw_data.get("additional_sources", []):
                 item_path = item.get("file_path")
                 if item_path:
                     source_files[item_path] = item.get("source_code")
         else:
-            file_path = raw_data.get("file_path")
-            if not file_path or file_path == ".sol":
-                language = raw_data.get("language", "").lower()
-                if language == "solidity":
-                    file_path = f"{raw_data.get('name', 'Contract')}.sol"
-                else:
-                    file_path = f"{raw_data.get('name', 'Contract')}.vy"
+            file_path = _determine_file_path(raw_data)
             source_files[file_path] = raw_data.get("source_code")
 
     processed_args, truncated_flag = _truncate_constructor_args(raw_data.get("constructor_args"))
