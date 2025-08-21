@@ -29,7 +29,7 @@ async def test_get_chains_list_uses_cache_within_ttl(mock_ctx, monkeypatch):
     def fake_time() -> int:
         return fake_now
 
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.time", fake_time)
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", fake_time)
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 2)
 
     mock_api_response = {
@@ -65,7 +65,7 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
     def fake_time() -> int:
         return fake_now
 
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.time", fake_time)
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", fake_time)
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 2)
 
     mock_api_response_1 = {
@@ -107,7 +107,7 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
     def fake_time() -> int:
         return fake_now
 
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.time", fake_time)
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", fake_time)
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 2)
 
     mock_api_response = {
@@ -144,7 +144,7 @@ async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypat
     def fake_time() -> int:
         return fake_now
 
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.time", fake_time)
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", fake_time)
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 2)
 
     mock_api_response = {
@@ -186,7 +186,7 @@ async def test_get_chains_list_cached_progress_reporting(mock_ctx):
             ecosystem="Ethereum",
         )
     ]
-    chains_list_cache.expiry_timestamp = time.time() + 60
+    chains_list_cache.expiry_timestamp = time.monotonic() + 60
 
     with patch(
         "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",

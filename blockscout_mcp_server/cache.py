@@ -82,7 +82,7 @@ class ChainsListCache:
 
     def get_if_fresh(self) -> list[ChainInfo] | None:
         """Return cached chains if the snapshot is still fresh."""
-        if self.chains_snapshot is None or time.time() >= self.expiry_timestamp:
+        if self.chains_snapshot is None or time.monotonic() >= self.expiry_timestamp:
             return None
         return self.chains_snapshot
 
@@ -93,7 +93,7 @@ class ChainsListCache:
     def store_snapshot(self, chains: list[ChainInfo]) -> None:
         """Store a fresh snapshot and compute its expiry timestamp."""
         self.chains_snapshot = chains
-        self.expiry_timestamp = time.time() + config.chains_list_ttl_seconds
+        self.expiry_timestamp = time.monotonic() + config.chains_list_ttl_seconds
 
 
 class CachedContract(BaseModel):
@@ -118,7 +118,7 @@ class ContractCache:
             if key not in self._cache:
                 return None
             contract_data, expiry_timestamp = self._cache[key]
-            if time.time() >= expiry_timestamp:
+            if time.monotonic() >= expiry_timestamp:
                 self._cache.pop(key)
                 return None
             self._cache.move_to_end(key)
@@ -127,7 +127,7 @@ class ContractCache:
     async def set(self, key: str, value: CachedContract) -> None:
         """Add an entry to the cache, enforcing size and TTL."""
         async with self._lock:
-            expiry_timestamp = time.time() + self._ttl
+            expiry_timestamp = time.monotonic() + self._ttl
             self._cache[key] = (value, expiry_timestamp)
             self._cache.move_to_end(key)
             if len(self._cache) > self._max_size:
