@@ -28,19 +28,29 @@ from blockscout_mcp_server.web3_pool import WEB3_POOL
 async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context) -> CachedContract:
     """Fetch contract data from cache or Blockscout API."""
 
-    cache_key = f"{chain_id}:{address}"
+    normalized_address = address.lower()
+    cache_key = f"{chain_id}:{normalized_address}"
     if cached := await contract_cache.get(cache_key):
         return cached
 
     base_url = await get_blockscout_base_url(chain_id)
-    api_path = f"/api/v2/smart-contracts/{address}"
+    api_path = f"/api/v2/smart-contracts/{normalized_address}"
     raw_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
 
     source_files: dict[str, str] = {}
     if raw_data.get("additional_sources"):
-        source_files[raw_data.get("file_path")] = raw_data.get("source_code")
+        main_file_path = raw_data.get("file_path")
+        if not main_file_path or main_file_path == ".sol":
+            language = raw_data.get("language", "").lower()
+            if language == "solidity":
+                main_file_path = f"{raw_data.get('name', 'Contract')}.sol"
+            else:
+                main_file_path = f"{raw_data.get('name', 'Contract')}.vy"
+        source_files[main_file_path] = raw_data.get("source_code")
         for item in raw_data.get("additional_sources", []):
-            source_files[item.get("file_path")] = item.get("source_code")
+            item_path = item.get("file_path")
+            if item_path:
+                source_files[item_path] = item.get("source_code")
     else:
         file_path = raw_data.get("file_path")
         if not file_path or file_path == ".sol":

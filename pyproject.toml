@@ -1,6 +1,6 @@
 [project]
 name = "blockscout-mcp-server"
-version = "0.8.0-dev"
+version = "0.9.0-dev"
 description = "MCP server for Blockscout"
 requires-python = ">=3.11"
 dependencies = [

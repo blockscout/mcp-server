@@ -97,7 +97,7 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
             return_value="https://base",
         ),
     ):
-        await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+        await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_awaited_once()
     mock_set.assert_awaited_once()
@@ -117,7 +117,7 @@ async def test_fetch_and_process_cache_hit(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+        result = await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
     assert result is cached
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_not_called()
@@ -156,6 +156,41 @@ async def test_process_logic_single_solidity_file(mock_ctx):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
     mock_set.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_process_logic_multi_file_missing_main_path(mock_ctx):
+    api_response = {
+        "name": "Main",
+        "language": "Solidity",
+        "source_code": "a",
+        "file_path": "",
+        "additional_sources": [{"file_path": "B.sol", "source_code": "b"}],
+        "constructor_args": None,
+    }
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=api_response,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+            return_value="https://base",
+        ),
+    ):
+        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+    assert set(result.metadata["source_code_tree_structure"]) == {"Main.sol", "B.sol"}
 
 
 @pytest.mark.asyncio

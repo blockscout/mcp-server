@@ -469,7 +469,7 @@ def _truncate_constructor_args(
         if len(args) > INPUT_DATA_TRUNCATION_LIMIT:
             return f"{args[:INPUT_DATA_TRUNCATION_LIMIT]}...", True
         return args, False
-    if isinstance(args, list | dict):
+    if isinstance(args, (list, dict)):  # noqa: UP038
         return _recursively_truncate_and_flag_long_strings(args)
     return args, False
 

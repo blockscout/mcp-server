@@ -1,3 +1,3 @@
 """Blockscout MCP Server package."""
 
-__version__ = "0.8.0-dev"
+__version__ = "0.9.0-dev"
