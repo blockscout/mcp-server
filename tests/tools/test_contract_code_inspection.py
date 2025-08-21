@@ -27,6 +27,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
             "proxy_type": None,
             "is_fully_verified": None,
             "constructor_args": None,
+            "decoded_constructor_args": None,
             "constructor_args_truncated": False,
         },
         source_files={"A.sol": "code"},
@@ -46,6 +47,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractMetadata)
     assert result.data.source_code_tree_structure == ["A.sol"]
+    assert result.data.decoded_constructor_args is None
     assert result.instructions == [
         (
             "To retrieve a specific file's contents, call this tool again with the "
@@ -323,3 +325,33 @@ async def test_inspect_contract_propagates_api_error(mock_ctx):
         mock_ctx.report_progress.await_args_list[0].kwargs["message"]
         == "Starting to fetch contract metadata for 0xabc on chain 1..."
     )
+
+
+@pytest.mark.asyncio
+async def test_inspect_contract_metadata_mode_truncated_sets_notes(mock_ctx):
+    contract = CachedContract(
+        metadata={
+            "name": "Test",
+            "language": None,
+            "compiler_version": None,
+            "verified_at": None,
+            "source_code_tree_structure": [],
+            "optimization_enabled": None,
+            "optimization_runs": None,
+            "evm_version": None,
+            "license_type": None,
+            "proxy_type": None,
+            "is_fully_verified": None,
+            "constructor_args": "0x1234",
+            "decoded_constructor_args": ["arg1"],
+            "constructor_args_truncated": True,
+        },
+        source_files={},
+    )
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        new_callable=AsyncMock,
+        return_value=contract,
+    ):
+        result = await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)
+    assert result.notes == ["Constructor arguments were truncated to limit context size."]

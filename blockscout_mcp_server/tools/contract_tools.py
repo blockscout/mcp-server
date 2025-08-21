@@ -60,6 +60,7 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         "license_type",
         "proxy_type",
         "is_fully_verified",
+        "decoded_constructor_args",
     ]:
         raw_data.setdefault(key, None)
 
@@ -91,8 +92,8 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     processed_args, truncated_flag = _truncate_constructor_args(raw_data.get("constructor_args"))
     raw_data["constructor_args"] = processed_args
     raw_data["constructor_args_truncated"] = truncated_flag
-    if raw_data.get("decoded_constructor_args"):
-        processed_decoded, decoded_truncated = _truncate_constructor_args(raw_data.get("decoded_constructor_args"))
+    if raw_data["decoded_constructor_args"]:
+        processed_decoded, decoded_truncated = _truncate_constructor_args(raw_data["decoded_constructor_args"])
         raw_data["decoded_constructor_args"] = processed_decoded
         if decoded_truncated:
             raw_data["constructor_args_truncated"] = True
@@ -106,7 +107,6 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         "source_code",
         "additional_sources",
         "file_path",
-        "decoded_constructor_args",
     ]:
         metadata_copy.pop(field, None)
 
@@ -147,6 +147,9 @@ async def inspect_contract_code(
     if file_name is None:
         metadata = ContractMetadata.model_validate(processed.metadata)
         instructions = None
+        notes = None
+        if metadata.constructor_args_truncated:
+            notes = ["Constructor arguments were truncated to limit context size."]
         if processed.source_files:
             instructions = [
                 (
@@ -154,7 +157,7 @@ async def inspect_contract_code(
                     "'file_name' argument using one of the values from 'source_code_tree_structure'."
                 )
             ]
-        return build_tool_response(data=metadata, instructions=instructions)
+        return build_tool_response(data=metadata, instructions=instructions, notes=notes)
     if file_name not in processed.source_files:
         available = ", ".join(processed.source_files.keys())
         raise ValueError(

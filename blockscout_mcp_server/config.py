@@ -26,8 +26,9 @@ class ServerConfig(BaseSettings):
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates
 
     # --- Contracts Cache ---
-    contracts_cache_max_number: int = Field(default=10, validation_alias="blockscout_contracts_cache_max_number")
-    contracts_cache_ttl_seconds: int = Field(default=3600, validation_alias="blockscout_contracts_cache_ttl_seconds")
+    # Environment variables follow the BLOCKSCOUT_ prefix automatically (no alias needed).
+    contracts_cache_max_number: int = Field(default=10)
+    contracts_cache_ttl_seconds: int = Field(default=3600)
 
     nft_page_size: int = 10
     logs_page_size: int = 10

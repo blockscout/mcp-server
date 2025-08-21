@@ -92,10 +92,13 @@ class ContractMetadata(BaseModel):
     )
     is_fully_verified: bool | None = Field(description="Flag indicating if the contract is fully verified.")
 
-    constructor_args: str | dict | list | None = Field(
-        description="The raw or decoded constructor arguments, possibly truncated."
+    constructor_args: str | None = Field(description="The raw constructor arguments, possibly truncated.")
+    decoded_constructor_args: str | dict | list | None = Field(
+        default=None, description="Decoded constructor arguments, if available."
     )
-    constructor_args_truncated: bool = Field(default=False, description="Indicates if constructor_args was truncated.")
+    constructor_args_truncated: bool = Field(
+        default=False, description="Indicates if constructor_args or decoded_constructor_args was truncated."
+    )
 
 
 # --- Model for inspect_contract_code File Payload ---
