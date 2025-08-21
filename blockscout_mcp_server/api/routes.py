@@ -22,7 +22,11 @@ from blockscout_mcp_server.tools.address_tools import (
 )
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi, read_contract
+from blockscout_mcp_server.tools.contract_tools import (
+    get_contract_abi,
+    inspect_contract_code,
+    read_contract,
+)
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
@@ -161,6 +165,14 @@ async def get_contract_abi_rest(request: Request) -> Response:
 
 
 @handle_rest_errors
+async def inspect_contract_code_rest(request: Request) -> Response:
+    """REST wrapper for the inspect_contract_code tool."""
+    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["file_name"])
+    tool_response = await inspect_contract_code(**params, ctx=get_mock_context(request))
+    return JSONResponse(tool_response.model_dump())
+
+
+@handle_rest_errors
 async def read_contract_rest(request: Request) -> Response:
     """REST wrapper for the read_contract tool."""
     params = extract_and_validate_params(
@@ -284,6 +296,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     _add_v1_tool_route(mcp, "/get_token_transfers_by_address", get_token_transfers_by_address_rest)
     _add_v1_tool_route(mcp, "/lookup_token_by_symbol", lookup_token_by_symbol_rest)
     _add_v1_tool_route(mcp, "/get_contract_abi", get_contract_abi_rest)
+    _add_v1_tool_route(mcp, "/inspect_contract_code", inspect_contract_code_rest)
     _add_v1_tool_route(mcp, "/read_contract", read_contract_rest)
     _add_v1_tool_route(mcp, "/get_address_info", get_address_info_rest)
     _add_v1_tool_route(mcp, "/get_tokens_by_address", get_tokens_by_address_rest)

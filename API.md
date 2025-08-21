@@ -427,6 +427,27 @@ Retrieves the Application Binary Interface (ABI) for a smart contract.
 curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
 ```
 
+#### Inspect Contract Code (`inspect_contract_code`)
+
+Returns contract metadata or the content of a specific source file for a
+verified smart contract.
+
+`GET /v1/inspect_contract_code`
+
+**Parameters**
+
+| Name       | Type     | Required | Description                                                                 |
+| ---------- | -------- | -------- | --------------------------------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                                                   |
+| `address`  | `string` | Yes      | The smart contract address.                                                 |
+| `file_name`| `string` | No       | The name of the source file to fetch. Omit to retrieve metadata and file list. |
+
+**Example Request**
+
+```bash
+curl "http://127.0.0.1:8000/v1/inspect_contract_code?chain_id=1&address=0x..."
+```
+
 #### Get Address by ENS Name (`get_address_by_ens_name`)
 
 Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum address.

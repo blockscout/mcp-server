@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +24,10 @@ class ServerConfig(BaseSettings):
     chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
     chains_list_ttl_seconds: int = 300  # Default 5 minutes
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates
+
+    # --- Contracts Cache ---
+    contracts_cache_max_number: int = Field(default=10, validation_alias="blockscout_contracts_cache_max_number")
+    contracts_cache_ttl_seconds: int = Field(default=3600, validation_alias="blockscout_contracts_cache_ttl_seconds")
 
     nft_page_size: int = 10
     logs_page_size: int = 10

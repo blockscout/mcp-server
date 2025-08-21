@@ -71,6 +71,33 @@ class InstructionsData(BaseModel):
     efficiency_optimization_rules: str = Field(description="Rules for optimizing query strategies and performance.")
 
 
+# --- Model for inspect_contract_code Metadata Payload ---
+class ContractMetadata(BaseModel):
+    """Detailed metadata for a verified smart contract."""
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str = Field(description="The name of the contract.")
+    language: str | None = Field(description="The programming language of the contract (e.g., Solidity, Vyper).")
+    compiler_version: str | None = Field(description="The compiler version used.")
+    verified_at: str | None = Field(description="The timestamp when the contract was verified.")
+    source_code_tree_structure: list[str] = Field(description="A list of all source file paths for the contract.")
+
+    optimization_enabled: bool | None = Field(description="Flag indicating if compiler optimization was enabled.")
+    optimization_runs: int | None = Field(description="The number of optimization runs.")
+    evm_version: str | None = Field(description="The EVM version target.")
+    license_type: str | None = Field(description="The license of the contract code (e.g., MIT, none).")
+    proxy_type: str | None = Field(
+        description="The type of proxy if the contract is a proxy (e.g., basic_implementation)."
+    )
+    is_fully_verified: bool | None = Field(description="Flag indicating if the contract is fully verified.")
+
+    constructor_args: str | dict | list | None = Field(
+        description="The raw or decoded constructor arguments, possibly truncated."
+    )
+    constructor_args_truncated: bool = Field(default=False, description="Indicates if constructor_args was truncated.")
+
+
 # --- Model for get_contract_abi Data Payload ---
 class ContractAbiData(BaseModel):
     """A structured representation of a smart contract's ABI."""

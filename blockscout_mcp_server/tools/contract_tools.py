@@ -7,8 +7,15 @@ from pydantic import Field
 from web3.exceptions import ContractLogicError
 from web3.utils.abi import check_if_arguments_can_be_encoded
 
-from blockscout_mcp_server.models import ContractAbiData, ContractReadData, ToolResponse
+from blockscout_mcp_server.cache import CachedContract, contract_cache
+from blockscout_mcp_server.models import (
+    ContractAbiData,
+    ContractMetadata,
+    ContractReadData,
+    ToolResponse,
+)
 from blockscout_mcp_server.tools.common import (
+    _truncate_constructor_args,
     build_tool_response,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -17,8 +24,87 @@ from blockscout_mcp_server.tools.common import (
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
-# The contracts sources are not returned by MCP tools as they consume too much context.
-# More elegant solution needs to be found.
+
+async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context) -> CachedContract:
+    """Fetch contract data from cache or Blockscout API."""
+
+    cache_key = f"{chain_id}:{address}"
+    if cached := await contract_cache.get(cache_key):
+        return cached
+
+    base_url = await get_blockscout_base_url(chain_id)
+    api_path = f"/api/v2/smart-contracts/{address}"
+    raw_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+
+    source_files: dict[str, str] = {}
+    if raw_data.get("additional_sources"):
+        source_files[raw_data.get("file_path")] = raw_data.get("source_code")
+        for item in raw_data.get("additional_sources", []):
+            source_files[item.get("file_path")] = item.get("source_code")
+    else:
+        file_path = raw_data.get("file_path")
+        if not file_path or file_path == ".sol":
+            if raw_data.get("language", "").lower() == "solidity":
+                file_path = f"{raw_data.get('name', 'Contract')}.sol"
+            else:
+                file_path = f"{raw_data.get('name', 'Contract')}.vy"
+        source_files[file_path] = raw_data.get("source_code")
+
+    processed_args, truncated_flag = _truncate_constructor_args(raw_data.get("constructor_args"))
+    raw_data["constructor_args"] = processed_args
+    raw_data["constructor_args_truncated"] = truncated_flag
+    if raw_data.get("decoded_constructor_args"):
+        processed_decoded, decoded_truncated = _truncate_constructor_args(raw_data.get("decoded_constructor_args"))
+        raw_data["decoded_constructor_args"] = processed_decoded
+        if decoded_truncated:
+            raw_data["constructor_args_truncated"] = True
+
+    metadata_copy = raw_data.copy()
+    metadata_copy["source_code_tree_structure"] = list(source_files.keys())
+    for field in [
+        "abi",
+        "deployed_bytecode",
+        "creation_bytecode",
+        "source_code",
+        "additional_sources",
+        "file_path",
+        "decoded_constructor_args",
+    ]:
+        metadata_copy.pop(field, None)
+
+    cached_contract = CachedContract(metadata=metadata_copy, source_files=source_files)
+    await contract_cache.set(cache_key, cached_contract)
+    return cached_contract
+
+
+@log_tool_invocation
+async def inspect_contract_code(
+    chain_id: Annotated[str, Field(description="The ID of the blockchain.")],
+    address: Annotated[str, Field(description="The address of the smart contract.")],
+    file_name: Annotated[
+        str | None,
+        Field(
+            description=(
+                "The name of the source file to inspect. "
+                "If omitted, returns contract metadata and the list of source files."
+            ),
+        ),
+    ] = None,
+    *,
+    ctx: Context,
+) -> ToolResponse[ContractMetadata | str]:
+    """Inspects a verified contract's source code or metadata."""
+
+    processed = await _fetch_and_process_contract(chain_id, address, ctx)
+    if file_name is None:
+        metadata = ContractMetadata.model_validate(processed.metadata)
+        return build_tool_response(data=metadata)
+    if file_name not in processed.source_files:
+        available = ", ".join(processed.source_files.keys())
+        raise ValueError(
+            f"File '{file_name}' not found in the source code for this contract. Available files: {available}"
+        )
+    return build_tool_response(data=processed.source_files[file_name])
 
 
 @log_tool_invocation

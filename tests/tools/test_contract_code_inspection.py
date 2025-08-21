@@ -1,0 +1,219 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
+import pytest
+
+from blockscout_mcp_server.cache import CachedContract
+from blockscout_mcp_server.models import ContractMetadata, ToolResponse
+from blockscout_mcp_server.tools.contract_tools import (
+    _fetch_and_process_contract,
+    inspect_contract_code,
+)
+
+
+@pytest.mark.asyncio
+async def test_inspect_contract_metadata_mode_success(mock_ctx):
+    contract = CachedContract(
+        metadata={
+            "name": "Test",
+            "language": None,
+            "compiler_version": None,
+            "verified_at": None,
+            "source_code_tree_structure": ["A.sol"],
+            "optimization_enabled": None,
+            "optimization_runs": None,
+            "evm_version": None,
+            "license_type": None,
+            "proxy_type": None,
+            "is_fully_verified": None,
+            "constructor_args": None,
+            "constructor_args_truncated": False,
+        },
+        source_files={"A.sol": "code"},
+    )
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        new_callable=AsyncMock,
+        return_value=contract,
+    ) as mock_fetch:
+        result = await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)
+    mock_fetch.assert_awaited_once_with("1", "0xabc", mock_ctx)
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, ContractMetadata)
+    assert result.data.source_code_tree_structure == ["A.sol"]
+
+
+@pytest.mark.asyncio
+async def test_inspect_contract_file_content_mode_success(mock_ctx):
+    contract = CachedContract(metadata={}, source_files={"A.sol": "pragma"})
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        new_callable=AsyncMock,
+        return_value=contract,
+    ):
+        result = await inspect_contract_code(chain_id="1", address="0xabc", file_name="A.sol", ctx=mock_ctx)
+    assert result.data == "pragma"
+
+
+@pytest.mark.asyncio
+async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
+    contract = CachedContract(metadata={}, source_files={"A.sol": ""})
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        new_callable=AsyncMock,
+        return_value=contract,
+    ):
+        with pytest.raises(ValueError):
+            await inspect_contract_code(chain_id="1", address="0xabc", file_name="B.sol", ctx=mock_ctx)
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_process_cache_miss(mock_ctx):
+    api_response = {
+        "name": "C",
+        "language": "Solidity",
+        "source_code": "code",
+        "file_path": "C.sol",
+        "constructor_args": "0x",
+    }
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ) as mock_get,
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=api_response,
+        ) as mock_request,
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            new_callable=AsyncMock,
+        ) as mock_set,
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+            return_value="https://base",
+        ),
+    ):
+        await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+    mock_get.assert_awaited_once_with("1:0xabc")
+    mock_request.assert_awaited_once()
+    mock_set.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_process_cache_hit(mock_ctx):
+    cached = CachedContract(metadata={}, source_files={})
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=cached,
+        ) as mock_get,
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+    assert result is cached
+    mock_get.assert_awaited_once_with("1:0xabc")
+    mock_request.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_process_logic_single_solidity_file(mock_ctx):
+    api_response = {
+        "name": "MyContract",
+        "language": "Solidity",
+        "source_code": "code",
+        "file_path": ".sol",
+        "constructor_args": None,
+    }
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=api_response,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            new_callable=AsyncMock,
+        ) as mock_set,
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+            return_value="https://base",
+        ),
+    ):
+        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+    assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
+    mock_set.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_process_logic_multi_file_and_vyper(mock_ctx):
+    multi_resp = {
+        "name": "Multi",
+        "language": "Solidity",
+        "source_code": "a",
+        "file_path": "A.sol",
+        "additional_sources": [{"file_path": "B.sol", "source_code": "b"}],
+        "constructor_args": None,
+    }
+    vyper_resp = {
+        "name": "VyperC",
+        "language": "Vyper",
+        "source_code": "# vyper",
+        "file_path": "",
+        "constructor_args": None,
+    }
+    with (
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+            return_value="https://base",
+        ),
+    ):
+        with patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=multi_resp,
+        ):
+            multi = await _fetch_and_process_contract("1", "0x1", mock_ctx)
+        with patch(
+            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+            return_value=vyper_resp,
+        ):
+            vyper = await _fetch_and_process_contract("1", "0x2", mock_ctx)
+    assert set(multi.metadata["source_code_tree_structure"]) == {"A.sol", "B.sol"}
+    assert vyper.metadata["source_code_tree_structure"] == ["VyperC.vy"]
+
+
+@pytest.mark.asyncio
+async def test_inspect_contract_propagates_api_error(mock_ctx):
+    error = httpx.HTTPStatusError("err", request=MagicMock(), response=MagicMock(status_code=404))
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        new_callable=AsyncMock,
+        side_effect=error,
+    ):
+        with pytest.raises(httpx.HTTPStatusError):
+            await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)

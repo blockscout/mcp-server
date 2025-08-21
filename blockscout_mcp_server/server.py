@@ -24,7 +24,11 @@ from blockscout_mcp_server.tools.address_tools import (
 )
 from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi, read_contract
+from blockscout_mcp_server.tools.contract_tools import (
+    get_contract_abi,
+    inspect_contract_code,
+    read_contract,
+)
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
@@ -89,6 +93,7 @@ mcp.tool(structured_output=False)(get_transactions_by_address)
 mcp.tool(structured_output=False)(get_token_transfers_by_address)
 mcp.tool(structured_output=False)(lookup_token_by_symbol)
 mcp.tool(structured_output=False)(get_contract_abi)
+mcp.tool(structured_output=False)(inspect_contract_code)
 mcp.tool(structured_output=False)(read_contract)
 mcp.tool(structured_output=False)(get_address_info)
 mcp.tool(structured_output=False)(get_tokens_by_address)

@@ -64,6 +64,7 @@ async def test_get_address_logs_integration(mock_ctx):
     assert isinstance(first_log.block_number, int)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_address_info_integration(mock_ctx):
     # Using a well-known, stable address with public tags (USDC contract)

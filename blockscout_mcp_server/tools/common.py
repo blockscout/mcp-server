@@ -460,6 +460,20 @@ def _process_and_truncate_log_items(items: list) -> tuple[list, bool]:
     return processed_items, was_truncated
 
 
+def _truncate_constructor_args(
+    args: str | list | dict | None,
+) -> tuple[str | list | dict | None, bool]:
+    """Truncates constructor arguments if they are too large."""
+
+    if isinstance(args, str):
+        if len(args) > INPUT_DATA_TRUNCATION_LIMIT:
+            return f"{args[:INPUT_DATA_TRUNCATION_LIMIT]}...", True
+        return args, False
+    if isinstance(args, list | dict):
+        return _recursively_truncate_and_flag_long_strings(args)
+    return args, False
+
+
 async def report_and_log_progress(
     ctx: Context,
     progress: float,

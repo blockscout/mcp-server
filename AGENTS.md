@@ -31,7 +31,7 @@ mcp-server/
 │       ├── initialization_tools.py # Implements the __unlock_blockchain_analysis__ tool
 │       ├── ens_tools.py        # Implements ENS-related tools
 │       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
-│       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi)
+│       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi, inspect_contract_code)
 │       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address)
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, get_transaction_info)
@@ -255,7 +255,7 @@ mcp-server/
                 * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
                 * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
-                * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)`.
+                * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)` and `inspect_contract_code(chain_id, address, file_name=None)`.
                 * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)` with robust, cursor-based pagination.
                 * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
                 * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)`, `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)`, `get_transaction_info(chain_id, hash, include_raw_input=False)`, `transaction_summary(chain_id, hash)`, `get_transaction_logs(chain_id, hash, cursor=None)`, etc.

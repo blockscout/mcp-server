@@ -565,3 +565,19 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - Write operations are not supported; `eth_call` does not change state.
 - No caller context (`from`) or gas simulation tuning is provided.
 - Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.
+
+### inspect_contract_code
+
+This tool lets agents explore verified contract sources without flooding the
+LLM context. When invoked without `file_name`, it returns structured metadata
+and a list of source file paths. Supplying `file_name` returns the raw contents
+of that file.
+
+- **Caching**: Processed contracts are cached in-memory with LRU eviction and
+  TTL expiry to minimize repeat API calls.
+- **File tree logic**: For multi-file contracts, all sources are indexed by
+  path. Single-file Solidity contracts with empty `file_path` use
+  `<name>.sol`, while Vyper contracts default to `<name>.vy`.
+- **Constructor args**: Raw and decoded constructor arguments are truncated
+  when exceeding the input-size limit, setting a `constructor_args_truncated`
+  flag in the metadata.

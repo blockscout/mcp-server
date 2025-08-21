@@ -1,8 +1,10 @@
 """Simple in-memory cache for chain metadata."""
 
 import time
+from collections import OrderedDict
 
 import anyio
+from pydantic import BaseModel, Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ChainInfo
@@ -92,3 +94,45 @@ class ChainsListCache:
         """Store a fresh snapshot and compute its expiry timestamp."""
         self.chains_snapshot = chains
         self.expiry_timestamp = time.time() + config.chains_list_ttl_seconds
+
+
+class CachedContract(BaseModel):
+    """Represents the pre-processed and cached data for a smart contract."""
+
+    metadata: dict = Field(description="The processed metadata of the contract, with large fields removed.")
+    source_files: dict[str, str] = Field(description="A map of file paths to their source code content.")
+
+
+class ContractCache:
+    """In-process, thread-safe, LRU, TTL cache for processed contract data."""
+
+    def __init__(self) -> None:
+        self._cache: OrderedDict[str, tuple[CachedContract, float]] = OrderedDict()
+        self._lock = anyio.Lock()
+        self._max_size = config.contracts_cache_max_number
+        self._ttl = config.contracts_cache_ttl_seconds
+
+    async def get(self, key: str) -> CachedContract | None:
+        """Retrieve an entry from the cache if it exists and is fresh."""
+        async with self._lock:
+            if key not in self._cache:
+                return None
+            contract_data, expiry_timestamp = self._cache[key]
+            if time.time() >= expiry_timestamp:
+                self._cache.pop(key)
+                return None
+            self._cache.move_to_end(key)
+            return contract_data
+
+    async def set(self, key: str, value: CachedContract) -> None:
+        """Add an entry to the cache, enforcing size and TTL."""
+        async with self._lock:
+            expiry_timestamp = time.time() + self._ttl
+            self._cache[key] = (value, expiry_timestamp)
+            self._cache.move_to_end(key)
+            if len(self._cache) > self._max_size:
+                self._cache.popitem(last=False)
+
+
+# Global singleton instance for the contract cache
+contract_cache = ContractCache()

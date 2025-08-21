@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "blockscout-mcp",
   "display_name": "Blockscout",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Contextual blockchain activity analysis via Blockscout APIs",
   "long_description": "This extension enables contextual blockchain activity analysis with multi-chain support, intelligent context optimization, smart response slicing, and seamless pagination. The server exposes blockchain data including balances, tokens, NFTs, contract metadata, transactions, and logs via MCP for comprehensive blockchain analysis. This extension acts as a proxy to the official Blockscout MCP server.",
   "author": {
@@ -51,6 +51,10 @@
     {
       "name": "get_contract_abi",
       "description": "Retrieves the ABI for a smart contract"
+    },
+    {
+      "name": "inspect_contract_code",
+      "description": "Inspects a verified smart contract's source code, returning metadata or specific file content."
     },
     {
       "name": "get_address_info",

@@ -43,17 +43,18 @@ All tools are available via both MCP and REST API interfaces:
 3. **`get_address_by_ens_name`** - Converts an ENS name to its Ethereum address
 4. **`lookup_token_by_symbol`** - Searches for tokens by symbol or name
 5. **`get_contract_abi`** - Retrieves the ABI for a smart contract
-6. **`get_address_info`** - Gets comprehensive information about an address
-7. **`get_tokens_by_address`** - Returns ERC20 token holdings for an address
-8. **`get_latest_block`** - Returns the latest indexed block number and timestamp
-9. **`get_transactions_by_address`** - Gets transactions for an address with time range filtering
-10. **`get_token_transfers_by_address`** - Returns ERC-20 token transfers for an address
-11. **`transaction_summary`** - Provides human-readable transaction summaries
-12. **`nft_tokens_by_address`** - Retrieves NFT tokens owned by an address
-13. **`get_block_info`** - Returns detailed block information
-14. **`get_transaction_info`** - Gets comprehensive transaction information
-15. **`get_transaction_logs`** - Returns transaction logs with decoded event data
-16. **`read_contract`** - Executes a read-only smart contract function
+6. **`inspect_contract_code`** - Inspects a verified contract's source code
+7. **`get_address_info`** - Gets comprehensive information about an address
+8. **`get_tokens_by_address`** - Returns ERC20 token holdings for an address
+9. **`get_latest_block`** - Returns the latest indexed block number and timestamp
+10. **`get_transactions_by_address`** - Gets transactions for an address with time range filtering
+11. **`get_token_transfers_by_address`** - Returns ERC-20 token transfers for an address
+12. **`transaction_summary`** - Provides human-readable transaction summaries
+13. **`nft_tokens_by_address`** - Retrieves NFT tokens owned by an address
+14. **`get_block_info`** - Returns detailed block information
+15. **`get_transaction_info`** - Gets comprehensive transaction information
+16. **`get_transaction_logs`** - Returns transaction logs with decoded event data
+17. **`read_contract`** - Executes a read-only smart contract function
 
 ## When to Use Each Interface
 
