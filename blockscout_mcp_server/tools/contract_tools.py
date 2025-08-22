@@ -91,7 +91,7 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
 
     # Create a copy to avoid mutating the original raw_data
     metadata_copy = raw_data.copy()
-    
+
     # Process constructor args on the copy instead of the original
     processed_args, truncated_flag = _truncate_constructor_args(metadata_copy.get("constructor_args"))
     metadata_copy["constructor_args"] = processed_args
