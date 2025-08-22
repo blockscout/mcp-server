@@ -63,6 +63,10 @@
       "description": "Retrieves the ABI for a smart contract"
     },
     {
+      "name": "inspect_contract_code",
+      "description": "Inspects a verified smart contract's source code, returning metadata or specific file content."
+    },
+    {
       "name": "get_address_info",
       "description": "Gets comprehensive information about an address"
     },
