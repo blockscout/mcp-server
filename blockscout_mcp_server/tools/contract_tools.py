@@ -89,16 +89,18 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
             file_path = _determine_file_path(raw_data)
             source_files[file_path] = raw_data.get("source_code")
 
-    processed_args, truncated_flag = _truncate_constructor_args(raw_data.get("constructor_args"))
-    raw_data["constructor_args"] = processed_args
-    raw_data["constructor_args_truncated"] = truncated_flag
-    if raw_data["decoded_constructor_args"]:
-        processed_decoded, decoded_truncated = _truncate_constructor_args(raw_data["decoded_constructor_args"])
-        raw_data["decoded_constructor_args"] = processed_decoded
-        if decoded_truncated:
-            raw_data["constructor_args_truncated"] = True
-
+    # Create a copy to avoid mutating the original raw_data
     metadata_copy = raw_data.copy()
+    
+    # Process constructor args on the copy instead of the original
+    processed_args, truncated_flag = _truncate_constructor_args(metadata_copy.get("constructor_args"))
+    metadata_copy["constructor_args"] = processed_args
+    metadata_copy["constructor_args_truncated"] = truncated_flag
+    if metadata_copy["decoded_constructor_args"]:
+        processed_decoded, decoded_truncated = _truncate_constructor_args(metadata_copy["decoded_constructor_args"])
+        metadata_copy["decoded_constructor_args"] = processed_decoded
+        if decoded_truncated:
+            metadata_copy["constructor_args_truncated"] = True
     metadata_copy["source_code_tree_structure"] = list(source_files.keys())
     for field in [
         "abi",
