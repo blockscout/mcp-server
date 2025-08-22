@@ -176,6 +176,11 @@ When the most recent reward distribution of Kinto token was made to the wallet
 `0x7D467D99028199D99B1c91850C4dea0c82aDDF52` in Kinto chain?
 ```
 
+```plaintext
+Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum 
+mainnet could emit `SequencerBatchDelivered`?
+```
+
 ## Development & Deployment
 
 ### Local Installation
