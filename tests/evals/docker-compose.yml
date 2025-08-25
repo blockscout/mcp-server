@@ -13,7 +13,7 @@ services:
       start_period: 30s
 
   evaluation:
-    image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.1.12
+    image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.1.22
     command: gemini --yolo
     volumes:
       - ~/.gemini:/home/node/.gemini
