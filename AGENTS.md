@@ -70,6 +70,11 @@ mcp-server/
 │   ├── README.md               # DXT-specific documentation and packaging instructions
 │   ├── manifest.json           # Extension manifest with metadata and tool definitions
 │   └── blockscout.png          # Extension icon file
+├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
+│   ├── README.md               # GPT-specific documentation and configuration instructions
+│   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
+│   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
+│   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── API.md                      # Detailed documentation for the REST API
@@ -150,7 +155,27 @@ mcp-server/
         * Lists all available tools with their names and descriptions for Claude Desktop integration.
         * Includes keywords, license, and repository information.
 
-3. **`tests/` (Test Suite)**
+3. **`gpt/` (ChatGPT GPT Integration Package)**
+    * This directory contains files required to create the "Blockscout X-Ray" GPT in ChatGPT that integrates with the Blockscout MCP server via REST API.
+    * **`README.md`**:
+        * Provides comprehensive documentation for GPT creation and configuration.
+        * Includes maintenance instructions and known issues with GPT behavior.
+        * Specifies recommended GPT configuration (GPT-5 model, web search, code interpreter).
+    * **`instructions.md`**:
+        * Contains the core instructions for the GPT built following OpenAI GPT-5 prompting guide recommendations.
+        * Incorporates content from the `__unlock_blockchain_analysis__` tool for enhanced reasoning.
+        * Must be updated if the `__unlock_blockchain_analysis__` tool output changes.
+    * **`action_tool_descriptions.md`**:
+        * Contains detailed descriptions of all MCP tools available to the GPT.
+        * Required due to GPT's 8,000 character limit for instructions.
+        * Must be maintained and updated whenever MCP tools are modified or new ones are created.
+    * **`openapi.yaml`**:
+        * OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions.
+        * Contains modified tool descriptions to comply with OpenAPI standards (under 300 characters).
+        * Excludes the `__unlock_blockchain_analysis__` endpoint since its data is embedded in GPT instructions.
+        * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
+
+4. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
     * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. It includes tests for each tool module and for shared utilities in `test_common.py`.
         * Each test file corresponds to a tool module and provides comprehensive test coverage:
@@ -168,7 +193,7 @@ mcp-server/
         * **Tool-level tests** in `test_*_integration.py` validate that our tools extract and structure data correctly from live responses.
       All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
-4. **`blockscout_mcp_server/` (Main Python Package)**
+5. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
     * **`llms.txt`**: Machine-readable guidance file for AI crawlers.
     * **`__main__.py`**:

@@ -2,6 +2,10 @@
 
 > This server provides blockchain data access via both MCP (Model Context Protocol) and REST API. Choose the interface that best fits your agent's capabilities and integration requirements.
 
+## Try the Showcase GPT
+
+**[Blockscout X-Ray](https://chatgpt.com/g/g-68a7f315edf481918641bd0ed1e60f8b-blockscout-x-ray)** demonstrates the full MCP server capabilities with intelligent blockchain analysis and insights.
+
 ## Quick Start for AI Agents
 
 ### MCP Interface (Recommended for Native MCP Clients)

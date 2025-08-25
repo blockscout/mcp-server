@@ -1,0 +1,902 @@
+openapi: 3.1.0
+info:
+  title: Blockscout MCP Server REST API
+  description: |
+    A web-friendly, stateless interface to powerful blockchain tools providing access to 50+ EVM-compatible blockchains.
+  version: 0.9.0
+  contact:
+    name: Blockscout MCP Server
+    url: https://github.com/blockscout/mcp-server
+  license:
+    name: MIT
+    url: https://github.com/blockscout/mcp-server/blob/main/LICENSE
+
+servers:
+  - url: https://mcp.blockscout.com/v1
+    description: Production server
+
+paths:
+  # General tools
+  /get_chains_list:
+    get:
+      summary: Get chains list
+      description: |
+        Get the list of known blockchain chains with their IDs.
+      operationId: getChainsList
+      tags:
+        - General
+      responses:
+        '200':
+          description: List of blockchain chains
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # Block tools
+  /get_latest_block:
+    get:
+      summary: Get latest block
+      description: |
+        Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain.
+      operationId: getLatestBlock
+      tags:
+        - Blocks
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+      responses:
+        '200':
+          description: Latest block information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /get_block_info:
+    get:
+      summary: Get block info
+      description: |
+        Get block information like timestamp, gas used, burnt fees, transaction count etc.
+      operationId: getBlockInfo
+      tags:
+        - Blocks
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: number_or_hash
+          in: query
+          required: true
+          description: Block number or hash
+          schema:
+            type: string
+          example: "19000000"
+        - name: include_transactions
+          in: query
+          required: false
+          description: If true, includes a list of transaction hashes from the block
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Block information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Transaction tools
+  /get_transaction_info:
+    get:
+      summary: Get transaction info
+      description: |
+        Get comprehensive transaction information.
+      operationId: getTransactionInfo
+      tags:
+        - Transactions
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: transaction_hash
+          in: query
+          required: true
+          description: Transaction hash
+          schema:
+            type: string
+          example: "0x..."
+        - name: include_raw_input
+          in: query
+          required: false
+          description: If true, includes the raw transaction input data
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Transaction information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /get_transaction_logs:
+    get:
+      summary: Get transaction logs
+      description: |
+        Get comprehensive transaction logs.
+      operationId: getTransactionLogs
+      tags:
+        - Transactions
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: transaction_hash
+          in: query
+          required: true
+          description: Transaction hash
+          schema:
+            type: string
+          example: "0x..."
+        - name: cursor
+          in: query
+          required: false
+          description: The pagination cursor from a previous response to get the next page of results
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /transaction_summary:
+    get:
+      summary: Get transaction summary
+      description: |
+        Get human-readable transaction summaries from Blockscout Transaction Interpreter.
+      operationId: getTransactionSummary
+      tags:
+        - Transactions
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: transaction_hash
+          in: query
+          required: true
+          description: Transaction hash
+          schema:
+            type: string
+          example: "0x..."
+      responses:
+        '200':
+          description: Transaction summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /get_transactions_by_address:
+    get:
+      summary: Get transactions by address
+      description: |
+        Retrieves native currency transfers and smart contract interactions (calls, internal txs) for an address.
+      operationId: getTransactionsByAddress
+      tags:
+        - Transactions
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Address which either sender or receiver of the transaction
+          schema:
+            type: string
+          example: "0x..."
+        - name: age_from
+          in: query
+          required: false
+          description: Start date and time (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-01T00:00:00Z"
+        - name: age_to
+          in: query
+          required: false
+          description: End date and time (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+          example: "2024-12-31T23:59:59Z"
+        - name: methods
+          in: query
+          required: false
+          description: A method signature to filter transactions by
+          schema:
+            type: string
+          example: "0x304e6ade"
+        - name: cursor
+          in: query
+          required: false
+          description: The pagination cursor from a previous response to get the next page of results
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /get_token_transfers_by_address:
+    get:
+      summary: Get token transfers by address
+      description: |
+        Get ERC-20 token transfers for an address within a specific time range.
+      operationId: getTokenTransfersByAddress
+      tags:
+        - Tokens
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Address which either transfer initiator or transfer receiver
+          schema:
+            type: string
+          example: "0x..."
+        - name: age_from
+          in: query
+          required: false
+          description: Start date and time (ISO 8601 format). Should be provided in most cases to limit transfers and avoid heavy database queries
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-01T00:00:00Z"
+        - name: age_to
+          in: query
+          required: false
+          description: End date and time (ISO 8601 format). Can be omitted to get all transfers up to the current time
+          schema:
+            type: string
+            format: date-time
+          example: "2024-12-31T23:59:59Z"
+        - name: token
+          in: query
+          required: false
+          description: An ERC-20 token contract address to filter transfers by a specific token
+          schema:
+            type: string
+          example: "0x..."
+        - name: cursor
+          in: query
+          required: false
+          description: The pagination cursor from a previous response to get the next page of results
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of token transfers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Address tools
+  /get_address_info:
+    get:
+      summary: Get address info
+      description: |
+        Get comprehensive information about an address.
+      operationId: getAddressInfo
+      tags:
+        - Addresses
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Address to get information about
+          schema:
+            type: string
+          example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+      responses:
+        '200':
+          description: Address information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Token & NFT tools
+  /get_tokens_by_address:
+    get:
+      summary: Get tokens by address
+      description: |
+        Get comprehensive ERC20 token holdings for an address with enriched metadata and market data.
+      operationId: getTokensByAddress
+      tags:
+        - Tokens
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Wallet address
+          schema:
+            type: string
+          example: "0x..."
+        - name: cursor
+          in: query
+          required: false
+          description: The pagination cursor from a previous response to get the next page of results
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token holdings information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /nft_tokens_by_address:
+    get:
+      summary: Get NFT tokens by address
+      description: |
+        Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
+      operationId: getNftTokensByAddress
+      tags:
+        - NFTs
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: NFT owner address
+          schema:
+            type: string
+          example: "0x..."
+        - name: cursor
+          in: query
+          required: false
+          description: The pagination cursor from a previous response to get the next page of results
+          schema:
+            type: string
+      responses:
+        '200':
+          description: NFT tokens information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Search tools
+  /lookup_token_by_symbol:
+    get:
+      summary: Lookup token by symbol
+      description: |
+        Search for token addresses by symbol or name. Returns multiple potential matches based on symbol or token name similarity.
+      operationId: lookupTokenBySymbol
+      tags:
+        - Search
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: symbol
+          in: query
+          required: true
+          description: Token symbol or name to search for
+          schema:
+            type: string
+          example: "WETH"
+      responses:
+        '200':
+          description: Token search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Contract tools
+  /get_contract_abi:
+    get:
+      summary: Get contract ABI
+      description: |
+        Get smart contract ABI (Application Binary Interface).
+      operationId: getContractAbi
+      tags:
+        - Contracts
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Smart contract address
+          schema:
+            type: string
+          example: "0x..."
+      responses:
+        '200':
+          description: Contract ABI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /inspect_contract_code:
+    get:
+      summary: Inspect contract code
+      description: |
+        Inspects a verified contract's source code or metadata.
+      operationId: inspectContractCode
+      tags:
+        - Contracts
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: The address of the smart contract
+          schema:
+            type: string
+          example: "0x..."
+        - name: file_name
+          in: query
+          required: false
+          description: The name of the source file to inspect. If omitted, returns contract metadata and the list of source files.
+          schema:
+            type: string
+          example: "Token.sol"
+      responses:
+        '200':
+          description: Contract source code or metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  /read_contract:
+    get:
+      summary: Read contract
+      description: |
+        Calls a smart contract function (view/pure, or non-view/pure simulated via eth_call) and returns the decoded result.
+      operationId: readContract
+      tags:
+        - Contracts
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: address
+          in: query
+          required: true
+          description: Smart contract address
+          schema:
+            type: string
+          example: "0x..."
+        - name: abi
+          in: query
+          required: true
+          description: The JSON ABI for the specific function being called. This should be a dictionary that defines the function's name, inputs, and outputs. The function ABI can be obtained using the `get_contract_abi` tool.
+          schema:
+            type: string
+          example: "{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}"
+        - name: function_name
+          in: query
+          required: true
+          description: The symbolic name of the function to be called. This must match the `name` field in the provided ABI.
+          schema:
+            type: string
+          example: "balanceOf"
+        - name: args
+          in: query
+          required: false
+          description: A JSON array of arguments. Order and types must match ABI inputs. For addresses use 0x-prefixed strings; For numbers use integers (not quoted); For bytes keep as 0x-hex strings.
+          schema:
+            type: string
+          example: "[\"0xF977814e90dA44bFA03b6295A0616a897441aceC\"]"
+        - name: block
+          in: query
+          required: false
+          description: The block identifier to read the contract state from. Can be a block number (e.g., 19000000) or a string tag (e.g., 'latest'). Defaults to 'latest'.
+          schema:
+            type: string
+          example: "latest"
+      responses:
+        '200':
+          description: Contract function call result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+  # Name Service tools
+  /get_address_by_ens_name:
+    get:
+      summary: Get address by ENS name
+      description: |
+        Useful for when you need to convert an ENS domain name (e.g. "blockscout.eth") to its corresponding Ethereum address.
+      operationId: getAddressByEnsName
+      tags:
+        - Name Service
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: ENS domain name to resolve
+          schema:
+            type: string
+          example: "vitalik.eth"
+      responses:
+        '200':
+          description: Resolved Ethereum address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
+components:
+  schemas:
+    ToolResponse:
+      type: object
+      description: Standard response structure for all API endpoints
+      properties:
+        data:
+          description: The main data payload of the response. Structure varies by endpoint.
+          type: [object, array, string, number, boolean, "null"]
+        data_description:
+          type: [array, "null"]
+          items:
+            type: string
+          description: Optional list of strings explaining the structure or fields of the data payload
+        notes:
+          type: [array, "null"]
+          items:
+            type: string
+          description: Optional list of important warnings or contextual notes, such as data truncation alerts
+        instructions:
+          type: [array, "null"]
+          items:
+            type: string
+          description: Optional list of suggested follow-up actions for an AI agent
+        pagination:
+          anyOf:
+            - $ref: '#/components/schemas/Pagination'
+            - type: "null"
+      required:
+        - data
+
+    Pagination:
+      type: object
+      description: Pagination information for endpoints that return large datasets
+      properties:
+        next_call:
+          type: object
+          properties:
+            tool_name:
+              type: string
+              description: The tool name to use for the next request
+            params:
+              type: object
+              description: Parameters for the next request including the cursor
+              properties:
+                cursor:
+                  type: string
+                  description: Opaque cursor string containing all necessary pagination information
+              additionalProperties: true
+              required:
+                - cursor
+          required:
+            - tool_name
+            - params
+      required:
+        - next_call
+
+    Error:
+      type: object
+      description: Error response structure
+      properties:
+        error:
+          type: string
+          description: Descriptive error message
+          example: "Invalid chain_id parameter"
+      required:
+        - error
+
+  responses:
+    BadRequest:
+      description: Client-side error - validation errors, missing parameters, etc.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation_error:
+              summary: Validation error
+              value:
+                error: "Missing required parameter: chain_id"
+            invalid_parameter:
+              summary: Invalid parameter value
+              value:
+                error: "Invalid chain_id: must be a valid blockchain identifier"
+
+    ServerError:
+      description: Server-side error - internal server errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            internal_error:
+              summary: Internal server error
+              value:
+                error: "Internal server error occurred while processing request"
+
+    GatewayTimeout:
+      description: Downstream service timeout - request to external service timed out
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            timeout_error:
+              summary: Gateway timeout
+              value:
+                error: "Request to Blockscout API timed out"
+
+  parameters:
+    ChainId:
+      name: chain_id
+      in: query
+      required: true
+      description: The ID of the blockchain
+      schema:
+        type: string
+      example: "1"
+
+    Address:
+      name: address
+      in: query
+      required: true
+      description: Blockchain address
+      schema:
+        type: string
+      example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+
+    TransactionHash:
+      name: transaction_hash
+      in: query
+      required: true
+      description: Transaction hash
+      schema:
+        type: string
+      example: "0x..."
+
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: The pagination cursor from a previous response to get the next page of results
+      schema:
+        type: string
+
+    AgeFrom:
+      name: age_from
+      in: query
+      required: false
+      description: Start date and time (ISO 8601 format)
+      schema:
+        type: string
+        format: date-time
+      example: "2024-01-01T00:00:00Z"
+
+    AgeTo:
+      name: age_to
+      in: query
+      required: false
+      description: End date and time (ISO 8601 format)
+      schema:
+        type: string
+        format: date-time
+      example: "2024-12-31T23:59:59Z"
+
+tags:
+  - name: Static
+    description: Static endpoints providing general information
+  - name: Tools
+    description: Tool discovery and listing
+  - name: General
+    description: General blockchain information and setup
+  - name: Blocks
+    description: Block information and data
+  - name: Transactions
+    description: Transaction data and analysis
+  - name: Addresses
+    description: Address information and analysis
+  - name: Tokens
+    description: ERC-20 token data and transfers
+  - name: NFTs
+    description: Non-fungible token (NFT) data
+  - name: Search
+    description: Search and lookup functionality
+  - name: Contracts
+    description: Smart contract information
+  - name: Name Service
+    description: ENS and name resolution services
+
+externalDocs:
+  description: Full API Documentation
+  url: https://github.com/blockscout/mcp-server/blob/main/API.md

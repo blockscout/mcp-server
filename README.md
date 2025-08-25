@@ -92,6 +92,12 @@ Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ
 
 2. For detailed Gemini CLI MCP server configuration instructions, see the [official documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
 
+## Try Blockscout X-Ray GPT
+
+Experience the power of the Blockscout MCP server through our showcase GPT: **[Blockscout X-Ray](https://chatgpt.com/g/g-68a7f315edf481918641bd0ed1e60f8b-blockscout-x-ray)**
+
+This GPT demonstrates the full capabilities of the MCP server, providing intelligent blockchain analysis and insights. It's a great way to explore what's possible when AI agents have contextual access to blockchain data.
+
 ### Local Development Setup (For Developers)
 
 If you want to run the server locally for development purposes:
