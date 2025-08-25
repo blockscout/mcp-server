@@ -12,7 +12,7 @@ alwaysApply: false
    ```toml
    [project]
    name = "blockscout-mcp-server"
-   version = "X.Y.Z"  # <-- Update this line
+   version = "X.Y.Z"  # <-- Update this line (e.g., "1.2.3" or "1.2.3.dev0")
    ```
 
 2. **`blockscout_mcp_server/__init__.py`** - Update the `__version__` variable:
@@ -20,12 +20,13 @@ alwaysApply: false
    ```python
    """Blockscout MCP Server package."""
 
-   __version__ = "X.Y.Z"  # <-- Update this line
+   __version__ = "X.Y.Z"  # <-- Update this line (e.g., "1.2.3" or "1.2.3.dev0")
    ```
 
 ## Important Notes
 
-- **Use the exact same version string** in both locations (e.g., "1.2.3")
+- **Use the exact same version string** in both locations (e.g., "1.2.3" or "1.2.3.dev0")
+- **Follow PEP 440** for Python-compliant versioning format
 - **Follow semantic versioning** (MAJOR.MINOR.PATCH) when choosing version numbers
 - **Update both files simultaneously** to maintain consistency across the codebase
 
