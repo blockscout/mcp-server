@@ -44,4 +44,4 @@ OpenAPI 3.1.0 specification generated for the REST API endpoints provided by the
 
 1. **Block time estimation**: Although clearly stated in instructions, the GPT struggles to estimate blocks by time properly.
 
-2. **Contract inspection parameters**: The GPT has difficulty properly formatting input parameters (`abi` and `args`) for the `inspect_contract_code` tool, often requiring 2-3 additional action calls before understanding the correct format.
+2. **Contract read parameters**: The GPT has difficulty properly formatting input parameters (`abi` and `args`) for the `read_contract` tool, often requiring 2-3 additional action calls before understanding the correct format.

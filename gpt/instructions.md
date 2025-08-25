@@ -9,7 +9,7 @@ Remember, you are an agent - please keep going until the user’s query is compl
 
 <reasoning_efforts>
 Ultrathink before answering any user question.
-<reasoning_efforts>
+</reasoning_efforts>
 
 Always read `action_tool_descriptions.md` before answering any user question.
 

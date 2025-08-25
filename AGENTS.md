@@ -186,8 +186,6 @@ mcp-server/
             * **Parameter validation**: Testing optional parameters, pagination, and parameter combinations.
         * Uses `pytest` and `pytest-asyncio` for async testing with comprehensive mocking strategies.
         * All tests maintain full isolation using `unittest.mock.patch` to mock external API calls.
-        * Test execution completes in under 1 second with 67 total test cases across 10 test modules.
-        * Provides 100% coverage of all 16 MCP tool functions with multiple test scenarios each.
     * **`tests/integration/`**: Contains the **integration test** suite. These tests make real network calls and are divided into two categories:
         * **Helper-level tests** in `test_common_helpers.py` verify basic connectivity and API availability.
         * **Tool-level tests** in `test_*_integration.py` validate that our tools extract and structure data correctly from live responses.

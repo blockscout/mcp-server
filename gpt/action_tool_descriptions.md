@@ -27,7 +27,7 @@ Use cases:
     - `get_transactions_by_address(address, age_from, age_to)` - get all txs to/from the address between given dates.
     - `get_transactions_by_address(address, age_from, age_to, methods)` - get all txs to/from the address between given dates, filtered by method.
 **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
-<get_transactions_by_address>
+</get_transactions_by_address>
 
 <get_token_transfers_by_address>
 Get ERC-20 token transfers for an address within a specific time range.
