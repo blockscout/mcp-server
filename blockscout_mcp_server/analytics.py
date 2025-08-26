@@ -14,6 +14,8 @@ import logging
 import uuid
 from typing import Any
 
+from starlette.requests import Request
+
 try:
     # Import lazily; tests will mock this
     from mixpanel import Consumer, Mixpanel
@@ -127,6 +129,58 @@ def _determine_call_source(ctx: Any) -> str:
     except Exception:  # pragma: no cover
         pass
     return "unknown"
+
+
+def track_event(request: Request, event_name: str, properties: dict | None = None) -> None:
+    """Track a generic event in Mixpanel using a Starlette ``Request``.
+
+    Unlike :func:`track_tool_invocation`, this helper is intended for events that
+    are not tied to a specific MCP tool. It extracts the client's IP address and
+    ``User-Agent`` from the incoming HTTP ``Request`` and forwards the event to
+    Mixpanel if analytics are enabled.
+
+    Parameters
+    ----------
+    request:
+        Incoming HTTP request used to extract client metadata.
+    event_name:
+        Name of the event to record.
+    properties:
+        Optional additional event properties to include in the Mixpanel payload.
+    """
+    if not _is_http_mode_enabled:
+        return
+    mp = _get_mixpanel_client()
+    if mp is None:
+        return
+
+    try:
+        headers = request.headers or {}
+        xff = get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
+        if xff:
+            ip = xff.split(",")[0].strip()
+        else:
+            x_real_ip = get_header_case_insensitive(headers, "x-real-ip", "") or ""
+            if x_real_ip:
+                ip = x_real_ip
+            else:
+                client = getattr(request, "client", None)
+                ip = getattr(client, "host", "") if client else ""
+
+        user_agent = get_header_case_insensitive(headers, "user-agent", "") or "N/A"
+        distinct_id = _build_distinct_id(ip, user_agent, "N/A")
+
+        props: dict[str, Any] = {"ip": ip, "user_agent": user_agent}
+        if properties:
+            props.update(properties)
+
+        meta = {"ip": ip} if ip else None
+        if meta is not None:
+            mp.track(distinct_id, event_name, props, meta=meta)  # type: ignore[call-arg]
+        else:
+            mp.track(distinct_id, event_name, props)
+    except Exception as exc:  # pragma: no cover - do not break flow
+        logger.debug("Mixpanel tracking failed for %s: %s", event_name, exc)
 
 
 def track_tool_invocation(
