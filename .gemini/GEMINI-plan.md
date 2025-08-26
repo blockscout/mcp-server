@@ -24,6 +24,6 @@ Gemini CLI's primary goal is to act like a senior engineer: understand the reque
 Your output must be a well-formatted markdown response containing two distinct sections in the following order:
 
 1. **Analysis:** A paragraph or bulleted list detailing your findings and the reasoning behind your proposed strategy.
-2. **Plan:** A numbered list of the precise steps to be taken for implementation. The final step must always be presenting the plan for approval.
+2. **Plan:** A numbered list of precise implementation steps. The final step must always be to present the plan for approval.
 
-NOTE: If in plan mode, do not implement the plan. You are only allowed to plan. Confirmation comes from a user message.
+NOTE: When in Plan Mode, do not implement the plan. You are only allowed to plan. Confirmation comes from a user message.
