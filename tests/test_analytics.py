@@ -140,3 +140,29 @@ def test_tracks_with_intermediary_no_client_or_user_agent(monkeypatch):
         analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
         args, _ = mp_instance.track.call_args
         assert args[2]["client_name"] == "N/A/ClaudeDesktop"
+
+
+def test_track_event_tracks_when_enabled(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    req = DummyRequest(headers={"user-agent": "pytest-UA"}, host="203.0.113.5")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_event(req, "PageView", {"path": "/"})
+        mp_instance.track.assert_called_once()
+        args, kwargs = mp_instance.track.call_args
+        assert args[1] == "PageView"
+        assert args[2]["ip"] == "203.0.113.5"
+        assert args[2]["user_agent"] == "pytest-UA"
+        assert args[2]["path"] == "/"
+        assert kwargs.get("meta") == {"ip": "203.0.113.5"}
+
+
+def test_track_event_noop_when_disabled(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "", raising=False)
+    analytics.set_http_mode(True)
+    req = DummyRequest()
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        analytics.track_event(req, "PageView", {"path": "/"})
+        mp_cls.assert_not_called()

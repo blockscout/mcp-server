@@ -26,9 +26,10 @@ def client(test_mcp_instance):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.track_event")
 @patch("blockscout_mcp_server.api.routes.INDEX_HTML_CONTENT", "<h1>Blockscout MCP Server</h1>")
 @patch("blockscout_mcp_server.api.routes.LLMS_TXT_CONTENT", "# Blockscout MCP Server")
-async def test_static_routes_work_correctly(client: AsyncClient):
+async def test_static_routes_work_correctly(mock_track_event, client: AsyncClient):
     """Verify that static routes return correct content and headers after registration."""
     response_health = await client.get("/health")
     assert response_health.status_code == 200
@@ -39,6 +40,7 @@ async def test_static_routes_work_correctly(client: AsyncClient):
     assert response_main.status_code == 200
     assert "<h1>Blockscout MCP Server</h1>" in response_main.text
     assert "text/html" in response_main.headers["content-type"]
+    mock_track_event.assert_called_once_with(ANY, "PageView", {"path": "/"})
 
     response_llms = await client.get("/llms.txt")
     assert response_llms.status_code == 200

@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
+from blockscout_mcp_server.analytics import track_event
 from blockscout_mcp_server.api.dependencies import get_mock_context
 from blockscout_mcp_server.api.helpers import (
     create_deprecation_response,
@@ -70,8 +71,9 @@ async def serve_llms_txt(_: Request) -> Response:
     return PlainTextResponse(LLMS_TXT_CONTENT)
 
 
-async def main_page(_: Request) -> Response:
+async def main_page(request: Request) -> Response:
     """Serve the main landing page."""
+    track_event(request, "PageView", {"path": "/"})
     if INDEX_HTML_CONTENT is None:
         message = "Landing page content is not available."
         return PlainTextResponse(message, status_code=500)
