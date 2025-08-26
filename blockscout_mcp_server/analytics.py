@@ -81,29 +81,34 @@ def _get_mixpanel_client() -> Any | None:
         return None
 
 
+def _extract_ip_from_request(request: Request | None) -> str:
+    """Extract a client IP address from a ``Request`` if possible."""
+    ip = ""
+    if request is not None:
+        headers = request.headers or {}
+        # Prefer proxy-forwarded headers
+        xff = get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
+        if xff:
+            # left-most IP per standard
+            ip = xff.split(",")[0].strip()
+        else:
+            x_real_ip = get_header_case_insensitive(headers, "x-real-ip", "") or ""
+            if x_real_ip:
+                ip = x_real_ip
+            else:
+                client = getattr(request, "client", None)
+                if client and getattr(client, "host", None):
+                    ip = client.host
+    return ip
+
+
 def _extract_request_ip(ctx: Any) -> str:
     """Extract client IP address from context if possible."""
-    ip = ""
     try:
         request = getattr(getattr(ctx, "request_context", None), "request", None)
-        if request is not None:
-            headers = request.headers or {}
-            # Prefer proxy-forwarded headers
-            xff = get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
-            if xff:
-                # left-most IP per standard
-                ip = xff.split(",")[0].strip()
-            else:
-                x_real_ip = get_header_case_insensitive(headers, "x-real-ip", "") or ""
-                if x_real_ip:
-                    ip = x_real_ip
-                else:
-                    client = getattr(request, "client", None)
-                    if client and getattr(client, "host", None):
-                        ip = client.host
+        return _extract_ip_from_request(request)
     except Exception:  # pragma: no cover - tolerate all shapes
-        pass
-    return ip
+        return ""
 
 
 def _build_distinct_id(ip: str, client_name: str, client_version: str) -> str:
@@ -155,18 +160,8 @@ def track_event(request: Request, event_name: str, properties: dict | None = Non
         return
 
     try:
+        ip = _extract_ip_from_request(request)
         headers = request.headers or {}
-        xff = get_header_case_insensitive(headers, "x-forwarded-for", "") or ""
-        if xff:
-            ip = xff.split(",")[0].strip()
-        else:
-            x_real_ip = get_header_case_insensitive(headers, "x-real-ip", "") or ""
-            if x_real_ip:
-                ip = x_real_ip
-            else:
-                client = getattr(request, "client", None)
-                ip = getattr(client, "host", "") if client else ""
-
         user_agent = get_header_case_insensitive(headers, "user-agent", "") or "N/A"
         distinct_id = _build_distinct_id(ip, user_agent, "N/A")
 
