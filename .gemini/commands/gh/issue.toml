@@ -1,0 +1,6 @@
+description = "Create a GitHub issue description."
+prompt = "Prepare a GitHub issue description. Your sole and exclusive output must be a single, well-structured Markdown document in {{.file}}"
+
+[[params]]
+name = "file"
+description = "The file to store the GitHub issue description."
