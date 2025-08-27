@@ -8,6 +8,8 @@ from blockscout_mcp_server import analytics
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
+    DIRECT_API_CALL_ENDPOINT_LIST,
+    DIRECT_API_CALL_RULES,
     EFFICIENCY_OPTIMIZATION_RULES,
     ERROR_HANDLING_RULES,
     PAGINATION_RULES,
@@ -29,6 +31,7 @@ from blockscout_mcp_server.tools.contract_tools import (
     inspect_contract_code,
     read_contract,
 )
+from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
@@ -43,6 +46,24 @@ from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
 chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
+
+
+def format_endpoint_groups(groups):
+    formatted = []
+    for group in groups:
+        if "group" in group:
+            formatted.append(f'<group name="{group["group"]}">')
+            formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
+            formatted.append("</group>")
+        elif "chain_family" in group:
+            formatted.append(f'<chain_family name="{group["chain_family"]}">')
+            formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
+            formatted.append("</chain_family>")
+    return "\n".join(formatted)
+
+
+common_endpoints = format_endpoint_groups(DIRECT_API_CALL_ENDPOINT_LIST["common"])
+specific_endpoints = format_endpoint_groups(DIRECT_API_CALL_ENDPOINT_LIST["specific"])
 composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
@@ -75,6 +96,18 @@ Here is the list of IDs of most popular chains:
 <efficiency_optimization_rules>
 {EFFICIENCY_OPTIMIZATION_RULES.strip()}
 </efficiency_optimization_rules>
+
+<direct_call_endpoint_list>
+{DIRECT_API_CALL_RULES.strip()}
+
+<common>
+{common_endpoints}
+</common>
+
+<specific>
+{specific_endpoints}
+</specific>
+</direct_call_endpoint_list>
 """
 
 mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
@@ -102,6 +135,7 @@ mcp.tool(structured_output=False)(nft_tokens_by_address)
 mcp.tool(structured_output=False)(get_transaction_info)
 mcp.tool(structured_output=False)(get_transaction_logs)
 mcp.tool(structured_output=False)(get_chains_list)
+mcp.tool(structured_output=False)(direct_api_call)
 
 
 # Initialize logging and override the rich formatter defined in the FastMCP

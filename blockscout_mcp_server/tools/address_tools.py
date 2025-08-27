@@ -87,8 +87,31 @@ async def get_address_info(
     address_data = AddressInfoData(basic_info=address_info_result, metadata=metadata_data)
 
     await report_and_log_progress(ctx, progress=3.0, total=3.0, message="Successfully fetched all address data.")
+    instructions = [
+        (f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address."),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history-by-day` "
+            "to get daily native coin balance history."
+        ),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history` "
+            "to get native coin balance history."
+        ),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/blocks-validated` "
+            "to get Blocks Validated by this Address."
+        ),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/accounts/{address}` "
+            "to get Account Abstraction info."
+        ),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations` "
+            f"and query_params={{'sender': '{address}'}} to get User Operations sent by this Address."
+        ),
+    ]
 
-    return build_tool_response(data=address_data, notes=notes)
+    return build_tool_response(data=address_data, notes=notes, instructions=instructions)
 
 
 @log_tool_invocation

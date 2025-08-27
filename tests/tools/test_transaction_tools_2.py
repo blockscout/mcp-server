@@ -79,6 +79,11 @@ async def test_get_transaction_info_success(mock_ctx):
             assert data[key] == value
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
+        assert result.instructions is not None
+        assert any(
+            "/api/v2/proxy/account-abstraction/operations" in instr and f"{hash}" in instr
+            for instr in result.instructions
+        )
 
 
 @pytest.mark.asyncio

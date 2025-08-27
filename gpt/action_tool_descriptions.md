@@ -127,3 +127,7 @@ Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing
 Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
 **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
 </get_transaction_logs>
+
+<direct_api_call>
+Call a curated raw Blockscout API endpoint for specialized or chain-specific data not covered by other tools. Supports pagination via `cursor` when the API response includes `next_page_params`.
+</direct_api_call>

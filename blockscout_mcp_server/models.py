@@ -59,6 +59,40 @@ class ChainIdGuidance(BaseModel):
     )
 
 
+class DirectApiData(BaseModel):
+    """Generic container for direct API responses."""
+
+    model_config = ConfigDict(extra="allow")
+
+
+class DirectApiEndpoint(BaseModel):
+    """Represents a single direct API endpoint."""
+
+    path: str = Field(description="The API endpoint path (e.g., '/api/v2/stats').")
+    description: str = Field(description="A description of what this endpoint returns.")
+
+
+class DirectApiCommonGroup(BaseModel):
+    """Represents a group of common endpoints available on all chains."""
+
+    group: str = Field(description="The functional group name (e.g., 'Stats', 'Tokens & NFTs').")
+    endpoints: list[DirectApiEndpoint] = Field(description="List of endpoints in this group.")
+
+
+class DirectApiSpecificGroup(BaseModel):
+    """Represents a group of endpoints specific to certain chain families."""
+
+    chain_family: str = Field(description="The chain family this group applies to (e.g., 'Arbitrum', 'Optimism').")
+    endpoints: list[DirectApiEndpoint] = Field(description="List of chain-specific endpoints.")
+
+
+class DirectApiEndpointList(BaseModel):
+    """Contains the complete curated list of endpoints for direct_api_call tool."""
+
+    common: list[DirectApiCommonGroup] = Field(description="Endpoint groups available on all supported chains.")
+    specific: list[DirectApiSpecificGroup] = Field(description="Endpoint groups specific to certain chain families.")
+
+
 class InstructionsData(BaseModel):
     """A structured representation of the server's operational instructions."""
 
@@ -69,6 +103,10 @@ class InstructionsData(BaseModel):
     time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
     block_time_estimation_rules: str = Field(description="Rules for mathematical block time estimation and navigation.")
     efficiency_optimization_rules: str = Field(description="Rules for optimizing query strategies and performance.")
+    direct_api_call_rules: str = Field(description="Rules and guidance for using the direct_api_call tool.")
+    direct_api_endpoints: "DirectApiEndpointList" = Field(
+        description="Curated list of endpoints available for direct API calls."
+    )
 
 
 # --- Model for inspect_contract_code Metadata Payload ---

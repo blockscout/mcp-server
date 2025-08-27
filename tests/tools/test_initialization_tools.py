@@ -37,6 +37,11 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         patch("blockscout_mcp_server.tools.initialization_tools.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
         patch("blockscout_mcp_server.tools.initialization_tools.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
         patch("blockscout_mcp_server.tools.initialization_tools.RECOMMENDED_CHAINS", mock_chains),
+        patch("blockscout_mcp_server.tools.initialization_tools.DIRECT_API_CALL_RULES", "Direct API rule"),
+        patch(
+            "blockscout_mcp_server.tools.initialization_tools.DIRECT_API_CALL_ENDPOINT_LIST",
+            {"common": [], "specific": []},
+        ),
     ):
         # ACT
         result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
@@ -60,6 +65,8 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert result.data.time_based_query_rules == mock_time_rules
         assert result.data.block_time_estimation_rules == mock_block_rules
         assert result.data.efficiency_optimization_rules == mock_efficiency_rules
+        assert result.data.direct_api_call_rules == "Direct API rule"
+        assert result.data.direct_api_endpoints.common == []
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
