@@ -38,7 +38,7 @@ The easiest way to use the Blockscout MCP server with Claude Desktop is through 
 
 ### Using the Official Blockscout MCP Server
 
-The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides a reliable, always-updated service.
+The official cloud-hosted instance at `https://mcp.blockscout.com/mcp` provides a reliable, always-updated service.
 
 **Claude Desktop Setup:**
 
@@ -61,7 +61,7 @@ The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides
             "sparfenyuk/mcp-proxy:latest",
             "--transport",
             "streamablehttp",
-            "https://mcp.blockscout.com/mcp/"
+            "https://mcp.blockscout.com/mcp"
           ]
         }
       }
@@ -73,7 +73,7 @@ The official cloud-hosted instance at `https://mcp.blockscout.com/mcp/` provides
 
 **Cursor Setup:**
 
-Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwLCJoZWFkZXJzIjp7fX0%3D) to install the Blockscout MCP server in Cursor.
+Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9) to install the Blockscout MCP server in Cursor.
 
 **Gemini CLI Setup:**
 
@@ -83,7 +83,7 @@ Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ
     {
       "mcpServers": {
         "blockscout": {
-          "httpUrl": "https://mcp.blockscout.com/mcp/",
+          "httpUrl": "https://mcp.blockscout.com/mcp",
           "timeout": 180000
         }
       }

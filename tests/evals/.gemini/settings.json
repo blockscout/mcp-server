@@ -3,7 +3,7 @@
   "theme": "ANSI",
   "mcpServers": {
     "blockscout": {
-      "httpUrl": "${MCP_SERVER_URL}/mcp/",
+      "httpUrl": "${MCP_SERVER_URL}/mcp",
       "timeout": 180000
     }
   }

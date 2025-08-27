@@ -19,7 +19,7 @@ The Blockscout MCP Server supports two primary operational modes:
 2. **HTTP Mode**:
    - Enabled with the `--http` flag.
    - By default, this mode provides a pure MCP-over-HTTP endpoint at `/mcp`, using the same JSON-RPC 2.0 protocol as stdio mode.
-   - It is stateless and uses JSON responses, making it convenient for testing and integration.
+   - While it is stateless and streams Server‑Sent Events (SSE, text/event-stream) rather than prettified JSON, it is still convenient for testing and integration (e.g., using `curl` or `Insomnia`).
 
    The HTTP mode can be optionally extended to serve additional web and REST API endpoints. This is disabled by default and can be enabled by providing the `--rest` flag at startup.
 
@@ -536,8 +536,8 @@ To gain insight into tool usage patterns, the server can optionally report tool 
 
 - Anonymous identity (distinct_id) (as per Mixpanel's [documentation](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#server-side-identity-management)):
   - A stable `distinct_id` is generated to anonymously identify unique users.
-  - The fingerprint is the concatenation of: namespace URL (`"https://blockscout.com/mcp/"`), client IP, client name, and client version.
-  - This provides stable identification even when multiple clients share the same name/version (e.g., Claude Desktop), because their IPs differ.
+  - The fingerprint is the concatenation of: namespace URL (`https://mcp.blockscout.com/mcp`), client IP, client name, and client version.
+  - This yields stable identification even when multiple clients share the same name/version (e.g., Claude Desktop) because their IPs differ.
 
 - REST API support and source attribution:
   - The REST context mock is extended with a request context wrapper so analytics can extract IP and headers consistently (see `blockscout_mcp_server/api/dependencies.py`).
@@ -590,20 +590,20 @@ To enhance the flexibility and extensibility of the Blockscout MCP Server, a new
 
 While the existing MCP tools provide high-level, optimized access to common blockchain data, they do not cover every possible endpoint or chain-specific functionality offered by Blockscout. Introducing a dedicated tool for every niche endpoint would lead to "tool sprawl," overwhelming the LLM's context and making tool selection difficult. The `direct_api_call` tool addresses this by providing a controlled mechanism to access specialized data without proliferating the core toolset. It is specifically designed for:
 
-*   Accessing chain-specific data (e.g., rollup batch information, validator lists for PoS chains).
-*   Retrieving data from less frequently used or experimental Blockscout API endpoints.
-*   Providing a flexible interface for future Blockscout API additions without requiring server code changes.
+- Accessing chain-specific data (e.g., rollup batch information, validator lists for PoS chains).
+- Retrieving data from less frequently used or experimental Blockscout API endpoints.
+- Providing a flexible interface for future Blockscout API additions without requiring server code changes.
 
 **Architectural Integration and Curation Strategy:**
 
 The `direct_api_call` tool is integrated into the server with careful consideration for LLM usability and context optimization:
 
-1.  **Functional Uniqueness:** The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role.
-2.  **Endpoint Discovery:**
-    *   A primary, curated list of general and chain-specific endpoints is provided to the AI through the `__unlock_blockchain_analysis__` tool's response. This ensures the AI is aware of the tool's capabilities from the outset.
-    *   Additionally, context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`). This allows the AI to "dig deeper" into related data only when it's contextually relevant, optimizing LLM token usage.
-3.  **Input Simplicity:** The curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI is responsible for substituting any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.
-4.  **Output Conciseness:** Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list. This prevents overwhelming the LLM's context window with unmanageable information, aligning with the server's overall "Response Processing and Context Optimization" strategy.
+1. **Functional Uniqueness:** The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role.
+2. **Endpoint Discovery:**
+    - A primary, curated list of general and chain-specific endpoints is provided to the AI through the `__unlock_blockchain_analysis__` tool's response. This ensures the AI is aware of the tool's capabilities from the outset.
+    - Additionally, context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`). This allows the AI to "dig deeper" into related data only when it's contextually relevant, optimizing LLM token usage.
+3. **Input Simplicity:** The curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI is responsible for substituting any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.
+4. **Output Conciseness:** Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list. This prevents overwhelming the LLM's context window with unmanageable information, aligning with the server's overall "Response Processing and Context Optimization" strategy.
 
 **High-Level Implementation Details:**
 
