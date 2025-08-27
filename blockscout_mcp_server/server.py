@@ -182,7 +182,6 @@ def main_command(
         asgi_app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],  # Configure this more restrictively if needed
-            allow_credentials=True,
             allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
             allow_headers=["*"],
             expose_headers=["mcp-session-id"],  # Allow client to read session ID
