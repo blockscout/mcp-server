@@ -14,7 +14,7 @@ The blockscout MCP Server Desktop Extension doesn't include the original Python 
 
 The reasons for this are:
 
-- **Upgradeless improvements**: the stable version of the Blockscout MCP Server with the newest functionality is always deployed on `http://mcp.blockscout.com/mcp/`, therefore users don't need to upgrade the extension to get access to the newest features.
+- **Upgradeless improvements**: the stable version of the Blockscout MCP Server with the newest functionality is always deployed on `http://mcp.blockscout.com/mcp`, therefore users don't need to upgrade the extension to get access to the newest features.
 - **Simplify the distribution**: while Claude Desktop supports installing Python-based extensions, Python is not shipped with the application whereas Node.js (which is required for `mcp-remote`) is. Reducing assumptions about the software stack makes the extension more accessible to a wider range of users. If a user is experienced enough to install Python/Docker, they can easily install the original MCP server on the local machine by themselves.
 - **Simplify the development**: there is no need to adapt the MCP server to comply with the DXT specification.
 - **Open source in action**: the Blockscout MCP server code does not need to implement its own proxy functionality; instead, community-tested and trusted `mcp-remote` is used.
@@ -41,7 +41,7 @@ docker run --rm -it -v "$(pwd)"/dxt:/workspace -w /workspace node:20-slim bash -
 
 #### Build Modes
 
-- **Production (`prod`)**: Uses `manifest.json` and connects to the official `https://mcp.blockscout.com/mcp/` server. Creates `blockscout-mcp.dxt`.
+- **Production (`prod`)**: Uses `manifest.json` and connects to the official `https://mcp.blockscout.com/mcp` server. Creates `blockscout-mcp.dxt`.
 - **Development (`dev`)**: Uses `manifest-dev.json` with configurable URL and creates `blockscout-mcp-dev.dxt`. Users can configure the Blockscout MCP server URL during installation in Claude Desktop.
 
 This will automatically handle all the steps below and create the extension at `dxt/_build/blockscout-mcp[--dev].dxt`.

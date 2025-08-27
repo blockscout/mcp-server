@@ -14,7 +14,7 @@
 **Benefits:** Context-aware, progress tracking, intelligent pagination, optimized for LLM token usage
 
 **Configuration:**
-- **Cloud instance:** `https://mcp.blockscout.com/mcp/`
+- **Cloud instance:** `https://mcp.blockscout.com/mcp`
 - **Claude Desktop (DXT Extension):** Download and install `blockscout-mcp.dxt` from GitHub releases for one-click setup
 - **Claude Desktop (Docker):** Use `sparfenyuk/mcp-proxy:latest` with streamable HTTP transport
 - **Cursor and Gemini CLI:** Direct HTTP URL with 180-second timeout

@@ -120,13 +120,13 @@ The server will start and listen on `http://127.0.0.1:8000`.
 
 ### Testing MCP over HTTP
 
-These examples show how to interact with the server using the native MCP JSON-RPC protocol over HTTP. The MCP endpoint is available at `/mcp/`. **Note**: The trailing slash is required.
+These examples show how to interact with the server using the native MCP JSON-RPC protocol over HTTP. The MCP endpoint is available at `/mcp`.
 
 #### 1. List Available Tools
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8000/mcp/ \
+  --url http://127.0.0.1:8000/mcp \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -134,6 +134,7 @@ curl --request POST \
     "id": 0,
     "method": "tools/list"
   }'
+```
 
 This will return a list of all available tools with their descriptions and input schemas.
 
@@ -141,7 +142,7 @@ This will return a list of all available tools with their descriptions and input
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8000/mcp/ \
+  --url http://127.0.0.1:8000/mcp \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{
@@ -159,7 +160,7 @@ curl --request POST \
 
 ```bash
 curl --request POST \
-  --url http://127.0.0.1:8000/mcp/ \
+  --url http://127.0.0.1:8000/mcp \
   --header 'Content-Type: application/json' \
   --header 'Accept: application/json, text/event-stream' \
   --data '{

@@ -536,7 +536,7 @@ To gain insight into tool usage patterns, the server can optionally report tool 
 
 - Anonymous identity (distinct_id) (as per Mixpanel's [documentation](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#server-side-identity-management)):
   - A stable `distinct_id` is generated to anonymously identify unique users.
-  - The fingerprint is the concatenation of: namespace URL (`"https://blockscout.com/mcp/"`), client IP, client name, and client version.
+  - The fingerprint is the concatenation of: namespace URL (`"https://blockscout.com/mcp"`), client IP, client name, and client version.
   - This provides stable identification even when multiple clients share the same name/version (e.g., Claude Desktop), because their IPs differ.
 
 - REST API support and source attribution:

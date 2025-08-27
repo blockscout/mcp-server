@@ -24,7 +24,7 @@
       "command": "node",
       "args": [
         "${__dirname}/node_modules/mcp-remote/dist/proxy.js",
-        "https://mcp.blockscout.com/mcp/",
+        "https://mcp.blockscout.com/mcp",
         "--transport", "http-only",
         "--header", "Blockscout-MCP-Intermediary: ClaudeDesktop"
       ],

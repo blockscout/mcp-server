@@ -115,7 +115,7 @@ def _build_distinct_id(ip: str, client_name: str, client_version: str) -> str:
     # User-Agent is merged into client_name in extract_client_meta_from_ctx when name is unavailable.
     # Therefore composite requires only ip, client_name and client_version for a stable fingerprint.
     composite = "|".join([ip or "", client_name or "", client_version or ""])
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://blockscout.com/mcp/" + composite))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://mcp.blockscout.com/mcp" + composite))
 
 
 def _determine_call_source(ctx: Any) -> str:

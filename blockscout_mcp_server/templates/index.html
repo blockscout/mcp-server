@@ -84,7 +84,7 @@
         "sparfenyuk/mcp-proxy:latest",
         "--transport",
         "streamablehttp",
-        "https://mcp.blockscout.com/mcp/"
+        "https://mcp.blockscout.com/mcp"
       ]
     }
   }
@@ -100,14 +100,14 @@
     <p class="copy-hint">You can copy this prompt and paste it into your Claude Desktop conversation.</p>
 
     <h3>Cursor Setup</h3>
-    <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AvIiwidGltZW91dCI6MTgwMDAwfQ%3D%3D"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add Blockscout MCP server to Cursor" height="32" /></a>
+    <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add Blockscout MCP server to Cursor" height="32" /></a>
 
     <h3>Gemini CLI Setup</h3>
     <p>To configure the Blockscout MCP server with Gemini CLI, add the following to your <code>~/.gemini/settings.json</code> file:</p>
     <pre><code>{
   "mcpServers": {
     "blockscout": {
-      "httpUrl": "https://mcp.blockscout.com/mcp/",
+      "httpUrl": "https://mcp.blockscout.com/mcp",
       "timeout": 180000
     }
   }
