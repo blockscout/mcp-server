@@ -135,7 +135,7 @@ def main_command(
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         mcp.settings.stateless_http = True  # Enable stateless mode
-        mcp.settings.json_response = True  # Enable JSON responses instead of SSE for tool calls
+        mcp.settings.json_response = False  # Enable JSON responses instead of SSE for tool calls
         # Enable analytics in HTTP mode
         analytics.set_http_mode(True)
         asgi_app = mcp.streamable_http_app()
