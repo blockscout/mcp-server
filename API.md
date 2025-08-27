@@ -500,7 +500,7 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 | ---- | ---- | -------- | ----------- |
 | `chain_id` | `string` | Yes | The ID of the blockchain. |
 | `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
-| `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. |
+| `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax in the query string, e.g., `query_params[page]=1`. |
 | `cursor` | `string` | No | The cursor for pagination from a previous response. |
 
 **Example Request**
