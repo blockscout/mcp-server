@@ -3,6 +3,8 @@ from mcp.server.fastmcp import Context
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
+    DIRECT_API_CALL_ENDPOINT_LIST,
+    DIRECT_API_CALL_RULES,
     EFFICIENCY_OPTIMIZATION_RULES,
     ERROR_HANDLING_RULES,
     PAGINATION_RULES,
@@ -13,6 +15,10 @@ from blockscout_mcp_server.constants import (
 from blockscout_mcp_server.models import (
     ChainIdGuidance,
     ChainInfo,
+    DirectApiCommonGroup,
+    DirectApiEndpoint,
+    DirectApiEndpointList,
+    DirectApiSpecificGroup,
     InstructionsData,
     ToolResponse,
 )
@@ -53,6 +59,18 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
     )
 
+    common_groups = []
+    for group_data in DIRECT_API_CALL_ENDPOINT_LIST["common"]:
+        endpoints = [DirectApiEndpoint(**endpoint) for endpoint in group_data["endpoints"]]
+        common_groups.append(DirectApiCommonGroup(group=group_data["group"], endpoints=endpoints))
+
+    specific_groups = []
+    for group_data in DIRECT_API_CALL_ENDPOINT_LIST["specific"]:
+        endpoints = [DirectApiEndpoint(**endpoint) for endpoint in group_data["endpoints"]]
+        specific_groups.append(DirectApiSpecificGroup(chain_family=group_data["chain_family"], endpoints=endpoints))
+
+    direct_api_endpoints = DirectApiEndpointList(common=common_groups, specific=specific_groups)
+
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
         error_handling_rules=ERROR_HANDLING_RULES,
@@ -61,6 +79,8 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         time_based_query_rules=TIME_BASED_QUERY_RULES,
         block_time_estimation_rules=BLOCK_TIME_ESTIMATION_RULES,
         efficiency_optimization_rules=EFFICIENCY_OPTIMIZATION_RULES,
+        direct_api_call_rules=DIRECT_API_CALL_RULES,
+        direct_api_endpoints=direct_api_endpoints,
     )
 
     # Report completion

@@ -7,6 +7,7 @@ from blockscout_mcp_server.models import (
     BlockInfoData,
     ChainInfo,
     DecodedInput,
+    DirectApiEndpointList,
     InstructionsData,
     NextCallInfo,
     NftCollectionHolding,
@@ -56,6 +57,8 @@ def test_tool_response_complex_data():
         time_based_query_rules="Time rule",
         block_time_estimation_rules="Block rule",
         efficiency_optimization_rules="Efficiency rule",
+        direct_api_call_rules="Direct API rule",
+        direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
@@ -171,6 +174,8 @@ def test_instructions_data():
         time_based_query_rules="Time rules",
         block_time_estimation_rules="Block rules",
         efficiency_optimization_rules="Efficiency rules",
+        direct_api_call_rules="Direct API rules",
+        direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
     assert instructions.version == "2.0.0"
     assert instructions.error_handling_rules == "Error rules"

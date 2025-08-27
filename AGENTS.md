@@ -35,6 +35,7 @@ mcp-server/
 │       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address)
 │       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
 │       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, get_transaction_info)
+│       ├── direct_api_tools.py   # Implements generic direct API tool (direct_api_call)
 │       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
 ├── tests/                      # Test suite for all MCP tools
 │   ├── integration/            # Integration tests that make real network calls
@@ -44,6 +45,7 @@ mcp-server/
 │   │   ├── test_chains_tools_integration.py    # Tool-level integration tests for chains tools
 │   │   ├── test_common_helpers.py              # Helper-level integration tests for API helpers
 │   │   ├── test_contract_tools_integration.py  # Tool-level integration tests for contract tools
+│   │   ├── test_direct_api_tools_integration.py   # Tool-level integration tests for direct API tool
 │   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
@@ -281,4 +283,5 @@ mcp-server/
                 * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)` and `inspect_contract_code(chain_id, address, file_name=None)`.
                 * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)` with robust, cursor-based pagination.
                 * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
-                * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)`, `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)`, `get_transaction_info(chain_id, hash, include_raw_input=False)`, `transaction_summary(chain_id, hash)`, `get_transaction_logs(chain_id, hash, cursor=None)`, etc.
+            * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)`, `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)`, `get_transaction_info(chain_id, hash, include_raw_input=False)`, `transaction_summary(chain_id, hash)`, `get_transaction_logs(chain_id, hash, cursor=None)`, etc.
+            * `direct_api_tools.py`: Implements `direct_api_call(chain_id, endpoint_path, query_params=None, cursor=None)`.

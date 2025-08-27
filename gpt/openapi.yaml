@@ -35,6 +35,62 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /direct_api_call:
+    get:
+      summary: Direct API call
+      description: |
+        Perform a raw request to a curated Blockscout API endpoint for advanced or chain-specific data.
+      operationId: directApiCall
+      tags:
+        - General
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: endpoint_path
+          in: query
+          required: true
+          description: The Blockscout API path to call (e.g., '/api/v2/stats')
+          schema:
+            type: string
+          example: "/api/v2/stats"
+        - name: query_params
+          in: query
+          required: false
+          description: Optional query parameters forwarded to the Blockscout API
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            sender: "0x91f51371D33e4E50e838057E8045265372f8d448"
+            page: "1"
+        - name: cursor
+          in: query
+          required: false
+          description: Pagination cursor from a previous response
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Raw Blockscout API response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+
   # Block tools
   /get_latest_block:
     get:

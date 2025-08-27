@@ -556,6 +556,47 @@ async def test_get_chains_list_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_required_only(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.get("/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats")
+    assert response.status_code == 200
+    assert response.json()["data"] == {"ok": True}
+    mock_tool.assert_called_once_with(chain_id="1", endpoint_path="/api/v2/stats", ctx=ANY)
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_success_with_cursor_and_query_params(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    url = "/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&query_params[page]=1&cursor=abc"
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json()["data"] == {"ok": True}
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        endpoint_path="/api/v2/stats",
+        query_params={"page": "1"},
+        cursor="abc",
+        ctx=ANY,
+    )
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_missing_endpoint_path(client: AsyncClient):
+    response = await client.get("/v1/direct_api_call?chain_id=1")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'endpoint_path'"}
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_missing_chain_id(client: AsyncClient):
+    response = await client.get("/v1/direct_api_call?endpoint_path=/api/v2/stats")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "side_effect, status",
     [
