@@ -5,8 +5,8 @@ from pydantic import Field
 
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
+    apply_cursor_to_params,
     build_tool_response,
-    decode_cursor,
     encode_cursor,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -39,8 +39,7 @@ async def direct_api_call(
     base_url = await get_blockscout_base_url(chain_id)
 
     params = dict(query_params) if query_params else {}
-    if cursor:
-        params.update(decode_cursor(cursor))
+    apply_cursor_to_params(cursor, params)
 
     await report_and_log_progress(
         ctx,
