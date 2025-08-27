@@ -3,6 +3,7 @@ from typing import Annotated
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.constants import (
@@ -174,6 +175,20 @@ def main_command(
         # Enable analytics in HTTP mode
         analytics.set_http_mode(True)
         asgi_app = mcp.streamable_http_app()
+
+        # Wrap ASGI application with CORS middleware to expose Mcp-Session-Id header
+        # for browser-based clients (ensures 500 errors get proper CORS headers)
+        # See: https://github.com/modelcontextprotocol/python-sdk/pull/1059
+        asgi_app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Configure this more restrictively if needed
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
+            allow_headers=["*"],
+            expose_headers=["mcp-session-id"],  # Allow client to read session ID
+            max_age=86400,
+        )
+
         asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
         uvicorn.run(asgi_app, host=http_host, port=http_port)
     elif rest:
