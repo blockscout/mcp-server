@@ -1,0 +1,10 @@
+description = "Chat with the CodeAlive MCP server."
+prompt = """
+Use the CodeAlive MCP tool chat_completions to answer this question using my default data source. Call it with:
+
+messages: [{ 'role': 'user', 'content': '{{question}}' }]
+stream: true
+debug: false
+
+Return only the assistant’s final text.
+"""
