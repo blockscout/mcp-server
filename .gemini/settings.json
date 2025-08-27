@@ -5,5 +5,14 @@
     "enabled": true
   },
   "theme": "ANSI",
-  "mcpServers": {}
+  "hideBanner": true,
+  "mcpServers": {
+    "codealive": {
+      "httpUrl": "https://mcp.codealive.ai/api/",
+      "headers": {
+        "Authorization": "Bearer ${CODEALIVE_API_KEY}"
+      },
+      "timeout": 240000
+    }
+  }
 }
