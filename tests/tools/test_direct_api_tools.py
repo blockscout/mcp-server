@@ -148,3 +148,26 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_awaited_once()
         assert mock_ctx.report_progress.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_rejects_query_in_path(mock_ctx):
+    chain_id = "1"
+    endpoint_path = "/api/v2/data?foo=bar"
+    mock_base_url = "https://eth.blockscout.com"
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        with pytest.raises(ValueError):
+            await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_not_called()
+        assert mock_ctx.report_progress.call_count == 1

@@ -18,7 +18,12 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 @log_tool_invocation
 async def direct_api_call(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    endpoint_path: Annotated[str, Field(description="The Blockscout API path to call (e.g., '/api/v2/stats')")],
+    endpoint_path: Annotated[
+        str,
+        Field(
+            description="The Blockscout API path to call (e.g., '/api/v2/stats'); do not include query strings.",
+        ),
+    ],
     ctx: Context,
     query_params: Annotated[
         dict[str, Any] | None,
@@ -31,6 +36,9 @@ async def direct_api_call(
 ) -> ToolResponse[DirectApiData]:
     """Call a raw Blockscout API endpoint for advanced or chain-specific data.
 
+    Do not include query strings in ``endpoint_path``; pass all query parameters via
+    ``query_params`` to avoid double-encoding.
+
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
     use the provided next_call to get additional pages.
     """
@@ -41,6 +49,8 @@ async def direct_api_call(
         message=f"Resolving Blockscout URL for chain {chain_id}...",
     )
     base_url = await get_blockscout_base_url(chain_id)
+    if "?" in endpoint_path:
+        raise ValueError("Do not include query parameters in endpoint_path. Use query_params instead.")
 
     params = dict(query_params) if query_params else {}
     apply_cursor_to_params(cursor, params)

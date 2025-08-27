@@ -50,7 +50,7 @@ paths:
           description: The ID of the blockchain
           schema:
             type: string
-          example: "ethereum-mainnet"
+          example: "1"
         - name: endpoint_path
           in: query
           required: true
@@ -68,6 +68,9 @@ paths:
             type: object
             additionalProperties:
               type: string
+          example:
+            sender: "0x91f51371D33e4E50e838057E8045265372f8d448"
+            page: "1"
         - name: cursor
           in: query
           required: false

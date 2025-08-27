@@ -506,5 +506,5 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 **Example Request**
 
 ```bash
-curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&query_params[page]=1"
+curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=137&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
 ```

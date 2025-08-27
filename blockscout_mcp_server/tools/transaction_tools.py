@@ -547,9 +547,9 @@ async def get_transaction_info(
 
     instructions = [
         (
-            "Use `direct_api_call` with endpoint "
-            f"`/api/v2/proxy/account-abstraction/operations?transaction_hash={transaction_hash}` "
-            "to get User Operations for this transaction."
+            "To check for ERC-4337 User Operations related to this tx, call "
+            f"`direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations` "
+            f"with query_params={{'transaction_hash': '{transaction_hash}'}}."
         )
     ]
     return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)

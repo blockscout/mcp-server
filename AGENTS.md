@@ -45,6 +45,7 @@ mcp-server/
 │   │   ├── test_chains_tools_integration.py    # Tool-level integration tests for chains tools
 │   │   ├── test_common_helpers.py              # Helper-level integration tests for API helpers
 │   │   ├── test_contract_tools_integration.py  # Tool-level integration tests for contract tools
+│   │   ├── test_direct_api_tools_integration.py   # Tool-level integration tests for direct API tool
 │   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
 │   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
 │   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
