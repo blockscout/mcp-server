@@ -19,7 +19,7 @@ The Blockscout MCP Server supports two primary operational modes:
 2. **HTTP Mode**:
    - Enabled with the `--http` flag.
    - By default, this mode provides a pure MCP-over-HTTP endpoint at `/mcp`, using the same JSON-RPC 2.0 protocol as stdio mode.
-   - It is stateless and uses JSON responses, making it convenient for testing and integration.
+   - While it is stateless and streams Server‑Sent Events (SSE, text/event-stream) rather than prettified JSON, it still convenient for testing and integration (e.g. by using `curl` or `Insomnia`).
 
    The HTTP mode can be optionally extended to serve additional web and REST API endpoints. This is disabled by default and can be enabled by providing the `--rest` flag at startup.
 
@@ -536,7 +536,7 @@ To gain insight into tool usage patterns, the server can optionally report tool 
 
 - Anonymous identity (distinct_id) (as per Mixpanel's [documentation](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#server-side-identity-management)):
   - A stable `distinct_id` is generated to anonymously identify unique users.
-  - The fingerprint is the concatenation of: namespace URL ("https://mcp.blockscout.com/mcp"), client IP, client name, and client version.
+  - The fingerprint is the concatenation of: namespace URL (`https://mcp.blockscout.com/mcp`), client IP, client name, and client version.
   - This yields stable identification even when multiple clients share the same name/version (e.g., Claude Desktop) because their IPs differ.
 
 - REST API support and source attribution:
