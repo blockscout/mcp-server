@@ -59,6 +59,12 @@ class ChainIdGuidance(BaseModel):
     )
 
 
+class DirectApiData(BaseModel):
+    """Generic container for direct API responses."""
+
+    model_config = ConfigDict(extra="allow")
+
+
 class DirectApiEndpoint(BaseModel):
     """Represents a single direct API endpoint."""
 
@@ -76,7 +82,7 @@ class DirectApiCommonGroup(BaseModel):
 class DirectApiSpecificGroup(BaseModel):
     """Represents a group of endpoints specific to certain chain families."""
 
-    chains_family: str = Field(description="The chain family this group applies to (e.g., 'Arbitrum', 'Optimism').")
+    chain_family: str = Field(description="The chain family this group applies to (e.g., 'Arbitrum', 'Optimism').")
     endpoints: list[DirectApiEndpoint] = Field(description="List of chain-specific endpoints.")
 
 

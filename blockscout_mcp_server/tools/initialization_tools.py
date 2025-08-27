@@ -67,7 +67,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
     specific_groups = []
     for group_data in DIRECT_API_CALL_ENDPOINT_LIST["specific"]:
         endpoints = [DirectApiEndpoint(**endpoint) for endpoint in group_data["endpoints"]]
-        specific_groups.append(DirectApiSpecificGroup(chains_family=group_data["chains_family"], endpoints=endpoints))
+        specific_groups.append(DirectApiSpecificGroup(chain_family=group_data["chain_family"], endpoints=endpoints))
 
     direct_api_endpoints = DirectApiEndpointList(common=common_groups, specific=specific_groups)
 

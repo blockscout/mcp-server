@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
-from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
+from blockscout_mcp_server.models import DirectApiData, NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
@@ -28,8 +28,12 @@ async def direct_api_call(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> ToolResponse[dict[str, Any]]:
-    """Call a raw Blockscout API endpoint for advanced or chain-specific data."""
+) -> ToolResponse[DirectApiData]:
+    """Call a raw Blockscout API endpoint for advanced or chain-specific data.
+
+    **SUPPORTS PAGINATION**: If response includes 'pagination' field,
+    use the provided next_call to get additional pages.
+    """
     await report_and_log_progress(
         ctx,
         progress=0.0,
@@ -69,4 +73,5 @@ async def direct_api_call(
         message="Successfully fetched data.",
     )
 
-    return build_tool_response(data=response_json, pagination=pagination)
+    data = DirectApiData.model_validate(response_json)
+    return build_tool_response(data=data, pagination=pagination)

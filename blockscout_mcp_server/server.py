@@ -55,10 +55,10 @@ def format_endpoint_groups(groups):
             formatted.append(f'<group name="{group["group"]}">')
             formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
             formatted.append("</group>")
-        elif "chains_family" in group:
-            formatted.append(f'<chains_family name="{group["chains_family"]}">')
+        elif "chain_family" in group:
+            formatted.append(f'<chain_family name="{group["chain_family"]}">')
             formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
-            formatted.append("</chains_family>")
+            formatted.append("</chain_family>")
     return "\n".join(formatted)
 
 

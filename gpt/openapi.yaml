@@ -50,12 +50,24 @@ paths:
           description: The ID of the blockchain
           schema:
             type: string
+          example: "ethereum-mainnet"
         - name: endpoint_path
           in: query
           required: true
           description: The Blockscout API path to call (e.g., '/api/v2/stats')
           schema:
             type: string
+          example: "/api/v2/stats"
+        - name: query_params
+          in: query
+          required: false
+          description: Optional query parameters forwarded to the Blockscout API
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
         - name: cursor
           in: query
           required: false
@@ -73,6 +85,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
 
   # Block tools
   /get_latest_block:

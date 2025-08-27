@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.models import DirectApiData, ToolResponse
 from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 
 
@@ -31,7 +31,8 @@ async def test_direct_api_call_no_params(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params={})
         assert isinstance(result, ToolResponse)
-        assert result.data == mock_response
+        assert isinstance(result.data, DirectApiData)
+        assert result.data.model_dump() == mock_response
         assert result.pagination is None
         assert mock_ctx.report_progress.call_count == 3
 
@@ -84,7 +85,8 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
             params={"limit": "1", "page": 2},
         )
         assert isinstance(result, ToolResponse)
-        assert result.data == mock_response
+        assert isinstance(result.data, DirectApiData)
+        assert result.data.model_dump() == mock_response
         assert result.pagination is None
         assert mock_ctx.report_progress.call_count == 3
 

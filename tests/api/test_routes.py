@@ -559,7 +559,7 @@ async def test_get_chains_list_success(mock_tool, client: AsyncClient):
 @patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
 async def test_direct_api_call_success(mock_tool, client: AsyncClient):
     mock_tool.return_value = ToolResponse(data={"ok": True})
-    url = "/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&limit=1"
+    url = "/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&query_params[limit]=1"
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"] == {"ok": True}

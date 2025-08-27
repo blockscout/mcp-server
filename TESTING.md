@@ -230,7 +230,7 @@ curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee5
 #### 6. Direct API Call
 
 ```bash
-curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats"
+curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&query_params[page]=1"
 ```
 
 #### Expected REST API Response Format

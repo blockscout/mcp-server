@@ -269,11 +269,16 @@ async def get_chains_list_rest(request: Request) -> Response:
 async def direct_api_call_rest(request: Request) -> Response:
     """REST wrapper for the direct_api_call tool."""
     params = extract_and_validate_params(request, required=["chain_id", "endpoint_path"], optional=["cursor"])
-    extra = dict(request.query_params)
-    for key in ["chain_id", "endpoint_path", "cursor"]:
-        extra.pop(key, None)
+    extra: dict[str, str] = {}
+    for key, value in request.query_params.items():
+        if key in {"chain_id", "endpoint_path", "cursor"}:
+            continue
+        if key.startswith("query_params[") and key.endswith("]"):
+            extra[key[13:-1]] = value
+        else:
+            extra[key] = value
     if extra:
-        params["query_params"] = dict(extra)
+        params["query_params"] = extra
     tool_response = await direct_api_call(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump())
 

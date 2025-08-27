@@ -1,5 +1,6 @@
 import pytest
 
+from blockscout_mcp_server.models import DirectApiData
 from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 
 
@@ -7,7 +8,7 @@ from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 @pytest.mark.asyncio
 async def test_direct_api_call_stats_counters(mock_ctx):
     result = await direct_api_call(chain_id="1", endpoint_path="/stats-service/api/v1/counters", ctx=mock_ctx)
-    assert isinstance(result.data, dict)
+    assert isinstance(result.data, DirectApiData)
 
 
 @pytest.mark.integration
@@ -21,7 +22,7 @@ async def test_direct_api_call_arbitrum_messages_pagination(mock_ctx):
     assert first.pagination is not None
     next_params = first.pagination.next_call.params
     second = await direct_api_call(ctx=mock_ctx, **next_params)
-    assert isinstance(second.data, dict)
+    assert isinstance(second.data, DirectApiData)
 
 
 @pytest.mark.integration
@@ -32,4 +33,4 @@ async def test_direct_api_call_blocks_validated_pagination(mock_ctx):
     assert first.pagination is not None
     next_params = first.pagination.next_call.params
     second = await direct_api_call(ctx=mock_ctx, **next_params)
-    assert isinstance(second.data, dict)
+    assert isinstance(second.data, DirectApiData)

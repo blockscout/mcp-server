@@ -76,66 +76,66 @@ ADVANCED API USAGE: For specialized or chain-specific data not covered by other 
 </common>
 
 <specific>
-<chains_family name="Ethereum Mainnet and Gnosis">
+<chain_family name="Ethereum Mainnet and Gnosis">
 "/api/v2/addresses/{account_address}/beacon/deposits" - "Get Beacon Chain deposits for a specific address."
-"/api/v2/block/{block_number}/beacon/deposits" - "Get Beacon Chain deposits for a specific block."
+"/api/v2/blocks/{block_number}/beacon/deposits" - "Get Beacon Chain deposits for a specific block."
 "/api/v2/addresses/{account_address}/withdrawals" - "Get Beacon Chain withdrawals for a specific address."
 "/api/v2/blocks/{block_number}/withdrawals" - "Get Beacon Chain withdrawals for a specific block."
-</chains_family>
-<chains_family name="Arbitrum">
+</chain_family>
+<chain_family name="Arbitrum">
 "/api/v2/main-page/arbitrum/batches/latest-number" - "Get the latest committed batch number for Arbitrum."
 "/api/v2/arbitrum/batches/{batch_number}" - "Get information for a specific Arbitrum batch."
 "/api/v2/arbitrum/messages/to-rollup" - "Get L1 to L2 messages for Arbitrum."
 "/api/v2/arbitrum/messages/from-rollup" - "Get L2 to L1 messages for Arbitrum."
-"/api/v2/arbitrum/messages/withdrawals/{transactions_hash}" - "Get L2 to L1 messages for a specific transaction hash on Arbitrum."
-</chains_family>
-<chains_family name="Optimism">
+"/api/v2/arbitrum/messages/withdrawals/{transaction_hash}" - "Get L2 to L1 messages for a specific transaction hash on Arbitrum."
+</chain_family>
+<chain_family name="Optimism">
 "/api/v2/optimism/batches" - "Get the latest committed batches for Optimism."
 "/api/v2/optimism/batches/{batch_number}" - "Get information for a specific Optimism batch."
 "/api/v2/optimism/games" - "Get dispute games for Optimism."
 "/api/v2/optimism/deposits" - "Get L1 to L2 messages (deposits) for Optimism."
 "/api/v2/optimism/withdrawals" - "Get L2 to L1 messages (withdrawals) for Optimism."
-</chains_family>
-<chains_family name="Celo">
+</chain_family>
+<chain_family name="Celo">
 "/api/v2/celo/epochs" - "Get the latest finalized epochs for Celo."
 "/api/v2/celo/epochs/{epoch_number}" - "Get information for a specific Celo epoch."
 "/api/v2/celo/epochs/{epoch_number}/election-rewards/group" - "Get validator group rewards for a specific Celo epoch."
 "/api/v2/celo/epochs/{epoch_number}/election-rewards/validator" - "Get validator rewards for a specific Celo epoch."
 "/api/v2/celo/epochs/{epoch_number}/election-rewards/voter" - "Get voter rewards for a specific Celo epoch."
-</chains_family>
-<chains_family name="zkSync">
+</chain_family>
+<chain_family name="zkSync">
 "/api/v2/main-page/zksync/batches/latest-number" - "Get the latest committed batch number for zkSync."
 "/api/v2/zksync/batches/{batch_number}" - "Get information for a specific zkSync batch."
-</chains_family>
-<chains_family name="zkEVM">
+</chain_family>
+<chain_family name="zkEVM">
 "/api/v2/zkevm/batches/confirmed" - "Get the latest confirmed batches for zkEVM."
 "/api/v2/zkevm/batches/{batch_number}" - "Get information for a specific zkEVM batch."
 "/api/v2/zkevm/deposits" - "Get deposits for zkEVM."
 "/api/v2/zkevm/withdrawals" - "Get withdrawals for zkEVM."
-</chains_family>
-<chains_family name="Scroll">
+</chain_family>
+<chain_family name="Scroll">
 "/api/v2/scroll/batches" - "Get the latest committed batches for Scroll."
 "/api/v2/scroll/batches/{batch_number}" - "Get information for a specific Scroll batch."
 "/api/v2/blocks/scroll-batch/{batch_number}" - "Get blocks for a specific Scroll batch."
 "/api/v2/scroll/deposits" - "Get L1 to L2 messages (deposits) for Scroll."
 "/api/v2/scroll/withdrawals" - "Get L2 to L1 messages (withdrawals) for Scroll."
-</chains_family>
-<chains_family name="Shibarium">
+</chain_family>
+<chain_family name="Shibarium">
 "/api/v2/shibarium/deposits" - "Get L1 to L2 messages (deposits) for Shibarium."
 "/api/v2/shibarium/withdrawals" - "Get L2 to L1 messages (withdrawals) for Shibarium."
-</chains_family>
-<chains_family name="Stability">
+</chain_family>
+<chain_family name="Stability">
 "/api/v2/validators/stability" - "Get the list of validators for Stability."
-</chains_family>
-<chains_family name="Zilliqa">
+</chain_family>
+<chain_family name="Zilliqa">
 "/api/v2/validators/zilliqa" - "Get the list of validators for Zilliqa."
 "/api/v2/validators/zilliqa/{validator_public_key}" - "Get information for a specific Zilliqa validator."
-</chains_family>
-<chains_family name="Redstone">
+</chain_family>
+<chain_family name="Redstone">
 "/api/v2/mud/worlds" - "Get a list of MUD worlds for Redstone."
 "/api/v2/mud/worlds/{contract_address}/tables" - "Get tables for a specific MUD world on Redstone."
 "/api/v2/mud/worlds/{contract_address}/tables/{table_id}/records" - "Get records for a specific MUD world table on Redstone."
 "/api/v2/mud/worlds/{contract_address}/tables/{table_id}/records/{record_id}" - "Get a specific record from a MUD world table on Redstone."
-</chains_family>
+</chain_family>
 </specific>
 </direct_call_endpoint_list>

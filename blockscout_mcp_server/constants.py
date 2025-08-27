@@ -121,14 +121,14 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
     ],
     "specific": [
         {
-            "chains_family": "Ethereum Mainnet and Gnosis",
+            "chain_family": "Ethereum Mainnet and Gnosis",
             "endpoints": [
                 {
                     "path": "/api/v2/addresses/{account_address}/beacon/deposits",
                     "description": "Get Beacon Chain deposits for a specific address.",
                 },
                 {
-                    "path": "/api/v2/block/{block_number}/beacon/deposits",
+                    "path": "/api/v2/blocks/{block_number}/beacon/deposits",
                     "description": "Get Beacon Chain deposits for a specific block.",
                 },
                 {
@@ -142,7 +142,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Arbitrum",
+            "chain_family": "Arbitrum",
             "endpoints": [
                 {
                     "path": "/api/v2/main-page/arbitrum/batches/latest-number",
@@ -161,13 +161,13 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
                     "description": "Get L2 to L1 messages for Arbitrum.",
                 },
                 {
-                    "path": "/api/v2/arbitrum/messages/withdrawals/{transactions_hash}",
+                    "path": "/api/v2/arbitrum/messages/withdrawals/{transaction_hash}",
                     "description": "Get L2 to L1 messages for a specific transaction hash on Arbitrum.",
                 },
             ],
         },
         {
-            "chains_family": "Optimism",
+            "chain_family": "Optimism",
             "endpoints": [
                 {
                     "path": "/api/v2/optimism/batches",
@@ -192,7 +192,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Celo",
+            "chain_family": "Celo",
             "endpoints": [
                 {
                     "path": "/api/v2/celo/epochs",
@@ -217,7 +217,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "zkSync",
+            "chain_family": "zkSync",
             "endpoints": [
                 {
                     "path": "/api/v2/main-page/zksync/batches/latest-number",
@@ -230,7 +230,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "zkEVM",
+            "chain_family": "zkEVM",
             "endpoints": [
                 {
                     "path": "/api/v2/zkevm/batches/confirmed",
@@ -251,7 +251,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Scroll",
+            "chain_family": "Scroll",
             "endpoints": [
                 {
                     "path": "/api/v2/scroll/batches",
@@ -276,7 +276,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Shibarium",
+            "chain_family": "Shibarium",
             "endpoints": [
                 {
                     "path": "/api/v2/shibarium/deposits",
@@ -289,7 +289,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Stability",
+            "chain_family": "Stability",
             "endpoints": [
                 {
                     "path": "/api/v2/validators/stability",
@@ -298,7 +298,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Zilliqa",
+            "chain_family": "Zilliqa",
             "endpoints": [
                 {
                     "path": "/api/v2/validators/zilliqa",
@@ -311,7 +311,7 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
-            "chains_family": "Redstone",
+            "chain_family": "Redstone",
             "endpoints": [
                 {
                     "path": "/api/v2/mud/worlds",

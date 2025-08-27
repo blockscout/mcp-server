@@ -94,7 +94,7 @@ async def get_address_info(
             "to get daily native coin balance history."
         ),
         (
-            f"Use `direct_api_call` with endpoint `/addresses/{address}/coin-balance-history` "
+            f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history` "
             "to get native coin balance history."
         ),
         (
@@ -106,8 +106,8 @@ async def get_address_info(
             "to get Account Abstraction info."
         ),
         (
-            f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations?sender={address}` "
-            "to get User Operations sent by this Address."
+            f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations` "
+            f"and query_params={{'sender': '{address}'}} to get User Operations sent by this Address."
         ),
     ]
 
