@@ -28,6 +28,7 @@ from blockscout_mcp_server.tools.contract_tools import (
     inspect_contract_code,
     read_contract,
 )
+from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
 from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
 from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
@@ -264,6 +265,19 @@ async def get_chains_list_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump())
 
 
+@handle_rest_errors
+async def direct_api_call_rest(request: Request) -> Response:
+    """REST wrapper for the direct_api_call tool."""
+    params = extract_and_validate_params(request, required=["chain_id", "endpoint_path"], optional=["cursor"])
+    extra = dict(request.query_params)
+    for key in ["chain_id", "endpoint_path", "cursor"]:
+        extra.pop(key, None)
+    if extra:
+        params["query_params"] = dict(extra)
+    tool_response = await direct_api_call(**params, ctx=get_mock_context(request))
+    return JSONResponse(tool_response.model_dump())
+
+
 def _add_v1_tool_route(mcp: FastMCP, path: str, handler: Callable[..., Any]) -> None:
     """Register a tool route under the /v1/ prefix."""
     mcp.custom_route(f"/v1{path}", methods=["GET"])(handler)
@@ -308,3 +322,4 @@ def register_api_routes(mcp: FastMCP) -> None:
     _add_v1_tool_route(mcp, "/get_transaction_logs", get_transaction_logs_rest)
     _add_v1_tool_route(mcp, "/get_address_logs", get_address_logs_rest)
     _add_v1_tool_route(mcp, "/get_chains_list", get_chains_list_rest)
+    _add_v1_tool_route(mcp, "/direct_api_call", direct_api_call_rest)

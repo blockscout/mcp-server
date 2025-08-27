@@ -545,7 +545,14 @@ async def get_transaction_info(
             ),
         ]
 
-    return build_tool_response(data=transaction_data, notes=notes)
+    instructions = [
+        (
+            "Use `direct_api_call` with endpoint "
+            f"`/api/v2/proxy/account-abstraction/operations?transaction_hash={transaction_hash}` "
+            "to get User Operations for this transaction."
+        )
+    ]
+    return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)
 
 
 @log_tool_invocation

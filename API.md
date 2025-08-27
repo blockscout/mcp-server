@@ -487,3 +487,25 @@ Executes a read-only smart contract function and returns its result.
 ```bash
 curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee523a2206206994597C13D831ec7&function_name=balanceOf&abi=%7B%22constant%22%3Atrue%2C%22inputs%22%3A%5B%7B%22name%22%3A%22_owner%22%2C%22type%22%3A%22address%22%7D%5D%2C%22name%22%3A%22balanceOf%22%2C%22outputs%22%3A%5B%7B%22name%22%3A%22balance%22%2C%22type%22%3A%22uint256%22%7D%5D%2C%22payable%22%3Afalse%2C%22stateMutability%22%3A%22view%22%2C%22type%22%3A%22function%22%7D&args=%5B%220xF977814e90dA44bFA03b6295A0616a897441aceC%22%5D"
 ```
+
+### Direct API Call (`direct_api_call`)
+
+Allows calling a curated raw Blockscout API endpoint for advanced or chain-specific data.
+
+`GET /v1/direct_api_call`
+
+**Parameters**
+
+| Name | Type | Required | Description |
+| ---- | ---- | -------- | ----------- |
+| `chain_id` | `string` | Yes | The ID of the blockchain. |
+| `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
+| `cursor` | `string` | No | The cursor for pagination from a previous response. |
+
+Any additional query parameters appended to the URL are forwarded directly to the Blockscout API.
+
+**Example Request**
+
+```bash
+curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats"
+```

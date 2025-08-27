@@ -432,6 +432,32 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         assert result.data.basic_info == mock_blockscout_response
         assert result.data.metadata == mock_metadata_response["addresses"][address]
         assert result.notes is None
+        expected_instructions = [
+            (f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address."),
+            (
+                f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history-by-day` "
+                "to get daily native coin balance history."
+            ),
+            (
+                f"Use `direct_api_call` with endpoint `/addresses/{address}/coin-balance-history` "
+                "to get native coin balance history."
+            ),
+            (
+                f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/blocks-validated` "
+                "to get Blocks Validated by this Address."
+            ),
+            (
+                f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/accounts/{address}` "
+                "to get Account Abstraction info."
+            ),
+            (
+                f"Use `direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations?sender={address}` "
+                "to get User Operations sent by this Address."
+            ),
+        ]
+        assert result.instructions is not None
+        for instr in expected_instructions:
+            assert instr in result.instructions
 
         assert mock_ctx.report_progress.call_count == 4
         assert mock_ctx.info.call_count == 4
