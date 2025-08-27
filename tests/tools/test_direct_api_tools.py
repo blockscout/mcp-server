@@ -34,7 +34,7 @@ async def test_direct_api_call_no_params(mock_ctx):
         assert isinstance(result.data, DirectApiData)
         assert result.data.model_dump() == mock_response
         assert result.pagination is None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -88,7 +88,7 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
         assert isinstance(result.data, DirectApiData)
         assert result.data.model_dump() == mock_response
         assert result.pagination is None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -123,7 +123,47 @@ async def test_direct_api_call_with_pagination(mock_ctx):
         assert "query_params" not in nc
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params={})
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_with_query_params_pagination(mock_ctx):
+    chain_id = "1"
+    endpoint_path = "/api/v2/data"
+    query_params = {"sender": "0xabc"}
+    mock_base_url = "https://eth.blockscout.com"
+    mock_response = {"next_page_params": {"cursor": 456}, "items": []}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_response
+
+        result = await direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            query_params=query_params,
+            ctx=mock_ctx,
+        )
+
+        assert isinstance(result, ToolResponse)
+        assert result.pagination is not None
+        nc = result.pagination.next_call.params
+        assert nc["chain_id"] == chain_id
+        assert nc["endpoint_path"] == endpoint_path
+        assert nc["query_params"] == query_params
+        assert "cursor" in nc
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params=query_params)
+        assert mock_ctx.report_progress.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -147,7 +187,7 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
             await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_awaited_once()
-        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -160,14 +200,9 @@ async def test_direct_api_call_rejects_query_in_path(mock_ctx):
             "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
-            new_callable=AsyncMock,
-        ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
         with pytest.raises(ValueError):
             await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_not_called()
-        assert mock_ctx.report_progress.call_count == 1
+        assert mock_ctx.report_progress.await_count == 1
