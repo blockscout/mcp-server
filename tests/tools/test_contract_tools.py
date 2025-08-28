@@ -408,3 +408,29 @@ async def test_read_contract_default_args(mock_ctx):
     fn_mock.assert_called_once_with()
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
     assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_invalid_args_json(mock_ctx):
+    with pytest.raises(ValueError):
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi={"name": "foo", "type": "function", "inputs": [], "outputs": []},
+            function_name="foo",
+            args="[",  # invalid JSON
+            ctx=mock_ctx,
+        )
+
+
+@pytest.mark.asyncio
+async def test_read_contract_args_not_array(mock_ctx):
+    with pytest.raises(ValueError):
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi={"name": "foo", "type": "function", "inputs": [], "outputs": []},
+            function_name="foo",
+            args='{"x":1}',  # JSON object instead of array
+            ctx=mock_ctx,
+        )

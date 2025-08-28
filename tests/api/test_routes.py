@@ -364,6 +364,23 @@ async def test_read_contract_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_read_contract_invalid_abi_json(client: AsyncClient):
+    url = "/v1/read_contract?chain_id=1&address=0xabc&abi=%7B&function_name=foo"
+    resp = await client.get(url)
+    assert resp.status_code == 400
+    assert "Invalid JSON for 'abi'" in resp.json()["error"]
+
+
+@pytest.mark.asyncio
+async def test_read_contract_invalid_args_json(client: AsyncClient):
+    # The tool validation fails and bubbles as 400 via decorator
+    url = "/v1/read_contract?chain_id=1&address=0xabc&abi=%7B%7D&function_name=foo&args=%5B"
+    resp = await client.get(url)
+    assert resp.status_code == 400
+    assert "must be a JSON array string" in resp.json()["error"]
+
+
+@pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_address_info", new_callable=AsyncMock)
 async def test_get_address_info_success(mock_tool, client: AsyncClient):
     """Test /get_address_info endpoint."""

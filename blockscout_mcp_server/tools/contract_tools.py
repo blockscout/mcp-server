@@ -270,8 +270,9 @@ async def read_contract(
                 "A JSON string containing an array of arguments. "
                 'Example: "["0xabc..."]" for a single address argument, or "[]" for no arguments. '
                 "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
-                "Numbers: use integers (not quoted); Bytes: keep as 0x-hex strings. If no arguments, "
-                'pass "[]" or omit this field.'
+                'Numbers: prefer integers (not quoted); numeric strings like "1" are also '
+                "accepted and coerced to integers. "
+                'Bytes: keep as 0x-hex strings. If no arguments, pass "[]" or omit this field.'
             )
         ),
     ] = None,
@@ -325,7 +326,7 @@ async def read_contract(
     if args is not None:
         try:
             parsed = json.loads(args)
-        except Exception as exc:  # noqa: BLE001
+        except json.JSONDecodeError as exc:
             raise ValueError(
                 '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
             ) from exc
