@@ -319,7 +319,7 @@ async def test_read_contract_success(mock_ctx):
             address=address,
             abi=abi,
             function_name=function_name,
-            args=["1"],
+            args='["1"]',
             block="latest",
             ctx=mock_ctx,
         )

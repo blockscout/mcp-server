@@ -350,7 +350,7 @@ async def test_read_contract_with_optional(mock_tool, client: AsyncClient):
         address="0xabc",
         abi={},
         function_name="foo",
-        args=[1],
+        args="[1]",
         block=5,
         ctx=ANY,
     )

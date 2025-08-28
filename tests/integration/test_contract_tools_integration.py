@@ -25,7 +25,7 @@ TEST_CONTRACT_ABI = json.loads(ABI_PATH.read_text())
 ABI_BY_NAME = {entry["name"]: entry for entry in TEST_CONTRACT_ABI}
 
 
-async def _invoke(mock_ctx, function_name: str, args: list[Any]) -> Any:
+async def _invoke(mock_ctx, function_name: str, args: str) -> Any:
     try:
         result = await read_contract(
             chain_id=CHAIN_ID_SEPOLIA,
@@ -75,7 +75,7 @@ async def test_read_contract_integration(mock_ctx):
             address=address,
             abi=abi,
             function_name="balanceOf",
-            args=[owner],
+            args=f'["{owner}"]',
             ctx=mock_ctx,
         )
     except (aiohttp.ClientError, httpx.HTTPError, OSError) as e:
@@ -120,7 +120,7 @@ async def test_read_contract_decodes_tuple_result(mock_ctx):
             address=address,
             abi=abi,
             function_name="buffer",
-            args=[],
+            args="[]",
             ctx=mock_ctx,
         )
     except (aiohttp.ClientError, httpx.HTTPError, OSError) as e:
@@ -139,7 +139,7 @@ async def test_read_contract_decodes_tuple_result(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testInt(mock_ctx):
     # @see Web3PyTestContract.sol -> testInt()
-    res = await _invoke(mock_ctx, "testInt", [-42])
+    res = await _invoke(mock_ctx, "testInt", "[-42]")
     # Allow for provider-specific behavior; validate type only
     assert isinstance(res, int)
 
@@ -148,7 +148,7 @@ async def test_read_contract_sepolia_testInt(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testUint(mock_ctx):
     # @see Web3PyTestContract.sol -> testUint()
-    res = await _invoke(mock_ctx, "testUint", [12345])
+    res = await _invoke(mock_ctx, "testUint", "[12345]")
     assert isinstance(res, int)
     assert res >= 0
 
@@ -158,7 +158,7 @@ async def test_read_contract_sepolia_testUint(mock_ctx):
 async def test_read_contract_sepolia_testAddress(mock_ctx):
     # @see Web3PyTestContract.sol -> testAddress()
     addr = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
-    res = await _invoke(mock_ctx, "testAddress", [addr])
+    res = await _invoke(mock_ctx, "testAddress", f'["{addr}"]')
     assert res == to_checksum_address(addr)
 
 
@@ -167,7 +167,7 @@ async def test_read_contract_sepolia_testAddress(mock_ctx):
 async def test_read_contract_sepolia_testBytes(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes()
     data = "0x64617461"
-    res = await _invoke(mock_ctx, "testBytes", [data])
+    res = await _invoke(mock_ctx, "testBytes", f'["{data}"]')
     # Some RPCs return raw bytes; others echo hex string
     if isinstance(res, bytes | bytearray):
         assert bytes(res) == b"data"
@@ -180,7 +180,7 @@ async def test_read_contract_sepolia_testBytes(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testBool(mock_ctx):
     # @see Web3PyTestContract.sol -> testBool()
-    res = await _invoke(mock_ctx, "testBool", [True])
+    res = await _invoke(mock_ctx, "testBool", "[true]")
     assert isinstance(res, bool)
 
 
@@ -188,7 +188,7 @@ async def test_read_contract_sepolia_testBool(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testUintArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testUintArray()
-    res = await _invoke(mock_ctx, "testUintArray", [[1, 2, 3, 4, 5]])
+    res = await _invoke(mock_ctx, "testUintArray", "[[1, 2, 3, 4, 5]]")
     assert isinstance(res, list | tuple)
     assert len(res) == 5
     assert all(isinstance(v, int) for v in res)
@@ -200,7 +200,7 @@ async def test_read_contract_sepolia_testAddressArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testAddressArray()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
     addr2 = "0x8ba1f109551bd432803012645ff1c26ad3dbebf9"
-    res = await _invoke(mock_ctx, "testAddressArray", [[addr1, addr2]])
+    res = await _invoke(mock_ctx, "testAddressArray", f'[["{addr1}", "{addr2}"]]')
     assert res == 2
 
 
@@ -210,7 +210,7 @@ async def test_read_contract_sepolia_testBytesArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytesArray()
     data1 = "0x64617461"
     data2 = "0x6461746132"
-    res = await _invoke(mock_ctx, "testBytesArray", [[data1, data2]])
+    res = await _invoke(mock_ctx, "testBytesArray", f'[["{data1}", "{data2}"]]')
     assert res == 2
 
 
@@ -218,8 +218,8 @@ async def test_read_contract_sepolia_testBytesArray(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testSimpleStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testSimpleStruct()
-    simple_struct = {"id": 1, "name": "first", "active": True}
-    res = await _invoke(mock_ctx, "testSimpleStruct", [simple_struct])
+
+    res = await _invoke(mock_ctx, "testSimpleStruct", '[{"id": 1, "name": "first", "active": true}]')
     assert isinstance(res, list | tuple) and len(res) == 3
     assert isinstance(res[0], int)
     assert isinstance(res[1], str)
@@ -231,12 +231,11 @@ async def test_read_contract_sepolia_testSimpleStruct(mock_ctx):
 async def test_read_contract_sepolia_testNestedStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testNestedStruct()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
-    nested_struct = {
-        "value": 100,
-        "inner": {"id": 1, "name": "inner", "active": False},
-        "owner": addr1,
-    }
-    res = await _invoke(mock_ctx, "testNestedStruct", [nested_struct])
+
+    nested_struct_json = (
+        f'[{{"value": 100, "inner": {{"id": 1, "name": "inner", "active": false}}, "owner": "{addr1}"}}]'
+    )
+    res = await _invoke(mock_ctx, "testNestedStruct", nested_struct_json)
     assert isinstance(res, list | tuple) and len(res) == 3
     assert isinstance(res[0], int)
     assert isinstance(res[1], list | tuple) and len(res[1]) == 3
@@ -250,13 +249,11 @@ async def test_read_contract_sepolia_testNestedStruct(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testStructArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testStructArray()
-    struct_arr = [
-        {"id": 1, "name": "first", "active": True},
-        {"id": 2, "name": "second", "active": False},
-    ]
-    res = await _invoke(mock_ctx, "testStructArray", [struct_arr])
+
+    struct_array_json = '[[{"id": 1, "name": "first", "active": true}, {"id": 2, "name": "second", "active": false}]]'
+    res = await _invoke(mock_ctx, "testStructArray", struct_array_json)
     assert isinstance(res, int)
-    assert res >= len(struct_arr)
+    assert res >= 2  # Two structs in the array
 
 
 @pytest.mark.integration
@@ -265,12 +262,9 @@ async def test_read_contract_sepolia_testArrayStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testArrayStruct()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
     addr2 = "0x8ba1f109551bd432803012645ff1c26ad3dbebf9"
-    array_struct = {
-        "title": "title",
-        "numbers": [1, 2, 3],
-        "addresses": [addr1, addr2],
-    }
-    res = await _invoke(mock_ctx, "testArrayStruct", [array_struct])
+
+    array_struct_json = f'[{{"title": "title", "numbers": [1, 2, 3], "addresses": ["{addr1}", "{addr2}"]}}]'
+    res = await _invoke(mock_ctx, "testArrayStruct", array_struct_json)
     assert isinstance(res, list | tuple) and len(res) == 3
     assert isinstance(res[0], str)
     assert isinstance(res[1], list | tuple) and len(res[1]) == 3 and all(isinstance(v, int) for v in res[1])
@@ -286,7 +280,7 @@ async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
     res = await _invoke(
         mock_ctx,
         "testMultipleParams",
-        [-100, 200, addr, True, "0x64617461", {"id": 1, "name": "struct", "active": False}],
+        f'[-100, 200, "{addr}", true, "0x64617461", {{"id": 1, "name": "struct", "active": false}}]',
     )
     assert res[0] == -100 and res[1] == 200 and res[2] == to_checksum_address(addr)
 
@@ -295,7 +289,7 @@ async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testFixedArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testFixedArray()
-    res = await _invoke(mock_ctx, "testFixedArray", [[10, 20, 30]])
+    res = await _invoke(mock_ctx, "testFixedArray", "[[10, 20, 30]]")
     assert isinstance(res, list | tuple)
     assert len(res) == 3
     assert all(isinstance(v, int) for v in res)
@@ -306,7 +300,7 @@ async def test_read_contract_sepolia_testFixedArray(mock_ctx):
 async def test_read_contract_sepolia_testBytes32(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes32()
     value = "0x" + "1234567890abcdef" * 4
-    res = await _invoke(mock_ctx, "testBytes32", [value])
+    res = await _invoke(mock_ctx, "testBytes32", f'["{value}"]')
     if isinstance(res, bytes | bytearray):
         assert len(bytes(res)) == 32
     else:
@@ -318,7 +312,7 @@ async def test_read_contract_sepolia_testBytes32(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testString(mock_ctx):
     # @see Web3PyTestContract.sol -> testString()
-    res = await _invoke(mock_ctx, "testString", ["World"])
+    res = await _invoke(mock_ctx, "testString", '["World"]')
     assert isinstance(res, str)
     assert "World" in res
 
@@ -327,7 +321,7 @@ async def test_read_contract_sepolia_testString(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testEnum(mock_ctx):
     # @see Web3PyTestContract.sol -> testEnum()
-    res = await _invoke(mock_ctx, "testEnum", [0])
+    res = await _invoke(mock_ctx, "testEnum", "[0]")
     assert isinstance(res, int)
     assert 0 <= res <= 255
 
