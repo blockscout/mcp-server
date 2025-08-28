@@ -434,3 +434,62 @@ async def test_read_contract_args_not_array(mock_ctx):
             args='{"x":1}',  # JSON object instead of array
             ctx=mock_ctx,
         )
+
+
+@pytest.mark.asyncio
+async def test_read_contract_arity_mismatch(mock_ctx):
+    """Test that argument count mismatch gives clear error message."""
+    with pytest.raises(ValueError) as exc_info:
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi={"name": "foo", "type": "function", "inputs": [{"type": "uint256"}], "outputs": []},
+            function_name="foo",
+            args='[]',  # Empty args but ABI expects 1 input
+            ctx=mock_ctx,
+        )
+    assert "Argument count mismatch: expected 1 per ABI, got 0" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_read_contract_negative_numbers(mock_ctx):
+    """Test that negative numeric strings are properly converted to integers."""
+    chain_id = "1"
+    address = "0x0000000000000000000000000000000000000abc"
+    function_name = "testNegative"
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [{"name": "value", "type": "int256"}],
+        "outputs": [],
+    }
+    expected = -42
+
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=expected)
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ) as mock_get:
+        result = await read_contract(
+            chain_id=chain_id,
+            address=address,
+            abi=abi,
+            function_name=function_name,
+            args='["-42"]',  # Negative number as string
+            block="latest",
+            ctx=mock_ctx,
+        )
+
+    mock_get.assert_called_once_with(chain_id)
+    contract_mock.get_function_by_name.assert_called_once_with(function_name)
+    fn_mock.assert_called_once_with(-42)  # Should be converted to integer
+    fn_result.call.assert_awaited_once_with(block_identifier="latest")
+    assert result.data.result == expected

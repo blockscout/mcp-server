@@ -235,9 +235,11 @@ def _convert_json_args(obj: Any) -> Any:
             pass
         if obj.startswith(("0x", "0X")):
             return obj
-        if obj.isdigit():
-            return int(obj)
-        return obj
+        # Robust numeric detection: support negatives and large ints
+        try:
+            return int(obj, 10)
+        except ValueError:
+            return obj
     return obj
 
 
@@ -335,6 +337,13 @@ async def read_contract(
         py_args = _convert_json_args(parsed)
     else:
         py_args = []
+
+    # Early arity validation for clearer feedback
+    abi_inputs = abi.get("inputs", [])
+    if isinstance(abi_inputs, list) and len(py_args) != len(abi_inputs):
+        raise ValueError(
+            f"Argument count mismatch: expected {len(abi_inputs)} per ABI, got {len(py_args)}."
+        )
 
     # Normalize block if it is a decimal string
     if isinstance(block, str) and block.isdigit():

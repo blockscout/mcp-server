@@ -579,7 +579,7 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding. This leverages Web3's well-tested argument handling and return value decoding.
 - **ABI requirement**: Accepts the ABI of the specific function variant to call (a single ABI object for that function signature). This avoids ambiguity when contracts overload function names.
 - **Function name**: The `function_name` parameter must match the `name` field in the provided function ABI. Although redundant, it is kept intentionally to improve LLM tool-selection behavior and may be removed later.
-- **Arguments**: The `args` parameter is a JSON array. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
+- **Arguments**: The `args` parameter is a JSON string containing an array of arguments. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
   - Addresses can be provided as 0x-prefixed strings; the tool normalizes and applies EIP-55 checksum internally.
   - Numeric strings are coerced to integers.
   - Bytes values should be provided as 0x-hex strings; nested hex strings are handled.
@@ -594,10 +594,10 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 #### LLM guidance
 
 - Tool and argument descriptions explicitly instruct LLMs to:
-  - Provide arguments as a JSON array (not a quoted string)
-  - Provide 0x-prefixed address strings
+  - Provide arguments as a JSON string containing an array (e.g., `"[\"0xabc...\"]"` for a single address)
+  - Provide 0x-prefixed address strings within the array
   - Supply integers for numeric values (not quoted) when possible; numeric strings will be coerced
-  - Keep bytes as 0x-hex strings
+  - Keep bytes as 0x-hex strings within the array
 - These instructions improve the likelihood of valid `eth_call` preparation and encoding.
 
 #### Limitations
