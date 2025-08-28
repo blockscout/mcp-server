@@ -355,7 +355,31 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
 
-    **f) Transaction Input Data Truncation**
+    **f) Generic Tool Strategy for Comprehensive API Coverage**
+
+    While the existing specialized MCP tools provide high-level, optimized access to common blockchain data, they cannot cover every possible endpoint or chain-specific functionality offered by Blockscout. The challenge lies in balancing comprehensive data access with LLM context efficiency.
+
+    **The "Tool Sprawl" Problem:**
+    Introducing a dedicated tool for every niche endpoint would lead to "tool sprawl," overwhelming the LLM's context window and making effective tool selection difficult. This approach would violate the core principle of keeping the tool count minimal to maintain clear LLM reasoning and tool selection capabilities.
+
+    **Solution - The `direct_api_call` Tool:**
+    To address this challenge while maintaining context optimization, the server implements a generic `direct_api_call` tool that provides controlled access to a curated set of Blockscout API endpoints not covered by specialized tools. This approach allows AI agents to access specialized blockchain data without proliferating the core toolset.
+
+    **Architectural Integration and Context Optimization:**
+
+    1. **Functional Uniqueness**: The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role rather than creating redundancy.
+
+    2. **Context-Aware Endpoint Discovery**:
+       - A primary, curated list of general and chain-specific endpoints is provided to the AI through the `__unlock_blockchain_analysis__` tool's response, ensuring immediate awareness of capabilities.
+       - Context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`), allowing the AI to "dig deeper" into related data only when contextually relevant.
+
+    3. **Input Simplicity**: Curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI substitutes any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.
+
+    4. **Output Conciseness**: Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list, preventing LLM context overflow and maintaining the server's overall context optimization strategy.
+
+    **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms.
+
+    **g) Transaction Input Data Truncation**
 
     To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.
 
@@ -363,7 +387,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
     - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
 
-    **g) Contract Source Code and ABI Separation:**
+    **h) Contract Source Code and ABI Separation:**
 
     To prevent LLM context overflow when exploring smart contracts, the server implements a strategic separation between ABI retrieval and source code inspection through dedicated tools with optimized access patterns.
 
@@ -581,30 +605,3 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - Write operations are not supported; `eth_call` does not change state.
 - No caller context (`from`) or gas simulation tuning is provided.
 - Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.
-
-### Direct API Call Tool (`direct_api_call`)
-
-To enhance the flexibility and extensibility of the Blockscout MCP Server, a new generic tool, `direct_api_call`, has been introduced. This tool allows AI agents to access a curated set of Blockscout API endpoints that are not covered by existing, more specialized MCP tools.
-
-**Rationale for Introduction:**
-
-While the existing MCP tools provide high-level, optimized access to common blockchain data, they do not cover every possible endpoint or chain-specific functionality offered by Blockscout. Introducing a dedicated tool for every niche endpoint would lead to "tool sprawl," overwhelming the LLM's context and making tool selection difficult. The `direct_api_call` tool addresses this by providing a controlled mechanism to access specialized data without proliferating the core toolset. It is specifically designed for:
-
-- Accessing chain-specific data (e.g., rollup batch information, validator lists for PoS chains).
-- Retrieving data from less frequently used or experimental Blockscout API endpoints.
-- Providing a flexible interface for future Blockscout API additions without requiring server code changes.
-
-**Architectural Integration and Curation Strategy:**
-
-The `direct_api_call` tool is integrated into the server with careful consideration for LLM usability and context optimization:
-
-1. **Functional Uniqueness:** The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role.
-2. **Endpoint Discovery:**
-    - A primary, curated list of general and chain-specific endpoints is provided to the AI through the `__unlock_blockchain_analysis__` tool's response. This ensures the AI is aware of the tool's capabilities from the outset.
-    - Additionally, context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`). This allows the AI to "dig deeper" into related data only when it's contextually relevant, optimizing LLM token usage.
-3. **Input Simplicity:** The curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI is responsible for substituting any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.
-4. **Output Conciseness:** Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list. This prevents overwhelming the LLM's context window with unmanageable information, aligning with the server's overall "Response Processing and Context Optimization" strategy.
-
-**High-Level Implementation Details:**
-
-The `direct_api_call` tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path` (including any necessary API prefixes like `/api/v2/` or `/stats-service/api/v1/`), optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms.
