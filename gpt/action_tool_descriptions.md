@@ -129,5 +129,7 @@ Essential for analyzing smart contract events, tracking token transfers, monitor
 </get_transaction_logs>
 
 <direct_api_call>
-Call a curated raw Blockscout API endpoint for specialized or chain-specific data not covered by other tools. Supports pagination via `cursor` when the API response includes `next_page_params`.
+Call a raw Blockscout API endpoint for advanced or chain-specific data.
+Do not include query strings in `endpoint_path`; pass all query parameters via `query_params` to avoid double-encoding.
+**SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
 </direct_api_call>

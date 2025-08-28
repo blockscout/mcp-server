@@ -188,6 +188,11 @@ Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum
 mainnet could emit `SequencerBatchDelivered`?
 ```
 
+```plaintext
+What is the most recent executed cross-chain message sent from the Arbitrum Sepolia
+rollup to the base layer?
+```
+
 ## Development & Deployment
 
 ### Local Installation

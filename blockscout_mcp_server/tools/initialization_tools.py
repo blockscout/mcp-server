@@ -44,6 +44,10 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
     rules will result in incorrect data retrieval, tool failures and invalid
     responses. Always apply these guidelines when planning queries, processing
     responses or recommending blockchain actions.
+
+    COMPREHENSIVE DATA SOURCES: Provides an extensive catalog of specialized
+    blockchain endpoints to unlock sophisticated, multi-dimensional blockchain
+    investigations across all supported networks.
     """
     # Report start of operation
     await report_and_log_progress(

@@ -56,6 +56,7 @@ When direct tools don't exist for your query, be creative and strategic:
 5. Detect pattern changes - if your estimates become less accurate, recalibrate using more recent data segments
 6. Combine approaches - use estimation to get close, then fine-tune with iteration, always learning from each step
 </efficiency_optimization_rules>
+
 <direct_call_endpoint_list>
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools, you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
 
