@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -6,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
@@ -159,14 +161,25 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
-    if http:
+    # Normalize transport setting and detect whether env var triggered HTTP mode.
+    mcp_transport = (config.mcp_transport or "stdio").lower()
+    env_triggered = not http and mcp_transport == "http"
+
+    # Determine if we should run in HTTP mode based on CLI flag or environment variable.
+    run_in_http = http or mcp_transport == "http"
+
+    # When triggered by env var inside a container, default host must be 0.0.0.0 for accessibility.
+    in_container = Path("/.dockerenv").exists()
+    final_http_host = "0.0.0.0" if env_triggered and in_container else http_host
+
+    if run_in_http:
         if rest:
-            print(f"Starting Blockscout MCP Server with REST API on {http_host}:{http_port}")
+            print(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{http_port}")
             from blockscout_mcp_server.api.routes import register_api_routes
 
             register_api_routes(mcp)
         else:
-            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {http_host}:{http_port}")
+            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{http_port}")
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         mcp.settings.stateless_http = True  # Enable stateless mode
@@ -189,7 +202,7 @@ def main_command(
         )
 
         asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
-        uvicorn.run(asgi_app, host=http_host, port=http_port)
+        uvicorn.run(asgi_app, host=final_http_host, port=http_port)
     elif rest:
         raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:

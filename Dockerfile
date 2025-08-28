@@ -39,4 +39,11 @@ ENV BLOCKSCOUT_MIXPANEL_API_HOST=""
 ENV BLOCKSCOUT_INTERMEDIARY_HEADER="Blockscout-MCP-Intermediary"
 ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin"
 
+# Expose the default port for HTTP mode. This is for documentation and interoperability.
+EXPOSE 8000
+
+# Set the default transport mode. Can be overridden at runtime with -e.
+# Options: "stdio" (default), "http"
+ENV BLOCKSCOUT_MCP_TRANSPORT="stdio"
+
 CMD ["python", "-m", "blockscout_mcp_server"]

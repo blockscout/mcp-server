@@ -1,13 +1,20 @@
 # Smithery configuration file: https://smithery.ai/docs/build/project-config
 
+runtime: "container"
+
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
+
 startCommand:
-  type: stdio
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({ command: 'python', args: ['-m', 'blockscout_mcp_server.server'] })
+  type: "http"
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
+    # No user-configurable options are needed for this server at the moment.
+    type: "object"
     properties: {}
   exampleConfig: {}
+
+# Use environment variables to configure the container at runtime.
+# We set the transport to "http" for the Smithery.ai environment.
+env:
+  BLOCKSCOUT_MCP_TRANSPORT: "http"
