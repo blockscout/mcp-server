@@ -341,9 +341,7 @@ async def read_contract(
     # Early arity validation for clearer feedback
     abi_inputs = abi.get("inputs", [])
     if isinstance(abi_inputs, list) and len(py_args) != len(abi_inputs):
-        raise ValueError(
-            f"Argument count mismatch: expected {len(abi_inputs)} per ABI, got {len(py_args)}."
-        )
+        raise ValueError(f"Argument count mismatch: expected {len(abi_inputs)} per ABI, got {len(py_args)}.")
 
     # Normalize block if it is a decimal string
     if isinstance(block, str) and block.isdigit():

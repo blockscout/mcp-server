@@ -445,7 +445,7 @@ async def test_read_contract_arity_mismatch(mock_ctx):
             address="0x0000000000000000000000000000000000000abc",
             abi={"name": "foo", "type": "function", "inputs": [{"type": "uint256"}], "outputs": []},
             function_name="foo",
-            args='[]',  # Empty args but ABI expects 1 input
+            args="[]",  # Empty args but ABI expects 1 input
             ctx=mock_ctx,
         )
     assert "Argument count mismatch: expected 1 per ABI, got 0" in str(exc_info.value)
