@@ -708,7 +708,7 @@ paths:
         - name: args
           in: query
           required: false
-          description: A JSON array of arguments. Order and types must match ABI inputs. For addresses use 0x-prefixed strings; For numbers use integers (not quoted); For bytes keep as 0x-hex strings.
+          description: A JSON string containing an array of arguments. Order and types must match ABI inputs. For addresses use 0x-prefixed strings; For numbers use integers (not quoted); For bytes keep as 0x-hex strings.
           schema:
             type: string
           example: "[\"0xF977814e90dA44bFA03b6295A0616a897441aceC\"]"

@@ -235,9 +235,11 @@ def _convert_json_args(obj: Any) -> Any:
             pass
         if obj.startswith(("0x", "0X")):
             return obj
-        if obj.isdigit():
-            return int(obj)
-        return obj
+        # Robust numeric detection: support negatives and large ints
+        try:
+            return int(obj, 10)
+        except ValueError:
+            return obj
     return obj
 
 
@@ -264,14 +266,15 @@ async def read_contract(
         ),
     ],
     args: Annotated[
-        list[Any] | None,
+        str | None,
         Field(
             description=(
-                "A JSON array of arguments (not a string). "
-                'Example: ["0xabc..."] is correct; "[\\"0xabc...\\"]" is incorrect. '
+                "A JSON string containing an array of arguments. "
+                'Example: "["0xabc..."]" for a single address argument, or "[]" for no arguments. '
                 "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
-                "Numbers: use integers (not quoted); Bytes: keep as 0x-hex strings. If no arguments, "
-                "pass [] or omit this field."
+                'Numbers: prefer integers (not quoted); numeric strings like "1" are also '
+                "accepted and coerced to integers. "
+                'Bytes: keep as 0x-hex strings. If no arguments, pass "[]" or omit this field.'
             )
         ),
     ] = None,
@@ -310,7 +313,7 @@ async def read_contract(
           "type": "function"
         },
         "function_name": "balanceOf",
-        "args": ["0xF977814e90dA44bFA03b6295A0616a897441aceC"]
+        "args": "[\"0xF977814e90dA44bFA03b6295A0616a897441aceC\"]"
       }
     }
     """
@@ -321,19 +324,24 @@ async def read_contract(
         message=f"Preparing contract call {function_name} on {address}...",
     )
 
-    # Normalize args that might be provided as a JSON-encoded string
-    if isinstance(args, str):
+    # Parse args from JSON string if provided
+    if args is not None:
         try:
             parsed = json.loads(args)
-        except Exception as exc:  # noqa: BLE001
+        except json.JSONDecodeError as exc:
             raise ValueError(
-                '`args` must be a JSON array (e.g., ["0x..."]). Received a string that is not valid JSON.'
+                '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
             ) from exc
         if not isinstance(parsed, list):
-            raise ValueError("`args` must be a JSON array, not a JSON object or scalar.")
-        args = parsed
+            raise ValueError("`args` must be a JSON array string, not a JSON object or scalar.")
+        py_args = _convert_json_args(parsed)
+    else:
+        py_args = []
 
-    py_args = _convert_json_args(args or [])
+    # Early arity validation for clearer feedback
+    abi_inputs = abi.get("inputs", [])
+    if isinstance(abi_inputs, list) and len(py_args) != len(abi_inputs):
+        raise ValueError(f"Argument count mismatch: expected {len(abi_inputs)} per ABI, got {len(py_args)}.")
 
     # Normalize block if it is a decimal string
     if isinstance(block, str) and block.isdigit():

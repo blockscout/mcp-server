@@ -189,11 +189,7 @@ async def read_contract_rest(request: Request) -> Response:
         raise ValueError("Invalid JSON for 'abi'") from e
     if not isinstance(params["abi"], dict):
         raise ValueError("'abi' must be a JSON object")
-    if "args" in params:
-        try:
-            params["args"] = json.loads(params["args"])
-        except json.JSONDecodeError as e:
-            raise ValueError("Invalid JSON for 'args'") from e
+    # args parameter is now passed as a JSON string directly to the tool
     if "block" in params and params["block"].isdigit():
         params["block"] = int(params["block"])
     tool_response = await read_contract(**params, ctx=get_mock_context(request))

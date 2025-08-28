@@ -75,7 +75,7 @@ To check the USDT balance of an address on Ethereum Mainnet, you would use the f
         "type": "function"
     },
     "function_name": "balanceOf",
-    "args": ["0xF977814e90dA44bFA03b6295A0616a897441aceC"]
+    "args": "[\"0xF977814e90dA44bFA03b6295A0616a897441aceC\"]"
     }
 }
 ```
