@@ -56,8 +56,25 @@ def test_stdio_mode_works(mock_mcp_run):
     mock_mcp_run.assert_called_once()
 
 
-def test_env_var_triggers_http_mode(monkeypatch):
+@patch("pathlib.Path.exists", return_value=True)
+def test_env_var_triggers_http_mode(mock_exists, monkeypatch):
     """Verify that setting BLOCKSCOUT_MCP_TRANSPORT=http starts the server in HTTP mode."""
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_transport", "HTTP")
+    mock_run = MagicMock()
+    monkeypatch.setattr(server.uvicorn, "run", mock_run)
+
+    result = runner.invoke(server.cli_app, [])
+
+    assert result.exit_code == 0
+    mock_run.assert_called_once()
+    assert mock_run.call_args.kwargs["host"] == "0.0.0.0"
+
+
+@patch("pathlib.Path.exists", return_value=False)
+def test_env_var_http_mode_non_container(mock_exists, monkeypatch):
+    """Env var enables HTTP but non-container uses default host."""
     from blockscout_mcp_server import server
 
     monkeypatch.setattr(server.config, "mcp_transport", "http")
@@ -68,4 +85,4 @@ def test_env_var_triggers_http_mode(monkeypatch):
 
     assert result.exit_code == 0
     mock_run.assert_called_once()
-    assert mock_run.call_args.kwargs["host"] == "0.0.0.0"
+    assert mock_run.call_args.kwargs["host"] == "127.0.0.1"

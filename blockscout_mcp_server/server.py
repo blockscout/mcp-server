@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -160,11 +161,16 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
-    # Determine if we should run in HTTP mode based on CLI flag or environment variable.
-    run_in_http = http or config.mcp_transport == "http"
+    # Normalize transport setting and detect whether env var triggered HTTP mode.
+    mcp_transport = (config.mcp_transport or "stdio").lower()
+    env_triggered = not http and mcp_transport == "http"
 
-    # When triggered by env var, default host must be 0.0.0.0 for container accessibility.
-    final_http_host = "0.0.0.0" if not http and run_in_http else http_host
+    # Determine if we should run in HTTP mode based on CLI flag or environment variable.
+    run_in_http = http or mcp_transport == "http"
+
+    # When triggered by env var inside a container, default host must be 0.0.0.0 for accessibility.
+    in_container = Path("/.dockerenv").exists()
+    final_http_host = "0.0.0.0" if env_triggered and in_container else http_host
 
     if run_in_http:
         if rest:
