@@ -54,3 +54,18 @@ def test_stdio_mode_works(mock_mcp_run):
     result = runner.invoke(cli_app, [])
     assert result.exit_code == 0
     mock_mcp_run.assert_called_once()
+
+
+def test_env_var_triggers_http_mode(monkeypatch):
+    """Verify that setting BLOCKSCOUT_MCP_TRANSPORT=http starts the server in HTTP mode."""
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_transport", "http")
+    mock_run = MagicMock()
+    monkeypatch.setattr(server.uvicorn, "run", mock_run)
+
+    result = runner.invoke(server.cli_app, [])
+
+    assert result.exit_code == 0
+    mock_run.assert_called_once()
+    assert mock_run.call_args.kwargs["host"] == "0.0.0.0"

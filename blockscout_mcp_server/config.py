@@ -42,6 +42,10 @@ class ServerConfig(BaseSettings):
     mixpanel_token: str = ""
     mixpanel_api_host: str = ""  # Optional custom API host (e.g., EU region)
 
+    # Transport mode for the server ("stdio" or "http").
+    # Controls the server's operational mode, can be overridden by CLI flags.
+    mcp_transport: str = "stdio"
+
     # Composite client name configuration
     intermediary_header: str = "Blockscout-MCP-Intermediary"
     intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin"
