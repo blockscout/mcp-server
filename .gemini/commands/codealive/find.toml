@@ -1,0 +1,19 @@
+description = "Search for files with the CodeAlive MCP server."
+prompt = """
+Use the CodeAlive MCP tool search_code to find files that could be relevant to the question. Call it with:
+
+query: "{{question}}"
+data_source_ids: ["YOUR_DATA_SOURCE_ID_HERE"]  # Use the tool `get_data_sources` to get the data source ID
+mode: "{{mode}}"
+include_content: false
+
+Return the search results showing file locations only.
+"""
+
+[[params]]
+name = "question"
+description = "The search query - can be natural language or code patterns (e.g., 'find reporting logic' or 'function read_contract')."
+
+[[params]]
+name = "mode"
+description = "Search mode: 'auto' (recommended), 'fast', 'fast_deeper', or 'deep'."
