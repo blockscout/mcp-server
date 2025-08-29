@@ -579,7 +579,7 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding. This leverages Web3's well-tested argument handling and return value decoding.
 - **ABI requirement**: Accepts the ABI of the specific function variant to call (a single ABI object for that function signature). This avoids ambiguity when contracts overload function names.
 - **Function name**: The `function_name` parameter must match the `name` field in the provided function ABI. Although redundant, it is kept intentionally to improve LLM tool-selection behavior and may be removed later.
-- **Arguments**: The `args` parameter is a JSON string containing an array of arguments. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
+- **Arguments**: The `args` parameter is a JSON string containing an array of arguments, defaulting to `[]` when omitted. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
   - Addresses can be provided as 0x-prefixed strings; the tool normalizes and applies EIP-55 checksum internally.
   - Numeric strings are coerced to integers.
   - Bytes values should be provided as 0x-hex strings; nested hex strings are handled.
