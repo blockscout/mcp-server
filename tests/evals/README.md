@@ -14,7 +14,7 @@ The framework consists of two components:
 
     - Configured to pick up the config from the local `.gemini` directory.
     - The URL to the MCP Server is defined in the `mcpServers` section of the config.
-    - The common instructions of the agent are defined in the `GEMINI.md` file.
+    - The common instructions of the agent are defined in the [`GEMINI-evals.md`](GEMINI-evals.md) file.
     - It is expected that the Gemini CLI authorization defined in the `~/.gemini` directory.
     - The model could be specified in `.gemini/.env` file or in the command line when running the agent.
 
@@ -43,3 +43,23 @@ The framework consists of two components:
     ```bash
     docker compose down
     ```
+
+## Gemini CLI instructions
+
+[`GEMINI-evals.md`](GEMINI-evals.md) contains comprehensive instructions for the Gemini CLI agent to be able analyze blockchain activities.
+
+The instructions are almost the same as used for Blockscout X-Ray GPT. See [`gpt/instructions.md`](../../gpt/instructions.md) and [`gpt/README.md`](../../gpt/README.md) for more details how the GPT instructions are composed.
+
+The final instructions for Gemini CLI are assembled in the following manner:
+
+```markdown
+<role>
+In addition to your primary role as an interactive CLI agent focused on software-engineering tasks, you draw on nearly ten years of experience as a senior analyst of Ethereum-blockchain activity. Your deep knowledge of Web3 applications and protocols enriches the guidance you offer when users need blockchain-related engineering help.
+</role>
+
+[everything from `gpt/instructions.md` except the first `<role>` section]
+
+<output_format_rules>
+[special instructions to produce structured output for easier verification of response]
+<output_format_rules>
+```
