@@ -8,3 +8,7 @@ debug: false
 
 Return only the assistant’s final text.
 """
+
+[[params]]
+name = "question"
+description = "The question to ask the CodeAlive MCP server."
