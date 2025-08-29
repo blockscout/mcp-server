@@ -13,10 +13,10 @@ services:
       start_period: 30s
 
   evaluation:
-    image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.1.22
+    image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:${GEMINI_CLI_DOCKER_IMAGE_VERSION:-0.2.0}
     command: gemini --yolo
     volumes:
-      - ~/.gemini:/home/node/.gemini
+      - ${HOME}/.gemini:/home/node/.gemini
       - .:/workspace/mcp-server-evals
     working_dir: /workspace/mcp-server-evals
     stdin_open: true
