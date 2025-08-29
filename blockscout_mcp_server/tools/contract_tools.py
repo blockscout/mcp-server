@@ -266,7 +266,7 @@ async def read_contract(
         ),
     ],
     args: Annotated[
-        str | None,
+        str,
         Field(
             description=(
                 "A JSON string containing an array of arguments. "
@@ -274,10 +274,10 @@ async def read_contract(
                 "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
                 'Numbers: prefer integers (not quoted); numeric strings like "1" are also '
                 "accepted and coerced to integers. "
-                'Bytes: keep as 0x-hex strings. If no arguments, pass "[]" or omit this field.'
+                "Bytes: keep as 0x-hex strings."
             )
         ),
-    ] = None,
+    ] = "[]",
     block: Annotated[
         str | int,
         Field(
@@ -324,19 +324,19 @@ async def read_contract(
         message=f"Preparing contract call {function_name} on {address}...",
     )
 
-    # Parse args from JSON string if provided
-    if args is not None:
-        try:
-            parsed = json.loads(args)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
-            ) from exc
-        if not isinstance(parsed, list):
-            raise ValueError("`args` must be a JSON array string, not a JSON object or scalar.")
-        py_args = _convert_json_args(parsed)
-    else:
-        py_args = []
+    # Parse args from JSON string
+    args_str = args.strip()
+    if args_str == "":
+        args_str = "[]"
+    try:
+        parsed = json.loads(args_str)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
+        ) from exc
+    if not isinstance(parsed, list):
+        raise ValueError(f"`args` must be a JSON array string representing a list; got {type(parsed).__name__}.")
+    py_args = _convert_json_args(parsed)
 
     # Early arity validation for clearer feedback
     abi_inputs = abi.get("inputs", [])

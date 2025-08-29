@@ -146,7 +146,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 14. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
 15. `get_transaction_info(chain_id, hash, include_raw_input=False)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
 16. `get_transaction_logs(chain_id, hash, cursor=None)` - Returns transaction logs with decoded event data.
-17. `read_contract(chain_id, address, abi, function_name, args=None, block='latest')` - Executes a read-only smart contract function and returns its result. The `abi` argument is a JSON object describing the specific function's signature.
+17. `read_contract(chain_id, address, abi, function_name, args='[]', block='latest')` - Executes a read-only smart contract function and returns its result. The `abi` argument is a JSON object describing the specific function's signature.
 18. `direct_api_call(chain_id, endpoint_path, query_params=None, cursor=None)` - Calls a curated raw Blockscout API endpoint for specialized or chain-specific data.
 
 ## Example Prompts for AI Agents

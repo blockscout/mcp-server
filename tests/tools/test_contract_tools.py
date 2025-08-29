@@ -411,6 +411,36 @@ async def test_read_contract_default_args(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_read_contract_whitespace_args(mock_ctx):
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=0)
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi=abi,
+            function_name="foo",
+            args="   ",
+            ctx=mock_ctx,
+        )
+
+    fn_mock.assert_called_once_with()
+    fn_result.call.assert_awaited_once_with(block_identifier="latest")
+    assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
 async def test_read_contract_invalid_args_json(mock_ctx):
     with pytest.raises(ValueError):
         await read_contract(
@@ -425,7 +455,7 @@ async def test_read_contract_invalid_args_json(mock_ctx):
 
 @pytest.mark.asyncio
 async def test_read_contract_args_not_array(mock_ctx):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:
         await read_contract(
             chain_id="1",
             address="0x0000000000000000000000000000000000000abc",
@@ -434,6 +464,7 @@ async def test_read_contract_args_not_array(mock_ctx):
             args='{"x":1}',  # JSON object instead of array
             ctx=mock_ctx,
         )
+    assert "`args` must be a JSON array string representing a list; got dict." in str(exc_info.value)
 
 
 @pytest.mark.asyncio
