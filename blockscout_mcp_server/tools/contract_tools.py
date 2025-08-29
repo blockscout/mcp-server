@@ -274,7 +274,7 @@ async def read_contract(
                 "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
                 'Numbers: prefer integers (not quoted); numeric strings like "1" are also '
                 "accepted and coerced to integers. "
-                'Bytes: keep as 0x-hex strings. If omitted, defaults to "[]".'
+                "Bytes: keep as 0x-hex strings."
             )
         ),
     ] = "[]",
@@ -294,8 +294,7 @@ async def read_contract(
         Calls a smart contract function (view/pure, or non-view/pure simulated via eth_call) and returns the
         decoded result.
 
-        This tool provides a direct way to query the state of a smart contract. The `args`
-        parameter defaults to "[]" when omitted.
+        This tool provides a direct way to query the state of a smart contract.
 
         Example:
         To check the USDT balance of an address on Ethereum Mainnet, you would use the following arguments:
