@@ -7,7 +7,7 @@ data_source_ids: ["YOUR_DATA_SOURCE_ID_HERE"]  # Use the tool `get_data_sources`
 mode: "{{mode}}"
 include_content: false
 
-Return the search results showing file locations and code snippets.
+Return the search results showing file locations only.
 """
 
 [[params]]
