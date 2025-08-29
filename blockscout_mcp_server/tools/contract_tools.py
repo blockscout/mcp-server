@@ -266,7 +266,7 @@ async def read_contract(
         ),
     ],
     args: Annotated[
-        str | None,
+        str,
         Field(
             description=(
                 "A JSON string containing an array of arguments. "
@@ -274,10 +274,10 @@ async def read_contract(
                 "Order and types must match ABI inputs. Addresses: use 0x-prefixed strings; "
                 'Numbers: prefer integers (not quoted); numeric strings like "1" are also '
                 "accepted and coerced to integers. "
-                'Bytes: keep as 0x-hex strings. If no arguments, pass "[]" or omit this field.'
+                'Bytes: keep as 0x-hex strings. If omitted, defaults to "[]".'
             )
         ),
-    ] = None,
+    ] = "[]",
     block: Annotated[
         str | int,
         Field(
@@ -294,7 +294,8 @@ async def read_contract(
         Calls a smart contract function (view/pure, or non-view/pure simulated via eth_call) and returns the
         decoded result.
 
-        This tool provides a direct way to query the state of a smart contract.
+        This tool provides a direct way to query the state of a smart contract. The `args`
+        parameter defaults to "[]" when omitted.
 
         Example:
         To check the USDT balance of an address on Ethereum Mainnet, you would use the following arguments:
@@ -324,19 +325,16 @@ async def read_contract(
         message=f"Preparing contract call {function_name} on {address}...",
     )
 
-    # Parse args from JSON string if provided
-    if args is not None:
-        try:
-            parsed = json.loads(args)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
-            ) from exc
-        if not isinstance(parsed, list):
-            raise ValueError("`args` must be a JSON array string, not a JSON object or scalar.")
-        py_args = _convert_json_args(parsed)
-    else:
-        py_args = []
+    # Parse args from JSON string
+    try:
+        parsed = json.loads(args)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
+        ) from exc
+    if not isinstance(parsed, list):
+        raise ValueError("`args` must be a JSON array string, not a JSON object or scalar.")
+    py_args = _convert_json_args(parsed)
 
     # Early arity validation for clearer feedback
     abi_inputs = abi.get("inputs", [])
