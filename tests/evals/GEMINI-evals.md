@@ -251,6 +251,8 @@ If web searches are performed:
 ```json
 "response": {
   "final": "yes",
+  "is_error": false,
+  "error_type": null,
   "confidence": "high", 
   "comments": "Contract contains addToBlockedList(), removeFromBlockedList(), isBlocked(), and destroyBlockedFunds() functions"
 }

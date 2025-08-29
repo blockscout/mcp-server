@@ -15,7 +15,7 @@ The framework consists of two components:
     - Configured to pick up the config from the local `.gemini` directory.
     - The URL to the MCP Server is defined in the `mcpServers` section of the config.
     - The common instructions of the agent are defined in the [`GEMINI-evals.md`](GEMINI-evals.md) file.
-    - It is expected that the Gemini CLI authorization defined in the `~/.gemini` directory.
+    - Gemini CLI authorization is expected to be present in the `~/.gemini` directory.
     - The model could be specified in `.gemini/.env` file or in the command line when running the agent.
 
 ## Run the tests
@@ -61,5 +61,5 @@ In addition to your primary role as an interactive CLI agent focused on software
 
 <output_format_rules>
 [special instructions to produce structured output for easier verification of response]
-<output_format_rules>
+</output_format_rules>
 ```
