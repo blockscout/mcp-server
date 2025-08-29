@@ -325,14 +325,17 @@ async def read_contract(
     )
 
     # Parse args from JSON string
+    args_str = args.strip()
+    if args_str == "":
+        args_str = "[]"
     try:
-        parsed = json.loads(args)
+        parsed = json.loads(args_str)
     except json.JSONDecodeError as exc:
         raise ValueError(
             '`args` must be a JSON array string (e.g., "["0x..."]"). Received a string that is not valid JSON.'
         ) from exc
     if not isinstance(parsed, list):
-        raise ValueError("`args` must be a JSON array string, not a JSON object or scalar.")
+        raise ValueError(f"`args` must be a JSON array string representing a list; got {type(parsed).__name__}.")
     py_args = _convert_json_args(parsed)
 
     # Early arity validation for clearer feedback
