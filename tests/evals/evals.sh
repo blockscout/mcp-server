@@ -22,7 +22,7 @@ docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'Is any app
 # get_block_info
 # get_latest_block
 # get_chains_list
-docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'What is the latest block on Gnosis Chain and who is the block minter? Were any funds moved from this minter recently? Final answer is a the list where the first element is minter, the second element is traansaction hash and the third element is a recipient address.'
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'What is the latest block on Gnosis Chain and who is the block minter? Were any funds moved from this minter recently? Final answer is a the list where the first element is minter, the second element is transaction hash and the third element is a recipient address.'
 
 # get_token_transfers_by_address
 # get_latest_block
@@ -53,7 +53,7 @@ docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'Which meth
 docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'What is the most recent completed cross chain message sent from the Arbitrum Sepolia rollup to the base layer? Final answer is a transaction in the rollup.'
 
 # get_tokens_by_address
-docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'How many different stablecoins does `0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1` (Optimism Gateway) on Ethereum Mainnet hold with balance more than 1.000.000 USD? Final answer is the list of token symbols (e.g. ["USDT", "FRAX"])'
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'How many different stablecoins does `0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1` (Optimism Gateway) on Ethereum Mainnet hold with balance more than $1,000,000? Final answer is the list of token symbols (e.g. ["USDT", "FRAX"])'
 
 # transaction_summary
 # get_transaction_logs
