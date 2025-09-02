@@ -86,3 +86,84 @@ def test_env_var_http_mode_non_container(mock_exists, monkeypatch):
     assert result.exit_code == 0
     mock_run.assert_called_once()
     assert mock_run.call_args.kwargs["host"] == "127.0.0.1"
+
+
+def test_port_from_env_variable(monkeypatch):
+    monkeypatch.setenv("PORT", "9999")
+    from importlib import reload
+
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    assert cfg.config.port == 9999
+
+    monkeypatch.delenv("PORT")
+    reload(cfg)
+
+
+@patch("uvicorn.run")
+def test_cli_flag_overrides_env_port(mock_uvicorn_run, monkeypatch):
+    monkeypatch.setenv("PORT", "9001")
+    from importlib import reload
+
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    from blockscout_mcp_server import server
+
+    reload(server)
+
+    result = runner.invoke(server.cli_app, ["--http", "--http-port", "9000"])
+
+    assert result.exit_code == 0
+    mock_uvicorn_run.assert_called_once()
+    assert mock_uvicorn_run.call_args.kwargs["port"] == 9000
+    assert "Both --http-port (9000) and PORT (9001) are set" in result.output
+
+    monkeypatch.delenv("PORT")
+    reload(cfg)
+    reload(server)
+
+
+@patch("uvicorn.run")
+def test_env_port_used_when_flag_absent(mock_uvicorn_run, monkeypatch):
+    monkeypatch.setenv("PORT", "9002")
+    from importlib import reload
+
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    from blockscout_mcp_server import server
+
+    reload(server)
+
+    result = runner.invoke(server.cli_app, ["--http"])
+
+    assert result.exit_code == 0
+    mock_uvicorn_run.assert_called_once()
+    assert mock_uvicorn_run.call_args.kwargs["port"] == 9002
+
+    monkeypatch.delenv("PORT")
+    reload(cfg)
+    reload(server)
+
+
+@patch("uvicorn.run")
+def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
+    from importlib import reload
+
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    from blockscout_mcp_server import server
+
+    reload(server)
+
+    result = runner.invoke(server.cli_app, ["--http"])
+
+    assert result.exit_code == 0
+    mock_uvicorn_run.assert_called_once()
+    assert mock_uvicorn_run.call_args.kwargs["port"] == 8000
+
+    reload(cfg)
+    reload(server)
