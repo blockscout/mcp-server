@@ -16,11 +16,21 @@ Contains the core instructions for the GPT. The instructions incorporate the con
 
 The instructions are built following the OpenAI GPT-5 prompting guide recommendations: <https://github.com/openai/openai-cookbook/blob/main/examples/gpt-5/gpt-5_prompting_guide.ipynb>
 
-### @action_tool_descriptions.md
+### Extra files
 
-Required because GPT instructions are limited to 8,000 characters. This file contains detailed descriptions of all MCP tools available to the GPT.
+These files are required because GPT instructions are limited to 8,000 characters.
+
+#### @action_tool_descriptions.md
+
+Contains detailed descriptions of all MCP tools available to the GPT.
 
 **Maintenance**: This file must be updated every time an MCP tool is updated or a new one is created.
+
+#### @direct_call_endpoint_list.md
+
+Contains a list of all the Blockscout API endpoints besides the MCP tools that can be called by the GPT.
+
+**Maintenance**: This file must be updated every time a new Blockscout API endpoint is added.
 
 ### @openapi.yaml
 
@@ -32,6 +42,7 @@ OpenAPI 3.1.0 specification generated for the REST API endpoints provided by the
 - Tool descriptions are truncated to be less than 300 characters per OpenAPI requirements
 - The `__unlock_blockchain_analysis__` endpoint is excluded since its data is incorporated directly into the GPT instructions
 - Some tool parameters (specifically for `read_contract`) have modified descriptions for OpenAPI compliance
+- The specification of the `query_params` parameter for the `direct_api_call` tool is limited to define only `sender` to comply with OpenAPI linter used by OpenAI for API specification validation.
 
 ## Recommended GPT Configuration
 
@@ -39,6 +50,7 @@ OpenAPI 3.1.0 specification generated for the REST API endpoints provided by the
 - **Capabilities**:
   - Web Search
   - Code Interpreter and Data Analysis
+  - Canvas
 
 ## Known Issues
 
