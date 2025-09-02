@@ -7,10 +7,12 @@ from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
+from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
+    DEFAULT_HTTP_PORT,
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
     EFFICIENCY_OPTIMIZATION_RULES,
@@ -155,7 +157,10 @@ def main_command(
     http_host: Annotated[
         str, typer.Option("--http-host", help="Host for HTTP server if --http is used.")
     ] = "127.0.0.1",
-    http_port: Annotated[int, typer.Option("--http-port", help="Port for HTTP server if --http is used.")] = 8000,
+    http_port: Annotated[
+        int | None,
+        typer.Option("--http-port", help="Port for HTTP server if --http is used."),
+    ] = None,
 ):
     """Blockscout MCP Server. Runs in stdio mode by default.
     Use --http to enable HTTP Streamable mode.
@@ -172,14 +177,25 @@ def main_command(
     in_container = Path("/.dockerenv").exists()
     final_http_host = "0.0.0.0" if env_triggered and in_container else http_host
 
+    final_http_port = DEFAULT_HTTP_PORT
+
+    if http_port is not None:
+        final_http_port = http_port
+        if config.port is not None and config.port != final_http_port:
+            typer.echo(
+                "Warning: Both --http-port "
+                f"({final_http_port}) and PORT ({config.port}) are set. "
+                "Using value from --http-port."
+            )
+    elif config.port is not None:
+        final_http_port = config.port
+
     if run_in_http:
         if rest:
-            print(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{http_port}")
-            from blockscout_mcp_server.api.routes import register_api_routes
-
+            typer.echo(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{final_http_port}")
             register_api_routes(mcp)
         else:
-            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{http_port}")
+            typer.echo(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{final_http_port}")
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         mcp.settings.stateless_http = True  # Enable stateless mode
@@ -202,7 +218,7 @@ def main_command(
         )
 
         asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
-        uvicorn.run(asgi_app, host=final_http_host, port=http_port)
+        uvicorn.run(asgi_app, host=final_http_host, port=final_http_port)
     elif rest:
         raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:

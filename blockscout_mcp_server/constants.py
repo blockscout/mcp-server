@@ -410,6 +410,7 @@ RECOMMENDED_CHAINS = [
 ]
 
 SERVER_NAME = "blockscout-mcp-server"
+DEFAULT_HTTP_PORT = 8000
 
 # The maximum length for a log's `data` field before it's truncated.
 # 514 = '0x' prefix + 512 hex characters (256 bytes).

@@ -18,3 +18,6 @@ startCommand:
 # We set the transport to "http" for the Smithery.ai environment.
 env:
   BLOCKSCOUT_MCP_TRANSPORT: "http"
+  # The PORT variable is set by the Smithery.ai platform at runtime.
+  # It is included here for awareness. The value '8081' is arbitrary.
+  # PORT: 8081

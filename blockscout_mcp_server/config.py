@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +46,9 @@ class ServerConfig(BaseSettings):
     # Transport mode for the server ("stdio" or "http").
     # Controls the server's operational mode, can be overridden by CLI flags.
     mcp_transport: str = "stdio"
+
+    # Optional port for the HTTP server, read from the PORT environment variable.
+    port: int | None = Field(None, alias="PORT")
 
     # Composite client name configuration
     intermediary_header: str = "Blockscout-MCP-Intermediary"
