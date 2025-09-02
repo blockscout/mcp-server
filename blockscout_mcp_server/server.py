@@ -182,7 +182,7 @@ def main_command(
     if http_port is not None:
         final_http_port = http_port
         if config.port is not None and config.port != final_http_port:
-            print(
+            typer.echo(
                 "Warning: Both --http-port "
                 f"({final_http_port}) and PORT ({config.port}) are set. "
                 "Using value from --http-port."
@@ -192,10 +192,10 @@ def main_command(
 
     if run_in_http:
         if rest:
-            print(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{final_http_port}")
+            typer.echo(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{final_http_port}")
             register_api_routes(mcp)
         else:
-            print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{final_http_port}")
+            typer.echo(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{final_http_port}")
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         mcp.settings.stateless_http = True  # Enable stateless mode
