@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
+from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
+
 runner = CliRunner()
 
 
@@ -163,7 +165,7 @@ def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
 
     assert result.exit_code == 0
     mock_uvicorn_run.assert_called_once()
-    assert mock_uvicorn_run.call_args.kwargs["port"] == 8000
+    assert mock_uvicorn_run.call_args.kwargs["port"] == DEFAULT_HTTP_PORT
 
     reload(cfg)
     reload(server)

@@ -11,6 +11,7 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
+    DEFAULT_HTTP_PORT,
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
     EFFICIENCY_OPTIMIZATION_RULES,
@@ -175,7 +176,6 @@ def main_command(
     in_container = Path("/.dockerenv").exists()
     final_http_host = "0.0.0.0" if env_triggered and in_container else http_host
 
-    DEFAULT_HTTP_PORT = 8000
     final_http_port = DEFAULT_HTTP_PORT
 
     if http_port is not None:
