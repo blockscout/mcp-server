@@ -1,5 +1,4 @@
 import re
-import sys
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
@@ -21,18 +20,16 @@ def test_rest_flag_without_http_fails():
 
 
 @patch("uvicorn.run")
-def test_http_and_rest_flags_call_register_routes(mock_uvicorn_run):
+@patch("blockscout_mcp_server.server.register_api_routes")
+def test_http_and_rest_flags_call_register_routes(mock_register_routes, mock_uvicorn_run):
     """Verify that --http and --rest together call the route registration function."""
-    mock_routes_module = MagicMock()
-    sys.modules["blockscout_mcp_server.api.routes"] = mock_routes_module
-    from blockscout_mcp_server.server import cli_app
+    from blockscout_mcp_server import server
 
-    result = runner.invoke(cli_app, ["--http", "--rest"])
+    result = runner.invoke(server.cli_app, ["--http", "--rest"])
 
     assert result.exit_code == 0
-    mock_routes_module.register_api_routes.assert_called_once()
+    mock_register_routes.assert_called_once()
     mock_uvicorn_run.assert_called_once()
-    del sys.modules["blockscout_mcp_server.api.routes"]
 
 
 @patch("uvicorn.run")
@@ -121,6 +118,30 @@ def test_cli_flag_overrides_env_port(mock_uvicorn_run, monkeypatch):
     mock_uvicorn_run.assert_called_once()
     assert mock_uvicorn_run.call_args.kwargs["port"] == 9000
     assert "Both --http-port (9000) and PORT (9001) are set" in result.output
+
+    monkeypatch.delenv("PORT")
+    reload(cfg)
+    reload(server)
+
+
+@patch("uvicorn.run")
+def test_same_port_no_warning(mock_uvicorn_run, monkeypatch, capsys):
+    monkeypatch.setenv("PORT", "9003")
+    from importlib import reload
+
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    from blockscout_mcp_server import server
+
+    reload(server)
+
+    server.main_command(http=True, http_port=9003)
+
+    captured = capsys.readouterr()
+    assert "Both --http-port" not in captured.out
+    mock_uvicorn_run.assert_called_once()
+    assert mock_uvicorn_run.call_args.kwargs["port"] == 9003
 
     monkeypatch.delenv("PORT")
     reload(cfg)

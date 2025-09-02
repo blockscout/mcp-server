@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
+from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BLOCK_TIME_ESTIMATION_RULES,
@@ -192,8 +193,6 @@ def main_command(
     if run_in_http:
         if rest:
             print(f"Starting Blockscout MCP Server with REST API on {final_http_host}:{final_http_port}")
-            from blockscout_mcp_server.api.routes import register_api_routes
-
             register_api_routes(mcp)
         else:
             print(f"Starting Blockscout MCP Server in HTTP Streamable mode on {final_http_host}:{final_http_port}")
