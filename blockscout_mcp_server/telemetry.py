@@ -2,17 +2,18 @@ import logging
 
 import httpx
 
-from blockscout_mcp_server import __version__, analytics
+from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_ENDPOINT,
     COMMUNITY_TELEMETRY_URL,
+    SERVER_VERSION,
 )
 
 logger = logging.getLogger(__name__)
 
 
-async def report_tool_usage(tool_name: str, tool_args: dict) -> None:
+async def send_community_usage_report(tool_name: str, tool_args: dict) -> None:
     """Send a fire-and-forget tool usage report if in community telemetry mode."""
     if config.disable_community_telemetry:
         return
@@ -21,7 +22,7 @@ async def report_tool_usage(tool_name: str, tool_args: dict) -> None:
         return
 
     try:
-        headers = {"User-Agent": f"BlockscoutMCP/{__version__}"}
+        headers = {"User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION}"}
         payload = {"tool_name": tool_name, "tool_args": tool_args}
         url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
 

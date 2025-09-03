@@ -105,7 +105,10 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.tools.decorators.telemetry.report_tool_usage", new_callable=AsyncMock)
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
 async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> None:
     @log_tool_invocation
     async def dummy_tool(a: int, ctx: Context) -> int:
