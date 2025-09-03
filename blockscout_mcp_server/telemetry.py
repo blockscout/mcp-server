@@ -13,7 +13,13 @@ from blockscout_mcp_server.constants import (
 logger = logging.getLogger(__name__)
 
 
-async def send_community_usage_report(tool_name: str, tool_args: dict) -> None:
+async def send_community_usage_report(
+    tool_name: str,
+    tool_args: dict,
+    client_name: str,
+    client_version: str,
+    protocol_version: str,
+) -> None:
     """Send a fire-and-forget tool usage report if in community telemetry mode."""
     if config.disable_community_telemetry:
         return
@@ -23,7 +29,13 @@ async def send_community_usage_report(tool_name: str, tool_args: dict) -> None:
 
     try:
         headers = {"User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION}"}
-        payload = {"tool_name": tool_name, "tool_args": tool_args}
+        payload = {
+            "tool_name": tool_name,
+            "tool_args": tool_args,
+            "client_name": client_name,
+            "client_version": client_version,
+            "protocol_version": protocol_version,
+        }
         url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
 
         async with httpx.AsyncClient() as client:

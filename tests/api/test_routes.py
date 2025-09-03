@@ -642,7 +642,13 @@ async def test_error_handling(mock_tool, client: AsyncClient, side_effect, statu
 @pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
 async def test_report_tool_usage_success(mock_track, client: AsyncClient):
-    payload = {"tool_name": "dummy", "tool_args": {"a": 1}}
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+    }
     headers = {"User-Agent": "BlockscoutMCP/0.0"}
     response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
     assert response.status_code == 202
@@ -650,6 +656,9 @@ async def test_report_tool_usage_success(mock_track, client: AsyncClient):
     _, kwargs = mock_track.call_args
     assert kwargs["report"].tool_name == "dummy"
     assert kwargs["report"].tool_args == {"a": 1}
+    assert kwargs["report"].client_name == "cli"
+    assert kwargs["report"].client_version == "1.0"
+    assert kwargs["report"].protocol_version == "1.1"
     assert kwargs["user_agent"] == headers["User-Agent"]
 
 
@@ -661,6 +670,12 @@ async def test_report_tool_usage_bad_body(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_report_tool_usage_missing_header(client: AsyncClient):
-    payload = {"tool_name": "dummy", "tool_args": {}}
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+    }
     response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
     assert response.status_code == 400

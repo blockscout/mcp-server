@@ -528,6 +528,9 @@ Receive an anonymous tool usage report from a community-run server.
 | ---- | ---- | -------- | ----------- |
 | `tool_name` | `string` | Yes | Name of the tool being reported. |
 | `tool_args` | `object` | Yes | Arguments provided to the tool. |
+| `client_name` | `string` | Yes | Name of the MCP client invoking the tool. |
+| `client_version` | `string` | Yes | Version of the MCP client. |
+| `protocol_version` | `string` | Yes | Model Context Protocol version used. |
 
 **Example Request**
 
@@ -535,5 +538,5 @@ Receive an anonymous tool usage report from a community-run server.
 curl -X POST "http://127.0.0.1:8000/v1/report_tool_usage" \\
   -H "User-Agent: BlockscoutMCP/0.10.0" \\
   -H "Content-Type: application/json" \\
-  -d '{"tool_name": "get_latest_block", "tool_args": {"chain_id": "1"}}'
+  -d '{"tool_name": "get_latest_block", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
 ```

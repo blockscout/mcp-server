@@ -18,10 +18,19 @@ async def test_send_community_usage_report_sent(monkeypatch):
     mock_ctx_mgr = AsyncMock()
     mock_ctx_mgr.__aenter__.return_value = mock_client
     with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
-        await telemetry.send_community_usage_report("tool", {"a": 1})
+        await telemetry.send_community_usage_report("tool", {"a": 1}, "client", "1.0", "1.1")
         url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
         mock_client.post.assert_awaited_once_with(
-            url, json={"tool_name": "tool", "tool_args": {"a": 1}}, headers=ANY, timeout=2.0
+            url,
+            json={
+                "tool_name": "tool",
+                "tool_args": {"a": 1},
+                "client_name": "client",
+                "client_version": "1.0",
+                "protocol_version": "1.1",
+            },
+            headers=ANY,
+            timeout=2.0,
         )
 
 
@@ -29,7 +38,7 @@ async def test_send_community_usage_report_sent(monkeypatch):
 async def test_send_community_usage_report_disabled(monkeypatch):
     monkeypatch.setattr(config, "disable_community_telemetry", True, raising=False)
     with patch("httpx.AsyncClient", AsyncMock()) as mock_ac:
-        await telemetry.send_community_usage_report("tool", {})
+        await telemetry.send_community_usage_report("tool", {}, "client", "1.0", "1.1")
         mock_ac.assert_not_called()
 
 
@@ -40,7 +49,7 @@ async def test_send_community_usage_report_direct_mode(monkeypatch):
     analytics.set_http_mode(True)
     try:
         with patch("httpx.AsyncClient", AsyncMock()) as mock_ac:
-            await telemetry.send_community_usage_report("tool", {})
+            await telemetry.send_community_usage_report("tool", {}, "client", "1.0", "1.1")
             mock_ac.assert_not_called()
     finally:
         analytics.set_http_mode(False)
@@ -55,5 +64,5 @@ async def test_send_community_usage_report_network_error(monkeypatch):
     mock_ctx_mgr = AsyncMock()
     mock_ctx_mgr.__aenter__.return_value = mock_client
     with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
-        await telemetry.send_community_usage_report("tool", {})
+        await telemetry.send_community_usage_report("tool", {}, "client", "1.0", "1.1")
         mock_client.post.assert_awaited_once()

@@ -31,7 +31,6 @@ except ImportError:  # pragma: no cover
     Mixpanel = _MissingMixpanel  # type: ignore[assignment]
 
 from blockscout_mcp_server.client_meta import (
-    UNKNOWN_PROTOCOL_VERSION,
     ClientMeta,
     extract_client_meta_from_ctx,
     get_header_case_insensitive,
@@ -248,15 +247,15 @@ def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> 
         return
 
     try:
-        distinct_id = _build_distinct_id(ip, user_agent, "N/A")
+        distinct_id = _build_distinct_id(ip, report.client_name, report.client_version)
 
         properties: dict[str, Any] = {
             "ip": ip,
-            "client_name": user_agent,
-            "client_version": "N/A",
+            "client_name": report.client_name,
+            "client_version": report.client_version,
             "user_agent": user_agent,
             "tool_args": report.tool_args,
-            "protocol_version": UNKNOWN_PROTOCOL_VERSION,
+            "protocol_version": report.protocol_version,
             "source": "community",
         }
 

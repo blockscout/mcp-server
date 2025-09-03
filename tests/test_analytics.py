@@ -175,10 +175,20 @@ def test_track_community_usage(monkeypatch):
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
-        report = ToolUsageReport(tool_name="foo", tool_args={"a": 1})
+        report = ToolUsageReport(
+            tool_name="foo",
+            tool_args={"a": 1},
+            client_name="cli",
+            client_version="1.0",
+            protocol_version="1.1",
+        )
         analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
         mp_instance.track.assert_called_once()
         args, kwargs = mp_instance.track.call_args
         assert args[1] == "foo"
-        assert args[2]["source"] == "community"
+        properties = args[2]
+        assert properties["source"] == "community"
+        assert properties["client_name"] == "cli"
+        assert properties["client_version"] == "1.0"
+        assert properties["protocol_version"] == "1.1"
         assert kwargs.get("meta") == {"ip": "203.0.113.5"}

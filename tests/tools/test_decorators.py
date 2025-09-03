@@ -7,6 +7,11 @@ import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
 
+from blockscout_mcp_server.client_meta import (
+    UNDEFINED_CLIENT_NAME,
+    UNDEFINED_CLIENT_VERSION,
+    UNKNOWN_PROTOCOL_VERSION,
+)
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
@@ -114,6 +119,14 @@ async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> No
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
 
+    mock_ctx.session = None
+    mock_ctx.request_context = None
     await dummy_tool(5, ctx=mock_ctx)
     await asyncio.sleep(0)
-    mock_report.assert_awaited_once_with("dummy_tool", {"a": 5})
+    mock_report.assert_awaited_once_with(
+        "dummy_tool",
+        {"a": 5},
+        UNDEFINED_CLIENT_NAME,
+        UNDEFINED_CLIENT_VERSION,
+        UNKNOWN_PROTOCOL_VERSION,
+    )

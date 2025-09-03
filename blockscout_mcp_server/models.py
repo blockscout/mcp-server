@@ -11,6 +11,9 @@ T = TypeVar("T")
 class ToolUsageReport(BaseModel):
     tool_name: str
     tool_args: dict[str, Any]
+    client_name: str
+    client_version: str
+    protocol_version: str
 
 
 # --- Models for Pagination ---

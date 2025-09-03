@@ -51,7 +51,15 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         finally:
             try:
                 arg_snapshot = arg_dict.copy()
-                asyncio.create_task(telemetry.send_community_usage_report(func.__name__, arg_snapshot))
+                asyncio.create_task(
+                    telemetry.send_community_usage_report(
+                        func.__name__,
+                        arg_snapshot,
+                        client_name,
+                        client_version,
+                        protocol_version,
+                    )
+                )
             except Exception:
                 pass
 
