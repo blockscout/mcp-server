@@ -61,6 +61,11 @@ def set_http_mode(is_http: bool) -> None:
             logger.debug("Mixpanel analytics not enabled: BLOCKSCOUT_MIXPANEL_TOKEN is not set")
 
 
+def is_http_mode_enabled() -> bool:
+    """Check if HTTP mode is currently enabled."""
+    return _is_http_mode_enabled
+
+
 def _get_mixpanel_client() -> Any | None:
     """Return a singleton Mixpanel client if token is configured."""
     global _mp_client

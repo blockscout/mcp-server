@@ -24,7 +24,7 @@ async def send_community_usage_report(
     if config.disable_community_telemetry:
         return
 
-    if analytics._is_http_mode_enabled and config.mixpanel_token:
+    if analytics.is_http_mode_enabled() and config.mixpanel_token:
         return
 
     try:
