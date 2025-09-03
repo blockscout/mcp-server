@@ -31,11 +31,13 @@ except ImportError:  # pragma: no cover
     Mixpanel = _MissingMixpanel  # type: ignore[assignment]
 
 from blockscout_mcp_server.client_meta import (
+    UNKNOWN_PROTOCOL_VERSION,
     ClientMeta,
     extract_client_meta_from_ctx,
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.models import ToolUsageReport
 
 logger = logging.getLogger(__name__)
 
@@ -235,3 +237,33 @@ def track_tool_invocation(
             mp.track(distinct_id, tool_name, properties)
     except Exception as exc:  # pragma: no cover - do not break tool flow
         logger.debug("Mixpanel tracking failed for %s: %s", tool_name, exc)
+
+
+def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
+    """Track a tool invocation from a community (self-hosted) server."""
+    if not _is_http_mode_enabled:
+        return
+    mp = _get_mixpanel_client()
+    if mp is None:
+        return
+
+    try:
+        distinct_id = _build_distinct_id(ip, user_agent, "N/A")
+
+        properties: dict[str, Any] = {
+            "ip": ip,
+            "client_name": user_agent,
+            "client_version": "N/A",
+            "user_agent": user_agent,
+            "tool_args": report.tool_args,
+            "protocol_version": UNKNOWN_PROTOCOL_VERSION,
+            "source": "community",
+        }
+
+        meta = {"ip": ip} if ip else None
+        if meta is not None:
+            mp.track(distinct_id, report.tool_name, properties, meta=meta)  # type: ignore[call-arg]
+        else:
+            mp.track(distinct_id, report.tool_name, properties)
+    except Exception as exc:  # pragma: no cover - do not break flow
+        logger.debug("Community Mixpanel tracking failed for %s: %s", report.tool_name, exc)

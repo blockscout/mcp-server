@@ -8,6 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 T = TypeVar("T")
 
 
+class ToolUsageReport(BaseModel):
+    tool_name: str
+    tool_args: dict[str, Any]
+
+
 # --- Models for Pagination ---
 class NextCallInfo(BaseModel):
     """A structured representation of the tool call required to get the next page."""

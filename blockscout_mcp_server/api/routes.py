@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
+from blockscout_mcp_server import analytics
 from blockscout_mcp_server.analytics import track_event
 from blockscout_mcp_server.api.dependencies import get_mock_context
 from blockscout_mcp_server.api.helpers import (
@@ -16,6 +17,7 @@ from blockscout_mcp_server.api.helpers import (
     extract_and_validate_params,
     handle_rest_errors,
 )
+from blockscout_mcp_server.models import ToolUsageReport
 from blockscout_mcp_server.tools.address_tools import (
     get_address_info,
     get_tokens_by_address,
@@ -79,6 +81,23 @@ async def main_page(request: Request) -> Response:
         message = "Landing page content is not available."
         return PlainTextResponse(message, status_code=500)
     return HTMLResponse(INDEX_HTML_CONTENT)
+
+
+async def report_tool_usage(request: Request) -> Response:
+    """Receive and process an anonymous tool usage report from a self-hosted server."""
+    try:
+        payload = await request.json()
+        report = ToolUsageReport.model_validate(payload)
+    except Exception:
+        return Response(status_code=422)
+
+    user_agent = request.headers.get("user-agent")
+    if not user_agent:
+        return Response(status_code=400)
+
+    ip = analytics._extract_ip_from_request(request)
+    analytics.track_community_usage(report=report, ip=ip, user_agent=user_agent)
+    return Response(status_code=202)
 
 
 @handle_rest_errors
@@ -301,6 +320,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     mcp.custom_route("/health", methods=["GET"], include_in_schema=False)(health_check)
     mcp.custom_route("/llms.txt", methods=["GET"], include_in_schema=False)(serve_llms_txt)
     mcp.custom_route("/", methods=["GET"], include_in_schema=False)(main_page)
+    mcp.custom_route("/v1/report_tool_usage", methods=["POST"])(report_tool_usage)
 
     # Version 1 of the REST API
     _add_v1_tool_route(mcp, "/tools", list_tools_rest)

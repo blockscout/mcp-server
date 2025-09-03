@@ -6,6 +6,7 @@ import pytest
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.analytics import ClientMeta
 from blockscout_mcp_server.config import config as server_config
+from blockscout_mcp_server.models import ToolUsageReport
 
 
 class DummyRequest:
@@ -166,3 +167,18 @@ def test_track_event_noop_when_disabled(monkeypatch):
     with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_event(req, "PageView", {"path": "/"})
         mp_cls.assert_not_called()
+
+
+def test_track_community_usage(monkeypatch):
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        report = ToolUsageReport(tool_name="foo", tool_args={"a": 1})
+        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
+        mp_instance.track.assert_called_once()
+        args, kwargs = mp_instance.track.call_args
+        assert args[1] == "foo"
+        assert args[2]["source"] == "community"
+        assert kwargs.get("meta") == {"ip": "203.0.113.5"}

@@ -1,6 +1,6 @@
 import logging
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import mcp.types as types
 import pytest
@@ -101,3 +101,14 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
 
     log_text = caplog.text
     assert "(Client: test-client/HigressPlugin, Version: 1.2.3, Protocol: 2024-11-05)" in log_text
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.tools.decorators.telemetry.report_tool_usage", new_callable=AsyncMock)
+async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> None:
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    await dummy_tool(5, ctx=mock_ctx)
+    mock_report.assert_awaited_once_with("dummy_tool", {"a": 5})

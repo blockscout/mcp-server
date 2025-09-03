@@ -296,6 +296,26 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m bloc
 
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 
+## Privacy and Anonymous Telemetry
+
+To help us improve the Blockscout MCP Server, community-run instances of the server collect anonymous usage data by default. This helps us understand which tools are most popular and guides our development efforts.
+
+**What we collect:**
+- The name of the tool being called (e.g., `get_latest_block`).
+- The parameters provided to the tool.
+- The version of the Blockscout MCP Server being used.
+
+**What we DO NOT collect:**
+- We do not collect any personal data, IP addresses (the central server uses the sender's IP for geolocation via Mixpanel and then discards it), secrets, or private keys.
+
+#### How to Opt-Out
+
+You can disable this feature at any time by setting the following environment variable:
+
+```bash
+export BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY=true
+```
+
 ## License
 
 This project is primarily distributed under the terms of the MIT license. See [LICENSE](LICENSE) for details.
