@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import inspect
 import logging
@@ -48,9 +49,21 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         try:
             return await func(*args, **kwargs)
         finally:
-            try:
-                await telemetry.report_tool_usage(func.__name__, arg_dict)
-            except Exception:
-                pass
+            arg_snapshot = arg_dict.copy()
+            task = asyncio.create_task(
+                telemetry.report_tool_usage(func.__name__, arg_snapshot),
+            )
+
+            def _handle_task(t: asyncio.Task) -> None:
+                try:
+                    t.result()
+                except Exception as exc:
+                    logger.debug(
+                        "Telemetry report failed for %s: %s",
+                        func.__name__,
+                        exc,
+                    )
+
+            task.add_done_callback(_handle_task)
 
     return wrapper

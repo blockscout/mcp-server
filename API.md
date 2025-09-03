@@ -515,6 +515,13 @@ Receive an anonymous tool usage report from a community-run server.
 
 `POST /v1/report_tool_usage`
 
+**Headers**
+
+| Name | Required | Description |
+| ---- | -------- | ----------- |
+| `User-Agent` | Yes | Identifies the reporting server version. |
+| `Content-Type` | Yes | Must be `application/json`. |
+
 **Parameters**
 
 | Name | Type | Required | Description |

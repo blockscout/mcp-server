@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -111,4 +112,5 @@ async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> No
         return a
 
     await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
     mock_report.assert_awaited_once_with("dummy_tool", {"a": 5})
