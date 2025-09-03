@@ -2,7 +2,7 @@ from unittest.mock import ANY, AsyncMock, patch
 
 import pytest
 
-from blockscout_mcp_server import telemetry
+from blockscout_mcp_server import analytics, telemetry
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_ENDPOINT,
@@ -37,10 +37,13 @@ async def test_report_tool_usage_disabled(monkeypatch):
 async def test_report_tool_usage_direct_mode(monkeypatch):
     monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
     monkeypatch.setattr(config, "mixpanel_token", "token", raising=False)
-    monkeypatch.setattr(telemetry, "_is_http_mode_enabled", True, raising=False)
-    with patch("httpx.AsyncClient", AsyncMock()) as mock_ac:
-        await telemetry.report_tool_usage("tool", {})
-        mock_ac.assert_not_called()
+    analytics.set_http_mode(True)
+    try:
+        with patch("httpx.AsyncClient", AsyncMock()) as mock_ac:
+            await telemetry.report_tool_usage("tool", {})
+            mock_ac.assert_not_called()
+    finally:
+        analytics.set_http_mode(False)
 
 
 @pytest.mark.asyncio

@@ -2,8 +2,7 @@ import logging
 
 import httpx
 
-from blockscout_mcp_server import __version__
-from blockscout_mcp_server.analytics import _is_http_mode_enabled
+from blockscout_mcp_server import __version__, analytics
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_ENDPOINT,
@@ -18,7 +17,7 @@ async def report_tool_usage(tool_name: str, tool_args: dict) -> None:
     if config.disable_community_telemetry:
         return
 
-    if _is_http_mode_enabled and config.mixpanel_token:
+    if analytics._is_http_mode_enabled and config.mixpanel_token:
         return
 
     try:
