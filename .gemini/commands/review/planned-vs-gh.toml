@@ -1,0 +1,44 @@
+description = "Reviews a given GitHub pull request."
+
+prompt = '''
+Switch to the role of an experienced code reviewer.
+
+The delta of changes is available at the following URL: "https://patch-diff.githubusercontent.com/raw/blockscout/mcp-server/pull/{{.github_pr_number}}.diff".
+
+Take the implementation plan provided in the context and carefully review the changes in the delta against it. Your review should answer the following questions:
+- Does the code properly implement the intent of the plan?
+- Is the implementation complete with respect to the plan?
+- Was anything missed from the plan?
+- Are there any potential improvements to the code?
+
+Only suggest changes that would genuinely improve functionality, documentation, or tests. Do not suggest cosmetic changes.
+
+Structure your findings as an XML document. All findings must be wrapped in a single `<findings>` root element. Each individual finding should be in its own `<finding>` tag.
+
+If there are no findings, return an empty `<findings></findings>` element.
+
+Here is the required format for each finding:
+```xml
+<finding target_file="path/to/file.py" importance="high|medium|low">
+A clear and actionable prompt for an AI agent to address the finding. The prompt should contain enough context for the agent to understand and implement the change.
+</finding>
+```
+
+Example with multiple findings:
+```xml
+<findings>
+  <finding target_file="src/main.py" importance="high">
+  In the `calculate_total` function, the logic for handling discounts is incorrect. Please refactor it to apply the percentage discount *before* adding the tax.
+  </finding>
+  <finding target_file="docs/api.md" importance="medium">
+  The documentation for the `/users` endpoint is missing details about the `sort_order` parameter. Please add a description for it.
+  </finding>
+</findings>
+```
+
+If the code in the delta differs from the implementation plan, base your review and findings on the actual code from the delta, not on what was planned.
+'''
+
+[[params]]
+name = "github_pr_number"
+description = "The GitHub pull request number to review."
