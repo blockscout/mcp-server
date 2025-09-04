@@ -42,6 +42,7 @@ class ServerConfig(BaseSettings):
     # Analytics configuration
     mixpanel_token: str = ""
     mixpanel_api_host: str = ""  # Optional custom API host (e.g., EU region)
+    disable_community_telemetry: bool = False
 
     # Transport mode for the server ("stdio" or "http").
     # Controls the server's operational mode, can be overridden by CLI flags.

@@ -20,6 +20,7 @@ mcp-server/
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
 │   ├── logging_utils.py        # Logging utilities for production-ready log formatting
 │   ├── analytics.py            # Centralized Mixpanel analytics for tool invocations (HTTP mode only)
+│   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
@@ -239,6 +240,9 @@ mcp-server/
         * Generates deterministic `distinct_id` based on client IP, name, and version fingerprint.
         * Tracks tool invocations with client metadata, protocol version, and call source (MCP vs REST).
         * Includes IP geolocation metadata for Mixpanel and graceful error handling to avoid breaking tool execution.
+    * **`telemetry.py`**:
+        * Sends anonymous usage reports from self-hosted servers when direct analytics are disabled.
+        * Designed as fire-and-forget and never disrupts tool execution.
     * **`client_meta.py`**:
         * Shared utilities for extracting client metadata (name, version, protocol, user_agent) from MCP Context.
         * Provides `ClientMeta` dataclass and `extract_client_meta_from_ctx()` function.

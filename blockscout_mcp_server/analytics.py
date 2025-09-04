@@ -36,6 +36,7 @@ from blockscout_mcp_server.client_meta import (
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.models import ToolUsageReport
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,11 @@ def set_http_mode(is_http: bool) -> None:
             logger.info("Mixpanel analytics enabled (api_host=%s)", api_host)
         else:
             logger.debug("Mixpanel analytics not enabled: BLOCKSCOUT_MIXPANEL_TOKEN is not set")
+
+
+def is_http_mode_enabled() -> bool:
+    """Check if HTTP mode is currently enabled."""
+    return _is_http_mode_enabled
 
 
 def _get_mixpanel_client() -> Any | None:
@@ -235,3 +241,33 @@ def track_tool_invocation(
             mp.track(distinct_id, tool_name, properties)
     except Exception as exc:  # pragma: no cover - do not break tool flow
         logger.debug("Mixpanel tracking failed for %s: %s", tool_name, exc)
+
+
+def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
+    """Track a tool invocation from a community (self-hosted) server."""
+    if not _is_http_mode_enabled:
+        return
+    mp = _get_mixpanel_client()
+    if mp is None:
+        return
+
+    try:
+        distinct_id = _build_distinct_id(ip, report.client_name, report.client_version)
+
+        properties: dict[str, Any] = {
+            "ip": ip,
+            "client_name": report.client_name,
+            "client_version": report.client_version,
+            "user_agent": user_agent,
+            "tool_args": report.tool_args,
+            "protocol_version": report.protocol_version,
+            "source": "community",
+        }
+
+        meta = {"ip": ip} if ip else None
+        if meta is not None:
+            mp.track(distinct_id, report.tool_name, properties, meta=meta)  # type: ignore[call-arg]
+        else:
+            mp.track(distinct_id, report.tool_name, properties)
+    except Exception as exc:  # pragma: no cover - do not break flow
+        logger.debug("Community Mixpanel tracking failed for %s: %s", report.tool_name, exc)

@@ -637,3 +637,45 @@ async def test_error_handling(mock_tool, client: AsyncClient, side_effect, statu
     assert response.status_code == status
     assert response.json() == {"error": str(side_effect)}
     mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_success(mock_track, client: AsyncClient):
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].tool_name == "dummy"
+    assert kwargs["report"].tool_args == {"a": 1}
+    assert kwargs["report"].client_name == "cli"
+    assert kwargs["report"].client_version == "1.0"
+    assert kwargs["report"].protocol_version == "1.1"
+    assert kwargs["user_agent"] == headers["User-Agent"]
+
+
+@pytest.mark.asyncio
+async def test_report_tool_usage_bad_body(client: AsyncClient):
+    response = await client.post("/v1/report_tool_usage", json={"tool_name": "x"})
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_report_tool_usage_missing_header(client: AsyncClient):
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+    }
+    response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
+    assert response.status_code == 400

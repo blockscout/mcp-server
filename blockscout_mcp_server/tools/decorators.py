@@ -1,10 +1,11 @@
+import asyncio
 import functools
 import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from blockscout_mcp_server import analytics
+from blockscout_mcp_server import analytics, telemetry
 from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,22 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
             f"(Client: {client_name}, Version: {client_version}, Protocol: {protocol_version})"
         )
         logger.info(log_message)
-        return await func(*args, **kwargs)
+
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            try:
+                arg_snapshot = arg_dict.copy()
+                asyncio.create_task(
+                    telemetry.send_community_usage_report(
+                        func.__name__,
+                        arg_snapshot,
+                        client_name,
+                        client_version,
+                        protocol_version,
+                    )
+                )
+            except Exception:
+                pass
 
     return wrapper

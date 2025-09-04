@@ -1,11 +1,17 @@
+import asyncio
 import logging
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
 
+from blockscout_mcp_server.client_meta import (
+    UNDEFINED_CLIENT_NAME,
+    UNDEFINED_CLIENT_VERSION,
+    UNKNOWN_PROTOCOL_VERSION,
+)
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
@@ -101,3 +107,26 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
 
     log_text = caplog.text
     assert "(Client: test-client/HigressPlugin, Version: 1.2.3, Protocol: 2024-11-05)" in log_text
+
+
+@pytest.mark.asyncio
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
+async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> None:
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    mock_ctx.session = None
+    mock_ctx.request_context = None
+    await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
+    mock_report.assert_awaited_once_with(
+        "dummy_tool",
+        {"a": 5},
+        UNDEFINED_CLIENT_NAME,
+        UNDEFINED_CLIENT_VERSION,
+        UNKNOWN_PROTOCOL_VERSION,
+    )

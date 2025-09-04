@@ -508,3 +508,35 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 ```bash
 curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
 ```
+
+### Report Tool Usage (`report_tool_usage`)
+
+Receive an anonymous tool usage report from a community-run server.
+
+`POST /v1/report_tool_usage`
+
+**Headers**
+
+| Name | Required | Description |
+| ---- | -------- | ----------- |
+| `User-Agent` | Yes | Identifies the reporting server version. |
+| `Content-Type` | Yes | Must be `application/json`. |
+
+**Parameters**
+
+| Name | Type | Required | Description |
+| ---- | ---- | -------- | ----------- |
+| `tool_name` | `string` | Yes | Name of the tool being reported. |
+| `tool_args` | `object` | Yes | Arguments provided to the tool. |
+| `client_name` | `string` | Yes | Name of the MCP client invoking the tool. |
+| `client_version` | `string` | Yes | Version of the MCP client. |
+| `protocol_version` | `string` | Yes | Model Context Protocol version used. |
+
+**Example Request**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/report_tool_usage" \\
+  -H "User-Agent: BlockscoutMCP/0.11.0.dev0" \\
+  -H "Content-Type: application/json" \\
+  -d '{"tool_name": "get_latest_block", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
+```
