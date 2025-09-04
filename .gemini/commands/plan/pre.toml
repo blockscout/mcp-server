@@ -2,5 +2,5 @@ description = "Describes high level changes."
 prompt = """
 Describe very high level changes required to implement discussed functionality (functionality, test, docs).
 
-Only provide the description of the changes. Don't provide any code changes yet.
+Only provide the description of the changes. Don't provide any actual code changes yet.
 """
