@@ -11,7 +11,9 @@ The following materials will be available to the developer:
 - The GitHub repository of the Blockscout MCP server
 - Your implementation plan
 
-Do not assume that the developer will thoroughly read the MCP server’s Python SDK or documentation of other 3rd-party components. Do not assume that the developer has access to the discussion’s history. Create the plan with this limitation in mind.
+Do not assume that the developer will thoroughly read the MCP server's Python SDK or documentation of other 3rd-party components. Do not assume that the developer has access to the discussion's history. Create the plan with this limitation in mind.
+
+Assume that the developer will not prepare good documentation updates due to lack of experience in documentation preparation. Therefore, explicitly provide text snippets showing exactly what must be added to each documentation file. Include the specific sections, headings, and complete text content that should be inserted or modified in README.md, SPEC.md, AGENTS.md, API.md, TESTING.md, .env.example, and any other relevant documentation files.
 
 If possible, divide the implementation into distinct phases so that each group of changes can be verified through tests before moving on to the next phase. This incremental approach will help validate modifications step by step and reduce the risk of accumulated errors.
 
@@ -20,6 +22,8 @@ Include a reference to the GitHub issue (with a link) in the plan.
 After creating the plan, double-check that it covers all areas: server functionality, tests, and documentation, as defined in the project guidelines.
 
 Your sole and exclusive output must be a single, well-structured Markdown document in `temp/impl_plans/issue-{{.github_issue_number}}.md`
+
+Don't provide any actual code changes yet. Just the plan.
 """
 
 [[params]]
