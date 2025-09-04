@@ -1,5 +1,5 @@
 description = "Create a GitHub issue description."
-prompt = "Prepare a GitHub issue description. Your sole and exclusive output must be a single, well-structured Markdown document in `temp/gh_issues/{{.file}}`"
+prompt = "Prepare a GitHub issue description. Your sole and exclusive output must be a single, well-structured Markdown document in `temp/gh_issues/{{.file}}`. Don't provide any actual code changes yet."
 
 [[params]]
 name = "file"
