@@ -1,4 +1,3 @@
-# tests/tools/test_search_tools.py
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
