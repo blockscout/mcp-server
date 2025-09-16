@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,7 +6,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.models import ChainInfo
+from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
 from blockscout_mcp_server.tools.common import chains_list_cache
 
@@ -20,6 +18,177 @@ def clear_chains_list_cache():
     yield
     chains_list_cache.chains_snapshot = None
     chains_list_cache.expiry_timestamp = 0.0
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_success(mock_ctx):
+    """Verify that get_chains_list correctly processes a successful API response."""
+    mock_api_response = {
+        "1": {
+            "name": "Ethereum",
+            "isTestnet": False,
+            "native_currency": "ETH",
+            "ecosystem": "Ethereum",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
+        },
+        "137": {
+            "name": "Polygon PoS",
+            "isTestnet": False,
+            "native_currency": "POL",
+            "ecosystem": "Polygon",
+            "settlementLayerChainId": "1",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
+        },
+    }
+
+    expected_data = [
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
+        ),
+        ChainInfo(
+            name="Polygon PoS",
+            chain_id="137",
+            is_testnet=False,
+            native_currency="POL",
+            ecosystem="Polygon",
+            settlement_layer_chain_id="1",
+        ),
+    ]
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = mock_api_response
+
+        result = await get_chains_list(ctx=mock_ctx)
+
+        mock_request.assert_called_once_with(api_path="/api/chains")
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_caches_filtered_chains(mock_ctx):
+    """Verify that get_chains_list caches only chains with Blockscout explorers."""
+    mock_api_response = {
+        "1": {"name": "Ethereum", "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}]},
+        "999": {"name": "No Blockscout", "explorers": [{"hostedBy": "other", "url": "https://other"}]},
+    }
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        with patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_cache:
+            mock_request.return_value = mock_api_response
+            mock_cache.bulk_set = AsyncMock()
+
+            await get_chains_list(ctx=mock_ctx)
+
+            mock_cache.bulk_set.assert_awaited_once()
+            cached = mock_cache.bulk_set.call_args.args[0]
+            assert cached == {"1": "https://eth"}
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_empty_response(mock_ctx):
+    """Verify that get_chains_list handles empty API responses gracefully."""
+    mock_api_response: dict[str, dict] = {}
+    expected_data: list[ChainInfo] = []
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = mock_api_response
+
+        result = await get_chains_list(ctx=mock_ctx)
+
+        mock_request.assert_called_once_with(api_path="/api/chains")
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_invalid_response_format(mock_ctx):
+    """Verify that get_chains_list handles invalid response formats gracefully."""
+    mock_api_response = {"error": "Invalid data"}
+    expected_data: list[ChainInfo] = []
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = mock_api_response
+
+        result = await get_chains_list(ctx=mock_ctx)
+
+        mock_request.assert_called_once_with(api_path="/api/chains")
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
+    """Verify that get_chains_list handles chains with missing name or chain ID fields."""
+    mock_api_response = {
+        "1": {
+            "name": "Ethereum",
+            "isTestnet": False,
+            "native_currency": "ETH",
+            "ecosystem": "Ethereum",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://eth"}],
+        },
+        "invalid": {"name": "Incomplete Chain"},
+        "137": {
+            "name": "Polygon PoS",
+            "isTestnet": False,
+            "native_currency": "POL",
+            "ecosystem": "Polygon",
+            "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
+        },
+        "empty": {},
+    }
+
+    expected_data = [
+        ChainInfo(
+            name="Ethereum",
+            chain_id="1",
+            is_testnet=False,
+            native_currency="ETH",
+            ecosystem="Ethereum",
+            settlement_layer_chain_id=None,
+        ),
+        ChainInfo(
+            name="Polygon PoS",
+            chain_id="137",
+            is_testnet=False,
+            native_currency="POL",
+            ecosystem="Polygon",
+            settlement_layer_chain_id=None,
+        ),
+    ]
+
+    with patch(
+        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = mock_api_response
+
+        result = await get_chains_list(ctx=mock_ctx)
+
+        mock_request.assert_called_once_with(api_path="/api/chains")
+        assert isinstance(result, ToolResponse)
+        assert result.data == expected_data
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -155,7 +324,6 @@ async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypat
         }
     }
 
-    # Track call count without any delays to avoid hangs
     call_count = 0
 
     async def mock_request(*, api_path: str):
@@ -163,7 +331,6 @@ async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypat
         call_count += 1
         return mock_api_response
 
-    # Mock both the API request and bulk_set without any async delays
     with (
         patch(
             "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
@@ -175,16 +342,12 @@ async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypat
             new_callable=AsyncMock,
         ) as mock_bulk_set,
     ):
-        # Test the sequential behavior first to ensure basic functionality works
         result1 = await get_chains_list(ctx=mock_ctx)
-        result2 = await get_chains_list(ctx=mock_ctx)  # This should use cache
+        result2 = await get_chains_list(ctx=mock_ctx)
 
-        # Only one API call should have been made due to caching
         assert call_count == 1
         assert mock_api_request.call_count == 1
         assert mock_bulk_set.call_count == 1
-
-        # Both results should be the same
         assert result1.data == result2.data
         assert len(result1.data) == 1
         assert result1.data[0].name == "Ethereum"
@@ -208,7 +371,6 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
         }
     }
 
-    # Use a counter and event to control execution properly
     call_count = 0
     first_call_started = asyncio.Event()
     first_call_can_complete = asyncio.Event()
@@ -218,13 +380,11 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
         call_count += 1
 
         if call_count == 1:
-            # This is the first call
             first_call_started.set()
             await first_call_can_complete.wait()
 
         return mock_api_response
 
-    # Mock without delays but with proper control
     with (
         patch(
             "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
@@ -236,31 +396,21 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
             new_callable=AsyncMock,
         ) as mock_bulk_set,
     ):
-
         async def run_concurrent_test():
-            # Start both calls
             task1 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
             task2 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
 
-            # Wait for first call to start
             await first_call_started.wait()
-
-            # Allow first call to complete
             first_call_can_complete.set()
 
-            # Wait for both to complete
             results = await asyncio.gather(task1, task2)
             return results
 
         results = await run_concurrent_test()
 
-        # Due to the locking mechanism, only one API call should be made
-        # The second call should wait for the first to complete and use its cached result
         assert call_count == 1
         assert mock_api_request.call_count == 1
         assert mock_bulk_set.call_count == 1
-
-        # Both results should be identical
         assert len(results) == 2
         assert results[0].data == results[1].data
         assert len(results[0].data) == 1

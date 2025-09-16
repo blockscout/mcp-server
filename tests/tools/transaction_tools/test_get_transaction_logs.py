@@ -1,18 +1,119 @@
-# tests/tools/test_transaction_tools_3.py
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.models import (
-    NextCallInfo,
-    PaginationInfo,
-    ToolResponse,
-    TransactionLogItem,
-)
+from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse, TransactionLogItem
 from blockscout_mcp_server.tools.common import encode_cursor
 from blockscout_mcp_server.tools.transaction_tools import get_transaction_logs
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_invalid_cursor(mock_ctx):
+    """Verify ValueError is raised when the cursor is invalid."""
+    with patch(
+        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        side_effect=ValueError("bad"),
+    ) as mock_apply:
+        with pytest.raises(ValueError, match="bad"):
+            await get_transaction_logs(chain_id="1", transaction_hash="0xhash", cursor="bad", ctx=mock_ctx)
+    mock_apply.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_logs_success(mock_ctx):
+    """
+    Verify get_transaction_logs correctly processes and formats transaction logs.
+    """
+    # ARRANGE
+    chain_id = "1"
+    tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {
+        "items": [
+            {
+                "address": {"hash": "0xcontract1..."},
+                "topics": ["0xtopic1...", "0xtopic2..."],
+                "data": "0xdata123...",
+                "log_index": "0",
+                "transaction_hash": tx_hash,
+                "block_number": 19000000,
+                "block_hash": "0xblockhash1...",
+                "decoded": {"name": "EventA"},
+                "index": 0,
+            },
+            {
+                "address": {"hash": "0xcontract2..."},
+                "topics": ["0xtopic3..."],
+                "data": "0xdata456...",
+                "log_index": "1",
+                "transaction_hash": tx_hash,
+                "block_number": 19000000,
+                "block_hash": "0xblockhash2...",
+                "decoded": {"name": "EventB"},
+                "index": 1,
+            },
+        ],
+    }
+
+    expected_log_items = [
+        TransactionLogItem(
+            address="0xcontract1...",
+            block_number=19000000,
+            data="0xdata123...",
+            decoded={"name": "EventA"},
+            index=0,
+            topics=["0xtopic1...", "0xtopic2..."],
+        ),
+        TransactionLogItem(
+            address="0xcontract2...",
+            block_number=19000000,
+            data="0xdata456...",
+            decoded={"name": "EventB"},
+            index=1,
+            topics=["0xtopic3..."],
+        ),
+    ]
+
+    # Patch json.dumps in the transaction_tools module
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        # ACT
+        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        # ASSERT
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/logs", params={}
+        )
+
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data[0], TransactionLogItem)
+        for actual, expected in zip(result.data, expected_log_items):
+            assert actual.address == expected.address
+            assert actual.block_number == expected.block_number
+            assert actual.data == expected.data
+            assert actual.decoded == expected.decoded
+            assert actual.index == expected.index
+            assert actual.topics == expected.topics
+        assert "transaction_hash" not in result.data[0].model_dump()
+        assert result.pagination is None
+
+        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.info.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -313,7 +414,7 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
 
 
 @pytest.mark.asyncio
-async def test_get_transaction_logs_invalid_cursor(mock_ctx):
+async def test_get_transaction_logs_invalid_cursor_no_request(mock_ctx):
     """Verify the tool returns a user-friendly error for a bad cursor."""
     chain_id = "1"
     hash = "0xabc123"
