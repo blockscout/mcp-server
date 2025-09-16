@@ -161,7 +161,7 @@ async def test_get_transactions_by_address_smart_pagination_error(mock_ctx):
                 ctx=mock_ctx,
             )
 
-        assert exc_info.value == smart_pagination_error
+        assert exc_info.value is smart_pagination_error
         mock_smart_pagination.assert_called_once()
 
 

@@ -237,6 +237,9 @@ async def test_nft_tokens_by_address_api_error(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
+        # Ensure the tool does not report a success step after the failure
+        assert mock_ctx.report_progress.await_count <= 2
+        assert mock_ctx.info.await_count <= 2
 
 
 @pytest.mark.asyncio

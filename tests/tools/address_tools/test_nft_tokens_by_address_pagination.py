@@ -78,7 +78,7 @@ async def test_nft_tokens_by_address_with_pagination(mock_ctx):
         # Verify create_items_pagination was called with correct parameters
         mock_create_pagination.assert_called_once()
         call_args = mock_create_pagination.call_args
-        assert call_args[1]["page_size"] == 10  # default nft_page_size
+        assert call_args[1]["page_size"] == config.nft_page_size
         assert call_args[1]["tool_name"] == "nft_tokens_by_address"
         assert call_args[1]["next_call_base_params"] == {"chain_id": chain_id, "address": address}
         assert callable(call_args[1]["cursor_extractor"])
@@ -96,7 +96,7 @@ async def test_nft_tokens_by_address_with_cursor(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
-    decoded_params = {"block_number": 100, "cursor": "bar"}
+    decoded_params = {"block_number": 100, "index": 1, "items_count": 25}
     cursor = encode_cursor(decoded_params)
 
     with (
@@ -201,7 +201,7 @@ async def test_nft_tokens_by_address_response_sliced(mock_ctx):
         # Verify create_items_pagination was called with correct parameters
         mock_create_pagination.assert_called_once()
         call_args = mock_create_pagination.call_args
-        assert call_args[1]["page_size"] == 10  # default nft_page_size
+        assert call_args[1]["page_size"] == config.nft_page_size
         assert call_args[1]["tool_name"] == "nft_tokens_by_address"
 
 
@@ -270,4 +270,4 @@ async def test_nft_tokens_by_address_custom_page_size(mock_ctx):
         # Verify create_items_pagination was called with custom page size
         mock_create_pagination.assert_called_once()
         call_args = mock_create_pagination.call_args
-        assert call_args[1]["page_size"] == 5  # custom nft_page_size
+        assert call_args[1]["page_size"] == 5
