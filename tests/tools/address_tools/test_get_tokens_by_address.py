@@ -90,6 +90,9 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         next_cursor = encode_cursor(mock_api_response["next_page_params"])
         assert result.pagination is not None
         assert result.pagination.next_call.params["cursor"] == next_cursor
+        assert result.pagination.next_call.tool_name == "get_tokens_by_address"
+        assert result.pagination.next_call.params["chain_id"] == chain_id
+        assert result.pagination.next_call.params["address"] == address
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.await_count == 3
@@ -222,6 +225,9 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         next_cursor = encode_cursor({"fiat_value": "888.88", "id": 99, "items_count": 25, "value": "3000"})
         assert result.pagination is not None
         assert result.pagination.next_call.params["cursor"] == next_cursor
+        assert result.pagination.next_call.tool_name == "get_tokens_by_address"
+        assert result.pagination.next_call.params["chain_id"] == chain_id
+        assert result.pagination.next_call.params["address"] == address
 
         # Check progress reporting and logging
         assert mock_ctx.report_progress.await_count == 3

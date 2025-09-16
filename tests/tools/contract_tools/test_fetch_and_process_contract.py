@@ -39,9 +39,12 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
         await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_get_url.assert_awaited_once_with("1")
-    mock_request.assert_awaited_once()
+    mock_request.assert_awaited_once_with(
+        base_url="https://base",
+        api_path="/api/v2/smart-contracts/0xabc",
+    )
     mock_set.assert_awaited_once()
-    key_arg, value_arg = mock_set.await_args_list[0].args
+    key_arg, value_arg = mock_set.await_args.args
     assert key_arg == "1:0xabc"
     assert isinstance(value_arg, CachedContract)
     assert mock_ctx.report_progress.await_count == 2
@@ -102,6 +105,7 @@ async def test_process_logic_single_solidity_file(mock_ctx):
     ):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
+    assert set(result.source_files.keys()) == {"MyContract.sol"}
     mock_set.assert_awaited_once()
     assert mock_ctx.report_progress.await_count == 2
 
@@ -139,6 +143,9 @@ async def test_process_logic_multi_file_missing_main_path(mock_ctx):
     ):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert set(result.metadata["source_code_tree_structure"]) == {"Main.sol", "B.sol"}
+    assert set(result.source_files.keys()) == {"Main.sol", "B.sol"}
+    assert result.source_files["Main.sol"] == "a"
+    assert result.source_files["B.sol"] == "b"
     assert mock_ctx.report_progress.await_count == 2
 
 
@@ -168,12 +175,12 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
             new_callable=AsyncMock,
-        ),
+        ) as mock_set,
         patch(
             "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
-        ),
+        ) as mock_get_url,
     ):
         with patch(
             "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
@@ -190,6 +197,8 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
     assert set(multi.metadata["source_code_tree_structure"]) == {"A.sol", "B.sol"}
     assert vyper.metadata["source_code_tree_structure"] == ["VyperC.vy"]
     assert mock_ctx.report_progress.await_count == 4
+    assert mock_get_url.await_count == 2
+    assert mock_set.await_count == 2
 
 
 @pytest.mark.asyncio

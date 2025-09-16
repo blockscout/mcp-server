@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import httpx
 import pytest
@@ -28,6 +28,7 @@ async def test_get_block_info_success_no_txs(mock_ctx):
 
         result = await get_block_info(chain_id=chain_id, number_or_hash=number_or_hash, ctx=mock_ctx)
 
+        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, BlockInfoData)
@@ -67,6 +68,14 @@ async def test_get_block_info_with_txs_success(mock_ctx):
             chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx
         )
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_awaits(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}"),
+                call(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}/transactions"),
+            ],
+            any_order=True,
+        )
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, BlockInfoData)
         assert result.data.block_details == mock_block_response
@@ -105,6 +114,14 @@ async def test_get_block_info_with_txs_partial_failure(mock_ctx):
             chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx
         )
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_awaits(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}"),
+                call(base_url=mock_base_url, api_path=f"/api/v2/blocks/{number_or_hash}/transactions"),
+            ],
+            any_order=True,
+        )
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, BlockInfoData)
         assert result.data.block_details == mock_block_response
@@ -143,5 +160,6 @@ async def test_get_block_info_total_failure(mock_ctx):
             await get_block_info(
                 chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx
             )
+        assert mock_request.await_count == 2
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3

@@ -74,7 +74,7 @@ async def test_get_chains_list_success(mock_ctx):
         expected_cache_payload = {"1": "https://eth", "137": "https://polygon"}
         mock_chain_cache.bulk_set.assert_awaited_once_with(expected_cache_payload)
         assert isinstance(result, ToolResponse)
-        assert result.data == expected_data
+        assert [chain.model_dump() for chain in result.data] == [chain.model_dump() for chain in expected_data]
         assert mock_ctx.report_progress.await_count == 2
         assert mock_ctx.info.await_count == 2
 
@@ -232,6 +232,8 @@ async def test_get_chains_list_uses_cache_within_ttl(mock_ctx, monkeypatch):
         mock_request.assert_called_once_with(api_path="/api/chains")
         mock_chain_cache.bulk_set.assert_awaited_once()
         assert result1.data == result2.data
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -274,6 +276,8 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         assert mock_request.call_count == 2
         assert mock_chain_cache.bulk_set.await_count == 2
         assert result1.data != result2.data
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -311,6 +315,8 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
 
         assert mock_request.call_count == 2
         assert mock_chain_cache.bulk_set.await_count == 1
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -358,6 +364,8 @@ async def test_get_chains_list_sequential_calls_use_cache(mock_ctx, monkeypatch)
         assert result1.data == result2.data
         assert len(result1.data) == 1
         assert result1.data[0].name == "Ethereum"
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -423,6 +431,8 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
         assert results[0].data == results[1].data
         assert len(results[0].data) == 1
         assert results[0].data[0].name == "Ethereum"
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio

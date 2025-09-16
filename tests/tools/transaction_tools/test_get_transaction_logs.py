@@ -99,6 +99,7 @@ async def test_get_transaction_logs_success(mock_ctx):
 
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data[0], TransactionLogItem)
+        assert len(result.data) == len(expected_log_items)
         for actual, expected in zip(result.data, expected_log_items):
             assert actual.address == expected.address
             assert actual.block_number == expected.block_number
@@ -278,13 +279,26 @@ async def test_get_transaction_logs_invalid_cursor_no_request(mock_ctx):
     tx_hash = "0xabc123"
     invalid_cursor = "bad-cursor"
 
-    with patch(
-        "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
-        new_callable=AsyncMock,
-    ) as mock_request:
-        with pytest.raises(ValueError):
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+            side_effect=ValueError("bad-cursor"),
+        ) as mock_apply,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        with pytest.raises(ValueError, match="bad-cursor"):
             await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, cursor=invalid_cursor, ctx=mock_ctx)
-        mock_request.assert_not_called()
+
+    mock_apply.assert_called_once()
+    mock_get_url.assert_not_called()
+    mock_request.assert_not_called()
 
 
 @pytest.mark.asyncio
