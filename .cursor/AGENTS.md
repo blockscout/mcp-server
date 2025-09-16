@@ -27,8 +27,8 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### Testing & Development
 
-- **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates). This rule now includes examples for running the per-tool unit test modules.
-- **Before modifying** any unit test files within `tests/tools/` or adding new unit tests, follow guidelines from `.cursor/rules/210-unit-testing-guidelines.mdc`, which documents the 1:1 mapping between test modules and MCP tools.
+- **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)
+- **Before modifying** any unit test files within `tests/tools/` or adding new unit tests, follow guidelines from `.cursor/rules/210-unit-testing-guidelines.mdc`
 - **Before working** with integration test files within `tests/integration/`, consult `.cursor/rules/220-integration-testing-guidelines.mdc`
 - **Apply** `.cursor/rules/230-api-route-tests.mdc` when editing `tests/api/test_routes.py`
 - **Apply** `.cursor/rules/240-terminal-path-usage.mdc` to avoid path errors in terminal commands (assume cwd is repo root; do not prefix paths with `bs-mcp-server/`)
