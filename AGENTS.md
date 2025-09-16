@@ -80,13 +80,17 @@ mcp-server/
 │       │   ├── test_get_transactions_by_address_pagination.py  # Pagination-focused transaction tests
 │       │   ├── test_helpers.py                     # Tests for transaction helper utilities
 │       │   └── test_transaction_summary.py         # Tests for transaction_summary
+│       ├── direct_api_tools/   # Tests for the direct API MCP tool
+│       │   └── test_direct_api_call.py  # Tests for direct_api_call
+│       ├── ens_tools/          # Tests for ENS-related MCP tools
+│       │   └── test_get_address_by_ens_name.py  # Tests for get_address_by_ens_name
+│       ├── initialization_tools/  # Tests for initialization MCP tools
+│       │   └── test___unlock_blockchain_analysis__.py  # Tests for __unlock_blockchain_analysis__
+│       ├── search_tools/       # Tests for search-related MCP tools
+│       │   └── test_lookup_token_by_symbol.py  # Tests for lookup_token_by_symbol
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_common_truncate.py   # Tests for truncation helpers
-│       ├── test_decorators.py        # Tests for logging decorators
-│       ├── test_direct_api_tools.py  # Tests for direct_api_call
-│       ├── test_ens_tools.py         # Tests for ENS-related tools (get_address_by_ens_name)
-│       ├── test_initialization_tools.py  # Tests for instruction tool (__unlock_blockchain_analysis__)
-│       └── test_search_tools.py      # Tests for search-related tools (lookup_token_by_symbol)
+│       └── test_decorators.py        # Tests for logging decorators
 ├── dxt/                        # Desktop Extension (.dxt) package for Claude Desktop
 │   ├── README.md               # DXT-specific documentation and packaging instructions
 │   ├── manifest.json           # Extension manifest with metadata and tool definitions

@@ -1,4 +1,4 @@
-# tests/tools/test_search_tools.py
+# tests/tools/search_tools/test_lookup_token_by_symbol.py
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx

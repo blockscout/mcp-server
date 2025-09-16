@@ -1,4 +1,4 @@
-# tests/tools/test_ens_tools.py
+# tests/tools/ens_tools/test_get_address_by_ens_name.py
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
