@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -92,8 +92,8 @@ async def test_nft_tokens_by_address_success(mock_ctx):
         assert isinstance(holding.token_instances[1].metadata_attributes, dict)
         assert holding.token_instances[1].metadata_attributes["trait_type"] == "Common"
         assert holding.token_instances[1].metadata_attributes["value"] == "Gray"
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -131,8 +131,8 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
         )
         assert isinstance(result, ToolResponse)
         assert result.data == []
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -200,8 +200,8 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
         assert result.data[0].token_instances[0].id == "999"
         assert result.data[1].collection.address == "0xempty456"
         assert result.data[1].token_instances == []
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -214,7 +214,9 @@ async def test_nft_tokens_by_address_api_error(mock_ctx):
     address = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    api_error = httpx.HTTPStatusError("Bad Request", request=MagicMock(), response=MagicMock(status_code=400))
+    req = httpx.Request("GET", f"{mock_base_url}/dummy")
+    resp = httpx.Response(status_code=400, request=req)
+    api_error = httpx.HTTPStatusError("Bad Request", request=req, response=resp)
 
     with (
         patch(
@@ -307,5 +309,5 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
         assert holding.collection.address == "0xmulti123"
         assert holding.token_instances[0].description == "First token"
         assert holding.token_instances[0].external_app_url == "https://example.com/1"
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
