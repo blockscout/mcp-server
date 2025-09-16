@@ -396,6 +396,7 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
             new_callable=AsyncMock,
         ) as mock_bulk_set,
     ):
+
         async def run_concurrent_test():
             task1 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
             task2 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
