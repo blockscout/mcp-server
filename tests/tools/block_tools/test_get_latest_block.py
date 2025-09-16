@@ -42,8 +42,9 @@ async def test_get_latest_block_success(mock_ctx):
         assert isinstance(result.data, LatestBlockData)
         assert result.data.block_number == 12345
         assert result.data.timestamp == "2023-01-01T00:00:00Z"
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert result.notes is None
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -78,6 +79,8 @@ async def test_get_latest_block_api_error(mock_ctx):
         # Verify mocks were still called as expected before the exception
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -109,6 +112,8 @@ async def test_get_latest_block_empty_response(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -137,5 +142,5 @@ async def test_get_latest_block_chain_not_found_error(mock_ctx):
         # Verify the chain lookup was attempted
         mock_get_url.assert_called_once_with(chain_id)
         # Progress should have been reported once (at start) before the error
-        assert mock_ctx.report_progress.call_count == 1
-        assert mock_ctx.info.call_count == 1
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1

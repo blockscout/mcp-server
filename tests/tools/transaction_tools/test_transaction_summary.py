@@ -42,8 +42,16 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
 
         # This tool should have 3 progress reports (start, after URL, completion)
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+
+        # Verify progress values and message content
+        progress_vals = [c.kwargs["progress"] for c in mock_ctx.report_progress.await_args_list]
+        assert progress_vals == [0.0, 1.0, 2.0]
+        info_messages = [c.args[0] for c in mock_ctx.info.await_args_list]
+        assert f"Starting to fetch transaction summary for {tx_hash}" in info_messages[0]
+        assert "Resolved Blockscout instance URL" in info_messages[1]
+        assert "Successfully fetched transaction summary." in info_messages[2]
 
 
 @pytest.mark.asyncio
@@ -79,13 +87,40 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
         assert result.data.summary is None
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
-async def test_transaction_summary_handles_non_string_summary(mock_ctx):
-    """Verify transaction_summary correctly handles a non-string summary."""
+async def test_transaction_summary_summary_explicit_none(mock_ctx):
+    chain_id = "1"
+    tx_hash = "0xnone"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_api_response = {"data": {"summaries": None}}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, TransactionSummaryData)
+        assert result.data.summary is None
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_transaction_summary_handles_list_summary(mock_ctx):
+    """Verify transaction_summary correctly handles a list-of-dicts summary."""
     # ARRANGE
     chain_id = "1"
     tx_hash = "0xcomplex"
@@ -119,8 +154,8 @@ async def test_transaction_summary_handles_non_string_summary(mock_ctx):
         assert result.data.summary == complex_summary  # Assert it's the original list
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -152,8 +187,8 @@ async def test_transaction_summary_handles_empty_list(mock_ctx):
         assert result.data.summary == []
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -178,7 +213,7 @@ async def test_transaction_summary_invalid_format(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match="unexpected format"):
             await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
@@ -186,5 +221,31 @@ async def test_transaction_summary_invalid_format(mock_ctx):
             base_url=mock_base_url,
             api_path=f"/api/v2/transactions/{tx_hash}/summary",
         )
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_transaction_summary_request_error_propagates_and_reports_partial_progress(mock_ctx):
+    chain_id = "1"
+    tx_hash = "0xerr"
+    mock_base_url = "https://eth.blockscout.com"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = RuntimeError("network error")
+
+        with pytest.raises(RuntimeError, match="network error"):
+            await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        # Only the start and URL resolution steps should be reported when the request fails.
+        assert mock_ctx.report_progress.await_count == 2
+        info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
+        assert not any(message.startswith("Successfully fetched transaction summary.") for message in info_messages)

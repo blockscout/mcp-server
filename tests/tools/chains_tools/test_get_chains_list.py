@@ -1,23 +1,21 @@
 import asyncio
-import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
+import blockscout_mcp_server.tools.common as common_tools
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.common import chains_list_cache
+from blockscout_mcp_server.tools.common import ChainsListCache
 
 
 @pytest.fixture(autouse=True)
-def clear_chains_list_cache():
-    chains_list_cache.chains_snapshot = None
-    chains_list_cache.expiry_timestamp = 0.0
-    yield
-    chains_list_cache.chains_snapshot = None
-    chains_list_cache.expiry_timestamp = 0.0
+def reset_chains_list_cache(monkeypatch):
+    new_cache = ChainsListCache()
+    monkeypatch.setattr(common_tools, "chains_list_cache", new_cache)
+    monkeypatch.setattr("blockscout_mcp_server.tools.chains_tools.chains_list_cache", new_cache)
 
 
 @pytest.mark.asyncio
@@ -60,18 +58,25 @@ async def test_get_chains_list_success(mock_ctx):
         ),
     ]
 
-    with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
-    ) as mock_request:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
+    ):
         mock_request.return_value = mock_api_response
+        mock_chain_cache.bulk_set = AsyncMock()
 
         result = await get_chains_list(ctx=mock_ctx)
 
         mock_request.assert_called_once_with(api_path="/api/chains")
+        expected_cache_payload = {"1": "https://eth", "137": "https://polygon"}
+        mock_chain_cache.bulk_set.assert_awaited_once_with(expected_cache_payload)
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -89,11 +94,13 @@ async def test_get_chains_list_caches_filtered_chains(mock_ctx):
             mock_request.return_value = mock_api_response
             mock_cache.bulk_set = AsyncMock()
 
-            await get_chains_list(ctx=mock_ctx)
+            result = await get_chains_list(ctx=mock_ctx)
 
             mock_cache.bulk_set.assert_awaited_once()
             cached = mock_cache.bulk_set.call_args.args[0]
             assert cached == {"1": "https://eth"}
+            assert isinstance(result, ToolResponse)
+            assert [chain.chain_id for chain in result.data] == ["1"]
 
 
 @pytest.mark.asyncio
@@ -112,8 +119,8 @@ async def test_get_chains_list_empty_response(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -132,8 +139,8 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -187,8 +194,8 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
         mock_request.assert_called_once_with(api_path="/api/chains")
         assert isinstance(result, ToolResponse)
         assert result.data == expected_data
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -307,8 +314,8 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_chains_list_concurrent_calls_deduplicated(mock_ctx, monkeypatch):
-    """Test that concurrent calls are properly handled by the cache locking mechanism."""
+async def test_get_chains_list_sequential_calls_use_cache(mock_ctx, monkeypatch):
+    """Sequential calls within TTL are served from cache (single upstream call)."""
     fake_now = 0
 
     def fake_time() -> int:
@@ -420,16 +427,17 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_chains_list_cached_progress_reporting(mock_ctx):
-    chains_list_cache.chains_snapshot = [
-        ChainInfo(
-            name="Ethereum",
-            chain_id="1",
-            is_testnet=False,
-            native_currency="ETH",
-            ecosystem="Ethereum",
-        )
-    ]
-    chains_list_cache.expiry_timestamp = time.monotonic() + 60
+    common_tools.chains_list_cache.store_snapshot(
+        [
+            ChainInfo(
+                name="Ethereum",
+                chain_id="1",
+                is_testnet=False,
+                native_currency="ETH",
+                ecosystem="Ethereum",
+            )
+        ]
+    )
 
     with patch(
         "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
@@ -438,6 +446,6 @@ async def test_get_chains_list_cached_progress_reporting(mock_ctx):
         result = await get_chains_list(ctx=mock_ctx)
 
     mock_request.assert_not_called()
-    assert mock_ctx.report_progress.call_count == 2
-    assert mock_ctx.info.call_count == 2
+    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.info.await_count == 2
     assert result.data[0].name == "Ethereum"

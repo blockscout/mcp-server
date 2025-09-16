@@ -92,8 +92,8 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         assert result.pagination.next_call.params["cursor"] == next_cursor
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -159,8 +159,8 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -224,8 +224,8 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         assert result.pagination.next_call.params["cursor"] == next_cursor
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -237,6 +237,9 @@ async def test_get_tokens_by_address_invalid_cursor(mock_ctx):
 
     with pytest.raises(ValueError):
         await get_tokens_by_address(chain_id=chain_id, address=address, cursor=invalid_cursor, ctx=mock_ctx)
+
+    assert mock_ctx.report_progress.await_count == 0
+    assert mock_ctx.info.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -279,8 +282,8 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -338,13 +341,20 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
         assert result.data[0].symbol == "UNK"
         assert result.data[0].address == "0x999888"
         assert result.data[0].balance == "123"
+        # Optional defaults when fields are missing
+        assert result.data[0].name == ""
+        assert result.data[0].decimals == ""
+        assert result.data[0].total_supply == ""
         assert result.data[1].balance == "456"
+        assert result.data[1].name == ""
+        assert result.data[1].symbol == ""
+        assert result.data[1].address == ""
 
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -381,5 +391,5 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
             base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
         # Progress should have been reported twice (start + after chain URL resolution) before the error
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2

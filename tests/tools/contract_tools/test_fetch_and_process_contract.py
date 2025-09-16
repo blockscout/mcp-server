@@ -34,12 +34,16 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
             "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
-        ),
+        ) as mock_get_url,
     ):
         await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
     mock_get.assert_awaited_once_with("1:0xabc")
+    mock_get_url.assert_awaited_once_with("1")
     mock_request.assert_awaited_once()
     mock_set.assert_awaited_once()
+    key_arg, value_arg = mock_set.await_args_list[0].args
+    assert key_arg == "1:0xabc"
+    assert isinstance(value_arg, CachedContract)
     assert mock_ctx.report_progress.await_count == 2
     assert mock_ctx.report_progress.await_args_list[0].kwargs["message"] == "Resolved Blockscout instance URL."
     assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
@@ -222,4 +226,9 @@ async def test_process_logic_unverified_contract(mock_ctx):
     assert result.source_files == {}
     assert result.metadata["source_code_tree_structure"] == []
     assert result.metadata["name"] == "0xabc"
+    # Heavy/raw fields should be stripped from metadata
+    assert "creation_bytecode" not in result.metadata
+    assert "deployed_bytecode" not in result.metadata
+    assert "source_code" not in result.metadata
+    assert "additional_sources" not in result.metadata
     assert mock_ctx.report_progress.await_count == 2

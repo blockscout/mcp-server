@@ -34,6 +34,8 @@ async def test_get_block_info_success_no_txs(mock_ctx):
         assert result.data.block_details == mock_api_response
         assert result.data.transaction_hashes is None
         assert result.notes is None
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -70,6 +72,8 @@ async def test_get_block_info_with_txs_success(mock_ctx):
         assert result.data.block_details == mock_block_response
         assert result.data.transaction_hashes == ["0xtx1", "0xtx2"]
         assert result.notes is None
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -107,6 +111,8 @@ async def test_get_block_info_with_txs_partial_failure(mock_ctx):
         assert result.data.transaction_hashes is None
         assert result.notes is not None
         assert "Could not retrieve the list of transactions" in result.notes[0]
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -137,3 +143,5 @@ async def test_get_block_info_total_failure(mock_ctx):
             await get_block_info(
                 chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx
             )
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3

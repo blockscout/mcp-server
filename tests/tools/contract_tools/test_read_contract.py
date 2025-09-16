@@ -49,8 +49,8 @@ async def test_read_contract_success(mock_ctx):
     fn_mock.assert_called_once_with(1)
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
     assert result.data.result == expected
-    assert mock_ctx.report_progress.call_count == 3
-    assert mock_ctx.info.call_count == 3
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,8 @@ async def test_read_contract_chain_not_found(mock_ctx):
                 ctx=mock_ctx,
             )
     mock_get.assert_called_once_with(chain_id)
-    assert mock_ctx.report_progress.call_count == 1
+    assert mock_ctx.report_progress.await_count == 1
+    assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -98,7 +99,8 @@ async def test_read_contract_contract_error(mock_ctx):
                 function_name="foo",
                 ctx=mock_ctx,
             )
-    assert mock_ctx.report_progress.call_count == 2
+    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -127,7 +129,8 @@ async def test_read_contract_default_args(mock_ctx):
 
     fn_mock.assert_called_once_with()
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
-    assert mock_ctx.report_progress.call_count == 3
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -157,7 +160,8 @@ async def test_read_contract_whitespace_args(mock_ctx):
 
     fn_mock.assert_called_once_with()
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
-    assert mock_ctx.report_progress.call_count == 3
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -244,3 +248,56 @@ async def test_read_contract_negative_numbers(mock_ctx):
     fn_mock.assert_called_once_with(-42)  # Should be converted to integer
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
     assert result.data.result == expected
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_function_not_in_abi(mock_ctx):
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    w3 = MagicMock()
+    contract = MagicMock()
+    contract.get_function_by_name.side_effect = ValueError("not found")
+    w3.eth.contract.return_value = contract
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3,
+    ):
+        with pytest.raises(ValueError, match="Function name 'bar' is not found in provided ABI"):
+            await read_contract(
+                chain_id="1",
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name="bar",
+                ctx=mock_ctx,
+            )
+
+
+@pytest.mark.asyncio
+async def test_read_contract_block_string_normalization(mock_ctx):
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=0)
+    fn = MagicMock(return_value=fn_result)
+    contract = MagicMock()
+    contract.get_function_by_name.return_value = fn
+    w3 = MagicMock()
+    w3.eth.contract.return_value = contract
+
+    with patch(
+        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3,
+    ):
+        await read_contract(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi=abi,
+            function_name="foo",
+            block="19000000",
+            ctx=mock_ctx,
+        )
+
+    fn_result.call.assert_awaited_once_with(block_identifier=19000000)

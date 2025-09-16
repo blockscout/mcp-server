@@ -62,8 +62,14 @@ async def test_get_contract_abi_success(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
         assert_contract_abi_response(result, mock_abi_list)
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        progress_calls = mock_ctx.report_progress.await_args_list
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
+        info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
+        assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
+        assert "Resolved Blockscout instance URL" in info_messages[1]
+        assert "Successfully fetched contract ABI." in info_messages[2]
 
 
 @pytest.mark.asyncio
@@ -96,8 +102,14 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
         assert_contract_abi_response(result, None)
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        progress_calls = mock_ctx.report_progress.await_args_list
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
+        info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
+        assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
+        assert "Resolved Blockscout instance URL" in info_messages[1]
+        assert "Successfully fetched contract ABI." in info_messages[2]
 
 
 @pytest.mark.asyncio
@@ -130,7 +142,14 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
         assert_contract_abi_response(result, [])
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        progress_calls = mock_ctx.report_progress.await_args_list
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
+        info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
+        assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
+        assert "Resolved Blockscout instance URL" in info_messages[1]
+        assert "Successfully fetched contract ABI." in info_messages[2]
 
 
 @pytest.mark.asyncio
@@ -281,4 +300,11 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
         assert_contract_abi_response(result, mock_abi_list)
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        progress_calls = mock_ctx.report_progress.await_args_list
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
+        info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
+        assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
+        assert "Resolved Blockscout instance URL" in info_messages[1]
+        assert "Successfully fetched contract ABI." in info_messages[2]

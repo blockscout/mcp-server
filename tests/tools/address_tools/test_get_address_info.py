@@ -77,8 +77,8 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         for instr in expected_instructions:
             assert instr in result.instructions
 
-        assert mock_ctx.report_progress.call_count == 4
-        assert mock_ctx.info.call_count == 4
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -115,9 +115,10 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
         assert result.data.basic_info == mock_blockscout_response
         assert result.data.metadata is None
         assert result.notes is None
+        assert result.instructions is not None and len(result.instructions) > 0
 
-        assert mock_ctx.report_progress.call_count == 4
-        assert mock_ctx.info.call_count == 4
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -155,9 +156,10 @@ async def test_get_address_info_metadata_failure(mock_ctx):
         assert result.data.basic_info == mock_blockscout_response
         assert result.data.metadata is None
         assert result.notes is not None and len(result.notes) == 1
+        assert "Could not retrieve address metadata" in result.notes[0]
 
-        assert mock_ctx.report_progress.call_count == 4
-        assert mock_ctx.info.call_count == 4
+        assert mock_ctx.report_progress.await_count == 4
+        assert mock_ctx.info.await_count == 4
 
 
 @pytest.mark.asyncio
@@ -196,5 +198,5 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
             api_path="/api/v1/metadata", params={"addresses": address, "chainId": chain_id}
         )
 
-        assert mock_ctx.report_progress.call_count == 2
-        assert mock_ctx.info.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2

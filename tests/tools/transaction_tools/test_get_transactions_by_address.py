@@ -189,7 +189,7 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
             assert item_dict.get("value") == expected["value"]
             # removed fields should not be present after transformation
             assert "token" not in item_dict
-        assert "total" not in item_dict
+            assert "total" not in item_dict
 
 
 @pytest.mark.asyncio

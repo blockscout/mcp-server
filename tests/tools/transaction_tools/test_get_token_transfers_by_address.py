@@ -17,7 +17,7 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
     address = "0x123abc"
     age_from = "2023-01-01T00:00:00.00Z"
     age_to = "2023-01-02T00:00:00.00Z"
-    token = "0xA0b86a33E6441d95d7a9b6F25b0f2F5D6C16eD97"
+    token = "0xDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaD"  # gitleaks:allow (test placeholder)
     mock_base_url = "https://eth.blockscout.com"
     mock_api_response = {"items": [], "next_page_params": None}
 
@@ -73,7 +73,12 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
         assert call_kwargs["current_step_message_prefix"] == "Fetching token transfers"
 
         # Verify progress was reported correctly before the wrapper call
-        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
+
+        # Verify timing hints are passed through from config
+        assert call_kwargs["total_duration_hint"] == config.bs_timeout
+        assert call_kwargs["progress_interval_seconds"] == config.progress_interval_seconds
 
 
 @pytest.mark.asyncio
@@ -87,7 +92,7 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
 
     from blockscout_mcp_server.tools.common import ChainNotFoundError
 
-    chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
+    chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Blockscout.")
 
     with (
         patch(
@@ -110,8 +115,8 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
         mock_wrapper.assert_not_called()
 
         # Progress should have been reported once (at start) before the error
-        assert mock_ctx.report_progress.call_count == 1
-        assert mock_ctx.info.call_count == 1
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -169,6 +174,11 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
         assert item_dict["token"] == expected_items[0]["token"]
         assert item_dict["total"] == expected_items[0]["total"]
 
+        # Unwanted fields must be absent
+        assert "value" not in item_dict
+        assert "internal_transaction_index" not in item_dict
+        assert "created_contract" not in item_dict
+
 
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
@@ -205,6 +215,8 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
 
         mock_create_pagination.assert_called_once()
         assert isinstance(result.pagination, PaginationInfo)
+        assert result.pagination.next_call.tool_name == "get_token_transfers_by_address"
+        assert "cursor" in result.pagination.next_call.params
 
 
 @pytest.mark.asyncio

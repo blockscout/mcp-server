@@ -45,6 +45,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
     assert isinstance(result.data, ContractMetadata)
     assert result.data.source_code_tree_structure == ["A.sol"]
     assert result.data.decoded_constructor_args is None
+    assert result.notes is None
     assert result.instructions == [
         (
             "To retrieve a specific file's contents, call this tool again with the "
@@ -79,13 +80,14 @@ async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
         new_callable=AsyncMock,
         return_value=contract,
     ):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             await inspect_contract_code(chain_id="1", address="0xabc", file_name="B.sol", ctx=mock_ctx)
     mock_ctx.report_progress.assert_awaited_once()
     assert (
         mock_ctx.report_progress.await_args_list[0].kwargs["message"]
         == "Starting to fetch source code for 'B.sol' of contract 0xabc on chain 1..."
     )
+    assert "Available files: A.sol" in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -133,3 +135,4 @@ async def test_inspect_contract_metadata_mode_truncated_sets_notes(mock_ctx):
     ):
         result = await inspect_contract_code(chain_id="1", address="0xabc", file_name=None, ctx=mock_ctx)
     assert result.notes == ["Constructor arguments were truncated to limit context size."]
+    assert result.instructions is None
