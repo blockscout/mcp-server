@@ -379,6 +379,12 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms.
 
+    **Smart Dispatching for Richer Responses**
+
+    To enhance user experience, the `direct_api_call` tool is not just a simple proxy. For certain, specific endpoints, it acts as a **smart dispatcher**, internally delegating the request to a more specialized, high-level tool. This provides the user with a richer, better-structured, and context-optimized response instead of the raw API output.
+
+    A prime example is the address logs endpoint. A call to `direct_api_call` with `endpoint_path='/api/v2/addresses/{address}/logs'` is automatically routed to the `get_address_logs` function. This ensures the response benefits from that tool's advanced data processing, truncation handling, and standardized pagination, making the generic tool more powerful for known, high-value endpoints.
+
     **g) Transaction Input Data Truncation**
 
     To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.

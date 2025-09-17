@@ -7,6 +7,61 @@ from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.tools.direct_api_tools.get_address_logs", new_callable=AsyncMock)
+async def test_direct_api_call_routes_to_get_address_logs(mock_get_address_logs, mock_ctx):
+    chain_id = "1"
+    address = "0x1234567890123456789012345678901234567890"
+    endpoint_path = f"/api/v2/addresses/{address}/logs"
+    cursor = "test_cursor"
+    mock_get_address_logs.return_value = "specialized_response"
+
+    result = await direct_api_call(
+        chain_id=chain_id,
+        endpoint_path=endpoint_path,
+        query_params=None,
+        cursor=cursor,
+        ctx=mock_ctx,
+    )
+
+    mock_get_address_logs.assert_called_once_with(
+        chain_id=chain_id,
+        address=address,
+        ctx=mock_ctx,
+        cursor=cursor,
+    )
+    assert result == "specialized_response"
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request", new_callable=AsyncMock)
+@patch("blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url", new_callable=AsyncMock)
+@patch("blockscout_mcp_server.tools.direct_api_tools.get_address_logs", new_callable=AsyncMock)
+async def test_direct_api_call_generic_path_not_routed(
+    mock_get_address_logs,
+    mock_get_blockscout_base_url,
+    mock_make_blockscout_request,
+    mock_ctx,
+):
+    endpoint_path = "/api/v2/some-other-endpoint"
+    mock_get_blockscout_base_url.return_value = "https://example.blockscout.com"
+    mock_make_blockscout_request.return_value = {"items": [], "next_page_params": None}
+
+    await direct_api_call(
+        chain_id="1",
+        endpoint_path=endpoint_path,
+        query_params=None,
+        cursor=None,
+        ctx=mock_ctx,
+    )
+
+    mock_get_address_logs.assert_not_called()
+    mock_get_blockscout_base_url.assert_called_once_with("1")
+    mock_make_blockscout_request.assert_called_once_with(
+        base_url="https://example.blockscout.com", api_path=endpoint_path, params={}
+    )
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_no_params(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/stats"

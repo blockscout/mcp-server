@@ -1,9 +1,11 @@
+import re
 from typing import Annotated, Any
 
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
 from blockscout_mcp_server.models import DirectApiData, NextCallInfo, PaginationInfo, ToolResponse
+from blockscout_mcp_server.tools.address_tools import get_address_logs
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
@@ -42,6 +44,16 @@ async def direct_api_call(
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
     use the provided next_call to get additional pages.
     """
+    logs_match = re.match(r"^/api/v2/addresses/([^/]+)/logs$", endpoint_path)
+    if logs_match:
+        address = logs_match.group(1)
+        return await get_address_logs(
+            chain_id=chain_id,
+            address=address,
+            ctx=ctx,
+            cursor=cursor,
+        )
+
     await report_and_log_progress(
         ctx,
         progress=0.0,
