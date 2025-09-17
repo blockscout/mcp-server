@@ -1,6 +1,7 @@
 import pytest
 
-from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
+from blockscout_mcp_server.tools.block.get_block_info import get_block_info
+from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
 
 
 @pytest.mark.integration

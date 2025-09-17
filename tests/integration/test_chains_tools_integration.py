@@ -6,7 +6,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse
-from blockscout_mcp_server.tools.chains_tools import get_chains_list
+from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
 from blockscout_mcp_server.tools.common import chain_cache, chains_list_cache, get_blockscout_base_url
 
 
@@ -66,7 +66,7 @@ async def test_get_chains_list_cache_hit_skips_network(mock_ctx, monkeypatch):
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 60)
     await get_chains_list(ctx=mock_ctx)
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
         new_callable=AsyncMock,
     ) as mock_request:
         await get_chains_list(ctx=mock_ctx)

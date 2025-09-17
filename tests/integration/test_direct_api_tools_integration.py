@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import DirectApiData
-from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
+from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 
 
 @pytest.mark.integration

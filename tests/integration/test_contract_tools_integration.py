@@ -8,11 +8,9 @@ import pytest
 from eth_utils import to_checksum_address
 
 from blockscout_mcp_server.models import ContractAbiData, ContractReadData, ToolResponse
-from blockscout_mcp_server.tools.contract_tools import (
-    get_contract_abi,
-    inspect_contract_code,
-    read_contract,
-)
+from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
+from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
+from blockscout_mcp_server.tools.contract.read_contract import read_contract
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 CHAIN_ID_MAINNET = "1"

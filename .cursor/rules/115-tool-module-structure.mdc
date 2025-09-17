@@ -1,0 +1,13 @@
+---
+description: Ensure a 1:1 mapping between MCP tools and implementation modules
+globs:
+  - blockscout_mcp_server/tools/**/*.py
+alwaysApply: false
+---
+# MCP Tool Module Structure
+
+- Each MCP tool function must live in its own module (for example, `address/get_address_info.py`).
+- Organize modules into domain subpackages such as `address/`, `block/`, `contract/`, `transaction/`, etc.
+- Shared helpers that support multiple tools belong in `_shared.py` or other support modules and must not register MCP tool entry points.
+- Do not define multiple MCP tool functions in the same file.
+- When adding a new tool, create a new module in the appropriate subpackage and update imports, tests, and documentation to reference the new path.

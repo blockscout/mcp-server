@@ -1,7 +1,10 @@
 import pytest
 
 from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
-from blockscout_mcp_server.tools.search_tools import TOKEN_RESULTS_LIMIT, lookup_token_by_symbol
+from blockscout_mcp_server.tools.search.lookup_token_by_symbol import (
+    TOKEN_RESULTS_LIMIT,
+    lookup_token_by_symbol,
+)
 
 
 @pytest.mark.integration

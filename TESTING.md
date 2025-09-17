@@ -44,7 +44,7 @@ pytest -v
 **Run tests for a specific module:**
 
 ```bash
-pytest tests/tools/test_address_tools.py -v
+pytest tests/tools/address_tools/test_get_address_info.py -v
 ```
 
 **Run tests with coverage report:**

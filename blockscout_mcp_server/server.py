@@ -24,29 +24,30 @@ from blockscout_mcp_server.constants import (
     TIME_BASED_QUERY_RULES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
-from blockscout_mcp_server.tools.address_tools import (
-    get_address_info,
-    get_tokens_by_address,
-    nft_tokens_by_address,
+from blockscout_mcp_server.tools.address.get_address_info import get_address_info
+from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
+from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
+from blockscout_mcp_server.tools.block.get_block_info import get_block_info
+from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
+from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
+from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
+from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
+from blockscout_mcp_server.tools.contract.read_contract import read_contract
+from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
+from blockscout_mcp_server.tools.ens.get_address_by_ens_name import get_address_by_ens_name
+from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import (
+    __unlock_blockchain_analysis__,
 )
-from blockscout_mcp_server.tools.block_tools import get_block_info, get_latest_block
-from blockscout_mcp_server.tools.chains_tools import get_chains_list
-from blockscout_mcp_server.tools.contract_tools import (
-    get_contract_abi,
-    inspect_contract_code,
-    read_contract,
-)
-from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
-from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
-from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
-from blockscout_mcp_server.tools.search_tools import lookup_token_by_symbol
-from blockscout_mcp_server.tools.transaction_tools import (
+from blockscout_mcp_server.tools.search.lookup_token_by_symbol import lookup_token_by_symbol
+from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address import (
     get_token_transfers_by_address,
-    get_transaction_info,
-    get_transaction_logs,
-    get_transactions_by_address,
-    transaction_summary,
 )
+from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
+from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
+from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
+    get_transactions_by_address,
+)
+from blockscout_mcp_server.tools.transaction.transaction_summary import transaction_summary
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor

@@ -4,7 +4,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AdvancedFilterItem, NextCallInfo, PaginationInfo, ToolResponse
-from blockscout_mcp_server.tools.transaction_tools import get_token_transfers_by_address
+from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address import get_token_transfers_by_address
 
 
 @pytest.mark.asyncio
@@ -23,10 +23,10 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
         ) as mock_wrapper,
     ):
         mock_get_url.return_value = mock_base_url
@@ -96,10 +96,10 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
         ) as mock_wrapper,
     ):
         mock_get_url.side_effect = chain_error
@@ -152,10 +152,10 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
         ) as mock_wrapper,
     ):
         mock_get_url.return_value = mock_base_url
@@ -190,14 +190,14 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch("blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination") as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
@@ -230,14 +230,14 @@ async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch("blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination") as mock_create_pagination,
         patch.object(config, "advanced_filters_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url
@@ -260,15 +260,15 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.apply_cursor_to_params",
         ) as mock_apply_cursor,
     ):
         mock_get_url.return_value = mock_base_url
@@ -298,7 +298,7 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
 async def test_get_token_transfers_by_address_invalid_cursor(mock_ctx):
     """Verify ValueError is raised when the cursor is invalid."""
     with patch(
-        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.apply_cursor_to_params",
         side_effect=ValueError("invalid"),
     ) as mock_apply:
         with pytest.raises(ValueError, match="invalid"):

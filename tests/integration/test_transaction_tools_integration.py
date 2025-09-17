@@ -11,14 +11,16 @@ from blockscout_mcp_server.models import (
     TransactionSummaryData,
 )
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
-from blockscout_mcp_server.tools.transaction_tools import (
-    EXCLUDED_TX_TYPES,
+from blockscout_mcp_server.tools.transaction._shared import EXCLUDED_TX_TYPES
+from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address import (
     get_token_transfers_by_address,
-    get_transaction_info,
-    get_transaction_logs,
-    get_transactions_by_address,
-    transaction_summary,
 )
+from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
+from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
+from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
+    get_transactions_by_address,
+)
+from blockscout_mcp_server.tools.transaction.transaction_summary import transaction_summary
 from tests.integration.helpers import is_log_a_truncated_call_executed
 
 

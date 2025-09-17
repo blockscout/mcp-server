@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
-from blockscout_mcp_server.tools.address_tools import get_address_info
+from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 
 
 @pytest.mark.asyncio
@@ -24,13 +24,13 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_bs_request,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_metadata_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request", new_callable=AsyncMock
         ) as mock_meta_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -95,13 +95,13 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_bs_request,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_metadata_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request", new_callable=AsyncMock
         ) as mock_meta_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -133,15 +133,15 @@ async def test_get_address_info_metadata_failure(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_bs_request,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_metadata_request",
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
             new_callable=AsyncMock,
         ) as mock_meta_request,
     ):
@@ -173,15 +173,15 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_bs_request,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_metadata_request",
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
             new_callable=AsyncMock,
         ) as mock_meta_request,
     ):

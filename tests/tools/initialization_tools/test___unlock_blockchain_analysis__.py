@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from blockscout_mcp_server.models import InstructionsData, ToolResponse
-from blockscout_mcp_server.tools.initialization_tools import __unlock_blockchain_analysis__
+from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import __unlock_blockchain_analysis__
 
 
 @pytest.mark.asyncio
@@ -29,17 +29,17 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     ]
 
     with (
-        patch("blockscout_mcp_server.tools.initialization_tools.SERVER_VERSION", mock_version),
-        patch("blockscout_mcp_server.tools.initialization_tools.ERROR_HANDLING_RULES", mock_error_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.CHAIN_ID_RULES", mock_chain_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.PAGINATION_RULES", mock_pagination_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.TIME_BASED_QUERY_RULES", mock_time_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
-        patch("blockscout_mcp_server.tools.initialization_tools.RECOMMENDED_CHAINS", mock_chains),
-        patch("blockscout_mcp_server.tools.initialization_tools.DIRECT_API_CALL_RULES", "Direct API rule"),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SERVER_VERSION", mock_version),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.ERROR_HANDLING_RULES", mock_error_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.CHAIN_ID_RULES", mock_chain_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.PAGINATION_RULES", mock_pagination_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.TIME_BASED_QUERY_RULES", mock_time_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.BLOCK_TIME_ESTIMATION_RULES", mock_block_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.EFFICIENCY_OPTIMIZATION_RULES", mock_efficiency_rules),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.RECOMMENDED_CHAINS", mock_chains),
+        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.DIRECT_API_CALL_RULES", "Direct API rule"),
         patch(
-            "blockscout_mcp_server.tools.initialization_tools.DIRECT_API_CALL_ENDPOINT_LIST",
+            "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.DIRECT_API_CALL_ENDPOINT_LIST",
             {"common": [], "specific": []},
         ),
     ):

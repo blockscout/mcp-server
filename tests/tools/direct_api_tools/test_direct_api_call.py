@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from blockscout_mcp_server.models import DirectApiData, ToolResponse
-from blockscout_mcp_server.tools.direct_api_tools import direct_api_call
+from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 
 
 @pytest.mark.asyncio
@@ -15,11 +15,11 @@ async def test_direct_api_call_no_params(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -46,15 +46,15 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
     query_params = {"limit": "1"}
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.apply_cursor_to_params",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.apply_cursor_to_params",
             new_callable=MagicMock,
         ) as mock_apply_cursor,
     ):
@@ -100,11 +100,11 @@ async def test_direct_api_call_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -136,11 +136,11 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -173,11 +173,11 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -197,7 +197,7 @@ async def test_direct_api_call_rejects_query_in_path(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
     ):

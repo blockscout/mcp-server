@@ -5,7 +5,7 @@ import pytest
 
 from blockscout_mcp_server.models import TokenSearchResult
 from blockscout_mcp_server.tools.common import build_tool_response
-from blockscout_mcp_server.tools.search_tools import (
+from blockscout_mcp_server.tools.search.lookup_token_by_symbol import (
     TOKEN_RESULTS_LIMIT,
     lookup_token_by_symbol,
 )
@@ -65,10 +65,10 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -131,10 +131,10 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -190,10 +190,10 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -223,10 +223,10 @@ async def test_lookup_token_by_symbol_empty_results(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -288,10 +288,10 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -321,10 +321,10 @@ async def test_lookup_token_by_symbol_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -352,7 +352,7 @@ async def test_lookup_token_by_symbol_chain_not_found(mock_ctx):
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
     with patch(
-        "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
     ) as mock_get_url:
         mock_get_url.side_effect = chain_error
 
@@ -378,10 +378,10 @@ async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.search_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.search_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url

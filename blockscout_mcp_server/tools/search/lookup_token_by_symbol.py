@@ -30,7 +30,6 @@ async def lookup_token_by_symbol(
     api_path = "/api/v2/search"
     params = {"q": symbol}
 
-    # Report start of operation
     await report_and_log_progress(
         ctx,
         progress=0.0,
@@ -40,7 +39,6 @@ async def lookup_token_by_symbol(
 
     base_url = await get_blockscout_base_url(chain_id)
 
-    # Report progress after resolving Blockscout URL
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -50,7 +48,6 @@ async def lookup_token_by_symbol(
 
     response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
 
-    # Report completion
     await report_and_log_progress(
         ctx,
         progress=2.0,
@@ -71,7 +68,6 @@ async def lookup_token_by_symbol(
 
     items_to_process = all_items[:TOKEN_RESULTS_LIMIT]
 
-    # To preserve the LLM context, only specific fields are added to the response
     search_results = [
         TokenSearchResult(
             address=item.get("address_hash", ""),

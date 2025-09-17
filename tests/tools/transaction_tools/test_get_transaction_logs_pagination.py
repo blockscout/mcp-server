@@ -5,7 +5,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse, TransactionLogItem
 from blockscout_mcp_server.tools.common import encode_cursor
-from blockscout_mcp_server.tools.transaction_tools import get_transaction_logs
+from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
 
 
 @pytest.mark.asyncio
@@ -46,15 +46,15 @@ async def test_get_transaction_logs_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
-        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs.create_items_pagination") as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -118,14 +118,14 @@ async def test_get_transaction_logs_with_cursor(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -157,15 +157,15 @@ async def test_get_transaction_logs_custom_page_size(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
-        patch("blockscout_mcp_server.tools.transaction_tools.create_items_pagination") as mock_create_pagination,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs.create_items_pagination") as mock_create_pagination,
         patch.object(config, "logs_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url

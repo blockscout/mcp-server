@@ -5,7 +5,7 @@ import pytest
 from web3.exceptions import ContractLogicError
 
 from blockscout_mcp_server.tools.common import ChainNotFoundError
-from blockscout_mcp_server.tools.contract_tools import read_contract
+from blockscout_mcp_server.tools.contract.read_contract import read_contract
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ async def test_read_contract_success(mock_ctx):
     w3_mock.eth.contract.return_value = contract_mock
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3_mock,
     ) as mock_get:
@@ -58,7 +58,7 @@ async def test_read_contract_chain_not_found(mock_ctx):
     chain_id = "999"
     abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         side_effect=ChainNotFoundError("not found"),
     ) as mock_get:
@@ -87,7 +87,7 @@ async def test_read_contract_contract_error(mock_ctx):
     w3_mock.eth.contract.return_value = contract_mock
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3_mock,
     ):
@@ -115,7 +115,7 @@ async def test_read_contract_default_args(mock_ctx):
     w3_mock.eth.contract.return_value = contract_mock
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3_mock,
     ):
@@ -145,7 +145,7 @@ async def test_read_contract_whitespace_args(mock_ctx):
     w3_mock.eth.contract.return_value = contract_mock
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3_mock,
     ):
@@ -229,7 +229,7 @@ async def test_read_contract_negative_numbers(mock_ctx):
     w3_mock.eth.contract.return_value = contract_mock
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3_mock,
     ) as mock_get:
@@ -261,7 +261,7 @@ async def test_read_contract_function_not_in_abi(mock_ctx):
     w3.eth.contract.return_value = contract
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3,
     ):
@@ -287,7 +287,7 @@ async def test_read_contract_block_string_normalization(mock_ctx):
     w3.eth.contract.return_value = contract
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.WEB3_POOL.get",
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
         new_callable=AsyncMock,
         return_value=w3,
     ):

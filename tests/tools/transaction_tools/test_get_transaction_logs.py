@@ -4,14 +4,14 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
-from blockscout_mcp_server.tools.transaction_tools import get_transaction_logs
+from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
 
 
 @pytest.mark.asyncio
 async def test_get_transaction_logs_invalid_cursor(mock_ctx):
     """Verify ValueError is raised when the cursor is invalid."""
     with patch(
-        "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+        "blockscout_mcp_server.tools.transaction.get_transaction_logs.apply_cursor_to_params",
         side_effect=ValueError("bad"),
     ) as mock_apply:
         with pytest.raises(ValueError, match="bad"):
@@ -77,11 +77,11 @@ async def test_get_transaction_logs_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -130,12 +130,12 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -172,10 +172,10 @@ async def test_get_transaction_logs_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -240,10 +240,10 @@ async def test_get_transaction_logs_complex_logs(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -281,15 +281,15 @@ async def test_get_transaction_logs_invalid_cursor_no_request(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.apply_cursor_to_params",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.apply_cursor_to_params",
             side_effect=ValueError("bad-cursor"),
         ) as mock_apply,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -313,12 +313,12 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -376,14 +376,14 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.transaction.get_transaction_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.transaction_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch("blockscout_mcp_server.tools.transaction.get_transaction_logs._process_and_truncate_log_items") as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
