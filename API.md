@@ -494,6 +494,9 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 
 `GET /v1/direct_api_call`
 
+> **Note: Smart Dispatching**
+> For certain high-value endpoints, this tool provides more than just the raw API response. For example, a request for the address logs endpoint (`/api/v2/addresses/{address}/logs`) will be internally routed to a specialized function. This returns a structured `ToolResponse` with processed data, contextual notes, and standardized pagination, offering a significantly enhanced experience over the raw API output.
+
 **Parameters**
 
 | Name | Type | Required | Description |
