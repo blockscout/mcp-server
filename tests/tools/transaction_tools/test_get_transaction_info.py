@@ -52,10 +52,12 @@ async def test_get_transaction_info_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -99,10 +101,12 @@ async def test_get_transaction_info_no_truncation(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -128,10 +132,12 @@ async def test_get_transaction_info_truncates_raw_input(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -165,10 +171,12 @@ async def test_get_transaction_info_truncates_decoded_input(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -203,10 +211,12 @@ async def test_get_transaction_info_keeps_and_truncates_raw_input_when_flagged(m
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -238,10 +248,12 @@ async def test_get_transaction_info_not_found(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -300,10 +312,12 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -357,10 +371,12 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url

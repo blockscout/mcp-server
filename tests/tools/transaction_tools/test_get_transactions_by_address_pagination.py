@@ -23,10 +23,13 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
-        patch("blockscout_mcp_server.tools.transaction.get_transactions_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.create_items_pagination",
+        ) as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
@@ -64,10 +67,13 @@ async def test_get_transactions_by_address_custom_page_size(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
-        patch("blockscout_mcp_server.tools.transaction.get_transactions_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.create_items_pagination",
+        ) as mock_create_pagination,
         patch.object(config, "advanced_filters_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url
@@ -97,7 +103,8 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
         patch(
@@ -143,10 +150,12 @@ async def test_get_transactions_by_address_smart_pagination_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
     ):
@@ -227,10 +236,12 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
         patch.object(config, "advanced_filters_page_size", 10),
@@ -300,14 +311,17 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.report_and_log_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.report_and_log_progress",
+            new_callable=AsyncMock,
         ) as mock_progress,
         patch.object(config, "advanced_filters_page_size", 10),
     ):

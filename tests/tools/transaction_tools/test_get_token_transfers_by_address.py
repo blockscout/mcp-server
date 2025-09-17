@@ -23,10 +23,13 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
+            new_callable=AsyncMock,
         ) as mock_wrapper,
     ):
         mock_get_url.return_value = mock_base_url
@@ -96,10 +99,13 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
+            new_callable=AsyncMock,
         ) as mock_wrapper,
     ):
         mock_get_url.side_effect = chain_error
@@ -152,10 +158,13 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
+            new_callable=AsyncMock,
         ) as mock_wrapper,
     ):
         mock_get_url.return_value = mock_base_url
@@ -194,10 +203,13 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination",
+        ) as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
@@ -234,10 +246,13 @@ async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
-        patch("blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination",
+        ) as mock_create_pagination,
         patch.object(config, "advanced_filters_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url
@@ -264,7 +279,8 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
+            "make_request_with_periodic_progress",
             new_callable=AsyncMock,
         ) as mock_wrapper,
         patch(

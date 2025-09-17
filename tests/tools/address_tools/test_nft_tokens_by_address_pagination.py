@@ -46,7 +46,9 @@ async def test_nft_tokens_by_address_with_pagination(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination",
+        ) as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -167,7 +169,9 @@ async def test_nft_tokens_by_address_response_sliced(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination",
+        ) as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -235,7 +239,9 @@ async def test_nft_tokens_by_address_custom_page_size(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination",
+        ) as mock_create_pagination,
         patch.object(config, "nft_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url

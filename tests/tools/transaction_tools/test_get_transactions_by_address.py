@@ -25,10 +25,12 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
     # We patch the smart pagination function and the base URL getter
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
     ):
@@ -92,10 +94,12 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
     ):
@@ -165,10 +169,12 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address._fetch_filtered_transactions_with_smart_pagination",
+            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+            "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
     ):

@@ -1,5 +1,3 @@
-from typing import Any
-
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.config import config

@@ -22,10 +22,12 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -71,10 +73,12 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -102,10 +106,12 @@ async def test_transaction_summary_missing_data_key_treated_as_none(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -131,10 +137,12 @@ async def test_transaction_summary_summary_explicit_none(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -264,10 +272,12 @@ async def test_transaction_summary_request_error_propagates_and_reports_partial_
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.get_blockscout_base_url",
+            new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.transaction.transaction_summary.make_blockscout_request",
+            new_callable=AsyncMock,
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
