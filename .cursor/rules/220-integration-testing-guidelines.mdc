@@ -7,6 +7,14 @@ alwaysApply: false
 
 This document provides detailed guidelines for writing effective integration tests that verify our interaction with live external APIs. Unlike unit tests which focus on logic with mocked data, integration tests ensure the "contract" between our tools and external services remains valid.
 
+## File Organization
+
+- Place integration tests under domain-specific folders within `tests/integration/` (for example, `tests/integration/address/`).
+- Each MCP tool must have a dedicated module named `test_<tool_name>_real.py` that contains all integration scenarios for that
+  tool.
+- Use the `_real` suffix to signal that the module performs live network calls. Do not combine multiple tools in a single
+  module.
+
 ## Categories of Integration Tests
 
 ### Category 1: Helper-Level Integration Tests (Connectivity & Basic Contract)
