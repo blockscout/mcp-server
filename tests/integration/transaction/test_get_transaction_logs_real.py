@@ -52,7 +52,12 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
     cursor = first_page_response.pagination.next_call.params["cursor"]
 
     try:
-        second_page_response = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx, cursor=cursor)
+        second_page_response = await get_transaction_logs(
+            chain_id="1",
+            transaction_hash=tx_hash,
+            ctx=mock_ctx,
+            cursor=cursor,
+        )
     except httpx.HTTPStatusError as exc:
         pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {exc}")
 
