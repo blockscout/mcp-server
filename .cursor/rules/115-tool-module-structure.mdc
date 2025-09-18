@@ -1,7 +1,6 @@
 ---
 description: Ensure a 1:1 mapping between MCP tools and implementation modules
 globs:
-  - blockscout_mcp_server/tools/**/*.py
 alwaysApply: false
 ---
 # MCP Tool Module Structure
