@@ -117,9 +117,7 @@ async def get_transactions_by_address(
         force_pagination=has_more_pages and len(filtered_items) <= config.advanced_filters_page_size,
     )
     transformed_items = [
-        AdvancedFilterItem.model_validate(
-            _transform_advanced_filter_item(item, fields_to_remove)
-        )
+        AdvancedFilterItem.model_validate(_transform_advanced_filter_item(item, fields_to_remove))
         for item in final_items
     ]
 

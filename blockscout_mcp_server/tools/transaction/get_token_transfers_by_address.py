@@ -118,9 +118,7 @@ async def get_token_transfers_by_address(
         cursor_extractor=extract_advanced_filters_cursor_params,
     )
     transformed_items = [
-        AdvancedFilterItem.model_validate(
-            _transform_advanced_filter_item(item, fields_to_remove)
-        )
+        AdvancedFilterItem.model_validate(_transform_advanced_filter_item(item, fields_to_remove))
         for item in sliced_items
     ]
 
