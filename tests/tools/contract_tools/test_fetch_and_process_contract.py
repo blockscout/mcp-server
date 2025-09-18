@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from blockscout_mcp_server.cache import CachedContract
-from blockscout_mcp_server.tools.contract_tools import _fetch_and_process_contract
+from blockscout_mcp_server.tools.contract._shared import _fetch_and_process_contract
 
 
 @pytest.mark.asyncio
@@ -17,21 +17,21 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
     }
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=None,
         ) as mock_get,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=api_response,
         ) as mock_request,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
         ) as mock_get_url,
@@ -57,12 +57,12 @@ async def test_fetch_and_process_cache_hit(mock_ctx):
     cached = CachedContract(metadata={}, source_files={})
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=cached,
         ) as mock_get,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -84,21 +84,21 @@ async def test_process_logic_single_solidity_file(mock_ctx):
     }
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=api_response,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
         ),
@@ -122,21 +122,21 @@ async def test_process_logic_multi_file_missing_main_path(mock_ctx):
     }
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=api_response,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
         ),
@@ -168,28 +168,28 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
     }
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
         ) as mock_get_url,
     ):
         with patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=multi_resp,
         ):
             multi = await _fetch_and_process_contract("1", "0x1", mock_ctx)
         with patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=vyper_resp,
         ):
@@ -212,21 +212,21 @@ async def test_process_logic_unverified_contract(mock_ctx):
     }
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.get",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.get",
             new_callable=AsyncMock,
             return_value=None,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=api_response,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.contract_cache.set",
+            "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ),
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
             new_callable=AsyncMock,
             return_value="https://base",
         ),

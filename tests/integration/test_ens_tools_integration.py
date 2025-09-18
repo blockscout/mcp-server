@@ -1,7 +1,7 @@
 import pytest
 
 from blockscout_mcp_server.models import EnsAddressData, ToolResponse
-from blockscout_mcp_server.tools.ens_tools import get_address_by_ens_name
+from blockscout_mcp_server.tools.ens.get_address_by_ens_name import get_address_by_ens_name
 
 
 @pytest.mark.integration

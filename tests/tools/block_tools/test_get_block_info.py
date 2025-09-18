@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import BlockInfoData, ToolResponse
-from blockscout_mcp_server.tools.block_tools import get_block_info
+from blockscout_mcp_server.tools.block.get_block_info import get_block_info
 
 
 @pytest.mark.asyncio
@@ -17,10 +17,10 @@ async def test_get_block_info_success_no_txs(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -55,10 +55,10 @@ async def test_get_block_info_with_txs_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -101,10 +101,10 @@ async def test_get_block_info_with_txs_partial_failure(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -147,10 +147,10 @@ async def test_get_block_info_total_failure(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_block_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url

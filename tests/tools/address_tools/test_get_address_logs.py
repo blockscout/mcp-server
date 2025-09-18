@@ -10,7 +10,7 @@ from blockscout_mcp_server.models import (
     PaginationInfo,
     ToolResponse,
 )
-from blockscout_mcp_server.tools.address_tools import get_address_logs
+from blockscout_mcp_server.tools.address.get_address_logs import get_address_logs
 from blockscout_mcp_server.tools.common import encode_cursor
 
 
@@ -37,14 +37,16 @@ async def test_get_address_logs_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -96,15 +98,19 @@ async def test_get_address_logs_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
-        patch("blockscout_mcp_server.tools.address_tools.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs.create_items_pagination",
+        ) as mock_create_pagination,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -147,15 +153,19 @@ async def test_get_address_logs_custom_page_size(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
-        patch("blockscout_mcp_server.tools.address_tools.create_items_pagination") as mock_create_pagination,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs.create_items_pagination",
+        ) as mock_create_pagination,
         patch.object(config, "logs_page_size", 5),
     ):
         mock_get_url.return_value = mock_base_url
@@ -183,14 +193,16 @@ async def test_get_address_logs_with_optional_params(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -232,11 +244,11 @@ async def test_get_address_logs_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -262,14 +274,16 @@ async def test_get_address_logs_empty_logs(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -299,14 +313,16 @@ async def test_get_address_logs_with_truncation_note(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
@@ -336,14 +352,16 @@ async def test_get_address_logs_with_decoded_truncation_note(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.address.get_address_logs.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.address.get_address_logs.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.address_tools._process_and_truncate_log_items") as mock_process_logs,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_logs._process_and_truncate_log_items",
+        ) as mock_process_logs,
     ):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response

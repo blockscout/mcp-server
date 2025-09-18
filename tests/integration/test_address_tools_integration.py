@@ -7,12 +7,10 @@ from blockscout_mcp_server.models import (
     NftCollectionHolding,
     ToolResponse,
 )
-from blockscout_mcp_server.tools.address_tools import (
-    get_address_info,
-    get_address_logs,
-    get_tokens_by_address,
-    nft_tokens_by_address,
-)
+from blockscout_mcp_server.tools.address.get_address_info import get_address_info
+from blockscout_mcp_server.tools.address.get_address_logs import get_address_logs
+from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
+from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
 from tests.integration.helpers import is_log_a_truncated_call_executed
 
 

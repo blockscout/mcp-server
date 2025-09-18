@@ -29,15 +29,45 @@ mcp-server/
 │       ├── __init__.py         # Initializes the tools sub-package
 │       ├── common.py           # Shared utilities and common functionality for all tools
 │       ├── decorators.py       # Logging decorators like @log_tool_invocation
-│       ├── initialization_tools.py # Implements the __unlock_blockchain_analysis__ tool
-│       ├── ens_tools.py        # Implements ENS-related tools
-│       ├── search_tools.py     # Implements search-related tools (e.g., lookup_token_by_symbol)
-│       ├── contract_tools.py   # Implements contract-related tools (e.g., get_contract_abi, inspect_contract_code)
-│       ├── address_tools.py    # Implements address-related tools (e.g., get_address_info, get_tokens_by_address)
-│       ├── block_tools.py      # Implements block-related tools (e.g., get_latest_block, get_block_info)
-│       ├── transaction_tools.py# Implements transaction-related tools (e.g., get_transactions_by_address, get_transaction_info)
-│       ├── direct_api_tools.py   # Implements generic direct API tool (direct_api_call)
-│       └── chains_tools.py     # Implements chain-related tools (e.g., get_chains_list)
+│       ├── address/            # Address-related tools grouped by functionality
+│       │   ├── __init__.py
+│       │   ├── get_address_info.py
+│       │   ├── get_address_logs.py
+│       │   ├── get_tokens_by_address.py
+│       │   └── nft_tokens_by_address.py
+│       ├── block/
+│       │   ├── __init__.py
+│       │   ├── get_block_info.py
+│       │   └── get_latest_block.py
+│       ├── chains/
+│       │   ├── __init__.py
+│       │   └── get_chains_list.py
+│       ├── contract/
+│       │   ├── __init__.py
+│       │   ├── _shared.py              # Shared helpers for contract tools
+│       │   ├── get_contract_abi.py
+│       │   ├── inspect_contract_code.py
+│       │   └── read_contract.py
+│       ├── direct_api/
+│       │   ├── __init__.py
+│       │   └── direct_api_call.py
+│       ├── ens/
+│       │   ├── __init__.py
+│       │   └── get_address_by_ens_name.py
+│       ├── initialization/
+│       │   ├── __init__.py
+│       │   └── unlock_blockchain_analysis.py
+│       ├── search/
+│       │   ├── __init__.py
+│       │   └── lookup_token_by_symbol.py
+│       └── transaction/
+│           ├── __init__.py
+│           ├── _shared.py             # Shared helpers for transaction tools
+│           ├── get_token_transfers_by_address.py
+│           ├── get_transaction_info.py
+│           ├── get_transaction_logs.py
+│           ├── get_transactions_by_address.py
+│           └── transaction_summary.py
 ├── tests/                      # Test suite for all MCP tools
 │   ├── integration/            # Integration tests that make real network calls
 │   │   ├── __init__.py         # Marks integration as a sub-package
@@ -252,7 +282,7 @@ mcp-server/
         * Defines centralized constants used throughout the application, including data truncation limits.
         * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
-        * Used by both server.py and tools like initialization_tools.py to maintain a single source of truth.
+        * Used by both server.py and tools like `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth.
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
@@ -288,26 +318,17 @@ mcp-server/
             * Includes logging helpers such as the `@log_tool_invocation` decorator.
         * **`decorators.py`**:
             * Contains the `log_tool_invocation` decorator and other logging helpers.
-        * **Individual Tool Modules** (e.g., `ens_tools.py`, `transaction_tools.py`):
-            * Each file will group logically related tools.
-            * Each tool will be implemented as an `async` Python function.
-            * For Blockscout API tools, functions take `chain_id` as the first parameter followed by other arguments and a `ctx: Context` parameter for progress tracking.
-            * For fixed endpoint tools (like BENS), functions take only the required operation-specific parameters plus the `ctx: Context` parameter.
-            * Argument descriptions are provided using `typing.Annotated[str, Field(description="...")]`.
-            * The function's docstring serves as the tool's description for `FastMCP`.
-            * All tools support MCP progress notifications and generate corresponding log messages, reporting progress at key steps (chain resolution, API calls, etc.).
-            * Inside each Blockscout API tool function:
-                1. It uses `get_blockscout_base_url(chain_id)` to dynamically resolve the appropriate Blockscout instance URL.
-                2. It calls `make_blockscout_request` with the resolved base URL, API path, and query parameters.
-                3. It processes the JSON response from Blockscout.
-                4. It transforms this response into the desired output format.
-            * Examples:
-                * `initialization_tools.py`: Implements `__unlock_blockchain_analysis__`, returning special server instructions and popular chain IDs.
-                * `chains_tools.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
-                * `ens_tools.py`: Implements `get_address_by_ens_name` (fixed BENS endpoint, no chain_id).
-                * `search_tools.py`: Implements `lookup_token_by_symbol(chain_id, symbol)`.
-                * `contract_tools.py`: Implements `get_contract_abi(chain_id, address)` and `inspect_contract_code(chain_id, address, file_name=None)`.
-                * `address_tools.py`: Implements `get_address_info(chain_id, address)` (includes public tags), `get_tokens_by_address(chain_id, address, cursor=None)`, `nft_tokens_by_address(chain_id, address, cursor=None)` with robust, cursor-based pagination.
-                * `block_tools.py`: Implements `get_block_info(chain_id, number_or_hash, include_transactions=False)`, `get_latest_block(chain_id)`.
-            * `transaction_tools.py`: Implements `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)`, `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)`, `get_transaction_info(chain_id, hash, include_raw_input=False)`, `transaction_summary(chain_id, hash)`, `get_transaction_logs(chain_id, hash, cursor=None)`, etc.
-            * `direct_api_tools.py`: Implements `direct_api_call(chain_id, endpoint_path, query_params=None, cursor=None)`.
+        * **Individual Tool Modules** (e.g., `address/get_address_info.py`, `transaction/get_transaction_info.py`):
+            * Each MCP tool lives in its own module named after the tool function.
+            * Modules are organized by domain (`address/`, `block/`, `contract/`, `transaction/`, etc.) to keep related tools together while preserving a 1:1 mapping.
+            * Shared helpers used by multiple tools in the same domain live in `_shared.py` modules alongside the individual tool files.
+            * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
+            * The function docstring provides the description surfaced to FastMCP clients.
+            * Example modules:
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning special server instructions and recommended chains.
+                * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
+                * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
+                * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.
+                * `contract/inspect_contract_code.py`: Uses helpers from `contract/_shared.py` to return metadata or source files for verified contracts.
+                * `address/get_tokens_by_address.py`: Implements paginated ERC-20 holdings responses with `NextCallInfo` for follow-up requests.
+                * `transaction/get_transactions_by_address.py`: Uses `_shared.py` helpers for smart pagination and filtering of advanced transactions.

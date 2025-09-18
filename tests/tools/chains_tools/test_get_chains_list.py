@@ -7,7 +7,7 @@ import pytest
 import blockscout_mcp_server.tools.common as common_tools
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
-from blockscout_mcp_server.tools.chains_tools import get_chains_list
+from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
 from blockscout_mcp_server.tools.common import ChainsListCache
 
 
@@ -15,7 +15,7 @@ from blockscout_mcp_server.tools.common import ChainsListCache
 def reset_chains_list_cache(monkeypatch):
     new_cache = ChainsListCache()
     monkeypatch.setattr(common_tools, "chains_list_cache", new_cache)
-    monkeypatch.setattr("blockscout_mcp_server.tools.chains_tools.chains_list_cache", new_cache)
+    monkeypatch.setattr("blockscout_mcp_server.tools.chains.get_chains_list.chains_list_cache", new_cache)
 
 
 @pytest.mark.asyncio
@@ -60,10 +60,10 @@ async def test_get_chains_list_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
+        patch("blockscout_mcp_server.tools.chains.get_chains_list.chain_cache") as mock_chain_cache,
     ):
         mock_request.return_value = mock_api_response
         mock_chain_cache.bulk_set = AsyncMock()
@@ -88,9 +88,9 @@ async def test_get_chains_list_caches_filtered_chains(mock_ctx):
     }
 
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
     ) as mock_request:
-        with patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_cache:
+        with patch("blockscout_mcp_server.tools.chains.get_chains_list.chain_cache") as mock_cache:
             mock_request.return_value = mock_api_response
             mock_cache.bulk_set = AsyncMock()
 
@@ -110,7 +110,7 @@ async def test_get_chains_list_empty_response(mock_ctx):
     expected_data: list[ChainInfo] = []
 
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
     ) as mock_request:
         mock_request.return_value = mock_api_response
 
@@ -130,7 +130,7 @@ async def test_get_chains_list_invalid_response_format(mock_ctx):
     expected_data: list[ChainInfo] = []
 
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
     ) as mock_request:
         mock_request.return_value = mock_api_response
 
@@ -185,7 +185,7 @@ async def test_get_chains_list_chains_with_missing_fields(mock_ctx):
     ]
 
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
     ) as mock_request:
         mock_request.return_value = mock_api_response
 
@@ -217,10 +217,10 @@ async def test_get_chains_list_uses_cache_within_ttl(mock_ctx, monkeypatch):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
+        patch("blockscout_mcp_server.tools.chains.get_chains_list.chain_cache") as mock_chain_cache,
     ):
         mock_request.return_value = mock_api_response
         mock_chain_cache.bulk_set = AsyncMock()
@@ -261,11 +261,11 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
             side_effect=[mock_api_response_1, mock_api_response_2],
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
+        patch("blockscout_mcp_server.tools.chains.get_chains_list.chain_cache") as mock_chain_cache,
     ):
         mock_chain_cache.bulk_set = AsyncMock()
 
@@ -300,11 +300,11 @@ async def test_get_chains_list_refresh_error(mock_ctx, monkeypatch):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
             side_effect=[mock_api_response, api_error],
         ) as mock_request,
-        patch("blockscout_mcp_server.tools.chains_tools.chain_cache") as mock_chain_cache,
+        patch("blockscout_mcp_server.tools.chains.get_chains_list.chain_cache") as mock_chain_cache,
     ):
         mock_chain_cache.bulk_set = AsyncMock()
 
@@ -346,12 +346,12 @@ async def test_get_chains_list_sequential_calls_use_cache(mock_ctx, monkeypatch)
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
             side_effect=mock_request,
         ) as mock_api_request,
         patch(
-            "blockscout_mcp_server.tools.chains_tools.chain_cache.bulk_set",
+            "blockscout_mcp_server.tools.chains.get_chains_list.chain_cache.bulk_set",
             new_callable=AsyncMock,
         ) as mock_bulk_set,
     ):
@@ -402,12 +402,12 @@ async def test_get_chains_list_true_concurrent_calls(mock_ctx, monkeypatch):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
             new_callable=AsyncMock,
             side_effect=controlled_mock_request,
         ) as mock_api_request,
         patch(
-            "blockscout_mcp_server.tools.chains_tools.chain_cache.bulk_set",
+            "blockscout_mcp_server.tools.chains.get_chains_list.chain_cache.bulk_set",
             new_callable=AsyncMock,
         ) as mock_bulk_set,
     ):
@@ -450,7 +450,7 @@ async def test_get_chains_list_cached_progress_reporting(mock_ctx):
     )
 
     with patch(
-        "blockscout_mcp_server.tools.chains_tools.make_chainscout_request",
+        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
         new_callable=AsyncMock,
     ) as mock_request:
         result = await get_chains_list(ctx=mock_ctx)

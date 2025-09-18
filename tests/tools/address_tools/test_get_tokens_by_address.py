@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import TokenHoldingData, ToolResponse
-from blockscout_mcp_server.tools.address_tools import get_tokens_by_address
+from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.common import encode_cursor
 
 
@@ -54,10 +54,10 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -131,10 +131,10 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -187,10 +187,10 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -265,10 +265,10 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -323,10 +323,10 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -378,10 +378,10 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url

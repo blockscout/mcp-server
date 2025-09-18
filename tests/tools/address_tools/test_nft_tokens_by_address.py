@@ -7,7 +7,7 @@ from blockscout_mcp_server.models import (
     NftCollectionHolding,
     ToolResponse,
 )
-from blockscout_mcp_server.tools.address_tools import (
+from blockscout_mcp_server.tools.address.nft_tokens_by_address import (
     nft_tokens_by_address,
 )
 
@@ -56,10 +56,10 @@ async def test_nft_tokens_by_address_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -110,10 +110,10 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -172,10 +172,10 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -220,10 +220,10 @@ async def test_nft_tokens_by_address_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -284,10 +284,10 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.address_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url

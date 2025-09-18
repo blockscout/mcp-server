@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import LatestBlockData, ToolResponse
-from blockscout_mcp_server.tools.block_tools import get_latest_block
+from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
 
 
 @pytest.mark.asyncio
@@ -22,10 +22,10 @@ async def test_get_latest_block_success(mock_ctx):
     # Patch both helpers used by the tool
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         # Configure the mocks
@@ -61,10 +61,10 @@ async def test_get_latest_block_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -97,10 +97,10 @@ async def test_get_latest_block_empty_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.block_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.block.get_latest_block.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -130,7 +130,7 @@ async def test_get_latest_block_chain_not_found_error(mock_ctx):
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
     with patch(
-        "blockscout_mcp_server.tools.block_tools.get_blockscout_base_url", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.block.get_latest_block.get_blockscout_base_url", new_callable=AsyncMock
     ) as mock_get_url:
         # Configure the mock to raise the chain error
         mock_get_url.side_effect = chain_error

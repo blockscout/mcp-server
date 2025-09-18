@@ -5,7 +5,7 @@ import pytest
 
 from blockscout_mcp_server.cache import CachedContract
 from blockscout_mcp_server.models import ContractMetadata, ContractSourceFile, ToolResponse
-from blockscout_mcp_server.tools.contract_tools import inspect_contract_code
+from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
         source_files={"A.sol": "code"},
     )
     with patch(
-        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        "blockscout_mcp_server.tools.contract.inspect_contract_code._fetch_and_process_contract",
         new_callable=AsyncMock,
         return_value=contract,
     ) as mock_fetch:
@@ -58,7 +58,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
 async def test_inspect_contract_file_content_mode_success(mock_ctx):
     contract = CachedContract(metadata={}, source_files={"A.sol": "pragma"})
     with patch(
-        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        "blockscout_mcp_server.tools.contract.inspect_contract_code._fetch_and_process_contract",
         new_callable=AsyncMock,
         return_value=contract,
     ):
@@ -76,7 +76,7 @@ async def test_inspect_contract_file_content_mode_success(mock_ctx):
 async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
     contract = CachedContract(metadata={}, source_files={"A.sol": ""})
     with patch(
-        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        "blockscout_mcp_server.tools.contract.inspect_contract_code._fetch_and_process_contract",
         new_callable=AsyncMock,
         return_value=contract,
     ):
@@ -94,7 +94,7 @@ async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
 async def test_inspect_contract_propagates_api_error(mock_ctx):
     error = httpx.HTTPStatusError("err", request=MagicMock(), response=MagicMock(status_code=404))
     with patch(
-        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        "blockscout_mcp_server.tools.contract.inspect_contract_code._fetch_and_process_contract",
         new_callable=AsyncMock,
         side_effect=error,
     ):
@@ -129,7 +129,7 @@ async def test_inspect_contract_metadata_mode_truncated_sets_notes(mock_ctx):
         source_files={},
     )
     with patch(
-        "blockscout_mcp_server.tools.contract_tools._fetch_and_process_contract",
+        "blockscout_mcp_server.tools.contract.inspect_contract_code._fetch_and_process_contract",
         new_callable=AsyncMock,
         return_value=contract,
     ):

@@ -1,4 +1,4 @@
-from blockscout_mcp_server.tools.transaction_tools import (
+from blockscout_mcp_server.tools.transaction._shared import (
     _transform_advanced_filter_item,
     _transform_transaction_info,
 )

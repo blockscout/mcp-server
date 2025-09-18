@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
-from blockscout_mcp_server.tools.contract_tools import get_contract_abi
+from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 
 
 def assert_contract_abi_response(result: ToolResponse, expected_abi) -> None:
@@ -44,11 +44,11 @@ async def test_get_contract_abi_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url",
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url",
             new_callable=AsyncMock,
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request",
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
@@ -87,10 +87,10 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -128,10 +128,10 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -169,10 +169,10 @@ async def test_get_contract_abi_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -204,7 +204,7 @@ async def test_get_contract_abi_chain_not_found(mock_ctx):
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
     with patch(
-        "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+        "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
     ) as mock_get_url:
         mock_get_url.side_effect = chain_error
 
@@ -232,10 +232,10 @@ async def test_get_contract_abi_invalid_address_format(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
@@ -294,10 +294,10 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.contract_tools.get_blockscout_base_url", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.get_blockscout_base_url", new_callable=AsyncMock
         ) as mock_get_url,
         patch(
-            "blockscout_mcp_server.tools.contract_tools.make_blockscout_request", new_callable=AsyncMock
+            "blockscout_mcp_server.tools.contract.get_contract_abi.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
