@@ -28,7 +28,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 
 ### Testing & Development
 
-- **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates)
+- **Follow** `.cursor/rules/200-development-testing-workflow.mdc` testing workflow whenever making ANY code changes to the MCP server (new features, bug fixes, modifications, refactoring, or test updates); it also outlines the domain-specific `_real` integration module layout
 - **Before modifying** any unit test files within `tests/tools/` or adding new unit tests, follow guidelines from `.cursor/rules/210-unit-testing-guidelines.mdc`
 - **Before working** with integration test files within `tests/integration/`, consult `.cursor/rules/220-integration-testing-guidelines.mdc`
   to follow the domain-folder layout and the 1:1 `test_<tool>_real.py` module requirement

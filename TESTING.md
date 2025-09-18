@@ -78,6 +78,11 @@ The project also includes a suite of integration tests that verify live connecti
 - **Real Network Calls:** Unlike unit tests, these tests require an active internet connection.
 - **`@pytest.mark.integration`:** Each integration test is marked with a custom `pytest` marker, allowing them to be run separately from unit tests.
 - **Excluded by Default:** To keep the default test run fast and offline-friendly, integration tests are **excluded** by default (as configured in `pytest.ini`).
+- **File Layout:** Helper connectivity checks live in
+  `tests/integration/test_common_helpers.py`, while tool-specific scenarios are
+  grouped by domain (for example, `tests/integration/address/`). Each tool has
+  its own module named `test_<tool_name>_real.py` to keep live-call coverage
+  tightly scoped.
 
 ### Running Integration Tests
 

@@ -59,7 +59,9 @@ async def test_make_blockscout_request_connectivity():
 These tests target the high-level MCP tool functions themselves (e.g., `get_latest_block`, `get_tokens_by_address`).
 
 - **Purpose:** To validate the "contract" between our tool's data processing logic and the live API's response schema. They ensure that the fields our tools *extract and transform* are still present and correctly structured in the live data. This protects against breaking changes in the API schema.
-- **Location:** `tests/integration/test_*_integration.py` (e.g., `test_block_tools_integration.py`).
+- **Location:** Domain folders under `tests/integration/` with modules named
+  `test_<tool_name>_real.py` (for example,
+  `tests/integration/block/test_get_latest_block_real.py`).
 - **What to Call:** The actual MCP tool function (e.g., `await get_latest_block(chain_id="1", ctx=mock_ctx)`).
 - **What to Assert:**
   - Focus on the **final, processed result** returned by the tool.
@@ -71,7 +73,7 @@ These tests target the high-level MCP tool functions themselves (e.g., `get_late
 **Example:**
 ```python
 import pytest
-from blockscout_mcp_server.tools.block_tools import get_latest_block
+from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
 
 @pytest.mark.integration
 async def test_get_latest_block_data_extraction(mock_ctx):
@@ -289,7 +291,10 @@ async def test_tool_with_dynamic_url(mock_ctx):
 
 ## File Size Limitations
 
-**Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused files (e.g., `test_block_tools_integration_1.py`, `test_block_tools_integration_2.py`) to maintain readability and logical organization.
+**Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused modules
+such as `test_get_transaction_logs_real_part1.py` and
+`test_get_transaction_logs_real_part2.py` to maintain readability and logical
+organization.
 
 ## Test Organization
 
