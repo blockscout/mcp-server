@@ -57,7 +57,9 @@ def _process_and_truncate_tx_info_data(data: dict, include_raw_input: bool) -> t
             processed_params, params_truncated = _recursively_truncate_and_flag_long_strings(
                 decoded_input["parameters"]
             )
-            decoded_input["parameters"] = processed_params
+            decoded_copy = decoded_input.copy()
+            decoded_copy["parameters"] = processed_params
+            transformed_data["decoded_input"] = decoded_copy
             if params_truncated:
                 was_truncated = True
 

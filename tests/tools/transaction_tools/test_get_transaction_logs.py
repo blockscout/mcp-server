@@ -157,6 +157,7 @@ async def test_get_transaction_logs_empty_logs(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert result.pagination is None
         assert result.data == expected_log_items
+        assert result.notes is None
 
         assert mock_ctx.report_progress.await_count >= 2
         assert mock_ctx.info.await_count >= 2
@@ -355,7 +356,7 @@ async def test_get_transaction_logs_with_truncation_note(mock_ctx):
         assert isinstance(result, ToolResponse)
         actual = result.data[0]
         expected = expected_log_items[0]
-        assert actual.model_extra.get("address") == expected.address
+        assert actual.address == expected.address
         assert actual.block_number == expected.block_number
         assert actual.data == expected.data
         assert actual.decoded == expected.decoded
@@ -419,7 +420,7 @@ async def test_get_transaction_logs_with_decoded_truncation_note(mock_ctx):
         assert isinstance(result, ToolResponse)
         actual = result.data[0]
         expected = expected_log_items[0]
-        assert actual.model_extra.get("address") == expected.address
+        assert actual.address == expected.address
         assert actual.block_number == expected.block_number
         assert actual.data == expected.data
         assert actual.decoded == expected.decoded

@@ -8,17 +8,15 @@ from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
+    create_items_pagination,
+    extract_advanced_filters_cursor_params,
     get_blockscout_base_url,
     make_blockscout_request,
     make_request_with_periodic_progress,
     report_and_log_progress,
 )
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
-from blockscout_mcp_server.tools.transaction._shared import (
-    _transform_advanced_filter_item,
-    create_items_pagination,
-    extract_advanced_filters_cursor_params,
-)
+from blockscout_mcp_server.tools.transaction._shared import _transform_advanced_filter_item
 
 
 @log_tool_invocation

@@ -64,17 +64,27 @@ async def get_tokens_by_address(
     for item in items_data:
         # To preserve the LLM context, only specific fields are added to the response
         token = item.get("token", {})
+        decimals_value = token.get("decimals")
+        total_supply_value = token.get("total_supply")
+        circulating_market_cap_value = token.get("circulating_market_cap")
+        exchange_rate_value = token.get("exchange_rate")
+        holders_count_value = token.get("holders_count")
+        balance_value = item.get("value")
         token_holdings.append(
             TokenHoldingData(
                 address=token.get("address_hash", ""),
                 name=token.get("name") or "",
                 symbol=token.get("symbol") or "",
-                decimals=token.get("decimals") or "",
-                total_supply=token.get("total_supply") or "",
-                circulating_market_cap=token.get("circulating_market_cap"),
-                exchange_rate=token.get("exchange_rate"),
-                holders_count=token.get("holders_count") or "",
-                balance=item.get("value", ""),
+                decimals="" if decimals_value is None else str(decimals_value),
+                total_supply="" if total_supply_value is None else str(total_supply_value),
+                circulating_market_cap=(
+                    None
+                    if circulating_market_cap_value is None
+                    else str(circulating_market_cap_value)
+                ),
+                exchange_rate=None if exchange_rate_value is None else str(exchange_rate_value),
+                holders_count="" if holders_count_value is None else str(holders_count_value),
+                balance="" if balance_value is None else str(balance_value),
             )
         )
 
