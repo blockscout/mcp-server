@@ -104,10 +104,8 @@ async def get_token_transfers_by_address(
     original_items = response_data.get("items", [])
     fields_to_remove = ["value", "internal_transaction_index", "created_contract"]
 
-    transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in original_items]
-
     sliced_items, pagination = create_items_pagination(
-        items=transformed_items,
+        items=original_items,
         page_size=config.advanced_filters_page_size,
         tool_name="get_token_transfers_by_address",
         next_call_base_params={
@@ -119,6 +117,11 @@ async def get_token_transfers_by_address(
         },
         cursor_extractor=extract_advanced_filters_cursor_params,
     )
-    sliced_items = [AdvancedFilterItem.model_validate(item) for item in sliced_items]
+    transformed_items = [
+        AdvancedFilterItem.model_validate(
+            _transform_advanced_filter_item(item, fields_to_remove)
+        )
+        for item in sliced_items
+    ]
 
-    return build_tool_response(data=sliced_items, pagination=pagination)
+    return build_tool_response(data=transformed_items, pagination=pagination)

@@ -101,10 +101,9 @@ async def get_transactions_by_address(
         "token_transfer_batch_index",
         "token_transfer_index",
     ]
-    transformed_items = [_transform_advanced_filter_item(item, fields_to_remove) for item in filtered_items]
 
     final_items, pagination = create_items_pagination(
-        items=transformed_items,
+        items=filtered_items,
         page_size=config.advanced_filters_page_size,
         tool_name="get_transactions_by_address",
         next_call_base_params={
@@ -115,9 +114,13 @@ async def get_transactions_by_address(
             "methods": methods,
         },
         cursor_extractor=extract_advanced_filters_cursor_params,
-        force_pagination=has_more_pages and len(transformed_items) <= config.advanced_filters_page_size,
+        force_pagination=has_more_pages and len(filtered_items) <= config.advanced_filters_page_size,
     )
+    transformed_items = [
+        AdvancedFilterItem.model_validate(
+            _transform_advanced_filter_item(item, fields_to_remove)
+        )
+        for item in final_items
+    ]
 
-    validated_items = [AdvancedFilterItem.model_validate(item) for item in final_items]
-
-    return build_tool_response(data=validated_items, pagination=pagination)
+    return build_tool_response(data=transformed_items, pagination=pagination)
