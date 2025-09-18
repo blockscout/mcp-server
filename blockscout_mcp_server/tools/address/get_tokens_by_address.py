@@ -78,9 +78,7 @@ async def get_tokens_by_address(
                 decimals="" if decimals_value is None else str(decimals_value),
                 total_supply="" if total_supply_value is None else str(total_supply_value),
                 circulating_market_cap=(
-                    None
-                    if circulating_market_cap_value is None
-                    else str(circulating_market_cap_value)
+                    None if circulating_market_cap_value is None else str(circulating_market_cap_value)
                 ),
                 exchange_rate=None if exchange_rate_value is None else str(exchange_rate_value),
                 holders_count="" if holders_count_value is None else str(holders_count_value),
