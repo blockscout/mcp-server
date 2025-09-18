@@ -7,7 +7,7 @@ alwaysApply: false
 
 This document provides detailed guidelines for writing effective unit tests for MCP tool functions and related components.
 
-**Test file organization:** Place tests for each MCP tool in its dedicated module under `tests/tools/<tool_category>/test_<tool_function>.py`. Do not combine multiple tools in a single test file—create a new module whenever a new tool is introduced.
+**Test file organization:** Place tests for each MCP tool in its dedicated module under `tests/tools/<tool_category>/test_<tool_function>.py` (for example, `tests/tools/address/test_get_address_info.py`). Do not combine multiple tools in a single test file—create a new module whenever a new tool is introduced.
 
 ## **HIGH PRIORITY: Keep Unit Tests Simple and Focused**
 
