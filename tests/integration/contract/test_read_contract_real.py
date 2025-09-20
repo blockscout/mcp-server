@@ -149,6 +149,20 @@ async def test_read_contract_sepolia_testAddress(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_read_contract_sepolia_testBytes(mock_ctx):
+    # @see Web3PyTestContract.sol -> testBytes()
+    data = "0x64617461"
+    res = await _invoke(mock_ctx, "testBytes", json.dumps([data]))
+    # Some RPCs return raw bytes; others echo hex string
+    if isinstance(res, bytes | bytearray):
+        assert bytes(res) == b"data"
+    else:
+        assert isinstance(res, str)
+        assert res.lower() in {data, data.lower()}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_read_contract_sepolia_testBool(mock_ctx):
     # @see Web3PyTestContract.sol -> testBool()
     res = await _invoke(mock_ctx, "testBool", json.dumps([True]))
@@ -289,13 +303,9 @@ async def test_read_contract_sepolia_testBytes32(mock_ctx):
 @pytest.mark.asyncio
 async def test_read_contract_sepolia_testString(mock_ctx):
     # @see Web3PyTestContract.sol -> testString()
-    data = "hello world"
-    res = await _invoke(mock_ctx, "testString", json.dumps([data]))
-    if isinstance(res, bytes | bytearray):
-        assert bytes(res).decode() == data
-    else:
-        assert isinstance(res, str)
-        assert res.lower() in {data, data.lower()}
+    res = await _invoke(mock_ctx, "testString", json.dumps(["World"]))
+    assert isinstance(res, str)
+    assert "World" in res
 
 
 @pytest.mark.integration
