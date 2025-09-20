@@ -7,14 +7,6 @@ alwaysApply: false
 
 This document provides detailed guidelines for writing effective integration tests that verify our interaction with live external APIs. Unlike unit tests which focus on logic with mocked data, integration tests ensure the "contract" between our tools and external services remains valid.
 
-## File Organization
-
-- Place integration tests under domain-specific folders within `tests/integration/` (for example, `tests/integration/address/`).
-- Each MCP tool must have a dedicated module named `test_<tool_name>_real.py` that contains all integration scenarios for that
-  tool.
-- Use the `_real` suffix to signal that the module performs live network calls. Do not combine multiple tools in a single
-  module.
-
 ## Categories of Integration Tests
 
 ### Category 1: Helper-Level Integration Tests (Connectivity & Basic Contract)
@@ -59,9 +51,7 @@ async def test_make_blockscout_request_connectivity():
 These tests target the high-level MCP tool functions themselves (e.g., `get_latest_block`, `get_tokens_by_address`).
 
 - **Purpose:** To validate the "contract" between our tool's data processing logic and the live API's response schema. They ensure that the fields our tools *extract and transform* are still present and correctly structured in the live data. This protects against breaking changes in the API schema.
-- **Location:** Domain folders under `tests/integration/` with modules named
-  `test_<tool_name>_real.py` (for example,
-  `tests/integration/block/test_get_latest_block_real.py`).
+- **Location:** Domain-specific folders under `tests/integration/` with modules named `test_<tool_name>_real.py` (for example, `tests/integration/block/test_get_latest_block_real.py`). Each MCP tool must have a dedicated module that contains all integration scenarios for that tool. Do not combine multiple tools in a single module.
 - **What to Call:** The actual MCP tool function (e.g., `await get_latest_block(chain_id="1", ctx=mock_ctx)`).
 - **What to Assert:**
   - Focus on the **final, processed result** returned by the tool.
@@ -291,10 +281,7 @@ async def test_tool_with_dynamic_url(mock_ctx):
 
 ## File Size Limitations
 
-**Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused modules
-such as `test_get_transaction_logs_real_part1.py` and
-`test_get_transaction_logs_real_part2.py` to maintain readability and logical
-organization.
+**Integration test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused modules such as `test_get_transaction_logs_real_part1.py` and `test_get_transaction_logs_real_part2.py` to maintain readability and logical organization.
 
 ## Test Organization
 
