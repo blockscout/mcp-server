@@ -14,7 +14,7 @@ Always run the unit test suite before and after making changes:
 pytest
 
 # Run specific tests related to your changes
-pytest tests/tools/address_tools/test_get_address_info.py -v
+pytest tests/tools/address/test_get_address_info.py -v
 ```
 
 ## 2. Add Tests for New Features

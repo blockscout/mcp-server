@@ -106,23 +106,23 @@ mcp-server/
 │   ├── test_server.py            # Tests for server CLI and startup logic
 │   ├── test_models.py            # Tests for Pydantic response models
 │   └── tools/                  # Unit test modules for each tool implementation
-│       ├── address_tools/      # Tests for address-related MCP tools
+│       ├── address/            # Tests for address-related MCP tools
 │       │   ├── test_get_address_info.py        # Tests for get_address_info
 │       │   ├── test_get_address_logs.py              # Tests for get_address_logs
 │       │   ├── test_get_tokens_by_address.py         # Tests for get_tokens_by_address
 │       │   ├── test_nft_tokens_by_address.py         # Tests for nft_tokens_by_address
 │       │   └── test_nft_tokens_by_address_pagination.py  # Pagination scenarios for nft_tokens_by_address
-│       ├── block_tools/        # Tests for block-related MCP tools
+│       ├── block/              # Tests for block-related MCP tools
 │       │   ├── test_get_block_info.py          # Tests for get_block_info
 │       │   └── test_get_latest_block.py        # Tests for get_latest_block
-│       ├── chains_tools/       # Tests for chain-related MCP tools
+│       ├── chains/             # Tests for chain-related MCP tools
 │       │   └── test_get_chains_list.py         # Tests for get_chains_list
-│       ├── contract_tools/     # Tests for contract-related MCP tools
+│       ├── contract/           # Tests for contract-related MCP tools
 │       │   ├── test_fetch_and_process_contract.py  # Tests for fetch_and_process_contract
 │       │   ├── test_get_contract_abi.py        # Tests for get_contract_abi
 │       │   ├── test_inspect_contract_code.py   # Tests for inspect_contract_code
 │       │   └── test_read_contract.py           # Tests for read_contract
-│       ├── transaction_tools/  # Tests for transaction-related MCP tools
+│       ├── transaction/        # Tests for transaction-related MCP tools
 │       │   ├── test_get_token_transfers_by_address.py      # Tests for get_token_transfers_by_address
 │       │   ├── test_get_transaction_info.py        # Tests for get_transaction_info
 │       │   ├── test_get_transaction_logs.py        # Tests for get_transaction_logs
@@ -131,13 +131,13 @@ mcp-server/
 │       │   ├── test_get_transactions_by_address_pagination.py  # Pagination-focused transaction tests
 │       │   ├── test_helpers.py                     # Tests for transaction helper utilities
 │       │   └── test_transaction_summary.py         # Tests for transaction_summary
-│       ├── direct_api_tools/   # Tests for the direct API MCP tool
+│       ├── direct_api/         # Tests for the direct API MCP tool
 │       │   └── test_direct_api_call.py  # Tests for direct_api_call
-│       ├── ens_tools/          # Tests for ENS-related MCP tools
+│       ├── ens/                # Tests for ENS-related MCP tools
 │       │   └── test_get_address_by_ens_name.py  # Tests for get_address_by_ens_name
-│       ├── initialization_tools/  # Tests for initialization MCP tools
+│       ├── initialization/     # Tests for initialization MCP tools
 │       │   └── test___unlock_blockchain_analysis__.py  # Tests for __unlock_blockchain_analysis__
-│       ├── search_tools/       # Tests for search-related MCP tools
+│       ├── search/             # Tests for search-related MCP tools
 │       │   └── test_lookup_token_by_symbol.py  # Tests for lookup_token_by_symbol
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_common_truncate.py   # Tests for truncation helpers
@@ -253,7 +253,7 @@ mcp-server/
 
 4. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
-    * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. Tool-specific tests live in dedicated modules under category folders (for example, `tests/tools/address_tools/test_get_address_info.py`), and shared utilities are covered by modules like `test_common.py`.
+    * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. Tool-specific tests live in dedicated modules under category folders (for example, `tests/tools/address/test_get_address_info.py`), and shared utilities are covered by modules like `test_common.py`.
         * Each test file corresponds to a single MCP tool and provides comprehensive test coverage:
             * **Success scenarios**: Testing normal operation with valid inputs and API responses.
             * **Error handling**: Testing API errors, chain lookup failures, timeout errors, and invalid responses.
