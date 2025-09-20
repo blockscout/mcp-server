@@ -50,10 +50,12 @@ async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
         )
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"API returned {exc}")
+
     assert first.pagination is not None
     next_params = first.pagination.next_call.params
     assert next_params["chain_id"] == "1"
     assert next_params["endpoint_path"] == "/api/v2/proxy/account-abstraction/operations"
     assert next_params["query_params"]["sender"] == sender
+
     second = await direct_api_call(ctx=mock_ctx, **next_params)
     assert isinstance(second.data, DirectApiData)

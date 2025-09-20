@@ -47,7 +47,7 @@ When editing REST API tests, follow the guidelines in [230-api-route-tests.mdc](
 **Integration test locations:**
 
 - **Helper functions**: `tests/integration/test_common_helpers.py`
-- **Tool functions**: `tests/integration/test_{tool_module}_integration.py`
+- **Tool functions**: Domain-specific folders under `tests/integration/` with modules named `test_<tool_name>_real.py` (for example, `tests/integration/address/test_get_address_info_real.py`).
 
 Follow the guidelines in [220-integration-testing-guidelines.mdc](mdc:.cursor/rules/220-integration-testing-guidelines.mdc)
 

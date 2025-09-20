@@ -64,6 +64,7 @@ async def test_get_chains_list_warms_cache(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_chains_list_cache_hit_skips_network(mock_ctx, monkeypatch):
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 60)
+
     await get_chains_list(ctx=mock_ctx)
     with patch(
         "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
@@ -77,9 +78,12 @@ async def test_get_chains_list_cache_hit_skips_network(mock_ctx, monkeypatch):
 @pytest.mark.asyncio
 async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
+
     await get_chains_list(ctx=mock_ctx)
     first_expiry = chain_cache.get("1")[1]
+
     await asyncio.sleep(1.1)
+
     await get_chains_list(ctx=mock_ctx)
     second_expiry = chain_cache.get("1")[1]
     assert second_expiry > first_expiry

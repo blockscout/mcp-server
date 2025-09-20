@@ -71,15 +71,36 @@ mcp-server/
 ├── tests/                      # Test suite for all MCP tools
 │   ├── integration/            # Integration tests that make real network calls
 │   │   ├── __init__.py         # Marks integration as a sub-package
-│   │   ├── test_address_tools_integration.py   # Tool-level integration tests for address tools
-│   │   ├── test_block_tools_integration.py     # Tool-level integration tests for block tools
-│   │   ├── test_chains_tools_integration.py    # Tool-level integration tests for chains tools
-│   │   ├── test_common_helpers.py              # Helper-level integration tests for API helpers
-│   │   ├── test_contract_tools_integration.py  # Tool-level integration tests for contract tools
-│   │   ├── test_direct_api_tools_integration.py   # Tool-level integration tests for direct API tool
-│   │   ├── test_ens_tools_integration.py       # Tool-level integration tests for ENS tools
-│   │   ├── test_search_tools_integration.py    # Tool-level integration tests for search tools
-│   │   └── test_transaction_tools_integration.py # Tool-level integration tests for transaction tools
+│   │   ├── helpers.py          # Shared utilities for integration assertions
+│   │   ├── test_common_helpers.py  # Helper-level integration tests for API helpers
+│   │   ├── address/            # Address tool integration tests (one file per tool)
+│   │   │   ├── test_get_address_info_real.py
+│   │   │   ├── test_get_address_logs_real.py
+│   │   │   ├── test_get_tokens_by_address_real.py
+│   │   │   └── test_nft_tokens_by_address_real.py
+│   │   ├── block/
+│   │   │   ├── test_get_block_info_real.py
+│   │   │   └── test_get_latest_block_real.py
+│   │   ├── chains/
+│   │   │   └── test_get_chains_list_real.py
+│   │   ├── contract/
+│   │   │   ├── Web3PyTestContract.sol          # Fixture contract for live calls
+│   │   │   ├── test_get_contract_abi_real.py
+│   │   │   ├── test_inspect_contract_code_real.py
+│   │   │   ├── test_read_contract_real.py
+│   │   │   └── web3py_test_contract_abi.json   # ABI fixture for Web3Py tests
+│   │   ├── direct_api/
+│   │   │   └── test_direct_api_call_real.py
+│   │   ├── ens/
+│   │   │   └── test_get_address_by_ens_name_real.py
+│   │   ├── search/
+│   │   │   └── test_lookup_token_by_symbol_real.py
+│   │   └── transaction/
+│   │       ├── test_get_token_transfers_by_address_real.py
+│   │       ├── test_get_transaction_info_real.py
+│   │       ├── test_get_transaction_logs_real.py
+│   │       ├── test_get_transactions_by_address_real.py
+│   │       └── test_transaction_summary_real.py
 │   ├── api/                      # Unit tests for the REST API
 │   │   └── test_routes.py        # Tests for static API route definitions
 │   ├── test_server.py            # Tests for server CLI and startup logic
@@ -243,7 +264,8 @@ mcp-server/
         * All tests maintain full isolation using `unittest.mock.patch` to mock external API calls.
     * **`tests/integration/`**: Contains the **integration test** suite. These tests make real network calls and are divided into two categories:
         * **Helper-level tests** in `test_common_helpers.py` verify basic connectivity and API availability.
-        * **Tool-level tests** in `test_*_integration.py` validate that our tools extract and structure data correctly from live responses.
+        * **Tool-level tests** live in domain-specific folders (for example, `tests/integration/address/`). Each `test_*_real.py`
+          module exercises exactly one MCP tool to keep test contexts focused for coding agents.
       All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
 5. **`blockscout_mcp_server/` (Main Python Package)**
