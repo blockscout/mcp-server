@@ -13,12 +13,15 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
     """Tests that get_token_transfers_by_address returns a transformed list of transfers."""
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
-    result = await get_token_transfers_by_address(
-        chain_id="1",
-        address=address,
-        age_to="2017-01-01T00:00:00.00Z",
-        ctx=mock_ctx,
-    )
+    try:
+        result = await get_token_transfers_by_address(
+            chain_id="1",
+            address=address,
+            age_to="2017-01-01T00:00:00.00Z",
+            ctx=mock_ctx,
+        )
+    except httpx.HTTPError as exc:
+        pytest.skip(f"Skipping get_token_transfers_by_address integration test due to network issue: {exc}")
 
     assert isinstance(result, ToolResponse)
     items = result.data
@@ -33,8 +36,8 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
 
     for item in items:
         assert isinstance(item, AdvancedFilterItem)
-        assert isinstance(item.from_address, str | type(None))
-        assert isinstance(item.to_address, str | type(None))
+        assert item.from_address is None or isinstance(item.from_address, str)
+        assert item.to_address is None or isinstance(item.to_address, str)
         item_dict = item.model_dump(by_alias=True)
         assert "value" not in item_dict
         assert "internal_transaction_index" not in item_dict
@@ -53,7 +56,7 @@ async def test_get_token_transfers_by_address_pagination_integration(mock_ctx):
 
     try:
         first_page = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
-    except httpx.HTTPStatusError as exc:
+    except httpx.HTTPError as exc:
         pytest.skip(f"API request failed: {exc}")
 
     if not first_page.pagination:
@@ -68,7 +71,7 @@ async def test_get_token_transfers_by_address_pagination_integration(mock_ctx):
             ctx=mock_ctx,
             cursor=cursor,
         )
-    except httpx.HTTPStatusError as exc:
+    except httpx.HTTPError as exc:
         pytest.fail(f"Failed to fetch second page: {exc}")
 
     assert isinstance(second_page.data, list)

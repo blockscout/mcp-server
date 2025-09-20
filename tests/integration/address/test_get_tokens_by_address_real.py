@@ -9,7 +9,10 @@ from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"  # Binance wallet
-    result = await get_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
+    try:
+        result = await get_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
+    except httpx.HTTPError as exc:
+        pytest.skip(f"Skipping get_tokens_by_address integration test due to network issue: {exc}")
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, list) and len(result.data) > 0
@@ -25,7 +28,7 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
 
     try:
         first_page_response = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
-    except httpx.HTTPStatusError as exc:
+    except httpx.HTTPError as exc:
         pytest.skip(f"API request failed, skipping pagination test: {exc}")
 
     assert first_page_response.pagination is not None, "Pagination info is missing."
@@ -37,7 +40,7 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
 
     try:
         second_page_response = await get_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
-    except httpx.HTTPStatusError as exc:
+    except httpx.HTTPError as exc:
         pytest.fail(f"API request for the second page failed with cursor: {exc}")
 
     assert isinstance(second_page_response, ToolResponse)

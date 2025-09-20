@@ -10,7 +10,10 @@ from tests.integration.helpers import is_log_a_truncated_call_executed
 @pytest.mark.asyncio
 async def test_get_address_logs_integration(mock_ctx):
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
-    result = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
+    try:
+        result = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
+    except httpx.HTTPError as exc:
+        pytest.fail(f"Live get_address_logs request failed for {address}: {exc}")
 
     assert isinstance(result, ToolResponse)
     assert result.pagination is not None
