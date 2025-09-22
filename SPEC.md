@@ -379,6 +379,15 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms.
 
+    ##### Specialized Response Handling via Dispatcher
+
+    While the `direct_api_call` tool is designed to be a generic gateway, some endpoints benefit from specialized response processing to make their data more useful and context-friendly for AI agents. To accommodate this without creating new tools, `direct_api_call` implements an internal dispatcher pattern.
+
+    - **Dispatcher (`dispatcher.py`)**: This module contains logic to match an incoming `endpoint_path` to a specific handler function. It uses a self-registering pattern where handlers use a decorator to associate themselves with a URL path regex.
+    - **Handlers (`handlers/`)**: Specialized response processors are located in the `blockscout_mcp_server/tools/direct_api/handlers/` directory. Each handler is responsible for transforming a raw JSON API response into a structured `ToolResponse` with a specific data model, applying logic like data truncation, field curation, and custom pagination.
+
+    If a matching handler is found, `direct_api_call` returns the rich, structured response from the handler. If no handler matches, it falls back to its default behavior of returning the raw, unprocessed JSON response wrapped in a generic `DirectApiData` model. This architecture allows for targeted enhancements while keeping the tool surface minimal and the system easily extensible.
+
     **g) Transaction Input Data Truncation**
 
     To handle potentially massive transaction input data, the `get_transaction_info` tool employs a multi-faceted truncation strategy.

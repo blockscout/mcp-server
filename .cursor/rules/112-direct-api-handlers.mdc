@@ -1,0 +1,38 @@
+---
+description: Guidelines for creating specialized handlers for the direct_api_call tool.
+globs:
+alwaysApply: false
+---
+# `direct_api_call` Handler Guidelines
+
+This document outlines the pattern for creating specialized response handlers that are invoked by the `direct_api_call` tool's dispatcher.
+
+## Purpose
+Handlers allow for custom processing of specific API endpoints to provide richer, more structured, and context-aware responses than the default generic JSON output of `direct_api_call`.
+
+## Handler Contract
+A handler MUST adhere to the following contract:
+1.  **Location**: It must be located in a new module within the `blockscout_mcp_server/tools/direct_api/handlers/` directory.
+2.  **Registration**: It must use the `@register_handler` decorator from `...tools.direct_api.dispatcher` to associate itself with a URL path regex.
+3.  **Signature**: It must be an `async` function that accepts a `match: re.Match` object as its first argument, followed by keyword arguments including `response_json: dict` and other context passed by the dispatcher.
+4.  **Responsibility**: It is responsible for processing the `response_json` and returning a complete, strongly-typed `ToolResponse[SpecificModel]` object. It is also responsible for extracting any path parameters it needs from the `match` object (e.g., `address = match.group("address")`).
+5.  **Activation**: To ensure the handler is registered on server startup, it must be imported in `blockscout_mcp_server/tools/direct_api/handlers/__init__.py`.
+
+### Example Handler
+```python
+# in .../handlers/my_handler.py
+import re
+from ...dispatcher import register_handler
+from ...models import ToolResponse, MySpecificModel
+
+@register_handler(r"/api/v2/my_endpoint/(?P<id>\d+)")
+async def handle_my_endpoint(match: re.Match, response_json: dict, **kwargs) -> ToolResponse[MySpecificModel]:
+    item_id = match.group("id")
+    # ... process response_json ...
+    processed_data = MySpecificModel(...)
+    return build_tool_response(data=processed_data)
+
+# in .../handlers/__init__.py
+from . import my_handler
+```
+```

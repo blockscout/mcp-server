@@ -175,6 +175,12 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     assert first_page_response.data[0] != second_page_response.data[0]
 ```
 
+## Testing the `direct_api_call` Dispatcher
+To test that the dispatcher correctly routes to a handler:
+- **Location**: `tests/integration/direct_api/test_<handler_name>_real.py`.
+- **Method**: Call the main `direct_api_call` tool with an `endpoint_path` that should trigger the handler.
+- **Assertion**: Assert that the returned `ToolResponse` contains the specific data model processed by the handler (e.g., `isinstance(result.data, list)` and `isinstance(result.data[0], AddressLogItem)`), not the generic `DirectApiData`. This verifies the end-to-end dispatch flow.
+
 ## General Rules for All Integration Tests
 
 ### Use Stable Targets

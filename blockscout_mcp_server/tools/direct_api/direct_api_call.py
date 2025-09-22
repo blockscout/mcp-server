@@ -13,6 +13,8 @@ from blockscout_mcp_server.tools.common import (
     report_and_log_progress,
 )
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
+from blockscout_mcp_server.tools.direct_api import dispatcher
+from blockscout_mcp_server.tools.direct_api import handlers as _handlers  # noqa: F401  # Ensure handler registration
 
 
 @log_tool_invocation
@@ -33,7 +35,7 @@ async def direct_api_call(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
-) -> ToolResponse[DirectApiData]:
+) -> ToolResponse[Any]:
     """Call a raw Blockscout API endpoint for advanced or chain-specific data.
 
     Do not include query strings in ``endpoint_path``; pass all query parameters via
@@ -62,6 +64,22 @@ async def direct_api_call(
         message="Fetching data from Blockscout API...",
     )
     response_json = await make_blockscout_request(base_url=base_url, api_path=endpoint_path, params=params)
+
+    handler_response = await dispatcher.dispatch(
+        endpoint_path=endpoint_path,
+        response_json=response_json,
+        chain_id=chain_id,
+        base_url=base_url,
+        ctx=ctx,
+    )
+    if handler_response is not None:
+        await report_and_log_progress(
+            ctx,
+            progress=2.0,
+            total=2.0,
+            message="Successfully fetched data.",
+        )
+        return handler_response
 
     pagination = None
     next_page_params = response_json.get("next_page_params")
