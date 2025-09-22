@@ -417,6 +417,10 @@ This architecture provides the flexibility of a multi-protocol server without th
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
+10. **Standardized Tool Annotations**:
+
+    To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
+
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
 #### The Initial Problem: Bypassed Server Instructions
