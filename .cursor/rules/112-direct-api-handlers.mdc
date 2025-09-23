@@ -14,33 +14,48 @@ Handlers allow for custom processing of specific API endpoints to provide richer
 A handler MUST adhere to the following contract:
 1.  **Location**: It must be located in a new module within the `blockscout_mcp_server/tools/direct_api/handlers/` directory.
 2.  **Registration**: It must use the `@register_handler` decorator from `...tools.direct_api.dispatcher` to associate itself with a URL path regex.
-3.  **Signature**: It must be an `async` function that accepts a `match: re.Match` object as its first argument, followed by keyword arguments including `response_json: dict`, `query_params: dict | None`, and other context passed by the dispatcher.
+3.  **Signature**: It must be an `async` function that accepts a `match: re.Match` object as its first argument, followed by keyword arguments including `response_json: dict` and other context passed by the dispatcher.
 4.  **Responsibility**: It is responsible for processing the `response_json` and returning a complete, strongly-typed `ToolResponse[SpecificModel]` object. It is also responsible for extracting any path parameters it needs from the `match` object (e.g., `address = match.group("address")`).
-5.  **Activation**: To ensure the handler is registered on server startup, it must be imported in `blockscout_mcp_server/tools/direct_api/handlers/__init__.py`.
+5.  **Activation**: Handlers are automatically discovered and imported at startup via the dynamic module loading in `blockscout_mcp_server/tools/direct_api/handlers/__init__.py`. No manual import is required.
 6.  **Regex Matching**: The dispatcher uses `fullmatch`. Ensure your pattern matches the entire `endpoint_path` (for example, anchor the regex or include trailing slash handling when required).
 
-### Example Handler
-```python
-# in .../handlers/my_handler.py
-import re
-from blockscout_mcp_server.tools.direct_api.dispatcher import register_handler
-from blockscout_mcp_server.tools.common import build_tool_response
-from blockscout_mcp_server.models import ToolResponse, MySpecificModel
+## Parameter Guidelines
 
+**Only declare parameters you actually use.** The dispatcher automatically passes all context parameters via `**kwargs`, so handlers should only explicitly declare parameters they directly reference in their code.
+
+**Common available parameters include:**
+- `match: re.Match` - **Always required** - Contains regex match groups for path parameters
+- `response_json: dict` - **Usually required** - The raw JSON response from the API
+- `query_params: dict | None` - **Only declare if used** - Query parameters from the original request
+- `chain_id: str`, `base_url: str`, `ctx: Context` - **Only declare if used** - Additional context
+
+**Examples:**
+
+Handler that doesn't need query_params:
+```python
 @register_handler(r"^/api/v2/my_endpoint/(?P<id>\d+)/?$")
-async def handle_my_endpoint(
+async def handle_simple_endpoint(
+    *,
+    match: re.Match,
+    response_json: dict,
+) -> ToolResponse[MyModel]:
+    item_id = match.group("id")
+    # ... process response_json ...
+    return build_tool_response(data=processed_data)
+```
+
+Handler that uses query_params for pagination:
+```python
+@register_handler(r"^/api/v2/paginated_endpoint/?$")
+async def handle_paginated_endpoint(
     *,
     match: re.Match,
     response_json: dict,
     query_params: dict | None,
+    chain_id: str,
     **kwargs,
-) -> ToolResponse[MySpecificModel]:
-    item_id = match.group("id")
+) -> ToolResponse[list[MyModel]]:
+    # Use query_params to build next_call pagination
     # ... process response_json ...
-    processed_data = MySpecificModel(...)
-    return build_tool_response(data=processed_data)
-
-# in .../handlers/__init__.py
-from . import my_handler
-```
+    return build_tool_response(data=processed_data, pagination=pagination)
 ```

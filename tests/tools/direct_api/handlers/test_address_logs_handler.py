@@ -40,7 +40,6 @@ async def test_handle_address_logs_success(mock_ctx):
         chain_id="1",
         base_url="https://example.blockscout",
         ctx=mock_ctx,
-        query_params=None,
     )
 
     assert isinstance(result, ToolResponse)
@@ -87,7 +86,6 @@ async def test_handle_address_logs_pagination(mock_ctx):
             chain_id="10",
             base_url="https://example.blockscout",
             ctx=mock_ctx,
-            query_params=None,
         )
 
     assert result.pagination is not None
@@ -124,7 +122,6 @@ async def test_handle_address_logs_truncation_notes(mock_ctx):
         chain_id="1",
         base_url="https://example.blockscout",
         ctx=mock_ctx,
-        query_params=None,
     )
 
     assert result.notes is not None
@@ -145,7 +142,6 @@ async def test_handle_address_logs_empty_items(mock_ctx):
         chain_id="1",
         base_url="https://example.blockscout",
         ctx=mock_ctx,
-        query_params=None,
     )
 
     assert isinstance(result, ToolResponse)

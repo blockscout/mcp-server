@@ -14,7 +14,6 @@ class DirectApiHandler(Protocol):
         self,
         *,
         match: re.Match[str],
-        query_params: dict[str, Any] | None,
         **kwargs: Any,
     ) -> Awaitable[Any]:
         """Handle the dispatched response."""
@@ -36,15 +35,12 @@ def register_handler(path_regex: str) -> Callable[[DirectApiHandler], DirectApiH
 
 async def dispatch(
     endpoint_path: str,
-    *,
-    query_params: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> Any | None:
     """Find and execute the first matching handler for the given endpoint path.
 
     Args:
         endpoint_path: The API path that was requested.
-        query_params: The query parameters used in the upstream API request (if any).
         **kwargs: Additional context forwarded to the handler.
 
     Note: precedence follows registration order. Keep regex patterns disjoint or
@@ -53,5 +49,5 @@ async def dispatch(
     for path_regex, handler in HANDLER_REGISTRY:
         match = path_regex.fullmatch(endpoint_path)
         if match:
-            return await handler(match=match, query_params=query_params, **kwargs)
+            return await handler(match=match, **kwargs)
     return None
