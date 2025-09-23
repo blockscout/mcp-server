@@ -69,6 +69,7 @@ async def direct_api_call(
 
     handler_response = await dispatcher.dispatch(
         endpoint_path=endpoint_path,
+        query_params=params if params else None,
         response_json=response_json,
         chain_id=chain_id,
         base_url=base_url,

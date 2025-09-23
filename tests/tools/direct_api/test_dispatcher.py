@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from blockscout_mcp_server.tools.direct_api import dispatcher
@@ -30,3 +32,28 @@ async def test_dispatch_routes_to_correct_handler(mock_ctx):
     assert hasattr(response, "data"), "Handler did not return a ToolResponse-like object"
     assert isinstance(response.data, list)
     assert response.data == []
+
+
+@pytest.mark.asyncio
+async def test_dispatch_passes_query_params(monkeypatch):
+    """Dispatch should forward query params to the resolved handler."""
+    captured: dict[str, object] = {}
+
+    async def dummy_handler(*, match: re.Match[str], query_params: dict[str, str] | None, **kwargs: object) -> object:
+        captured["match"] = match
+        captured["query_params"] = query_params
+        return {"data": []}
+
+    monkeypatch.setattr(
+        dispatcher,
+        "HANDLER_REGISTRY",
+        [(re.compile(r"^/dummy$"), dummy_handler)],
+        raising=False,
+    )
+
+    query_params = {"foo": "bar"}
+    response = await dispatcher.dispatch(endpoint_path="/dummy", query_params=query_params, response_json={})
+
+    assert response == {"data": []}
+    assert "match" in captured and captured["match"].group(0) == "/dummy"
+    assert captured["query_params"] is query_params
