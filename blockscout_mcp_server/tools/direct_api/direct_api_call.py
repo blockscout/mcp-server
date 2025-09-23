@@ -43,7 +43,7 @@ async def direct_api_call(
 
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
     use the provided next_call to get additional pages.
-    
+
     Returns:
         ToolResponse[Any]: Must return ToolResponse[Any] (not ToolResponse[BaseModel])
         because specialized handlers can return lists or other types that don't inherit
