@@ -51,6 +51,8 @@ async def direct_api_call(
         message=f"Resolving Blockscout URL for chain {chain_id}...",
     )
     base_url = await get_blockscout_base_url(chain_id)
+    if endpoint_path != "/" and endpoint_path.endswith("/"):
+        endpoint_path = endpoint_path.rstrip("/")
     if "?" in endpoint_path:
         raise ValueError("Do not include query parameters in endpoint_path. Use query_params instead.")
 

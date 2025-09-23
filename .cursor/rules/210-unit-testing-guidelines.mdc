@@ -124,7 +124,7 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
 ## Testing `direct_api_call` Handlers
 Handlers for `direct_api_call` must be tested in isolation.
 - **Location**: `tests/tools/direct_api/handlers/test_<handler_name>.py`.
-- **Method**: Do not mock API calls. Instead, call the handler function directly with a sample `response_json` dictionary and a mock `re.Match` object.
+- **Method**: Do not mock API calls. Instead, call the handler function directly with a sample `response_json` dict and a real `re.Match` created via `re.compile(pattern).fullmatch(endpoint_path)`.
 - **Assertion**: Assert that the handler correctly transforms the input JSON into the expected `ToolResponse[SpecificModel]`.
 
 ## File Size Limitations

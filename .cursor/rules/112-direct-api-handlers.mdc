@@ -17,15 +17,17 @@ A handler MUST adhere to the following contract:
 3.  **Signature**: It must be an `async` function that accepts a `match: re.Match` object as its first argument, followed by keyword arguments including `response_json: dict` and other context passed by the dispatcher.
 4.  **Responsibility**: It is responsible for processing the `response_json` and returning a complete, strongly-typed `ToolResponse[SpecificModel]` object. It is also responsible for extracting any path parameters it needs from the `match` object (e.g., `address = match.group("address")`).
 5.  **Activation**: To ensure the handler is registered on server startup, it must be imported in `blockscout_mcp_server/tools/direct_api/handlers/__init__.py`.
+6.  **Regex Matching**: The dispatcher uses `fullmatch`. Ensure your pattern matches the entire `endpoint_path` (for example, anchor the regex or include trailing slash handling when required).
 
 ### Example Handler
 ```python
 # in .../handlers/my_handler.py
 import re
-from ...dispatcher import register_handler
-from ...models import ToolResponse, MySpecificModel
+from blockscout_mcp_server.tools.direct_api.dispatcher import register_handler
+from blockscout_mcp_server.tools.common import build_tool_response
+from blockscout_mcp_server.models import ToolResponse, MySpecificModel
 
-@register_handler(r"/api/v2/my_endpoint/(?P<id>\d+)")
+@register_handler(r"^/api/v2/my_endpoint/(?P<id>\d+)/?$")
 async def handle_my_endpoint(match: re.Match, response_json: dict, **kwargs) -> ToolResponse[MySpecificModel]:
     item_id = match.group("id")
     # ... process response_json ...

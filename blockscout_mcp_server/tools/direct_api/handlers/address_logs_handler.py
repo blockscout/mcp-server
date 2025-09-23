@@ -18,7 +18,7 @@ from blockscout_mcp_server.tools.common import (
 from blockscout_mcp_server.tools.direct_api.dispatcher import register_handler
 
 
-@register_handler(r"/api/v2/addresses/(?P<address>0x[a-fA-F0-9]{40})/logs")
+@register_handler(r"^/api/v2/addresses/(?P<address>0x[a-fA-F0-9]{40})/logs/?$")
 async def handle_address_logs(
     *,
     match: re.Match[str],
@@ -31,16 +31,10 @@ async def handle_address_logs(
     address = match.group("address")
     original_items, was_truncated = _process_and_truncate_log_items(response_json.get("items", []))
 
+    keep = ("block_number", "transaction_hash", "topics", "data", "decoded", "index")
     log_items_dicts: list[dict[str, Any]] = []
     for item in original_items:
-        curated_item: dict[str, Any] = {
-            "block_number": item.get("block_number"),
-            "transaction_hash": item.get("transaction_hash"),
-            "topics": item.get("topics"),
-            "data": item.get("data"),
-            "decoded": item.get("decoded"),
-            "index": item.get("index"),
-        }
+        curated_item = {key: item[key] for key in keep if key in item}
         if item.get("data_truncated"):
             curated_item["data_truncated"] = True
         log_items_dicts.append(curated_item)

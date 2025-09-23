@@ -12,7 +12,7 @@ from blockscout_mcp_server.tools.direct_api.handlers.address_logs_handler import
 
 def _build_match(address: str) -> re.Match[str]:
     path = f"/api/v2/addresses/{address}/logs"
-    pattern = re.compile(r"/api/v2/addresses/(?P<address>0x[a-fA-F0-9]{40})/logs")
+    pattern = re.compile(r"^/api/v2/addresses/(?P<address>0x[a-fA-F0-9]{40})/logs/?$")
     match = pattern.fullmatch(path)
     assert match is not None  # Sanity check for test data
     return match
@@ -129,3 +129,22 @@ async def test_handle_address_logs_truncation_notes(mock_ctx):
     assert "transactions/{THE_TRANSACTION_HASH}/logs" in result.notes[-1]
     first_item_dump = result.data[0].model_dump()
     assert first_item_dump.get("data_truncated") is True
+
+
+@pytest.mark.asyncio
+async def test_handle_address_logs_empty_items(mock_ctx):
+    address = "0x" + "4" * 40
+    response_json = {"items": []}
+
+    result = await handle_address_logs(
+        match=_build_match(address),
+        response_json=response_json,
+        chain_id="1",
+        base_url="https://example.blockscout",
+        ctx=mock_ctx,
+    )
+
+    assert isinstance(result, ToolResponse)
+    assert result.data == []
+    assert result.notes is None
+    assert result.pagination is None

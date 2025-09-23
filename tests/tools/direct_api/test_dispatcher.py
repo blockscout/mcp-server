@@ -27,4 +27,6 @@ async def test_dispatch_routes_to_correct_handler(mock_ctx):
         ctx=mock_ctx,
     )
     assert response is not None, "Dispatcher did not invoke the handler"
+    assert hasattr(response, "data"), "Handler did not return a ToolResponse-like object"
+    assert isinstance(response.data, list)
     assert response.data == []

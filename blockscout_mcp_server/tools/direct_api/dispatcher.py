@@ -4,16 +4,29 @@ from __future__ import annotations
 
 import re
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Protocol
+
+
+class DirectApiHandler(Protocol):
+    """Protocol describing the expected handler signature."""
+
+    def __call__(
+        self,
+        *,
+        match: re.Match[str],
+        **kwargs: Any,
+    ) -> Awaitable[Any]:
+        """Handle the dispatched response."""
+
 
 # The registry will store tuples of (regex_pattern, handler_function)
-HANDLER_REGISTRY: list[tuple[re.Pattern[str], Callable[..., Awaitable[Any]]]] = []
+HANDLER_REGISTRY: list[tuple[re.Pattern[str], DirectApiHandler]] = []
 
 
-def register_handler(path_regex: str) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+def register_handler(path_regex: str) -> Callable[[DirectApiHandler], DirectApiHandler]:
     """A decorator to register a specialized handler for a given URL path regex."""
 
-    def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+    def decorator(func: DirectApiHandler) -> DirectApiHandler:
         HANDLER_REGISTRY.append((re.compile(path_regex), func))
         return func
 
@@ -21,7 +34,11 @@ def register_handler(path_regex: str) -> Callable[[Callable[..., Awaitable[Any]]
 
 
 async def dispatch(endpoint_path: str, **kwargs: Any) -> Any | None:
-    """Find and execute the first matching handler for the given endpoint path."""
+    """Find and execute the first matching handler for the given endpoint path.
+
+    Note: precedence follows registration order. Keep regex patterns disjoint or
+    register the most specific handler first when overlap is unavoidable.
+    """
     for path_regex, handler in HANDLER_REGISTRY:
         match = path_regex.fullmatch(endpoint_path)
         if match:
