@@ -45,6 +45,11 @@ async def dispatch(
 
     Note: precedence follows registration order. Keep regex patterns disjoint or
     register the most specific handler first when overlap is unavoidable.
+    
+    Returns:
+        Any | None: Must return Any (not ToolResponse[BaseModel]) because some handlers
+        can return lists or other types that don't inherit from BaseModel. The handler
+        is responsible for returning properly structured ToolResponse objects.
     """
     for path_regex, handler in HANDLER_REGISTRY:
         match = path_regex.fullmatch(endpoint_path)
