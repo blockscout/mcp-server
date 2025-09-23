@@ -121,6 +121,12 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
 - **API Calls:** Assert that the mocked API helper functions (`make_blockscout_request`, etc.) are called exactly once with the correct `api_path` and `params`.
 - **Wrapper Integration:** For tools using `make_request_with_periodic_progress`, mock the wrapper itself and assert that it was called with the correct arguments (`request_function`, `request_args`, etc.).
 
+## Testing `direct_api_call` Handlers
+Handlers for `direct_api_call` must be tested in isolation.
+- **Location**: `tests/tools/direct_api/handlers/test_<handler_name>.py`.
+- **Method**: Do not mock API calls. Instead, call the handler function directly with a sample `response_json` dict and a real `re.Match` created via `re.compile(pattern).fullmatch(endpoint_path)`.
+- **Assertion**: Assert that the handler correctly transforms the input JSON into the expected `ToolResponse[SpecificModel]`.
+
 ## File Size Limitations
 
 **Unit test files must not exceed 500 LOC.** If a file approaches this limit, split tests into multiple focused modules (e.g., `test_get_transactions_by_address.py` and `test_get_transactions_by_address_pagination.py`) so each file stays readable while still covering the same tool.

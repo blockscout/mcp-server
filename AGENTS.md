@@ -32,7 +32,6 @@ mcp-server/
 │       ├── address/            # Address-related tools grouped by functionality
 │       │   ├── __init__.py
 │       │   ├── get_address_info.py
-│       │   ├── get_address_logs.py
 │       │   ├── get_tokens_by_address.py
 │       │   └── nft_tokens_by_address.py
 │       ├── block/
@@ -50,7 +49,11 @@ mcp-server/
 │       │   └── read_contract.py
 │       ├── direct_api/
 │       │   ├── __init__.py
-│       │   └── direct_api_call.py
+│       │   ├── direct_api_call.py
+│       │   ├── dispatcher.py
+│       │   └── handlers/
+│       │       ├── __init__.py
+│       │       └── address_logs_handler.py
 │       ├── ens/
 │       │   ├── __init__.py
 │       │   └── get_address_by_ens_name.py
@@ -75,7 +78,6 @@ mcp-server/
 │   │   ├── test_common_helpers.py  # Helper-level integration tests for API helpers
 │   │   ├── address/            # Address tool integration tests (one file per tool)
 │   │   │   ├── test_get_address_info_real.py
-│   │   │   ├── test_get_address_logs_real.py
 │   │   │   ├── test_get_tokens_by_address_real.py
 │   │   │   └── test_nft_tokens_by_address_real.py
 │   │   ├── block/
@@ -90,6 +92,7 @@ mcp-server/
 │   │   │   ├── test_read_contract_real.py
 │   │   │   └── web3py_test_contract_abi.json   # ABI fixture for Web3Py tests
 │   │   ├── direct_api/
+│   │   │   ├── test_address_logs_handler_real.py
 │   │   │   └── test_direct_api_call_real.py
 │   │   ├── ens/
 │   │   │   └── test_get_address_by_ens_name_real.py
@@ -108,7 +111,6 @@ mcp-server/
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── address/            # Tests for address-related MCP tools
 │       │   ├── test_get_address_info.py        # Tests for get_address_info
-│       │   ├── test_get_address_logs.py              # Tests for get_address_logs
 │       │   ├── test_get_tokens_by_address.py         # Tests for get_tokens_by_address
 │       │   ├── test_nft_tokens_by_address.py         # Tests for nft_tokens_by_address
 │       │   └── test_nft_tokens_by_address_pagination.py  # Pagination scenarios for nft_tokens_by_address
@@ -132,6 +134,9 @@ mcp-server/
 │       │   ├── test_helpers.py                     # Tests for transaction helper utilities
 │       │   └── test_transaction_summary.py         # Tests for transaction_summary
 │       ├── direct_api/         # Tests for the direct API MCP tool
+│       │   ├── handlers/
+│       │   │   └── test_address_logs_handler.py
+│       │   ├── test_dispatcher.py
 │       │   └── test_direct_api_call.py  # Tests for direct_api_call
 │       ├── ens/                # Tests for ENS-related MCP tools
 │       │   └── test_get_address_by_ens_name.py  # Tests for get_address_by_ens_name

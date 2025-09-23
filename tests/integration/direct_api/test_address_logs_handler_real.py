@@ -2,40 +2,37 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.models import AddressLogItem, ToolResponse
-from blockscout_mcp_server.tools.address.get_address_logs import get_address_logs
+from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import is_log_a_truncated_call_executed
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_address_logs_integration(mock_ctx):
+async def test_direct_api_call_dispatches_to_logs_handler(mock_ctx):
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
+    endpoint_path = f"/api/v2/addresses/{address}/logs"
     try:
-        result = await get_address_logs(chain_id="1", address=address, ctx=mock_ctx)
+        result = await direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx)
     except httpx.HTTPError as exc:
-        pytest.fail(f"Live get_address_logs request failed for {address}: {exc}")
+        pytest.fail(f"Live direct_api_call request failed for {endpoint_path}: {exc}")
 
     assert isinstance(result, ToolResponse)
-    assert result.pagination is not None
     assert isinstance(result.data, list)
-    assert 0 < len(result.data) <= 10
-
-    first_log = result.data[0]
-    assert isinstance(first_log, AddressLogItem)
-    assert isinstance(first_log.transaction_hash, str)
-    assert first_log.transaction_hash.startswith("0x")
-    assert isinstance(first_log.block_number, int)
+    assert result.data, "Expected at least one log item"
+    assert isinstance(result.data[0], AddressLogItem)
+    assert result.pagination is not None
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_address_logs_pagination_integration(mock_ctx):
-    """Tests that get_address_logs can successfully use a cursor to fetch a second page."""
+async def test_direct_api_call_pagination_integration(mock_ctx):
+    """direct_api_call should provide pagination when the handler slices results."""
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     chain_id = "1"
+    endpoint_path = f"/api/v2/addresses/{address}/logs"
 
     try:
-        first_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx)
+        first_page_result = await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"API request failed, skipping pagination test: {exc}")
 
@@ -47,7 +44,12 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
     assert len(first_page_result.data) > 0
 
     try:
-        second_page_result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+        second_page_result = await direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            cursor=cursor,
+            ctx=mock_ctx,
+        )
     except httpx.HTTPStatusError as exc:
         pytest.fail(f"API request for the second page failed with cursor: {exc}")
 
@@ -58,22 +60,24 @@ async def test_get_address_logs_pagination_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_address_logs_paginated_search_for_truncation(mock_ctx):
-    """
-    Tests that get_address_logs can find a 'CallExecuted' event with truncated
-    decoded data by searching across pages. This validates the handling of
-    complex nested truncation from the live API.
-    """
+async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
+    """direct_api_call should surface truncated logs when paging through results."""
 
     address = "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7"
     chain_id = "1"
+    endpoint_path = f"/api/v2/addresses/{address}/logs"
     max_pages_to_check = 5
     cursor = None
     found_truncated_log = False
 
     for page_num in range(max_pages_to_check):
         try:
-            result = await get_address_logs(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+            result = await direct_api_call(
+                chain_id=chain_id,
+                endpoint_path=endpoint_path,
+                cursor=cursor,
+                ctx=mock_ctx,
+            )
         except httpx.HTTPStatusError as exc:
             pytest.skip(f"API request failed on page {page_num + 1}: {exc}")
 

@@ -1,5 +1,5 @@
 ---
-description: Folow these instructions whenever creating new MCP tool functions or modifying existing ones
+description: Follow these instructions whenever creating new MCP tool functions or modifying existing ones
 globs: 
 alwaysApply: false
 ---
@@ -263,8 +263,11 @@ async def tool_name(
 
 **All tools MUST return a standardized `ToolResponse[YourDataModel]` object.** This ensures consistency and provides clear, machine-readable data to the AI. The `ToolResponse` model is generic, allowing you to specify the exact type of the `data` payload for maximum type safety and clarity.
 
-**❌ AVOID:** Generic `ToolResponse[dict]` or `ToolResponse[Any]`  
+**❌ AVOID:** Generic `ToolResponse[dict]` or `ToolResponse[Any]`
 **✅ PREFER:** Specific `ToolResponse[YourDataModel]`
+
+**Note on Dynamic Dispatcher Tools:**
+An exception to the `AVOID: ToolResponse[Any]` rule exists for tools that function as dynamic dispatchers (e.g., `direct_api_call`). Such tools MAY be annotated with `-> ToolResponse[Any]` to accommodate multiple, strongly-typed responses from their specialized handlers. However, each underlying handler MUST still return a specific `ToolResponse[YourDataModel]`.
 
 Use the `build_tool_response` helper from `tools/common.py` to construct the response. The following patterns demonstrate how to process API data and package it into the appropriate fields of a `ToolResponse` object.
 
