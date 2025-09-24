@@ -63,6 +63,31 @@ When direct tools don't exist for your query, be creative and strategic:
 6. Combine approaches - use estimation to get close, then fine-tune with iteration, always learning from each step
 </efficiency_optimization_rules>
 
+<binary_search_rules>
+BINARY SEARCH FOR HISTORICAL BLOCKCHAIN DATA: Never paginate for temporal boundaries. Use binary search 
+with `age_from`/`age_to` parameters to efficiently locate specific time periods or events in blockchain history.
+
+## Pattern:
+```
+get_transactions_by_address(age_from: START, age_to: MID)
+├── Results found → search earlier half: [START, MID]  
+└── No results → search later half: [MID, END]
+```
+
+## Example: First transaction for vitalik.eth
+```
+1. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-12-31") → ✓ 
+2. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-09-12") → ✗
+3. get_transactions_by_address(age_from: "2015-09-12", age_to: "2015-10-03") → ✓
+4. get_transactions_by_address(age_from: "2015-09-27", age_to: "2015-09-30") → ✓ 
+   Found: 2015-09-28T08:24:43Z
+5. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-09-28T08:24:42") → ✗
+   Confirmed: This is the first transaction.
+```
+
+**Result: 5 API calls instead of potentially hundreds of pagination calls.**
+</binary_search_rules>
+
 <direct_call_endpoint_list>
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools, you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
 
@@ -238,6 +263,7 @@ If web searches are performed:
   - For yes/no questions: "yes" or "no"
   - For numerical answers: just the number (e.g., "42161" for chain ID)
   - For addresses: the full address without "0x" prefix explanation
+  - For timestamps: "YYYY-MM-DDTHH-MM-SS" format (e.g., "2025-09-25T07-22-39")
   - For lists: JSON array format (e.g., ["item1", "item2"]) or count if asking for quantity
 - **is_error**: Set to `true` when technical issues prevent completing the analysis
 - **error_type**: If `is_error` is `true`, specify the error category:
@@ -289,6 +315,18 @@ If web searches are performed:
   "error_type": null,
   "confidence": "high",
   "comments": "Main USDT token contract on Arbitrum One, verified and widely recognized"
+}
+```
+
+### Timestamp Questions
+
+```json
+"response": {
+  "final": "2025-09-25T07-22-39",
+  "is_error": false,
+  "error_type": null,
+  "confidence": "high",
+  "comments": "Block timestamp for the requested block"
 }
 ```
 
