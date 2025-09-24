@@ -11,6 +11,7 @@ from blockscout_mcp_server.constants import (
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
+    BINARY_SEARCH_RULES,
 )
 from blockscout_mcp_server.models import (
     ChainIdGuidance,
@@ -83,6 +84,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         time_based_query_rules=TIME_BASED_QUERY_RULES,
         block_time_estimation_rules=BLOCK_TIME_ESTIMATION_RULES,
         efficiency_optimization_rules=EFFICIENCY_OPTIMIZATION_RULES,
+        binary_search_rules=BINARY_SEARCH_RULES,
         direct_api_call_rules=DIRECT_API_CALL_RULES,
         direct_api_endpoints=direct_api_endpoints,
     )

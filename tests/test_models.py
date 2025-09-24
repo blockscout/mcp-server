@@ -57,6 +57,7 @@ def test_tool_response_complex_data():
         time_based_query_rules="Time rule",
         block_time_estimation_rules="Block rule",
         efficiency_optimization_rules="Efficiency rule",
+        binary_search_rules="Binary search rule",
         direct_api_call_rules="Direct API rule",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -174,6 +175,7 @@ def test_instructions_data():
         time_based_query_rules="Time rules",
         block_time_estimation_rules="Block rules",
         efficiency_optimization_rules="Efficiency rules",
+        binary_search_rules="Binary search rules",
         direct_api_call_rules="Direct API rules",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -187,6 +189,7 @@ def test_instructions_data():
     assert instructions.time_based_query_rules == "Time rules"
     assert instructions.block_time_estimation_rules == "Block rules"
     assert instructions.efficiency_optimization_rules == "Efficiency rules"
+    assert instructions.binary_search_rules == "Binary search rules"
 
 
 def test_tool_response_serialization():
