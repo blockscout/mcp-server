@@ -21,7 +21,11 @@ jobs:
       - name: Login to MCP Registry (DNS)
         run: |
           echo "${{ secrets.MCP_PRIVATE_KEY }}" > private_key.pem
-          ./mcp-publisher login dns --domain blockscout.com --private-key private_key.pem
-
+          PRIVATE_KEY_HEX=$(openssl pkey -in private_key.pem -noout -text \
+            | grep -A3 "priv:" \
+            | tail -n +2 \
+            | tr -d ' :\n')
+          ./mcp-publisher login dns --domain blockscout.com --private-key "$PRIVATE_KEY_HEX"
+          rm -f private_key.pem
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish
