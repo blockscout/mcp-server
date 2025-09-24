@@ -1,5 +1,9 @@
 description = "Create a GitHub issue description."
-prompt = "Prepare a GitHub issue description. Your sole and exclusive output must be a single, well-structured Markdown document in `temp/gh_issues/{{.file}}`. Don't provide any actual code changes yet."
+prompt = """
+Prepare a GitHub issue description. Your sole and exclusive output must be a single, well-structured Markdown document in `temp/gh_issues/{{.file}}`.
+
+CRITICAL: You must NOT modify, create, or edit ANY source code files. You must NOT provide code implementations, patches, or fixes. Your ONLY task is to write a GitHub issue description in the specified file. Do not touch any Python files, configuration files, or any other project files. Only create the issue description document.
+"""
 
 [[params]]
 name = "file"

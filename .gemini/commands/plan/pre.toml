@@ -2,5 +2,5 @@ description = "Describes high level changes."
 prompt = """
 Describe very high level changes required to implement discussed functionality (functionality, test, docs).
 
-Only provide the description of the changes. Don't provide any actual code changes yet.
+CRITICAL: You must NOT modify, create, or edit ANY source code files. You must NOT provide code implementations, patches, or fixes. Your ONLY task is to provide the description of the changes. Do not touch any Python files, configuration files, or any other project files.
 """
