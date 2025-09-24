@@ -15,6 +15,10 @@ Do not assume that the developer will thoroughly read the MCP server's Python SD
 
 Assume that the developer will not prepare good documentation updates due to lack of experience in documentation preparation. Therefore, explicitly provide text snippets showing exactly what must be added to each documentation file. Include the specific sections, headings, and complete text content that should be inserted or modified in README.md, SPEC.md, AGENTS.md, API.md, TESTING.md, .env.example, and any other relevant documentation files.
 
+For testing requirements, explicitly specify:
+- **Purpose and scope** of each required unit test (what functionality it validates)
+- **Specific scenarios** each test should cover (success cases, error handling, edge cases, boundary conditions)
+
 If possible, divide the implementation into distinct phases so that each group of changes can be verified through tests before moving on to the next phase. This incremental approach will help validate modifications step by step and reduce the risk of accumulated errors.
 
 Include a reference to the GitHub issue (with a link) in the plan.
@@ -23,7 +27,7 @@ After creating the plan, double-check that it covers all areas: server functiona
 
 Your sole and exclusive output must be a single, well-structured Markdown document in `temp/impl_plans/issue-{{.github_issue_number}}.md`
 
-Don't provide any actual code changes yet. Just the plan.
+CRITICAL: You must NOT modify, create, or edit ANY source code files. You must NOT provide code implementations, patches, or fixes. Your ONLY task is to write an implementation plan in the specified file. Do not touch any Python files, configuration files, or any other project files. Only create the plan document.
 """
 
 [[params]]
