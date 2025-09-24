@@ -1,10 +1,16 @@
 {
-  "contextFileName": ["GEMINI-evals.md"],
-  "theme": "ANSI",
+  "context": {
+    "fileName": [
+      "GEMINI-evals.md"
+    ]
+  },
   "mcpServers": {
     "blockscout": {
       "httpUrl": "${MCP_SERVER_URL}/mcp",
       "timeout": 180000
     }
+  },
+  "ui": {
+    "theme": "ANSI"
   }
 }

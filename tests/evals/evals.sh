@@ -41,7 +41,7 @@ docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'Is there
 # get_contract_abi
 # lookup_token_by_symbol
 # get_latest_block
-docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'Get the usdt token balance for `0xF977814e90dA44bFA03b6295A0616a897441aceC` on the ethereum mainnet at the block previous to the current block. Final answer is a decimal (e.g. 123.456)'
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'Get the usdt token balance for `0xF977814e90dA44bFA03b6295A0616a897441aceC` on the ethereum mainnet at the block previous to the current block. Answer as per the output format rules where the final field is a decimal (e.g. 123.456)'
 
 # inspect_contract_code
 # get_contract_abi
@@ -58,8 +58,16 @@ docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'How many d
 # transaction_summary
 # get_transaction_logs
 # get_transaction_info
-docker compose run --rm -i evaluation gemini -y -m gemini-2.5-flash -p 'Make comprehensive analysis of the transaction `0x6a6c375ea5c9370727cad7c69326a5f55db7b049623fba0e7ac52704b2778ba8` on Ethereum Mainnet. And answer what could be one word category for it. Collect as much details for this operation as you can before the answer. Final answer is one word.'
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'Make comprehensive analysis of the transaction `0x6a6c375ea5c9370727cad7c69326a5f55db7b049623fba0e7ac52704b2778ba8` on Ethereum Mainnet. And answer what could be one word category for it. Collect as much details for this operation as you can before the answer. Answer as per the output format rules where the final field is one word.'
 
 # nft_tokens_by_address
 # get_address_by_ens_name
 docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'How many tokens of NFT collection "ApePunks" owned by `🇵🇱pl.eth` on Ethereum Mainnet? Final answer is with a number.'
+
+# get_transactions_by_address
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'How old `0xBAfc03eC2641b82ae5E4c4f6cc59455773092DC6` address? Final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH-MM-SS.'
+
+# get_transaction_info
+# direct_api_call
+# get_chains_list
+docker compose run --rm -i evaluation gemini -y -m gemini-2.5-pro -p 'What is the block number on the settlement layer where the most recent completed cross-chain message sent from the Arbitrum Sepolia rollup to the base layer was executed? Final answer is a block number.'

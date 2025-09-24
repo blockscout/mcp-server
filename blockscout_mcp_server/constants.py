@@ -63,6 +63,31 @@ as you learn
 6. Combine approaches - use estimation to get close, then fine-tune with iteration, always learning from each step
 """
 
+BINARY_SEARCH_RULES = """
+BINARY SEARCH FOR HISTORICAL BLOCKCHAIN DATA: Never paginate for temporal boundaries. Use binary search 
+with `age_from`/`age_to` parameters to efficiently locate specific time periods or events in blockchain history.
+
+## Pattern:
+```
+get_transactions_by_address(age_from: START, age_to: MID)
+├── Results found → search earlier half: [START, MID]  
+└── No results → search later half: [MID, END]
+```
+
+## Example: First transaction for vitalik.eth
+```
+1. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-12-31") → ✓ 
+2. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-09-12") → ✗
+3. get_transactions_by_address(age_from: "2015-09-12", age_to: "2015-10-03") → ✓
+4. get_transactions_by_address(age_from: "2015-09-27", age_to: "2015-09-30") → ✓ 
+   Found: 2015-09-28T08:24:43Z
+5. get_transactions_by_address(age_from: "2015-07-30", age_to: "2015-09-28T08:24:42") → ✗
+   Confirmed: This is the first transaction.
+```
+
+**Result: 5 API calls instead of potentially hundreds of pagination calls.**
+"""
+
 DIRECT_API_CALL_RULES = """
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools,
 you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.

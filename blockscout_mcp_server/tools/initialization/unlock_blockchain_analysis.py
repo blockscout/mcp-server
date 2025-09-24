@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
+    BINARY_SEARCH_RULES,
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
     DIRECT_API_CALL_ENDPOINT_LIST,
@@ -83,6 +84,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         time_based_query_rules=TIME_BASED_QUERY_RULES,
         block_time_estimation_rules=BLOCK_TIME_ESTIMATION_RULES,
         efficiency_optimization_rules=EFFICIENCY_OPTIMIZATION_RULES,
+        binary_search_rules=BINARY_SEARCH_RULES,
         direct_api_call_rules=DIRECT_API_CALL_RULES,
         direct_api_endpoints=direct_api_endpoints,
     )

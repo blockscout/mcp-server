@@ -11,6 +11,7 @@ from blockscout_mcp_server import analytics
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
+    BINARY_SEARCH_RULES,
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
     DEFAULT_HTTP_PORT,
@@ -103,6 +104,10 @@ Here is the list of IDs of most popular chains:
 <efficiency_optimization_rules>
 {EFFICIENCY_OPTIMIZATION_RULES.strip()}
 </efficiency_optimization_rules>
+
+<binary_search_rules>
+{BINARY_SEARCH_RULES.strip()}
+</binary_search_rules>
 
 <direct_call_endpoint_list>
 {DIRECT_API_CALL_RULES.strip()}
