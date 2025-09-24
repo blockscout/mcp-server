@@ -77,3 +77,6 @@ dxt/_build/
 
 # MacOS
 .DS_Store
+
+# private key
+key.pem
