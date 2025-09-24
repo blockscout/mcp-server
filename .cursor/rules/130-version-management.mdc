@@ -23,6 +23,17 @@ alwaysApply: false
    __version__ = "X.Y.Z"  # <-- Update this line (e.g., "1.2.3" or "1.2.3.dev0")
    ```
 
+3. **`server.json`** - Update the `version` field:
+
+   ```json
+   {
+     "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
+     "name": "com.blockscout/mcp-server",
+     "version": "X.Y.Z",  # <-- Update this line
+     // ... other fields ...
+   }
+   ```
+
 ## Important Notes
 
 - **Use the exact same version string** in both locations (e.g., "1.2.3" or "1.2.3.dev0")
