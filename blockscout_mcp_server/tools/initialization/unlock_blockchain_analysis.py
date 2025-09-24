@@ -1,6 +1,7 @@
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
+    BINARY_SEARCH_RULES,
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
     DIRECT_API_CALL_ENDPOINT_LIST,
@@ -11,7 +12,6 @@ from blockscout_mcp_server.constants import (
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
-    BINARY_SEARCH_RULES,
 )
 from blockscout_mcp_server.models import (
     ChainIdGuidance,

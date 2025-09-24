@@ -11,6 +11,7 @@ from blockscout_mcp_server import analytics
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
+    BINARY_SEARCH_RULES,
     BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
     DEFAULT_HTTP_PORT,
@@ -23,7 +24,6 @@ from blockscout_mcp_server.constants import (
     SERVER_NAME,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
-    BINARY_SEARCH_RULES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
