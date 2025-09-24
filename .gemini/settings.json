@@ -1,18 +1,31 @@
 {
-  "contextFileName": ["GEMINI-plan.md", "AGENTS.md", "SPEC.md", "TESTING.md"],
-  "urlTemplate": "https://github.com/blockscout/mcp-server/issues/new?title={title}&body={info}",
-  "checkpointing": {
-    "enabled": true
+  "general": {
+    "checkpointing": {
+      "enabled": true
+    },
+    "disableAutoUpdate": true
   },
-  "theme": "ANSI",
-  "hideBanner": true,
-  "mcpServers": {
-    "codealive": {
-      "httpUrl": "https://mcp.codealive.ai/api/",
-      "headers": {
-        "Authorization": "Bearer ${CODEALIVE_API_KEY}"
-      },
-      "timeout": 360000
+  "context": {
+    "fileName": [
+      "GEMINI-plan.md",
+      "AGENTS.md",
+      "SPEC.md",
+      "TESTING.md"
+    ]
+  },
+  "ui": {
+    "hideTips": true,
+    "hideBanner": true,
+    "theme": "ANSI",
+    "footer": {
+      "hideSandboxStatus": true
+    },
+    "showCitations": true
+  },
+  "urlTemplate": "https://github.com/blockscout/mcp-server/issues/new?title={title}&body={info}",
+  "tools": {
+    "shell": {
+      "showColor": true
     }
   }
 }
