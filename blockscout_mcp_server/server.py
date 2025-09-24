@@ -23,6 +23,7 @@ from blockscout_mcp_server.constants import (
     SERVER_NAME,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
+    BINARY_SEARCH_RULES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
@@ -103,6 +104,10 @@ Here is the list of IDs of most popular chains:
 <efficiency_optimization_rules>
 {EFFICIENCY_OPTIMIZATION_RULES.strip()}
 </efficiency_optimization_rules>
+
+<binary_search_rules>
+{BINARY_SEARCH_RULES.strip()}
+</binary_search_rules>
 
 <direct_call_endpoint_list>
 {DIRECT_API_CALL_RULES.strip()}
