@@ -74,7 +74,7 @@ async def lookup_token_by_symbol(
             name=item.get("name", ""),
             symbol=item.get("symbol", ""),
             token_type=item.get("token_type", ""),
-            total_supply=item.get("total_supply", ""),
+            total_supply=item.get("total_supply"),
             circulating_market_cap=item.get("circulating_market_cap"),
             exchange_rate=item.get("exchange_rate"),
             is_smart_contract_verified=item.get("is_smart_contract_verified", False),

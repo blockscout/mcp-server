@@ -180,7 +180,7 @@ class TokenSearchResult(BaseModel):
     name: str = Field(description="The full name of the token (e.g., 'USD Coin').")
     symbol: str = Field(description="The symbol of the token (e.g., 'USDC').")
     token_type: str = Field(description="The token standard (e.g., 'ERC-20').")
-    total_supply: str = Field(description="The total supply of the token.")
+    total_supply: str | None = Field(description="The total supply of the token.")
     circulating_market_cap: str | None = Field(description="The circulating market cap, if available.")
     exchange_rate: str | None = Field(description="The current exchange rate, if available.")
     is_smart_contract_verified: bool = Field(description="Indicates if the token's contract is verified.")
