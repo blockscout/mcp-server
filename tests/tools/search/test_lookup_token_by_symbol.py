@@ -53,7 +53,7 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
             name=item.get("name", ""),
             symbol=item.get("symbol", ""),
             token_type="",
-            total_supply=item.get("total_supply", ""),
+            total_supply=item.get("total_supply"),
             circulating_market_cap=item.get("circulating_market_cap"),
             exchange_rate=item.get("exchange_rate"),
             is_smart_contract_verified=False,
@@ -112,7 +112,7 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
             name=item.get("name", ""),
             symbol=item.get("symbol", ""),
             token_type="",
-            total_supply=item.get("total_supply", ""),
+            total_supply=item.get("total_supply"),
             circulating_market_cap=item.get("circulating_market_cap"),
             exchange_rate=item.get("exchange_rate"),
             is_smart_contract_verified=False,
@@ -178,7 +178,7 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
             name=item.get("name", ""),
             symbol=item.get("symbol", ""),
             token_type="",
-            total_supply=item.get("total_supply", ""),
+            total_supply=item.get("total_supply"),
             circulating_market_cap=item.get("circulating_market_cap"),
             exchange_rate=item.get("exchange_rate"),
             is_smart_contract_verified=False,
@@ -276,7 +276,7 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
             name=item.get("name", ""),
             symbol=item.get("symbol", ""),
             token_type=item.get("token_type", ""),
-            total_supply=item.get("total_supply", ""),
+            total_supply=item.get("total_supply"),
             circulating_market_cap=item.get("circulating_market_cap"),
             exchange_rate=item.get("exchange_rate"),
             is_smart_contract_verified=False,
@@ -304,6 +304,67 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
         assert result == expected_result
+        assert mock_ctx.report_progress.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_lookup_token_by_symbol_total_supply_none(mock_ctx):
+    """lookup_token_by_symbol surfaces null total supply values without errors."""
+
+    chain_id = "137"
+    symbol = "FET"
+    mock_base_url = "https://polygon.blockscout.com"
+
+    mock_api_response = {
+        "items": [
+            {
+                "address_hash": "0x7583feddbcefa813dc18259940f76a02710a8905",
+                "name": "Fetch (PoS)",
+                "symbol": "FET",
+                "token_type": "ERC-20",
+                "total_supply": None,
+                "circulating_market_cap": None,
+                "exchange_rate": None,
+                "is_smart_contract_verified": True,
+                "is_verified_via_admin_panel": False,
+            }
+        ]
+    }
+
+    expected_data = [
+        TokenSearchResult(
+            address="0x7583feddbcefa813dc18259940f76a02710a8905",
+            name="Fetch (PoS)",
+            symbol="FET",
+            token_type="ERC-20",
+            total_supply=None,
+            circulating_market_cap=None,
+            exchange_rate=None,
+            is_smart_contract_verified=True,
+            is_verified_via_admin_panel=False,
+        )
+    ]
+    expected_result = build_tool_response(data=expected_data)
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
+
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
+        assert result == expected_result
+        assert result.data[0].total_supply is None
         assert mock_ctx.report_progress.call_count == 3
 
 
