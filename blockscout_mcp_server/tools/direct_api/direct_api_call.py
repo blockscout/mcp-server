@@ -28,9 +28,15 @@ async def direct_api_call(
     ],
     ctx: Context,
     query_params: Annotated[
-        dict[str, Any] | None,
-        Field(description="Optional query parameters forwarded to the Blockscout API."),
-    ] = None,
+        dict[str, Any],
+        Field(
+            description="Optional query parameters forwarded to the Blockscout API.",
+            # Some MCP clients/providers reject any JSON Schema object node that omits
+            # "properties", even when "additionalProperties" is used for dict-like
+            # objects. Including an empty "properties" keeps such clients happy.
+            json_schema_extra={"properties": {}},
+        ),
+    ] = {},
     cursor: Annotated[
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
@@ -74,7 +80,7 @@ async def direct_api_call(
 
     handler_response = await dispatcher.dispatch(
         endpoint_path=endpoint_path,
-        query_params=query_params,
+        query_params=query_params or None,
         response_json=response_json,
         chain_id=chain_id,
         base_url=base_url,

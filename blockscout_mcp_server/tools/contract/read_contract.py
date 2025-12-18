@@ -53,7 +53,11 @@ async def read_contract(
                 "The JSON ABI for the specific function being called. This should be "
                 "a dictionary that defines the function's name, inputs, and outputs. "
                 "The function ABI can be obtained using the `get_contract_abi` tool."
-            )
+            ),
+            # Some MCP clients/providers reject any JSON Schema object node that omits
+            # "properties", even when "additionalProperties" is used for dict-like
+            # objects. Including an empty "properties" keeps such clients happy.
+            json_schema_extra={"properties": {}},
         ),
     ],
     function_name: Annotated[
