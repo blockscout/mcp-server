@@ -38,7 +38,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 @log_tool_invocation
 async def __unlock_blockchain_analysis__(
     ctx: Context,
-    _ignored: Annotated[
+    ignored: Annotated[
         str | None,
         Field(
             default=None,
