@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from mcp.server.fastmcp import Context
+from pydantic import Field
 
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
@@ -13,7 +16,16 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation
-async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
+async def get_chains_list(
+    ctx: Context,
+    _ignored: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description="Optional. Ignored. Leave empty. Exists to satisfy stricter JSON Schema validators.",
+        ),
+    ] = None,
+) -> ToolResponse[list[ChainInfo]]:
     """
     Get the list of known blockchain chains with their IDs.
     Useful for getting a chain ID when the chain name is known. This information can be used in other tools that require a chain ID to request information.

@@ -3,7 +3,7 @@ info:
   title: Blockscout MCP Server REST API
   description: |
     A web-friendly, stateless interface to powerful blockchain tools providing access to 50+ EVM-compatible blockchains.
-  version: 0.11.0
+  version: 0.11.1
   contact:
     name: Blockscout MCP Server
     url: https://github.com/blockscout/mcp-server
