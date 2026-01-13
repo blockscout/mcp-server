@@ -7,7 +7,6 @@ import blockscout_mcp_server.tools.direct_api.direct_api_call as direct_api_call
 from blockscout_mcp_server.api.dependencies import MockCtx
 from blockscout_mcp_server.models import DirectApiData, ToolResponse
 from blockscout_mcp_server.tools.common import ResponseTooLargeError
-from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 
 
 @pytest.mark.asyncio
@@ -30,7 +29,11 @@ async def test_direct_api_call_no_params(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
-        result = await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=mock_ctx,
+        )
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params={})
@@ -73,7 +76,7 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
 
         mock_apply_cursor.side_effect = fake_apply
 
-        result = await direct_api_call(
+        result = await direct_api_call_module.direct_api_call(
             chain_id=chain_id,
             endpoint_path=endpoint_path,
             ctx=mock_ctx,
@@ -115,7 +118,11 @@ async def test_direct_api_call_with_pagination(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
-        result = await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=mock_ctx,
+        )
 
         assert isinstance(result, ToolResponse)
         assert result.pagination is not None
@@ -151,7 +158,7 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
-        result = await direct_api_call(
+        result = await direct_api_call_module.direct_api_call(
             chain_id=chain_id,
             endpoint_path=endpoint_path,
             query_params=query_params,
@@ -188,7 +195,11 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.side_effect = TimeoutError("upstream timeout")
         with pytest.raises(TimeoutError):
-            await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+            await direct_api_call_module.direct_api_call(
+                chain_id=chain_id,
+                endpoint_path=endpoint_path,
+                ctx=mock_ctx,
+            )
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_awaited_once()
         assert mock_ctx.report_progress.await_count == 2
@@ -207,7 +218,11 @@ async def test_direct_api_call_rejects_query_in_path(mock_ctx):
     ):
         mock_get_url.return_value = mock_base_url
         with pytest.raises(ValueError):
-            await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+            await direct_api_call_module.direct_api_call(
+                chain_id=chain_id,
+                endpoint_path=endpoint_path,
+                ctx=mock_ctx,
+            )
         mock_get_url.assert_called_once_with(chain_id)
         assert mock_ctx.report_progress.await_count == 1
 
@@ -233,7 +248,11 @@ async def test_direct_api_call_allows_response_under_limit(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
-        result = await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=mock_ctx,
+        )
 
         assert isinstance(result, ToolResponse)
         assert result.data.model_dump() == mock_response
@@ -261,7 +280,11 @@ async def test_direct_api_call_rejects_mcp_over_limit(mock_ctx):
         mock_request.return_value = mock_response
 
         with pytest.raises(ResponseTooLargeError):
-            await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+            await direct_api_call_module.direct_api_call(
+                chain_id=chain_id,
+                endpoint_path=endpoint_path,
+                ctx=mock_ctx,
+            )
 
 
 @pytest.mark.asyncio
@@ -287,7 +310,11 @@ async def test_direct_api_call_rejects_rest_over_limit_without_header():
         mock_request.return_value = mock_response
 
         with pytest.raises(ResponseTooLargeError):
-            await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=ctx)
+            await direct_api_call_module.direct_api_call(
+                chain_id=chain_id,
+                endpoint_path=endpoint_path,
+                ctx=ctx,
+            )
 
 
 @pytest.mark.asyncio
@@ -312,7 +339,11 @@ async def test_direct_api_call_allows_rest_over_limit_with_header():
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
-        result = await direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=ctx)
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=ctx,
+        )
 
         assert isinstance(result, ToolResponse)
         assert result.data.model_dump() == mock_response
