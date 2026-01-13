@@ -121,7 +121,7 @@ async def direct_api_call(
         if is_rest_call:
             request_context = getattr(ctx, "request_context", None)
             request = getattr(request_context, "request", None) if request_context else None
-            headers = request.headers if request is not None else {}
+            headers = getattr(request, "headers", {}) if request is not None else {}
             allow_header = None
             if headers:
                 allow_header = headers.get(ALLOW_LARGE_RESPONSE_HEADER)
