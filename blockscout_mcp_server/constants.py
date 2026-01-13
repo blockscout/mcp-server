@@ -93,6 +93,8 @@ ADVANCED API USAGE: For specialized or chain-specific data not covered by other 
 you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
 """
 
+ALLOW_LARGE_RESPONSE_HEADER = "X-Blockscout-Allow-Large-Response"
+
 # Curated list of endpoints for the direct_api_call tool
 DIRECT_API_CALL_ENDPOINT_LIST = {
     "common": [

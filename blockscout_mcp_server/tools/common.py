@@ -54,6 +54,12 @@ class ChainNotFoundError(ValueError):
     pass
 
 
+class ResponseTooLargeError(Exception):
+    """Exception raised when a response exceeds the configured size limit."""
+
+    pass
+
+
 # Shared cache instance for chain data
 chain_cache = ChainCache()
 chains_list_cache = ChainsListCache()
