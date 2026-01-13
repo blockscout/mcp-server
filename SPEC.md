@@ -415,7 +415,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     **i) Generic Tool Response Size Limit**
 
-    For the `direct_api_call` tool, which acts as a fallback for accessing raw API endpoints, the server enforces a strict response size limit (default: 40,000 characters).
+    For the `direct_api_call` tool, which acts as a fallback for accessing raw API endpoints, the server enforces a strict response size limit (default: 100,000 characters).
 
     - **Rationale**: Unlike specialized tools that curate and truncate data, this tool returns raw JSON. A massive unpaginated response could instantly exhaust the LLM's context window or cause generation failures.
     - **Enforcement**:

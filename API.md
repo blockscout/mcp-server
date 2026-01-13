@@ -89,7 +89,7 @@ For endpoints that return large datasets, the response will include a `paginatio
 ## Safety & Limits
 
 ### Response Size Limits
-To prevent system overload and context exhaustion, the `direct_api_call` endpoint enforces a maximum response size limit (default: 40,000 characters).
+To prevent system overload and context exhaustion, the `direct_api_call` endpoint enforces a maximum response size limit (default: 100,000 characters).
 
 If you receive a `413 Payload Too Large` (or similar error) indicating the response is too large, you can bypass this check by adding the following header to your request:
 

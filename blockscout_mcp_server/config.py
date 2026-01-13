@@ -32,7 +32,7 @@ class ServerConfig(BaseSettings):
     logs_page_size: int = 10
     advanced_filters_page_size: int = 10
     direct_api_response_size_limit: int = Field(
-        40000,
+        100000,
         description="Maximum allowed characters for direct_api_call raw responses.",
     )
 
