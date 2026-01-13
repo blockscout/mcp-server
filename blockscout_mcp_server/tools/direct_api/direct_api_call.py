@@ -122,12 +122,10 @@ async def direct_api_call(
             request_context = getattr(ctx, "request_context", None)
             request = getattr(request_context, "request", None) if request_context else None
             headers = getattr(request, "headers", {}) if request is not None else {}
-            allow_header = None
-            if headers:
-                allow_header = headers.get(ALLOW_LARGE_RESPONSE_HEADER)
-            if isinstance(allow_header, str) and allow_header.lower() == "true":
-                pass
-            else:
+            if not (
+                isinstance(headers.get(ALLOW_LARGE_RESPONSE_HEADER), str)
+                and headers.get(ALLOW_LARGE_RESPONSE_HEADER).lower() == "true"
+            ):
                 message = (
                     f"Response size ({response_len} chars) exceeds the safety limit. "
                     f"To bypass, add the header '{ALLOW_LARGE_RESPONSE_HEADER}: true' to your request."
