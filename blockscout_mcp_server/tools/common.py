@@ -218,7 +218,10 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
                 except httpx.HTTPStatusError as e:
                     details = _extract_http_error_details(e.response)
                     reason = e.response.reason_phrase or "Error"
-                    message = f"{e.response.status_code} {reason} - Details: {details}"
+                    if details:
+                        message = f"{e.response.status_code} {reason} - Details: {details}"
+                    else:
+                        message = f"{e.response.status_code} {reason}"
                     raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
                 return response.json()
             except httpx.RequestError as e:

@@ -641,6 +641,29 @@ async def test_make_blockscout_request_simple_json_error_message():
 
 
 @pytest.mark.asyncio
+async def test_make_blockscout_request_empty_details_message():
+    """Verify empty error details omit the details suffix."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(422, json={}, request=request)
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            return_value=MockAsyncClient(response),
+        ),
+        patch(
+            "blockscout_mcp_server.tools.common._extract_http_error_details",
+            return_value="",
+        ),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert str(exc_info.value).startswith("422 Unprocessable Entity")
+    assert "Details:" not in str(exc_info.value)
+
+
+@pytest.mark.asyncio
 async def test_make_blockscout_request_raw_text_error_truncation():
     """Verify raw text errors are truncated to 200 characters."""
     html_body = "<html><body><h1>502 Bad Gateway</h1>" + ("a" * 250) + "</body></html>"
