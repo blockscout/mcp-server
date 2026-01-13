@@ -1,10 +1,14 @@
+import json
 from typing import Annotated, Any
 
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import ALLOW_LARGE_RESPONSE_HEADER
 from blockscout_mcp_server.models import DirectApiData, NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
+    ResponseTooLargeError,
     apply_cursor_to_params,
     build_tool_response,
     encode_cursor,
@@ -108,6 +112,33 @@ async def direct_api_call(
         total=2.0,
         message="Successfully fetched data.",
     )
+
+    response_str = json.dumps(response_json)
+    response_len = len(response_str)
+    response_limit = config.direct_api_response_size_limit
+    if response_len > response_limit:
+        is_rest_call = getattr(ctx, "call_source", None) == "rest"
+        if is_rest_call:
+            request_context = getattr(ctx, "request_context", None)
+            request = getattr(request_context, "request", None) if request_context else None
+            headers = request.headers if request is not None else {}
+            allow_header = None
+            if headers:
+                allow_header = headers.get(ALLOW_LARGE_RESPONSE_HEADER)
+            if isinstance(allow_header, str) and allow_header.lower() == "true":
+                pass
+            else:
+                message = (
+                    f"Response size ({response_len} chars) exceeds the safety limit. "
+                    f"To bypass, add the header '{ALLOW_LARGE_RESPONSE_HEADER}: true' to your request."
+                )
+                raise ResponseTooLargeError(message)
+        else:
+            message = (
+                f"Response size ({response_len} chars) exceeds the safety limit of {response_limit}. "
+                "Use query parameters to filter the result or try a more specific tool."
+            )
+            raise ResponseTooLargeError(message)
 
     data = DirectApiData.model_validate(response_json)
     return build_tool_response(data=data, pagination=pagination)

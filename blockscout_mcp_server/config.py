@@ -31,6 +31,10 @@ class ServerConfig(BaseSettings):
     nft_page_size: int = 10
     logs_page_size: int = 10
     advanced_filters_page_size: int = 10
+    direct_api_response_size_limit: int = Field(
+        40000,
+        description="Maximum allowed characters for direct_api_call raw responses.",
+    )
 
     # RPC connection pool configuration
     rpc_request_timeout: float = 60.0

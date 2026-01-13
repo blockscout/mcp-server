@@ -158,6 +158,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The REST API endpoints under `/v1/` are simple wrappers that call these tool functions. They are registered directly with the `FastMCP` instance using its `custom_route` method.
    - This approach ensures consistency between the two protocols, simplifies maintenance, and allows for a single deployment process.
    - This extended functionality is opt-in via a `--rest` command-line flag to maintain the server's primary focus as an MCP-first application.
+   - **Context-Aware Safety**: The server distinguishes between "MCP Mode" (AI consumption) and "REST Mode" (script consumption) to apply appropriate safety guards. For example, large raw data dumps are blocked for AI agents to prevent context exhaustion but can be explicitly allowed for REST clients via control headers.
 
 2. **Tool Selection and Context Optimization**:
    - Not all Blockscout API endpoints are exposed as MCP tools
@@ -377,7 +378,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     4. **Output Conciseness**: Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list, preventing LLM context overflow and maintaining the server's overall context optimization strategy.
 
-    **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms.
+    **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms. To ensure safety, the tool enforces a configurable response size limit (controlled by `BLOCKSCOUT_DIRECT_API_RESPONSE_SIZE_LIMIT`). In REST mode, this limit can be bypassed by setting the `X-Blockscout-Allow-Large-Response: true` header, allowing scripts to retrieve full datasets while protecting AI agents from context overflow.
 
     ##### Specialized Response Handling via Dispatcher
 
@@ -411,6 +412,15 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Smart File Naming**: For single-file contracts (including flattened contracts), the server ensures a consistent file tree structure. When metadata doesn't provide a file name (common in Solidity contracts), the server constructs one using the pattern `<contract_name>.sol` for Solidity. For Vyper contracts, the file name is usually specified in the metadata.
 
     - **Response Caching**: Since contract source exploration often involves multiple sequential requests for the same contract, the server implements in-memory caching of Blockscout API responses with LRU eviction and TTL expiry. This minimizes redundant API calls and improves response times for multi-file contract inspection workflows.
+
+    **i) Generic Tool Response Size Limit**
+
+    For the `direct_api_call` tool, which acts as a fallback for accessing raw API endpoints, the server enforces a strict response size limit (default: 40,000 characters).
+
+    - **Rationale**: Unlike specialized tools that curate and truncate data, this tool returns raw JSON. A massive unpaginated response could instantly exhaust the LLM's context window or cause generation failures.
+    - **Enforcement**:
+        - **MCP Mode (AI Agents)**: The limit is strictly enforced. If a response exceeds the limit, the tool raises a `ResponseTooLargeError` and advises the agent to use filters.
+        - **REST Mode (Scripts/Middleware)**: The limit is enforced by default to prevent accidental overload. However, developers can explicitly bypass this check by including the HTTP header `X-Blockscout-Allow-Large-Response: true`.
 
 7. **HTTP Request Robustness**
 
