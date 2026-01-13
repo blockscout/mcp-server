@@ -1,7 +1,9 @@
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import DirectApiData
+from blockscout_mcp_server.tools.common import ResponseTooLargeError
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 
 
@@ -59,3 +61,14 @@ async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
 
     second = await direct_api_call(ctx=mock_ctx, **next_params)
     assert isinstance(second.data, DirectApiData)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
+    monkeypatch.setattr(config, "direct_api_response_size_limit", 10)
+    try:
+        with pytest.raises(ResponseTooLargeError):
+            await direct_api_call(chain_id="1", endpoint_path="/api/v2/stats", ctx=mock_ctx)
+    except httpx.HTTPStatusError as exc:
+        pytest.skip(f"API returned {exc}")
