@@ -164,7 +164,7 @@ def _extract_http_error_details(response: httpx.Response) -> str:
                 details = error
 
     if not details:
-        details = raw_text[:200] if raw_text else "No details provided."
+        details = raw_text[:200] if raw_text else ""
 
     return details
 
