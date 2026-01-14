@@ -697,7 +697,7 @@ async def test_make_blockscout_request_errors_title_no_detail():
         with pytest.raises(httpx.HTTPStatusError) as exc_info:
             await make_blockscout_request("https://example.com", "/api/v2/test")
 
-    assert "Details: Invalid value: (at /sort)" in str(exc_info.value)
+    assert "Details: Invalid value (at /sort)" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

@@ -142,7 +142,7 @@ def _extract_http_error_details(response: httpx.Response) -> str:
                 if isinstance(item, dict):
                     title = item.get("title") or "Error"
                     detail = item.get("detail") or ""
-                    message = f"{title}: {detail}".rstrip()
+                    message = f"{title}: {detail}" if detail else title
                     source = item.get("source")
                     pointer = source.get("pointer") if isinstance(source, dict) else None
                     if pointer:
