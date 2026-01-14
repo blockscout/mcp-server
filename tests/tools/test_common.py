@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import httpx
 import pytest
 from mcp.server.fastmcp import Context
 
@@ -17,7 +18,26 @@ from blockscout_mcp_server.tools.common import (
     create_items_pagination,
     decode_cursor,
     encode_cursor,
+    make_blockscout_request,
 )
+
+
+class MockAsyncClient:
+    def __init__(self, response: httpx.Response) -> None:
+        self._response = response
+        self.request_params: dict | None = None
+        self.request_url: str | None = None
+
+    async def __aenter__(self) -> "MockAsyncClient":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    async def get(self, url: str, params: dict | None = None) -> httpx.Response:
+        self.request_url = url
+        self.request_params = params
+        return self._response
 
 
 def test_encode_decode_roundtrip():
@@ -546,3 +566,210 @@ def test_extract_advanced_filters_cursor_params():
     }
 
     assert extract_advanced_filters_cursor_params(item_missing) == expected_missing
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_json_api_error_sort():
+    """Verify JSON:API errors include title, detail, and pointer."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(
+        422,
+        json={
+            "errors": [
+                {
+                    "title": "Invalid value",
+                    "source": {"pointer": "/sort"},
+                    "detail": "Unexpected field: sort",
+                }
+            ]
+        },
+        request=request,
+    )
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "422 Unprocessable Entity - Details: Invalid value: Unexpected field: sort (at /sort)" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_json_api_error_address_format():
+    """Verify JSON:API errors include pointer details for address fields."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(
+        422,
+        json={
+            "errors": [
+                {
+                    "title": "Invalid value",
+                    "source": {"pointer": "/address_hash_param"},
+                    "detail": "Invalid format",
+                }
+            ]
+        },
+        request=request,
+    )
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "Details: Invalid value: Invalid format (at /address_hash_param)" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_simple_json_error_message():
+    """Verify message fields are surfaced for generic JSON errors."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(400, json={"message": "Invalid chain ID"}, request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "Details: Invalid chain ID" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_error_field_fallback():
+    """Verify error fields are surfaced when provided."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(400, json={"error": "Some error text"}, request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "Details: Some error text" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_errors_string_items():
+    """Verify string items in errors array are included."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(422, json={"errors": ["Simple error message"]}, request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "Details: Simple error message" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_errors_title_no_detail():
+    """Verify errors with title but empty detail are formatted consistently."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(
+        422,
+        json={
+            "errors": [
+                {
+                    "title": "Invalid value",
+                    "source": {"pointer": "/sort"},
+                    "detail": "",
+                }
+            ]
+        },
+        request=request,
+    )
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert "Details: Invalid value (at /sort)" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_multiple_errors_joined():
+    """Verify multiple errors are joined with semicolons."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(
+        422,
+        json={
+            "errors": [
+                {"title": "First error", "detail": "First detail", "source": {"pointer": "/first"}},
+                {"title": "Second error", "detail": "Second detail"},
+            ]
+        },
+        request=request,
+    )
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    message = str(exc_info.value)
+    assert "First error: First detail (at /first); Second error: Second detail" in message
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_empty_details_message():
+    """Verify empty bodies omit the details suffix."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(422, content=b"", request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert str(exc_info.value).startswith("422 Unprocessable Entity")
+    assert "Details:" not in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_raw_text_error_truncation():
+    """Verify raw text errors are truncated to 200 characters."""
+    html_body = "<html><body><h1>502 Bad Gateway</h1>" + ("a" * 250) + "</body></html>"
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(502, content=html_body.encode(), request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert html_body[:200] in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_success():
+    """Verify successful responses return JSON payloads."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(200, json={"result": "success"}, request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        result = await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert result == {"result": "success"}

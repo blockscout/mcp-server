@@ -380,7 +380,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     **Implementation**: The tool functions as a thin wrapper around the core `make_blockscout_request` helper. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, and an optional `cursor` for pagination. For pagination in the response, it directly encodes the raw `next_page_params` from the Blockscout API into an opaque cursor, as the structure of these parameters can vary across arbitrary endpoints. It leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms. To ensure safety, the tool enforces a configurable response size limit (controlled by `BLOCKSCOUT_DIRECT_API_RESPONSE_SIZE_LIMIT`). In REST mode, this limit can be bypassed by setting the `X-Blockscout-Allow-Large-Response: true` header, allowing scripts to retrieve full datasets while protecting AI agents from context overflow.
 
-    ##### Specialized Response Handling via Dispatcher
+    **Specialized Response Handling via Dispatcher**
 
     While the `direct_api_call` tool is designed to be a generic gateway, some endpoints benefit from specialized response processing to make their data more useful and context-friendly for AI agents. To accommodate this without creating new tools, `direct_api_call` implements an internal dispatcher pattern. Because the response size guard is enforced only on the generic fallback path, specialized handlers must ensure their outputs remain context-safe and do not return oversized payloads that could exhaust the LLM context window.
 
@@ -436,7 +436,20 @@ This architecture provides the flexibility of a multi-protocol server without th
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
-10. **Standardized Tool Annotations**:
+8. **HTTP Error Handling and Context Propagation**
+
+   To enable AI agents to self-correct when API requests fail (e.g., due to invalid parameters like unsupported sort fields), the server implements a robust error propagation strategy.
+
+   - **Interception**: The server intercepts standard `HTTPStatusError` exceptions raised by the underlying HTTP client.
+   - **Extraction**: It parses the response body to extract detailed error messages, specifically targeting:
+     - The `errors` array (JSON:API standard), combining `title`, `detail`, and `source.pointer` to provide complete context (e.g., "Invalid value: Unexpected field (at /sort)").
+     - The `message` or `error` fields for generic JSON errors.
+   - **Enrichment**: The generic HTTP error message (e.g., "422 Unprocessable Entity") is enriched with these specific details.
+   - **Safety**: For non-JSON errors (like HTML 502 pages), the raw response text is included but strictly truncated (200 characters) to protect the LLM context window.
+
+   This ensures that the AI receives the specific feedback needed to adjust its tool usage without overwhelming it with raw HTML or stack traces.
+
+9. **Standardized Tool Annotations**:
 
     To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
 

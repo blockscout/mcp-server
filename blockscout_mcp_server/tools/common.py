@@ -125,6 +125,50 @@ async def get_blockscout_base_url(chain_id: str) -> str:
     raise ChainNotFoundError(f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown.")
 
 
+def _extract_http_error_details(response: httpx.Response) -> str:
+    details = ""
+    raw_text = response.text or ""
+
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        body = None
+
+    if isinstance(body, dict):
+        errors = body.get("errors")
+        if isinstance(errors, list) and errors:
+            messages = []
+            for item in errors:
+                if isinstance(item, dict):
+                    title = item.get("title") or "Error"
+                    detail = item.get("detail") or ""
+                    message = f"{title}: {detail}" if detail else title
+                    source = item.get("source")
+                    pointer = source.get("pointer") if isinstance(source, dict) else None
+                    if pointer:
+                        message = f"{message} (at {pointer})"
+                    messages.append(message)
+                elif isinstance(item, str):
+                    messages.append(item)
+            if messages:
+                details = "; ".join(messages)
+
+        if not details:
+            message = body.get("message")
+            if isinstance(message, str) and message:
+                details = message
+
+        if not details:
+            error = body.get("error")
+            if isinstance(error, str) and error:
+                details = error
+
+    if not details:
+        details = raw_text[:200] if raw_text else ""
+
+    return details
+
+
 async def make_blockscout_request(base_url: str, api_path: str, params: dict | None = None) -> dict:
     """
     Make a GET request to the Blockscout API.
@@ -169,7 +213,16 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         for attempt in range(config.bs_request_max_retries):
             try:
                 response = await client.get(url, params=params)
-                response.raise_for_status()  # Raise an exception for HTTP errors
+                try:
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                except httpx.HTTPStatusError as e:
+                    details = _extract_http_error_details(e.response)
+                    reason = e.response.reason_phrase or "Error"
+                    if details:
+                        message = f"{e.response.status_code} {reason} - Details: {details}"
+                    else:
+                        message = f"{e.response.status_code} {reason}"
+                    raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
                 return response.json()
             except httpx.RequestError as e:
                 last_error = e
