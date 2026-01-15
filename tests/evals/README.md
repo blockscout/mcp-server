@@ -18,31 +18,56 @@ The framework consists of two components:
     - Gemini CLI authorization is expected to be present in the `~/.gemini` directory.
     - The model could be specified in `.gemini/.env` file or in the command line when running the agent.
 
+## Evaluation Set Format
+
+The [`eval-set.json`](eval-set.json) file contains a standardized set of evaluation tasks in JSON format. Each evaluation item has the following structure:
+
+```json
+{
+  "id": "eval-000",
+  "model": "gemini-2.5-pro",
+  "question": "What is the block number of the Ethereum Mainnet that corresponds to midnight (or any closer moment) of the 1st of July.",
+  "expected_result_format": "Final answer is a block number.",
+  "ground_truth": {}
+}
+```
+
+### Field Descriptions
+
+- **`id`** (string): Unique identifier for the evaluation task (e.g., `"eval-000"`, `"eval-001"`). The numeric suffix matches the 0-indexed position in the array.
+- **`model`** (string): The Gemini model to use for this evaluation (e.g., `"gemini-2.5-pro"`, `"gemini-2.5-flash"`).
+- **`question`** (string): The actual question or task for the AI agent to solve. This should contain only the query itself, without format instructions.
+- **`expected_result_format`** (string): Description of how the final answer should be formatted. This helps both the AI agent structure its response and evaluators verify correctness.
+- **`ground_truth`** (object): Container for the verified correct answer. Initially empty (`{}`), this should be populated with the verified correct result after running the evaluation.
+
 ## Run the tests
 
-1. If it is necessary, build the docker image of the Blockscout MCP Server in the project root directory. Otherwise, the latest image from the Blockscout registry will be used.
+### Using `run.sh` (recommended)
 
-    ```bash
-    docker rmi ghcr.io/blockscout/mcp-server:latest
-    docker build -t ghcr.io/blockscout/mcp-server .
-    ```
+The `run.sh` script provides a convenient way to run evaluations with proper validation and output management.
 
-2. Move to the `tests/evals` directory and run a test.
+```bash
+cd tests/evals
 
-    ```bash
-    cd tests/evals
-    docker compose run --rm -i evaluation gemini -y -p 'Which 10 most recent logs were emitted by 0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7 before "Nov 08 2024 04:21:35 AM (-06:00 UTC)"? on Ethereum Mainnet'
-    ```
+# Run a specific test by index (0-indexed)
+./run.sh 4            # Runs eval-004
 
-   The MCP Server will be run automatically.
-   An output of the test will be on the console.
-   The evaluation docker container will be removed after the test is finished.
+# Run a specific test by ID
+./run.sh eval-004
 
-3. Stop the MCP Server.
+# Run interactive Gemini session
+./run.sh
 
-    ```bash
-    docker compose down
-    ```
+# Stop and clean up containers
+./run.sh clean
+```
+
+**Prerequisites:**
+
+- Configure `GEMINI_CLI_DOCKER_IMAGE_VERSION` in `.env` file
+- Either build/pull the MCP server image (`docker pull ghcr.io/blockscout/mcp-server:latest`) or set `MCP_SERVER_URL` to an external server. To build the image, run `docker build -t ghcr.io/blockscout/mcp-server .` in the project root directory.
+
+**Output files** are saved to the `results/` directory with timestamps.
 
 ## Gemini CLI instructions
 

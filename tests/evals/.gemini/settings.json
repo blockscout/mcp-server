@@ -4,13 +4,18 @@
       "GEMINI-evals.md"
     ]
   },
+  "general": {
+    "sessionRetention": {
+      "enabled": true,
+      "maxAge": "60m",
+      "maxCount": 2,
+      "minRetention": "10m"
+    }
+  },
   "mcpServers": {
     "blockscout": {
       "httpUrl": "${MCP_SERVER_URL}/mcp",
       "timeout": 180000
     }
-  },
-  "ui": {
-    "theme": "ANSI"
   }
 }

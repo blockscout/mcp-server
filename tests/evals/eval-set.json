@@ -1,0 +1,114 @@
+[
+  {
+    "id": "eval-000",
+    "model": "gemini-2.5-pro",
+    "question": "What is the block number of the Ethereum Mainnet that corresponds to midnight (or any closer moment) of the 1st of July.",
+    "expected_result_format": "Final answer is a block number.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-001",
+    "model": "gemini-2.5-pro",
+    "question": "What address balance of `ens.eth`?",
+    "expected_result_format": "Final answer is a decimal (e.g. 123.456)",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-002",
+    "model": "gemini-2.5-pro",
+    "question": "Is any approval set for OP token on Optimism chain by `zeaver.eth`?",
+    "expected_result_format": "Final answer is the list where the first element is transaction where approval was set, the second element is the approval amount and the third element is the spender address.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-003",
+    "model": "gemini-2.5-pro",
+    "question": "What is the latest block on Gnosis Chain and who is the block minter? Were any funds moved from this minter recently?",
+    "expected_result_format": "Final answer is the list where the first element is minter, the second element is transaction hash and the third element is a recipient address.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-004",
+    "model": "gemini-2.5-pro",
+    "question": "When the most recent reward distribution of Kinto token was made to the wallet `0x7D467D99028199D99B1c91850C4dea0c82aDDF52` in Kinto chain?",
+    "expected_result_format": "Final answer is a transaction hash.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-005",
+    "model": "gemini-2.5-pro",
+    "question": "Is there any blacklisting functionality of USDT token on Arbitrum One?",
+    "expected_result_format": "Final answer is \"yes\" or \"no\"",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-006",
+    "model": "gemini-2.5-pro",
+    "question": "Get the usdt token balance for `0xF977814e90dA44bFA03b6295A0616a897441aceC` on the ethereum mainnet at the block previous to the current block.",
+    "expected_result_format": "Answer as per the output format rules where the final field is a decimal (e.g. 123.456)",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-007",
+    "model": "gemini-2.5-pro",
+    "question": "Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum mainnet could emit `SequencerBatchDelivered`?",
+    "expected_result_format": "Final answer is a comma separated list of method names (e.g. [\"addLiquidity\", \"removeLiquidity\"]).",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-008",
+    "model": "gemini-2.5-pro",
+    "question": "What is the most recent completed cross chain message sent from the Arbitrum Sepolia rollup to the base layer?",
+    "expected_result_format": "Final answer is a transaction in the rollup.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-009",
+    "model": "gemini-2.5-pro",
+    "question": "How many different stablecoins does `0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1` (Optimism Gateway) on Ethereum Mainnet hold with balance more than $1,000,000?",
+    "expected_result_format": "Final answer is the list of token symbols (e.g. [\"USDT\", \"FRAX\"])",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-010",
+    "model": "gemini-2.5-pro",
+    "question": "Make comprehensive analysis of the transaction `0x6a6c375ea5c9370727cad7c69326a5f55db7b049623fba0e7ac52704b2778ba8` on Ethereum Mainnet. And answer what could be one word category for it. Collect as much details for this operation as you can before the answer.",
+    "expected_result_format": "Answer as per the output format rules where the final field is one word.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-011",
+    "model": "gemini-2.5-pro",
+    "question": "How many tokens of NFT collection \"ApePunks\" owned by `🇵🇱pl.eth` on Ethereum Mainnet?",
+    "expected_result_format": "Final answer is with a number.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-012",
+    "model": "gemini-2.5-pro",
+    "question": "How old `0xBAfc03eC2641b82ae5E4c4f6cc59455773092DC6` address?",
+    "expected_result_format": "Final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH-MM-SS.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-013",
+    "model": "gemini-2.5-pro",
+    "question": "What is the block number on the settlement layer where the most recent completed cross-chain message sent from the Arbitrum Sepolia rollup to the base layer was executed?",
+    "expected_result_format": "Final answer is a block number.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-014",
+    "model": "gemini-3-flash-preview",
+    "question": "Use only information from your current context to get and output Blockscout MCP server version. Don't read from the file system, don't use web search. If you have no information, response 'No info'.",
+    "expected_result_format": "Final answer is a version string (e.g. '1.2.3') or 'No info'.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-015",
+    "model": "gemini-2.5-pro",
+    "question": "Unlock blockchain analysis by Blockscout MCP server and output the MCP server version which is provided as part of the tool output. If you have no information eventually, response 'No info'.",
+    "expected_result_format": "Final answer is a version string (e.g. '1.2.3') or 'No info'.",
+    "ground_truth": {}
+  } 
+]
