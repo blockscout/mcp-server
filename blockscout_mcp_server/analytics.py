@@ -225,14 +225,6 @@ def track_tool_invocation(
             "source": _determine_call_source(ctx),
         }
 
-        # TODO: Remove this log after validating Mixpanel analytics end-to-end
-        logger.info(
-            "Mixpanel event prepared: distinct_id=%s tool=%s properties=%s",
-            distinct_id,
-            tool_name,
-            properties,
-        )
-
         meta = {"ip": ip} if ip else None
         # Mixpanel Python SDK allows meta for IP geolocation mapping
         if meta is not None:
