@@ -175,6 +175,19 @@ ADVANCED API USAGE: For specialized or chain-specific data not covered by other 
 <output_format_rules>
 When performing blockchain analysis using MCP tools, you MUST format your complete response as a structured JSON object that captures the entire analysis workflow, reasoning chain, and provides a parseable final answer.
 
+## CRITICAL: Output Method
+
+Your final JSON response MUST be output as plain text in your reply - simply write the JSON directly as your response.
+
+**DO NOT:**
+
+- Use `write_file` to create JSON files
+- Use shell commands (`cat`, `echo`, heredocs) to output JSON
+- Create any files containing the output
+
+**DO:**
+Just include the JSON object directly in your response text.
+
 ## Output Format
 
 Your response must be a valid JSON object with the following structure:
