@@ -21,7 +21,6 @@ The `server.json` file is the core configuration file for publishing your MCP se
 
 * **Version:** The current version of your server, aligning with your project's version.
     *Note: Ensure this version matches the `version` specified in `pyproject.toml` and `blockscout_mcp_server/__init__.py` to maintain consistency across the project and the registry.*
-* **Status:** The operational status of your server (e.g., `active`).
 * **Website URL:** The official website for your project.
 * **Repository:** Information about your project's source code repository.
 * **Remotes:** Details about how to connect to your server, including the transport type and URL.
@@ -32,7 +31,26 @@ For the Blockscout MCP Server, the `server.json` is configured to point to the o
 
 For the most up-to-date and comprehensive instructions on publishing an MCP server, please refer to the official MCP Registry documentation:
 
-[Publishing an MCP Server](https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/publishing/publish-server.md)
+[Quickstart: Publish an MCP Server](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/quickstart.mdx)
+
+## Verifying DNS Configuration
+
+Before publishing, you can verify that the DNS TXT record for `blockscout.com` contains the MCP authentication public key:
+
+```bash
+curl -s "https://dns.google/resolve?name=blockscout.com&type=TXT" | jq '.Answer[] | select(.data | contains("MCPv1"))'
+```
+
+The output should show a record like:
+
+```json
+{
+  "name": "blockscout.com.",
+  "type": 16,
+  "TTL": 300,
+  "data": "v=MCPv1; k=ed25519; p=<PUBLIC_KEY>"
+}
+```
 
 ## Manual Publishing Steps
 
@@ -41,7 +59,7 @@ While the primary method for publishing new server versions is through GitHub Ac
 1. **Install `mcp-publisher` CLI:**
 
     ```bash
-    curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.0.0/mcp-publisher_1.0.0_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher && sudo mv mcp-publisher /usr/local/bin/
+    curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher && sudo mv mcp-publisher /usr/local/bin/
     ```
 
 2. **Login to the Registry with DNS Ownership Proof:**
