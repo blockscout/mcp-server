@@ -24,7 +24,7 @@
     "id": "eval-003",
     "model": "gemini-2.5-pro",
     "question": "What is the latest block on Gnosis Chain and who is the block minter? Were any funds moved from this minter recently?",
-    "expected_result_format": "Final answer is a the list where the first element is minter, the second element is transaction hash and the third element is a recipient address.",
+    "expected_result_format": "Final answer is the list where the first element is minter, the second element is transaction hash and the third element is a recipient address.",
     "ground_truth": {}
   },
   {
