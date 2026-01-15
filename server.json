@@ -1,9 +1,8 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.blockscout/mcp-server",
   "description": "MCP server for Blockscout",
   "version": "0.12.0",
-  "status": "active",
   "websiteUrl": "https://blockscout.com",
   "repository": {
     "url": "https://github.com/blockscout/mcp-server",
