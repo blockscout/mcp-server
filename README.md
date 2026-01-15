@@ -25,57 +25,40 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 
 ## Configuring MCP Clients
 
-### Using the Claude Desktop Extension (.dxt) - Recommended
+### Using Claude Connectors Directory - Recommended
 
-The easiest way to use the Blockscout MCP server with Claude Desktop is through the official Desktop Extension. This provides a seamless, one-click installation experience.
+The easiest way to use the Blockscout MCP server with Claude ( Claude Web, Claude Desktop and Claude Code) is through the official [Anthropic Connectors Directory](https://claude.com/connectors). This provides a native, managed installation experience with automatic updates.
 
-**Installation:**
+#### Installation
 
-1. Download the latest `blockscout-mcp.dxt` file from the [releases page](https://github.com/blockscout/mcp-server/releases).
-2. Open Claude Desktop.
-3. Double click to open the `.dxt` file to automatically install the extension.
-4. Check Settings -> Extensions if you experience any issues. You can also drag and drop .DXT files into the extensions window to view and install.
+##### Option 1: Direct Link
 
-### Using the Official Blockscout MCP Server
+Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscout) and click links in "Used in" section to install the Blockscout connector.
 
-The official cloud-hosted instance at `https://mcp.blockscout.com/mcp` provides a reliable, always-updated service.
+##### Option 2: Via Settings
 
-**Claude Desktop Setup:**
+1. Open Claude (Web or Desktop app)
+2. Go to Settings > Connectors > Browse connectors
+3. Search for "Blockscout"
+4. Click "Connect" to install
 
-> _Note: Docker is required for this setup_
+> **Note:** Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).
 
-1. Open Claude Desktop and click on Settings
-2. Navigate to the "Developer" section
-3. Click "Edit Config"
-4. Open the file `claude_desktop_config.json` and configure the server:
+### Claude Code Setup
 
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "command": "docker",
-          "args": [
-            "run",
-            "--rm",
-            "-i",
-            "sparfenyuk/mcp-proxy:latest",
-            "--transport",
-            "streamablehttp",
-            "https://mcp.blockscout.com/mcp"
-          ]
-        }
-      }
-    }
-    ```
+To quickly install the Blockscout MCP server for use with Claude Code, run the following command in your terminal:
 
-5. Save the file and restart Claude Desktop
-6. When chatting with Claude, you can now enable the Blockscout MCP Server to allow Claude to access blockchain data
+```sh
+claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp/
+```
 
-**Cursor Setup:**
+After running this command, Blockscout will be available as an MCP server in Claude Code, allowing you to access and analyze blockchain data directly from your coding environment.
+
+### Cursor Setup
 
 Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9) to install the Blockscout MCP server in Cursor.
 
-**Gemini CLI Setup:**
+### Gemini CLI Setup
 
 1. Add the following configuration to your `~/.gemini/settings.json` file:
 
@@ -296,19 +279,30 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m bloc
 
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 
+### Testing with Claude Desktop
+
+Use MCP bundle to test the server with Claude Desktop.
+
+1. Build the bundle as per instructions in [mcpb/README.md](mcpb/README.md).
+2. Open Claude Desktop.
+3. Double click to open the `blockscout-mcp-dev.mcpb` file to automatically install the extension.
+4. Configure the Blockscout MCP Server URL when prompted (default: `http://127.0.0.1:8000/mcp`)
+
 ## Privacy and Anonymous Telemetry
 
 To help us improve the Blockscout MCP Server, community-run instances of the server collect anonymous usage data by default. This helps us understand which tools are most popular and guides our development efforts.
 
 **What we collect:**
+
 - The name of the tool being called (e.g., `get_latest_block`).
 - The parameters provided to the tool.
 - The version of the Blockscout MCP Server being used.
 
 **What we DO NOT collect:**
+
 - We do not collect any personal data, IP addresses (the central server uses the sender's IP for geolocation via Mixpanel and then discards it), secrets, or private keys.
 
-#### How to Opt-Out
+### How to Opt-Out
 
 You can disable this feature at any time by setting the following environment variable:
 

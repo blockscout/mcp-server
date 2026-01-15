@@ -51,46 +51,15 @@
 
     <h2>Configuration</h2>
     
-    <h3>Claude Desktop Setup</h3>
-    <p>You have two options to use the official Blockscout MCP server with Claude Desktop:</p>
-    
-    <h4>Option 1: Desktop Extension (DXT) - Recommended</h4>
-    <p><strong>Best for:</strong> Easy installation and automatic updates</p>
-    <p>Download and install the pre-built Desktop Extension (.dxt file):</p>
+    <h3>Claude Setup</h3>
+    <p>Install the Blockscout connector from the <a href="https://claude.com/connectors">Anthropic Connectors Directory</a>:</p>
     <ol>
-        <li>Download the latest <code>blockscout-mcp.dxt</code> from the <a href="https://github.com/blockscout/mcp-server/releases">GitHub releases</a></li>
-        <li>Double-click the .dxt file to install it in Claude Desktop</li>
-        <li>The extension will automatically connect to the hosted Blockscout MCP service</li>
+        <li><strong>Direct link:</strong> Visit <a href="https://claude.com/connectors/blockscout">claude.com/connectors/blockscout</a> and click "Connect"</li>
+        <li><strong>Or via Settings:</strong> Go to Settings &gt; Connectors &gt; Browse connectors, search for "Blockscout", and click the corresponding link in "Used in" section</li>
     </ol>
-    <p><strong>Benefits:</strong></p>
-    <ul>
-        <li>One-click installation with no command-line setup required</li>
-        <li>Automatic access to the latest features without manual updates</li>
-        <li>No Docker or technical dependencies needed</li>
-        <li>Uses the stable hosted service at <code>https://mcp.blockscout.com/</code></li>
-    </ul>
+    <p><strong>Note:</strong> Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).</p>
     
-    <h4>Option 2: Docker Proxy</h4>
-    <p><strong>Best for:</strong> Users comfortable with command-line tools and custom configurations</p>
-    <p>Add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
-    <pre><code>{
-  "mcpServers": {
-    "blockscout": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "sparfenyuk/mcp-proxy:latest",
-        "--transport",
-        "streamablehttp",
-        "https://mcp.blockscout.com/mcp"
-      ]
-    }
-  }
-}</code></pre>
-    
-    <p><strong>Suggested First Prompt:</strong> For optimal results, start your Claude Desktop conversation with:</p>
+    <p><strong>Suggested First Prompt:</strong> For optimal results, start your Claude conversation with:</p>
     <div class="prompt-box">
         <p>You are a senior analyst specializing in Ethereum-blockchain activities with almost ten years of experience. You have deep knowledge of Web3 applications and protocols.</p>
         <p>Before responding to the user's request, prepare a short plan of the actions you will take to provide a complete response.</p>

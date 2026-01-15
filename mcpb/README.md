@@ -1,4 +1,6 @@
-# Blockscout MCP Server MCP Bundle
+# Blockscout MCP Server MCP Bundle (Development Only)
+
+> **Important:** This bundle is intended for **development and testing purposes only**. For production use with Claude, install the official Blockscout connector from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout).
 
 ## General MCPB Specification
 
@@ -8,43 +10,37 @@ An MCP Bundle (.mcpb file) bundles an entire MCP server — including all depend
 - [Complete bundle manifest structure and field definitions](https://github.com/modelcontextprotocol/mcpb/blob/main/MANIFEST.md)
 - [Reference implementations including a "Hello World" example](https://github.com/modelcontextprotocol/mcpb/tree/main/examples)
 
+## Purpose
+
+This development bundle allows developers to test local or custom instances of the Blockscout MCP Server with Claude Desktop. It uses [mcp-remote](https://github.com/geelen/mcp-remote) to proxy requests to a configurable MCP server URL.
+
+**Use cases:**
+
+- Testing local MCP server changes before deployment
+- Connecting to custom/self-hosted Blockscout MCP instances
+- Development and debugging workflows
+
 ## Technical Details
 
-The blockscout MCP Server MCP Bundle doesn't include the original Python package. Instead, it uses [mcp-remote](https://github.com/geelen/mcp-remote) to proxy all requests to [the official Blockscout MCP Server](http://mcp.blockscout.com/) (see configuration details in the `server` section of the [manifest.json](manifest.json) file).
+The bundle doesn't include the original Python package. Instead, it uses `mcp-remote` to proxy all requests to a user-configured Blockscout MCP Server URL (default: `http://127.0.0.1:8000/mcp`).
 
-The reasons for this are:
+The reasons for this approach:
 
-- **Upgradeless improvements**: the stable version of the Blockscout MCP Server with the newest functionality is always deployed on `http://mcp.blockscout.com/mcp`, therefore users don't need to upgrade the bundle to get access to the newest features.
-- **Simplify the distribution**: while Claude Desktop supports installing Python-based bundles, Python is not shipped with the application whereas Node.js (which is required for `mcp-remote`) is. Reducing assumptions about the software stack makes the bundle more accessible to a wider range of users. If a user is experienced enough to install Python/Docker, they can easily install the original MCP server on the local machine by themselves.
-- **Simplify the development**: there is no need to adapt the MCP server to comply with the MCPB specification.
-- **Open source in action**: the Blockscout MCP server code does not need to implement its own proxy functionality; instead, community-tested and trusted `mcp-remote` is used.
+- **Simplify the distribution**: Node.js (required for `mcp-remote`) is shipped with Claude Desktop, whereas Python is not.
+- **Configurable endpoint**: Users can specify any MCP server URL during installation.
+- **Open source in action**: Uses community-tested and trusted `mcp-remote` for proxy functionality.
 
-## Packaging instructions
+## Building the Bundle
 
 ### Automated Build (Recommended)
 
 For automated building using the provided build script:
 
-**Production mode (default):**
-
 ```shell
 docker run --rm -it -v "$(pwd)"/mcpb:/workspace -w /workspace node:20-slim bash -c "./build.sh"
-# or explicitly:
-docker run --rm -it -v "$(pwd)"/mcpb:/workspace -w /workspace node:20-slim bash -c "./build.sh prod"
 ```
 
-**Development mode:**
-
-```shell
-docker run --rm -it -v "$(pwd)"/mcpb:/workspace -w /workspace node:20-slim bash -c "./build.sh dev"
-```
-
-#### Build Modes
-
-- **Production (`prod`)**: Uses `manifest.json` and connects to the official `https://mcp.blockscout.com/mcp` server. Creates `blockscout-mcp.mcpb`.
-- **Development (`dev`)**: Uses `manifest-dev.json` with configurable URL and creates `blockscout-mcp-dev.mcpb`. Users can configure the Blockscout MCP server URL during installation in Claude Desktop.
-
-This will automatically handle all the steps below and create the bundle at `mcpb/_build/blockscout-mcp[--dev].mcpb`.
+This will create the bundle at `mcpb/_build/blockscout-mcp-dev.mcpb`.
 
 ### Manual Build
 
@@ -78,14 +74,22 @@ For manual building or if you prefer step-by-step control:
     cp manifest.json blockscout.png _build/
     cd _build
     npm install mcp-remote@0.1.18
-    mcpb pack . blockscout-mcp.mcpb
+    mcpb pack . blockscout-mcp-dev.mcpb
     ```
 
 4. Verify the bundle:
 
     ```shell
-    mcpb verify blockscout-mcp.mcpb 
-    mcpb info blockscout-mcp.mcpb
+    mcpb verify blockscout-mcp-dev.mcpb 
+    mcpb info blockscout-mcp-dev.mcpb
     ```
 
-Finally the built bundle will be in `mcpb/_build/blockscout-mcp.mcpb`.
+Finally the built bundle will be in `mcpb/_build/blockscout-mcp-dev.mcpb`.
+
+## Installation
+
+After building, install the bundle in Claude Desktop:
+
+1. Copy the `.mcpb` file from the container to your host system
+2. Double-click the file or drag it into Claude Desktop's Extensions window
+3. Configure the Blockscout MCP Server URL when prompted (default: `http://127.0.0.1:8000/mcp`)

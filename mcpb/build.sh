@@ -1,23 +1,19 @@
 #!/bin/bash
 
-# Build script for Blockscout MCP Server MCP Bundle
+# Build script for Blockscout MCP Server MCP Bundle (Development Only)
 # This script can be run inside the Docker container to build the bundle automatically
 #
-# Usage: ./build.sh [mode]
-#   mode: "prod" (default) or "dev"
+# Usage: ./build.sh
+#
+# Note: This bundle is for development/testing purposes only.
+# For production use, install from the Anthropic Connectors Directory:
+# https://claude.com/connectors/blockscout
 
 set -e  # Exit on any error
 
-# Parse arguments
-MODE="${1:-prod}"
+MCPB_FILENAME="blockscout-mcp-dev.mcpb"
 
-if [[ "$MODE" != "prod" && "$MODE" != "dev" ]]; then
-    echo "❌ Error: Mode must be 'prod' or 'dev'"
-    echo "Usage: $0 [prod|dev]"
-    exit 1
-fi
-
-echo "🚀 Building Blockscout MCP Server MCP Bundle (${MODE} mode)..."
+echo "🚀 Building Blockscout MCP Server MCP Bundle (development)..."
 
 # Step 1: Install system dependencies
 echo "📦 Installing system dependencies..."
@@ -37,15 +33,9 @@ fi
 
 mkdir _build
 
-# Step 4: Copy required files based on mode
+# Step 4: Copy required files
 echo "📋 Copying manifest and assets..."
-if [[ "$MODE" == "dev" ]]; then
-    echo "   Using development manifest (manifest-dev.json)"
-    cp manifest-dev.json _build/manifest.json
-else
-    echo "   Using production manifest (manifest.json)"
-    cp manifest.json _build/
-fi
+cp manifest.json _build/
 cp blockscout.png _build/
 
 # Step 5: Change to build directory and install dependencies
@@ -55,11 +45,6 @@ npm install mcp-remote@0.1.18
 
 # Step 6: Package the bundle
 echo "📦 Packaging bundle..."
-if [[ "$MODE" == "dev" ]]; then
-    MCPB_FILENAME="blockscout-mcp-dev.mcpb"
-else
-    MCPB_FILENAME="blockscout-mcp.mcpb"
-fi
 mcpb pack . "$MCPB_FILENAME"
 
 # Step 7: Verify the bundle
@@ -76,11 +61,11 @@ mcpb info "$MCPB_FILENAME"
 echo ""
 echo "🎉 Bundle built successfully!"
 echo "📄 Output: mcpb/_build/$MCPB_FILENAME"
-echo "🔧 Mode: $MODE"
-if [[ "$MODE" == "dev" ]]; then
-    echo "⚙️  Note: Dev mode requires manual configuration of Blockscout MCP server URL"
-fi
+echo ""
+echo "⚙️  Note: This is a development bundle. Configure the Blockscout MCP server URL"
+echo "   during installation in Claude Desktop (default: http://127.0.0.1:8000/mcp)"
 echo ""
 echo "To use this bundle:"
 echo "1. Copy the .mcpb file from the container to your host system"
 echo "2. Install it in Claude Desktop"
+echo "3. Configure the MCP server URL when prompted"
