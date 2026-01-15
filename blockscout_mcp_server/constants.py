@@ -4,8 +4,7 @@ from blockscout_mcp_server import __version__
 
 SERVER_VERSION = __version__
 
-# TODO: replace with official MCP server before the final 0.11.0 release
-COMMUNITY_TELEMETRY_URL = "https://mcp.k8s-dev.blockscout.com"
+COMMUNITY_TELEMETRY_URL = "https://mcp.blockscout.com"
 COMMUNITY_TELEMETRY_ENDPOINT = "/v1/report_tool_usage"
 
 ERROR_HANDLING_RULES = """
