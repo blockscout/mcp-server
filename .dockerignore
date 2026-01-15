@@ -72,8 +72,8 @@ htmlcov/
 # local documents
 temp/
 
-# dxt build
-dxt/_build/
+# MCP bundle build
+mcpb/_build/
 
 # MacOS
 .DS_Store

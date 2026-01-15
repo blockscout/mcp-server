@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Build script for Blockscout MCP Server Desktop Extension
-# This script can be run inside the Docker container to build the extension automatically
+# Build script for Blockscout MCP Server MCP Bundle
+# This script can be run inside the Docker container to build the bundle automatically
 #
 # Usage: ./build.sh [mode]
 #   mode: "prod" (default) or "dev"
@@ -17,16 +17,16 @@ if [[ "$MODE" != "prod" && "$MODE" != "dev" ]]; then
     exit 1
 fi
 
-echo "🚀 Building Blockscout MCP Server Desktop Extension (${MODE} mode)..."
+echo "🚀 Building Blockscout MCP Server MCP Bundle (${MODE} mode)..."
 
 # Step 1: Install system dependencies
 echo "📦 Installing system dependencies..."
 apt-get update -qq
 apt-get install -y openssl
 
-# Step 2: Install DXT CLI
-echo "🔧 Installing DXT CLI..."
-npm install -g @anthropic-ai/dxt
+# Step 2: Install MCPB CLI
+echo "🔧 Installing MCPB CLI..."
+npm install -g @anthropic-ai/mcpb
 
 # Step 3: Prepare build directory
 echo "📂 Preparing build directory..."
@@ -53,39 +53,34 @@ echo "📦 Installing mcp-remote dependency..."
 cd _build
 npm install mcp-remote@0.1.18
 
-# Step 6: Package the extension
-echo "📦 Packaging extension..."
+# Step 6: Package the bundle
+echo "📦 Packaging bundle..."
 if [[ "$MODE" == "dev" ]]; then
-    DXT_FILENAME="blockscout-mcp-dev.dxt"
+    MCPB_FILENAME="blockscout-mcp-dev.mcpb"
 else
-    DXT_FILENAME="blockscout-mcp.dxt"
+    MCPB_FILENAME="blockscout-mcp.mcpb"
 fi
-dxt pack . "$DXT_FILENAME"
+mcpb pack . "$MCPB_FILENAME"
 
-# Step 7: Sign the extension
-echo "✍️  Signing extension..."
-dxt sign "$DXT_FILENAME" --self-signed
-
-# Step 8: Verify the extension
-echo "✅ Verifying extension..."
-if dxt verify "$DXT_FILENAME"; then
-    echo "   ✅ Extension signature verified successfully"
+# Step 7: Verify the bundle
+echo "✅ Verifying bundle..."
+if mcpb verify "$MCPB_FILENAME"; then
+    echo "   ✅ Bundle verified successfully"
 else
-    echo "   ⚠️  Extension verification failed (expected for self-signed certificates)"
-    echo "   ℹ️  This is normal when using self-signed certificates and won't affect functionality"
+    echo "   ⚠️  Bundle verification failed"
 fi
 echo ""
-echo "ℹ️  Extension info:"
-dxt info "$DXT_FILENAME"
+echo "ℹ️  Bundle info:"
+mcpb info "$MCPB_FILENAME"
 
 echo ""
-echo "🎉 Extension built successfully!"
-echo "📄 Output: dxt/_build/$DXT_FILENAME"
+echo "🎉 Bundle built successfully!"
+echo "📄 Output: mcpb/_build/$MCPB_FILENAME"
 echo "🔧 Mode: $MODE"
 if [[ "$MODE" == "dev" ]]; then
     echo "⚙️  Note: Dev mode requires manual configuration of Blockscout MCP server URL"
 fi
 echo ""
-echo "To use this extension:"
-echo "1. Copy the .dxt file from the container to your host system"
+echo "To use this bundle:"
+echo "1. Copy the .mcpb file from the container to your host system"
 echo "2. Install it in Claude Desktop"
