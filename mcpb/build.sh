@@ -48,11 +48,13 @@ echo "📦 Packaging bundle..."
 mcpb pack . "$MCPB_FILENAME"
 
 # Step 7: Verify the bundle
+# Verification could fail since we intentionally don't sign the bundle
 echo "✅ Verifying bundle..."
 if mcpb verify "$MCPB_FILENAME"; then
     echo "   ✅ Bundle verified successfully"
 else
-    echo "   ⚠️  Bundle verification failed"
+    echo "   ⚠️  Bundle verification failed (expected for non-signed bundles)"
+    echo "   ℹ️  This is normal when the bundle is used for development purposes and won't affect functionality"
 fi
 echo ""
 echo "ℹ️  Bundle info:"
