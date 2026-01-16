@@ -73,7 +73,7 @@ For manual building or if you prefer step-by-step control:
     mkdir _build
     cp manifest.json blockscout.png _build/
     cd _build
-    npm install mcp-remote@0.1.18
+    npm install mcp-remote@0.1.37
     mcpb pack . blockscout-mcp-dev.mcpb
     ```
 

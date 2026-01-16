@@ -41,7 +41,7 @@ cp blockscout.png _build/
 # Step 5: Change to build directory and install dependencies
 echo "📦 Installing mcp-remote dependency..."
 cd _build
-npm install mcp-remote@0.1.18
+npm install mcp-remote@0.1.37
 
 # Step 6: Package the bundle
 echo "📦 Packaging bundle..."
