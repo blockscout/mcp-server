@@ -285,7 +285,7 @@ Use MCP bundle to test the server with Claude Desktop.
 
 1. Build the bundle as per instructions in [mcpb/README.md](mcpb/README.md).
 2. Open Claude Desktop.
-3. Double click to open the `blockscout-mcp-dev.mcpb` file to automatically install the extension.
+3. Double-click to open the `blockscout-mcp-dev.mcpb` file to automatically install the bundle.
 4. Configure the Blockscout MCP Server URL when prompted (default: `http://127.0.0.1:8000/mcp`)
 
 ## Privacy and Anonymous Telemetry
