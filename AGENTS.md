@@ -147,10 +147,11 @@ mcp-server/
 │       ├── test_common.py            # Tests for shared utility functions
 │       ├── test_common_truncate.py   # Tests for truncation helpers
 │       └── test_decorators.py        # Tests for logging decorators
-├── dxt/                        # Desktop Extension (.dxt) package for Claude Desktop
-│   ├── README.md               # DXT-specific documentation and packaging instructions
-│   ├── manifest.json           # Extension manifest with metadata and tool definitions
-│   └── blockscout.png          # Extension icon file
+├── mcpb/                       # MCP Bundle package for Claude Desktop
+│   ├── README.md               # MCPB documentation and build instructions
+│   ├── manifest.json           # Bundle manifest for development builds
+│   ├── build.sh                # Build script for creating the development bundle
+│   └── blockscout.png          # Bundle icon file
 ├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
 │   ├── README.md               # GPT-specific documentation and configuration instructions
 │   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
@@ -225,16 +226,19 @@ mcp-server/
             * `BLOCKSCOUT_LOGS_PAGE_SIZE`: Page size for address logs queries (default: 10).
             * `BLOCKSCOUT_ADVANCED_FILTERS_PAGE_SIZE`: Page size for advanced filter queries (default: 10).
 
-2. **`dxt/` (Desktop Extension Package)**
-    * This directory contains the Desktop Extension (.dxt) package for Claude Desktop integration.
+2. **`mcpb/` (MCP Bundle - Development Only)**
+    * This directory contains the MCP Bundle (.mcpb) for Claude Desktop integration - for development and testing purposes only.
+    * **Note:** For production use with Claude, install the official Blockscout connector from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout).
     * **`README.md`**:
-        * Provides comprehensive documentation for the DXT specification and architecture.
-        * Contains detailed packaging instructions for building the extension.
+        * Provides documentation for the MCPB specification and development workflow.
+        * Contains build instructions for creating the development bundle.
     * **`manifest.json`**:
-        * Defines the extension manifest with metadata including name, version, description, and author information.
+        * Defines the bundle manifest with configurable MCP server URL for development.
         * Specifies the server configuration using Node.js with mcp-remote proxy.
-        * Lists all available tools with their names and descriptions for Claude Desktop integration.
-        * Includes keywords, license, and repository information.
+        * Allows developers to connect to local or custom MCP server instances.
+    * **`build.sh`**:
+        * Automated build script for creating the development bundle.
+        * Handles dependency installation and bundle packaging.
 
 3. **`gpt/` (ChatGPT GPT Integration Package)**
     * This directory contains files required to create the "Blockscout X-Ray" GPT in ChatGPT that integrates with the Blockscout MCP server via REST API.
