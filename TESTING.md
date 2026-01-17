@@ -202,10 +202,10 @@ All MCP responses follow the JSON-RPC 2.0 format:
 curl http://127.0.0.1:8000/health
 ```
 
-#### 2. Get Latest Block (Success Case)
+#### 2. Get Block Number (Success Case)
 
 ```bash
-curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
+curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1"
 ```
 
 #### 3. Get Block Info (With Optional Parameter)

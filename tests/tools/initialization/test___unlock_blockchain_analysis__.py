@@ -15,7 +15,6 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     mock_chain_rules = "Chain ID rule."
     mock_pagination_rules = "Pagination rule."
     mock_time_rules = "Time-based query rule."
-    mock_block_rules = "Block time estimation rule."
     mock_efficiency_rules = "Efficiency optimization rule."
     mock_binary_search_rules = "Binary search rule."
     mock_chains = [
@@ -43,10 +42,6 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.TIME_BASED_QUERY_RULES",
             mock_time_rules,
-        ),
-        patch(
-            "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.BLOCK_TIME_ESTIMATION_RULES",
-            mock_block_rules,
         ),
         patch(
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.EFFICIENCY_OPTIMIZATION_RULES",
@@ -86,7 +81,6 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert first_chain.settlement_layer_chain_id == "1"
         assert result.data.pagination_rules == mock_pagination_rules
         assert result.data.time_based_query_rules == mock_time_rules
-        assert result.data.block_time_estimation_rules == mock_block_rules
         assert result.data.efficiency_optimization_rules == mock_efficiency_rules
         assert result.data.binary_search_rules == mock_binary_search_rules
         assert result.data.direct_api_call_rules == "Direct API rule"

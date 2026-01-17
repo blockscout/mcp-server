@@ -95,12 +95,12 @@ paths:
           $ref: '#/components/responses/GatewayTimeout'
 
   # Block tools
-  /get_latest_block:
+  /get_block_number:
     get:
-      summary: Get latest block
+      summary: Get block number by time or latest
       description: |
-        Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain.
-      operationId: getLatestBlock
+        Retrieves the block number and timestamp for a specific date/time or the latest block. Use when you need a block height for a specific point in time (e.g., 'block at 2024-01-01') or the current chain tip. If `datetime` is provided, finds the block immediately preceding that time. If omitted, returns the latest indexed block.
+      operationId: getBlockNumber
       tags:
         - Blocks
       parameters:
@@ -111,9 +111,15 @@ paths:
           schema:
             type: string
           example: "1"
+        - name: datetime
+          in: query
+          required: false
+          description: ISO 8601 format (e.g., 2023-01-01T00:00:00Z)
+          schema:
+            type: string
       responses:
         '200':
-          description: Latest block information
+          description: Block number information
           content:
             application/json:
               schema:

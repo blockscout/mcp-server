@@ -12,7 +12,6 @@ from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BINARY_SEARCH_RULES,
-    BLOCK_TIME_ESTIMATION_RULES,
     CHAIN_ID_RULES,
     DEFAULT_HTTP_PORT,
     DIRECT_API_CALL_ENDPOINT_LIST,
@@ -30,7 +29,7 @@ from blockscout_mcp_server.tools.address.get_address_info import get_address_inf
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
 from blockscout_mcp_server.tools.block.get_block_info import get_block_info
-from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
+from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
 from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
@@ -97,10 +96,6 @@ Here is the list of IDs of most popular chains:
 {TIME_BASED_QUERY_RULES.strip()}
 </time_based_query_rules>
 
-<block_time_estimation_rules>
-{BLOCK_TIME_ESTIMATION_RULES.strip()}
-</block_time_estimation_rules>
-
 <efficiency_optimization_rules>
 {EFFICIENCY_OPTIMIZATION_RULES.strip()}
 </efficiency_optimization_rules>
@@ -152,8 +147,8 @@ mcp.tool(
 )(get_block_info)
 mcp.tool(
     structured_output=False,
-    annotations=create_tool_annotations("Get Latest Block"),
-)(get_latest_block)
+    annotations=create_tool_annotations("Get Block Number"),
+)(get_block_number)
 mcp.tool(
     structured_output=False,
     annotations=create_tool_annotations("Get Address by ENS Name"),

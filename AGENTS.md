@@ -37,7 +37,7 @@ mcp-server/
 │       ├── block/
 │       │   ├── __init__.py
 │       │   ├── get_block_info.py
-│       │   └── get_latest_block.py
+│       │   └── get_block_number.py
 │       ├── chains/
 │       │   ├── __init__.py
 │       │   └── get_chains_list.py
@@ -82,7 +82,7 @@ mcp-server/
 │   │   │   └── test_nft_tokens_by_address_real.py
 │   │   ├── block/
 │   │   │   ├── test_get_block_info_real.py
-│   │   │   └── test_get_latest_block_real.py
+│   │   │   └── test_get_block_number_real.py
 │   │   ├── chains/
 │   │   │   └── test_get_chains_list_real.py
 │   │   ├── contract/
@@ -116,7 +116,7 @@ mcp-server/
 │       │   └── test_nft_tokens_by_address_pagination.py  # Pagination scenarios for nft_tokens_by_address
 │       ├── block/              # Tests for block-related MCP tools
 │       │   ├── test_get_block_info.py          # Tests for get_block_info
-│       │   └── test_get_latest_block.py        # Tests for get_latest_block
+│       │   └── test_get_block_number.py        # Tests for get_block_number
 │       ├── chains/             # Tests for chain-related MCP tools
 │       │   └── test_get_chains_list.py         # Tests for get_chains_list
 │       ├── contract/           # Tests for contract-related MCP tools

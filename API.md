@@ -158,23 +158,28 @@ curl "http://127.0.0.1:8000/v1/get_chains_list"
 
 ### Block Tools
 
-#### Get Latest Block (`get_latest_block`)
+#### Get Block Number (`get_block_number`)
 
-Returns the latest indexed block number and timestamp for a chain.
+Retrieves the block number and timestamp for a specific date/time or the latest block.
 
-`GET /v1/get_latest_block`
+`GET /v1/get_block_number`
 
 **Parameters**
 
-| Name       | Type     | Required | Description               |
-| ---------- | -------- | -------- | ------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain. |
+| Name       | Type     | Required | Description                                                                                                   |
+| ---------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `chain_id` | `string` | Yes      | The ID of the blockchain.                                                                                     |
+| `datetime` | `string` | No       | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
 
 **Example Request**
 
 ```bash
-curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
+curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
 ```
+
+**Deprecated**
+
+`GET /v1/get_latest_block` is deprecated but still supported for backward compatibility.
 
 #### Get Block Info (`get_block_info`)
 
@@ -553,5 +558,5 @@ Receive an anonymous tool usage report from a community-run server.
 curl -X POST "http://127.0.0.1:8000/v1/report_tool_usage" \\
   -H "User-Agent: BlockscoutMCP/0.11.0" \\
   -H "Content-Type: application/json" \\
-  -d '{"tool_name": "get_latest_block", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
+  -d '{"tool_name": "get_block_number", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
 ```
