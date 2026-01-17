@@ -4,7 +4,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
-from blockscout_mcp_server.models import LatestBlockData, ToolResponse
+from blockscout_mcp_server.models import BlockNumberData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     get_blockscout_base_url,
@@ -40,7 +40,7 @@ async def get_block_number(
             )
         ),
     ] = None,
-) -> ToolResponse[LatestBlockData]:
+) -> ToolResponse[BlockNumberData]:
     """
     Retrieves the block number and timestamp for a specific date/time or the latest block.
     Use when you need a block height for a specific point in time (e.g., "block at 2024-01-01")
@@ -79,7 +79,7 @@ async def get_block_number(
             timestamp = first_block.get("timestamp")
             if block_number is None or timestamp is None:
                 raise ValueError("Blockscout API returned an incomplete latest block response.")
-            block_data = LatestBlockData(block_number=int(block_number), timestamp=timestamp)
+            block_data = BlockNumberData(block_number=int(block_number), timestamp=timestamp)
             return build_tool_response(data=block_data)
 
         raise ValueError("Could not retrieve latest block data from the API.")
@@ -151,5 +151,5 @@ async def get_block_number(
         message="Successfully resolved block number by time.",
     )
 
-    block_data = LatestBlockData(block_number=block_number_int, timestamp=block_timestamp)
+    block_data = BlockNumberData(block_number=block_number_int, timestamp=block_timestamp)
     return build_tool_response(data=block_data)

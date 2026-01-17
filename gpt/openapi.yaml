@@ -98,8 +98,7 @@ paths:
   /get_block_number:
     get:
       summary: Get block number by time or latest
-      description: |
-        Retrieves the block number and timestamp for a specific date/time or the latest block. Use when you need a block height for a specific point in time (e.g., 'block at 2024-01-01') or the current chain tip. If `datetime` is provided, finds the block immediately preceding that time. If omitted, returns the latest indexed block.
+      description: Returns the block number and timestamp for a given datetime (using the block immediately before it) or the latest block when datetime is omitted.
       operationId: getBlockNumber
       tags:
         - Blocks

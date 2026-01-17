@@ -111,11 +111,11 @@ Retrieves a list of all available tools and their MCP schemas.
 
 `GET /v1/tools`
 
-**Parameters**
+### Parameters
 
 *None*
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/tools"
@@ -130,11 +130,11 @@ Provides custom instructions and operational guidance for using the server. This
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
 
-**Parameters**
+### Parameters
 
 *None*
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
@@ -146,11 +146,11 @@ Returns a list of all known blockchain chains, including whether each is a testn
 
 `GET /v1/get_chains_list`
 
-**Parameters**
+### Parameters
 
 *None*
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_chains_list"
@@ -164,20 +164,20 @@ Retrieves the block number and timestamp for a specific date/time or the latest 
 
 `GET /v1/get_block_number`
 
-**Parameters**
+### Parameters
 
 | Name       | Type     | Required | Description                                                                                                   |
 | ---------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------- |
 | `chain_id` | `string` | Yes      | The ID of the blockchain.                                                                                     |
 | `datetime` | `string` | No       | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
 ```
 
-**Deprecated**
+### Deprecated
 
 `GET /v1/get_latest_block` is deprecated but still supported for backward compatibility.
 

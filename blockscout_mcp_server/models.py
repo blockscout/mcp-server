@@ -33,7 +33,7 @@ class PaginationInfo(BaseModel):
 
 
 # --- Model for get_block_number Data Payload ---
-class LatestBlockData(BaseModel):
+class BlockNumberData(BaseModel):
     """Represents the essential data for a resolved block number."""
 
     block_number: int = Field(description="The block number (height) in the blockchain")
