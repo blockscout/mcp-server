@@ -93,8 +93,8 @@ sequenceDiagram
     MCP-->>REST: {"status": "ok"}
 
     Note over REST, MCP: REST API Endpoint (calls same tool function as MCP)
-    REST->>MCP: GET /v1/get_latest_block?chain_id=1
-    Note over MCP: REST wrapper calls get_latest_block() tool function
+    REST->>MCP: GET /v1/get_block_number?chain_id=1
+    Note over MCP: REST wrapper calls get_block_number() tool function
     MCP->>CS: GET /api/chains/1
     CS-->>MCP: Chain metadata (includes Blockscout URL)
     MCP->>BS: GET /api/v2/blocks/latest
@@ -138,7 +138,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
 5. **Blockchain Data Retrieval**:
-   - MCP Host requests blockchain data (e.g., `get_latest_block`) with specific chain_id, optionally requesting progress updates
+   - MCP Host requests blockchain data (e.g., `get_block_number`) with specific chain_id, optionally requesting progress updates
    - MCP Server, if progress is requested, reports starting the operation
    - MCP Server queries Chainscout for chain metadata including Blockscout instance URL
    - MCP Server reports progress after resolving the Blockscout URL
@@ -154,7 +154,7 @@ This architecture provides the flexibility of a multi-protocol server without th
      - **Gateway Integration**: To enable easier integration with API gateways and marketplaces like Higress.
      - **AI-Friendly Stop-Gap**: To provide an AI-friendly alternative to the raw Blockscout API.
      - **Non-MCP Agent Support**: To allow agents without native MCP support to use the server's functionality.
-   - The core MCP tool functions (e.g., `get_latest_block`) serve as the single source of truth for business logic.
+   - The core MCP tool functions (e.g., `get_block_number`) serve as the single source of truth for business logic.
    - The REST API endpoints under `/v1/` are simple wrappers that call these tool functions. They are registered directly with the `FastMCP` instance using its `custom_route` method.
    - This approach ensures consistency between the two protocols, simplifies maintenance, and allows for a single deployment process.
    - This extended functionality is opt-in via a `--rest` command-line flag to maintain the server's primary focus as an MCP-first application.

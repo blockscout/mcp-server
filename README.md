@@ -121,7 +121,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 6. `inspect_contract_code(chain_id, address, file_name=None)` - Allows getting the source files of verified contracts.
 7. `get_address_info(chain_id, address)` - Gets comprehensive information about an address including balance, ENS association, contract status, token details, and public tags.
 8. `get_tokens_by_address(chain_id, address, cursor=None)` - Returns detailed ERC20 token holdings for an address with enriched metadata and market data.
-9. `get_latest_block(chain_id)` - Returns the latest indexed block number and timestamp.
+9. `get_block_number(chain_id, [datetime])` - Retrieves the block number and timestamp for a specific date/time or the latest block.
 10. `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)` - Gets transactions for an address within a specific time range with optional method filtering.
 11. `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)` - Returns ERC-20 token transfers for an address within a specific time range.
 12. `transaction_summary(chain_id, hash)` - Provides human-readable transaction summaries using Blockscout Transaction Interpreter.
@@ -294,7 +294,7 @@ To help us improve the Blockscout MCP Server, community-run instances of the ser
 
 **What we collect:**
 
-- The name of the tool being called (e.g., `get_latest_block`).
+- The name of the tool being called (e.g., `get_block_number`).
 - The parameters provided to the tool.
 - The version of the Blockscout MCP Server being used.
 

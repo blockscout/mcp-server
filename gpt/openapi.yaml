@@ -95,12 +95,11 @@ paths:
           $ref: '#/components/responses/GatewayTimeout'
 
   # Block tools
-  /get_latest_block:
+  /get_block_number:
     get:
-      summary: Get latest block
-      description: |
-        Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain.
-      operationId: getLatestBlock
+      summary: Get block number by time or latest
+      description: Returns the block number and timestamp for a given datetime (using the block immediately before it) or the latest block when datetime is omitted.
+      operationId: getBlockNumber
       tags:
         - Blocks
       parameters:
@@ -111,9 +110,15 @@ paths:
           schema:
             type: string
           example: "1"
+        - name: datetime
+          in: query
+          required: false
+          description: ISO 8601 format (e.g., 2023-01-01T00:00:00Z)
+          schema:
+            type: string
       responses:
         '200':
-          description: Latest block information
+          description: Block number information
           content:
             application/json:
               schema:

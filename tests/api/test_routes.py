@@ -72,14 +72,44 @@ async def test_list_tools_success(client: AsyncClient, test_mcp_instance: FastMC
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.get_latest_block", new_callable=AsyncMock)
-async def test_get_latest_block_success(mock_tool, client: AsyncClient):
+@patch("blockscout_mcp_server.api.routes.get_block_number", new_callable=AsyncMock)
+async def test_get_block_number_success(mock_tool, client: AsyncClient):
     """Test the happy path for a simple REST endpoint."""
+    mock_tool.return_value = ToolResponse(data={"block_number": 123})
+    response = await client.get("/v1/get_block_number?chain_id=1")
+    assert response.status_code == 200
+    assert response.json()["data"] == {"block_number": 123}
+    mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.get_block_number", new_callable=AsyncMock)
+async def test_get_block_number_with_datetime_success(mock_tool, client: AsyncClient):
+    """Test get_block_number with optional datetime parameter."""
+    mock_tool.return_value = ToolResponse(data={"block_number": 456})
+    response = await client.get("/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z")
+    assert response.status_code == 200
+    assert response.json()["data"] == {"block_number": 456}
+    mock_tool.assert_called_once_with(chain_id="1", datetime="2023-01-01T00:00:00Z", ctx=ANY)
+
+
+@pytest.mark.asyncio
+async def test_get_block_number_missing_param(client: AsyncClient):
+    """Test that a 400 is returned if a required parameter is missing."""
+    response = await client.get("/v1/get_block_number")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.get_block_number", new_callable=AsyncMock)
+async def test_get_latest_block_success(mock_tool, client: AsyncClient):
+    """Test the legacy endpoint forwards to get_block_number."""
     mock_tool.return_value = ToolResponse(data={"block_number": 123})
     response = await client.get("/v1/get_latest_block?chain_id=1")
     assert response.status_code == 200
     assert response.json()["data"] == {"block_number": 123}
-    mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)
+    mock_tool.assert_called_once_with(chain_id="1", datetime=None, ctx=ANY)
 
 
 @pytest.mark.asyncio
@@ -629,11 +659,11 @@ async def test_direct_api_call_missing_chain_id(client: AsyncClient):
         (ValueError("bad input"), 400),
     ],
 )
-@patch("blockscout_mcp_server.api.routes.get_latest_block", new_callable=AsyncMock)
+@patch("blockscout_mcp_server.api.routes.get_block_number", new_callable=AsyncMock)
 async def test_error_handling(mock_tool, client: AsyncClient, side_effect, status):
     """Generic error handling for the REST API."""
     mock_tool.side_effect = side_effect
-    response = await client.get("/v1/get_latest_block?chain_id=1")
+    response = await client.get("/v1/get_block_number?chain_id=1")
     assert response.status_code == status
     assert response.json() == {"error": str(side_effect)}
     mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)

@@ -32,9 +32,9 @@ class PaginationInfo(BaseModel):
     next_call: NextCallInfo = Field(description="The structured tool call required to fetch the subsequent page.")
 
 
-# --- Model for get_latest_block Data Payload ---
-class LatestBlockData(BaseModel):
-    """Represents the essential data for the latest block."""
+# --- Model for get_block_number Data Payload ---
+class BlockNumberData(BaseModel):
+    """Represents the essential data for a resolved block number."""
 
     block_number: int = Field(description="The block number (height) in the blockchain")
     timestamp: str = Field(description="The timestamp when the block was mined (ISO format)")
@@ -109,8 +109,6 @@ class InstructionsData(BaseModel):
     chain_id_guidance: ChainIdGuidance = Field(description="Comprehensive guidance for chain ID selection and usage.")
     pagination_rules: str = Field(description="Rules for handling paginated responses and data retrieval.")
     time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
-    block_time_estimation_rules: str = Field(description="Rules for mathematical block time estimation and navigation.")
-    efficiency_optimization_rules: str = Field(description="Rules for optimizing query strategies and performance.")
     binary_search_rules: str = Field(description="Rules for using binary search for historical blockchain data.")
     direct_api_call_rules: str = Field(description="Rules and guidance for using the direct_api_call tool.")
     direct_api_endpoints: "DirectApiEndpointList" = Field(

@@ -22,7 +22,7 @@ from blockscout_mcp_server.tools.address.get_address_info import get_address_inf
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
 from blockscout_mcp_server.tools.block.get_block_info import get_block_info
-from blockscout_mcp_server.tools.block.get_latest_block import get_latest_block
+from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
 from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
@@ -133,9 +133,17 @@ async def get_block_info_rest(request: Request) -> Response:
 
 @handle_rest_errors
 async def get_latest_block_rest(request: Request) -> Response:
-    """REST wrapper for the get_latest_block tool."""
+    """REST wrapper for the legacy get_latest_block tool."""
     params = extract_and_validate_params(request, required=["chain_id"], optional=[])
-    tool_response = await get_latest_block(**params, ctx=get_mock_context(request))
+    tool_response = await get_block_number(chain_id=params["chain_id"], datetime=None, ctx=get_mock_context(request))
+    return JSONResponse(tool_response.model_dump())
+
+
+@handle_rest_errors
+async def get_block_number_rest(request: Request) -> Response:
+    """REST wrapper for the get_block_number tool."""
+    params = extract_and_validate_params(request, required=["chain_id"], optional=["datetime"])
+    tool_response = await get_block_number(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump())
 
 
@@ -328,6 +336,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     _add_v1_tool_route(mcp, "/get_instructions", get_instructions_rest)
     _add_v1_tool_route(mcp, "/unlock_blockchain_analysis", unlock_blockchain_analysis_rest)
     _add_v1_tool_route(mcp, "/get_block_info", get_block_info_rest)
+    _add_v1_tool_route(mcp, "/get_block_number", get_block_number_rest)
     _add_v1_tool_route(mcp, "/get_latest_block", get_latest_block_rest)
     _add_v1_tool_route(mcp, "/get_address_by_ens_name", get_address_by_ens_name_rest)
     _add_v1_tool_route(mcp, "/get_transactions_by_address", get_transactions_by_address_rest)

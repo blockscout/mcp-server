@@ -32,7 +32,7 @@
 **Examples:**
 ```
 GET /v1/tools
-GET /v1/get_latest_block?chain_id=1
+GET /v1/get_block_number?chain_id=1
 GET /v1/get_address_info?chain_id=1&address=0x...
 GET /v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=7d
 ```
@@ -49,7 +49,7 @@ All tools are available via both MCP and REST API interfaces:
 6. **`inspect_contract_code`** - Inspects a verified contract's source code
 7. **`get_address_info`** - Gets comprehensive information about an address
 8. **`get_tokens_by_address`** - Returns ERC20 token holdings for an address
-9. **`get_latest_block`** - Returns the latest indexed block number and timestamp
+9. **`get_block_number`** - Retrieves the block number and timestamp for a specific date/time or the latest block
 10. **`get_transactions_by_address`** - Gets transactions for an address with time range filtering
 11. **`get_token_transfers_by_address`** - Returns ERC-20 token transfers for an address
 12. **`transaction_summary`** - Provides human-readable transaction summaries

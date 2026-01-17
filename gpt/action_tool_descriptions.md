@@ -9,10 +9,12 @@ Get block information like timestamp, gas used, burnt fees, transaction count et
 Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
 </get_block_info>
 
-<get_latest_block>
-Get the latest indexed block number and timestamp, which represents the most recent state of the blockchain.
-No transactions or token transfers can exist beyond this point, making it useful as a reference timestamp for other API calls.
-</get_latest_block>
+<get_block_number>
+Retrieves the block number and timestamp for a specific date/time or the latest block.
+Use when you need a block height for a specific point in time (e.g., "block at 2024-01-01")
+or the current chain tip. If `datetime` is provided, finds the block immediately
+preceding that time. If omitted, returns the latest indexed block.
+</get_block_number>
 
 <get_address_by_ens_name>
 Useful for when you need to convert an ENS domain name (e.g. "blockscout.eth") to its corresponding Ethereum address.
