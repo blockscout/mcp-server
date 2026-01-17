@@ -109,7 +109,6 @@ class InstructionsData(BaseModel):
     chain_id_guidance: ChainIdGuidance = Field(description="Comprehensive guidance for chain ID selection and usage.")
     pagination_rules: str = Field(description="Rules for handling paginated responses and data retrieval.")
     time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
-    efficiency_optimization_rules: str = Field(description="Rules for optimizing query strategies and performance.")
     binary_search_rules: str = Field(description="Rules for using binary search for historical blockchain data.")
     direct_api_call_rules: str = Field(description="Rules and guidance for using the direct_api_call tool.")
     direct_api_endpoints: "DirectApiEndpointList" = Field(

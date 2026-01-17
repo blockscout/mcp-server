@@ -55,7 +55,6 @@ def test_tool_response_complex_data():
         chain_id_guidance=chain_id_guidance,
         pagination_rules="Pagination rule",
         time_based_query_rules="Time rule",
-        efficiency_optimization_rules="Efficiency rule",
         binary_search_rules="Binary search rule",
         direct_api_call_rules="Direct API rule",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
@@ -172,7 +171,6 @@ def test_instructions_data():
         chain_id_guidance=chain_id_guidance,
         pagination_rules="Pagination rules",
         time_based_query_rules="Time rules",
-        efficiency_optimization_rules="Efficiency rules",
         binary_search_rules="Binary search rules",
         direct_api_call_rules="Direct API rules",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
@@ -185,7 +183,6 @@ def test_instructions_data():
     assert instructions.chain_id_guidance.recommended_chains[1].chain_id == "137"
     assert instructions.pagination_rules == "Pagination rules"
     assert instructions.time_based_query_rules == "Time rules"
-    assert instructions.efficiency_optimization_rules == "Efficiency rules"
     assert instructions.binary_search_rules == "Binary search rules"
 
 

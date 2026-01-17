@@ -16,7 +16,6 @@ from blockscout_mcp_server.constants import (
     DEFAULT_HTTP_PORT,
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
-    EFFICIENCY_OPTIMIZATION_RULES,
     ERROR_HANDLING_RULES,
     PAGINATION_RULES,
     RECOMMENDED_CHAINS,
@@ -95,10 +94,6 @@ Here is the list of IDs of most popular chains:
 <time_based_query_rules>
 {TIME_BASED_QUERY_RULES.strip()}
 </time_based_query_rules>
-
-<efficiency_optimization_rules>
-{EFFICIENCY_OPTIMIZATION_RULES.strip()}
-</efficiency_optimization_rules>
 
 <binary_search_rules>
 {BINARY_SEARCH_RULES.strip()}

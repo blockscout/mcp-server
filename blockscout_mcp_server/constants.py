@@ -37,11 +37,6 @@ specific dates), start with transaction-level tools that support time filtering 
 from those specific transactions.
 """
 
-EFFICIENCY_OPTIMIZATION_RULES = """
-EFFICIENCY OPTIMIZATION: When direct tools don't exist for your query, be creative and strategic. Avoid excessive
-iteration.
-"""
-
 BINARY_SEARCH_RULES = """
 BINARY SEARCH FOR HISTORICAL BLOCKCHAIN DATA: Never paginate for temporal boundaries. Use binary search 
 with `age_from`/`age_to` parameters to efficiently locate specific time periods or events in blockchain history.
