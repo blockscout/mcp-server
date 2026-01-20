@@ -26,9 +26,16 @@ async def get_address_info(
     ctx: Context,
 ) -> ToolResponse[AddressInfoData]:
     """
-    Retrieve on-chain and metadata details for an address, including first transaction block/timestamp.
-    Use for address overviews or age checks; metadata may be unavailable.
-    """
+    Get comprehensive information about an address, including:
+    - Address existence check
+    - Native token (ETH) balance (provided as is, without adjusting by decimals)
+    - First transaction details (block number and timestamp) for age calculation
+    - ENS name association (if any)
+    - Contract status (whether the address is a contract, whether it is verified)
+    - Proxy contract information (if applicable): determines if a smart contract is a proxy contract (which forwards calls to implementation contracts), including proxy type and implementation addresses
+    - Token details (if the contract is a token): name, symbol, decimals, total supply, etc.
+    Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
+    """  # noqa: E501
     await report_and_log_progress(
         ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
