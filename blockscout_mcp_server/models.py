@@ -111,6 +111,7 @@ class InstructionsData(BaseModel):
     time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
     binary_search_rules: str = Field(description="Rules for using binary search for historical blockchain data.")
     portfolio_analysis_rules: str = Field(description="Rules for conducting comprehensive portfolio analysis.")
+    funds_movement_rules: str = Field(description="Rules for analyzing funds movement and transfer activity.")
     direct_api_call_rules: str = Field(description="Rules and guidance for using the direct_api_call tool.")
     direct_api_endpoints: "DirectApiEndpointList" = Field(
         description="Curated list of endpoints available for direct API calls."

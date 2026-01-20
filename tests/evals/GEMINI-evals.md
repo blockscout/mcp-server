@@ -67,8 +67,12 @@ get_transactions_by_address(age_from: START, age_to: MID)
 </binary_search_rules>
 
 <portfolio_analysis_rules>
-PORTFOLIO ANALYSIS: When asked to analyze a portfolio, net worth, total assets, or funds movement for any address, you MUST check BOTH native-coin data AND ERC-20 token data. For balances, call `get_address_info` (native coin) AND `get_tokens_by_address` (ERC-20 holdings). For funds movement or recent transfers, call `get_transactions_by_address` (native coin transfers) AND `get_token_transfers_by_address` (ERC-20 transfers) before answering. Do not assume that "transactions" implies native coin only. Checking only one results in an incomplete and incorrect analysis.
+PORTFOLIO BALANCE ANALYSIS: When asked to analyze a portfolio, net worth, or total assets for any address, you MUST check BOTH native-coin data AND ERC-20 token data. Call `get_address_info` (native coin) AND `get_tokens_by_address` (ERC-20 holdings) before answering. Checking only one results in an incomplete and incorrect analysis.
 </portfolio_analysis_rules>
+
+<funds_movement_rules>
+FUNDS MOVEMENT ANALYSIS: When asked about funds movement, recent transfers, or transaction activity for any address, you MUST check BOTH native-coin transfers AND ERC-20 token transfers. Call `get_transactions_by_address` (native coin transfers) AND `get_token_transfers_by_address` (ERC-20 transfers) before answering. Do not assume that "transactions" implies native coin only. Checking only one results in an incomplete and incorrect analysis.
+</funds_movement_rules>
 
 <direct_call_endpoint_list>
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools, you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
