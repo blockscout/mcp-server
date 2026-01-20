@@ -43,7 +43,6 @@ from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address impo
     get_token_transfers_by_address,
 )
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
-from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
     get_transactions_by_address,
 )
@@ -192,10 +191,6 @@ mcp.tool(
     structured_output=False,
     annotations=create_tool_annotations("Get Transaction Information"),
 )(get_transaction_info)
-mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Transaction Logs"),
-)(get_transaction_logs)
 mcp.tool(
     structured_output=False,
     annotations=create_tool_annotations("Get List of Chains"),

@@ -302,10 +302,10 @@ This architecture provides the flexibility of a multi-protocol server without th
         "data": [...],
         "pagination": {
           "next_call": {
-            "tool_name": "get_transaction_logs",
+            "tool_name": "direct_api_call",
             "params": {
               "chain_id": "1",
-              "hash": "0x...",
+              "endpoint_path": "/api/v2/transactions/0x.../logs",
               "cursor": "eyJibG9ja19udW1iZXIiOjE4OTk5OTk5LCJpbmRleCI6NDIsIml0ZW1zX2NvdW50Ijo1MH0"
             }
           }

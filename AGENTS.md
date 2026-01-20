@@ -53,7 +53,8 @@ mcp-server/
 │       │   ├── dispatcher.py
 │       │   └── handlers/
 │       │       ├── __init__.py
-│       │       └── address_logs_handler.py
+│       │       ├── address_logs_handler.py
+│       │       └── transaction_logs_handler.py
 │       ├── ens/
 │       │   ├── __init__.py
 │       │   └── get_address_by_ens_name.py
@@ -68,7 +69,6 @@ mcp-server/
 │           ├── _shared.py             # Shared helpers for transaction tools
 │           ├── get_token_transfers_by_address.py
 │           ├── get_transaction_info.py
-│           ├── get_transaction_logs.py
 │           ├── get_transactions_by_address.py
 │           └── transaction_summary.py
 ├── tests/                      # Test suite for all MCP tools
@@ -101,7 +101,6 @@ mcp-server/
 │   │   └── transaction/
 │   │       ├── test_get_token_transfers_by_address_real.py
 │   │       ├── test_get_transaction_info_real.py
-│   │       ├── test_get_transaction_logs_real.py
 │   │       ├── test_get_transactions_by_address_real.py
 │   │       └── test_transaction_summary_real.py
 │   ├── api/                      # Unit tests for the REST API
@@ -127,15 +126,14 @@ mcp-server/
 │       ├── transaction/        # Tests for transaction-related MCP tools
 │       │   ├── test_get_token_transfers_by_address.py      # Tests for get_token_transfers_by_address
 │       │   ├── test_get_transaction_info.py        # Tests for get_transaction_info
-│       │   ├── test_get_transaction_logs.py        # Tests for get_transaction_logs
-│       │   ├── test_get_transaction_logs_pagination.py  # Pagination-focused logs tests
 │       │   ├── test_get_transactions_by_address.py      # Tests for get_transactions_by_address
 │       │   ├── test_get_transactions_by_address_pagination.py  # Pagination-focused transaction tests
 │       │   ├── test_helpers.py                     # Tests for transaction helper utilities
 │       │   └── test_transaction_summary.py         # Tests for transaction_summary
 │       ├── direct_api/         # Tests for the direct API MCP tool
 │       │   ├── handlers/
-│       │   │   └── test_address_logs_handler.py
+│       │   │   ├── test_address_logs_handler.py
+│       │   │   └── test_transaction_logs_handler.py
 │       │   ├── test_dispatcher.py
 │       │   └── test_direct_api_call.py  # Tests for direct_api_call
 │       ├── ens/                # Tests for ENS-related MCP tools

@@ -345,7 +345,7 @@ class NftCollectionHolding(BaseModel):
     )
 
 
-# --- Model for get_address_logs and get_transaction_logs Data Payloads ---
+# --- Model for address and transaction log data payloads ---
 class LogItemBase(BaseModel):
     """Common fields for log items from Blockscout."""
 
@@ -368,7 +368,7 @@ class AddressLogItem(LogItemBase):
     transaction_hash: str | None = Field(None, description="The transaction that triggered the event.")
 
 
-# --- Model for get_transaction_logs Data Payload ---
+# --- Model for transaction log data payload ---
 class TransactionLogItem(LogItemBase):
     """Represents a single log item with its originating contract address."""
 

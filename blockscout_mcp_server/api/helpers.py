@@ -85,7 +85,11 @@ def create_deprecation_response() -> Response:
     """Creates a standardized JSON response for a deprecated tool endpoint."""
     deprecation_notes = [
         "This endpoint is deprecated and will be removed in a future version.",
-        "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `get_transaction_logs` for each relevant transaction hash.",  # noqa: E501
+        (
+            "Please use the recommended workflow: first, call `get_transactions_by_address` "
+            "(which supports time filtering), and then use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
+        ),
     ]
     tool_response = ToolResponse(data={"status": "deprecated"}, notes=deprecation_notes)
     return JSONResponse(tool_response.model_dump(), status_code=410)

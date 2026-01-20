@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "blockscout-mcp",
   "display_name": "Blockscout (Development)",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Contextual blockchain activity analysis via Blockscout APIs",
   "long_description": "This extension enables contextual blockchain activity analysis with multi-chain support, intelligent context optimization, smart response slicing, and seamless pagination. The server exposes blockchain data including balances, tokens, NFTs, contract metadata, transactions, and logs via MCP for comprehensive blockchain analysis. This extension acts as a proxy to the official Blockscout MCP server.",
   "author": {
@@ -101,10 +101,6 @@
     {
       "name": "get_transaction_info",
       "description": "Gets comprehensive transaction information"
-    },
-    {
-      "name": "get_transaction_logs",
-      "description": "Returns transaction logs with decoded event data"
     },
     {
       "name": "read_contract",

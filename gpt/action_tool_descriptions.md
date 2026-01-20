@@ -123,13 +123,6 @@ By default, the raw transaction input is omitted if a decoded version is availab
 Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
 </get_transaction_info>
 
-<get_transaction_logs>
-Get comprehensive transaction logs.
-Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
-Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
-**SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
-</get_transaction_logs>
-
 <direct_api_call>
 Call a raw Blockscout API endpoint for advanced or chain-specific data.
 Do not include query strings in `endpoint_path`; pass all query parameters via `query_params` to avoid double-encoding.

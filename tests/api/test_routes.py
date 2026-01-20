@@ -545,36 +545,6 @@ async def test_get_transaction_info_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.get_transaction_logs", new_callable=AsyncMock)
-async def test_get_transaction_logs_success(mock_tool, client: AsyncClient):
-    """Test /get_transaction_logs endpoint."""
-    mock_tool.return_value = ToolResponse(data=[])
-    response = await client.get("/v1/get_transaction_logs?chain_id=1&transaction_hash=0x123&cursor=foo")
-    assert response.status_code == 200
-    assert response.json()["data"] == []
-    mock_tool.assert_called_once_with(chain_id="1", transaction_hash="0x123", cursor="foo", ctx=ANY)
-
-
-@pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.get_transaction_logs", new_callable=AsyncMock)
-async def test_get_transaction_logs_no_cursor(mock_tool, client: AsyncClient):
-    """Works without optional cursor."""
-    mock_tool.return_value = ToolResponse(data=[])
-    response = await client.get("/v1/get_transaction_logs?chain_id=1&transaction_hash=0x123")
-    assert response.status_code == 200
-    assert response.json()["data"] == []
-    mock_tool.assert_called_once_with(chain_id="1", transaction_hash="0x123", ctx=ANY)
-
-
-@pytest.mark.asyncio
-async def test_get_transaction_logs_missing_param(client: AsyncClient):
-    """Missing chain_id."""
-    response = await client.get("/v1/get_transaction_logs?transaction_hash=0x123")
-    assert response.status_code == 400
-    assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
-
-
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "url",
     [

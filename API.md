@@ -223,26 +223,6 @@ Gets comprehensive information for a single transaction.
 curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
 ```
 
-#### Get Transaction Logs (`get_transaction_logs`)
-
-Returns the event logs for a specific transaction, with decoded data if available.
-
-`GET /v1/get_transaction_logs`
-
-**Parameters**
-
-| Name               | Type     | Required | Description                                        |
-| ------------------ | -------- | -------- | -------------------------------------------------- |
-| `chain_id`         | `string` | Yes      | The ID of the blockchain.                          |
-| `transaction_hash` | `string` | Yes      | The hash of the transaction.                       |
-| `cursor`           | `string` | No       | The cursor for pagination from a previous response.|
-
-**Example Request**
-
-```bash
-curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
-```
-
 #### Get Transaction Summary (`transaction_summary`)
 
 Provides a human-readable summary of a transaction's purpose.
@@ -356,7 +336,7 @@ curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0xabc"
   "data": {"status": "deprecated"},
   "notes": [
     "This endpoint is deprecated and will be removed in a future version.",
-    "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `get_transaction_logs` for each relevant transaction hash."
+    "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
   ],
   "pagination": null,
   "instructions": null
