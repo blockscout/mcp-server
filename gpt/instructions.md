@@ -75,5 +75,5 @@ get_transactions_by_address(age_from: START, age_to: MID)
 </binary_search_rules>
 
 <portfolio_analysis_rules>
-PORTFOLIO ANALYSIS: When asked to analyze a portfolio, net worth, or total assets, you MUST check BOTH the native coin balance via `get_address_info` AND ERC-20 token holdings via `get_tokens_by_address`. Checking only one results in an incomplete and incorrect analysis.
+PORTFOLIO ANALYSIS: When asked to analyze a portfolio, net worth, total assets, or funds movement, you MUST check BOTH native-coin data AND ERC-20 token data. For balances, call `get_address_info` (native coin) AND `get_tokens_by_address` (ERC-20 holdings). For funds movement, call `get_transactions_by_address` (native coin transfers) AND `get_token_transfers_by_address` (ERC-20 transfers). Checking only one results in an incomplete and incorrect analysis.
 </portfolio_analysis_rules>
