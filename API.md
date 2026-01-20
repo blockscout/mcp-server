@@ -223,6 +223,40 @@ Gets comprehensive information for a single transaction.
 curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
 ```
 
+#### Get Transaction Logs (Deprecated) (`get_transaction_logs`)
+
+This endpoint is deprecated and always returns a static notice.
+
+`GET /v1/get_transaction_logs`
+
+**Parameters**
+
+| Name                | Type     | Required | Description                                        |
+| ------------------- | -------- | -------- | -------------------------------------------------- |
+| `chain_id`          | `string` | Yes      | The ID of the blockchain.                          |
+| `transaction_hash`  | `string` | Yes      | The transaction hash to fetch logs for.            |
+| `cursor`            | `string` | No       | The cursor for pagination from a previous response.|
+
+**Example Request**
+
+```bash
+curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
+```
+
+**Example Response**
+
+```json
+{
+  "data": {"status": "deprecated"},
+  "notes": [
+    "This endpoint is deprecated and will be removed in a future version.",
+    "Please use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` to retrieve logs for a transaction."
+  ],
+  "pagination": null,
+  "instructions": null
+}
+```
+
 #### Get Transaction Summary (`transaction_summary`)
 
 Provides a human-readable summary of a transaction's purpose.

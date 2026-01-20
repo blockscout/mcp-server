@@ -562,6 +562,23 @@ async def test_get_address_logs_returns_deprecation_notice(client: AsyncClient, 
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/v1/get_transaction_logs",
+        "/v1/get_transaction_logs?chain_id=1&transaction_hash=0xabc",
+    ],
+)
+async def test_get_transaction_logs_returns_deprecation_notice(client: AsyncClient, url: str):
+    """Deprecated /get_transaction_logs always returns a static 410 response."""
+    response = await client.get(url)
+    assert response.status_code == 410
+    json_response = response.json()
+    assert json_response["data"] == {"status": "deprecated"}
+    assert "direct_api_call" in json_response["notes"][1]
+
+
+@pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.get_chains_list", new_callable=AsyncMock)
 async def test_get_chains_list_success(mock_tool, client: AsyncClient):
     """Test /get_chains_list endpoint."""

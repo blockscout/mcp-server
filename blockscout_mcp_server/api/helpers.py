@@ -81,9 +81,9 @@ def handle_rest_errors(
     return wrapper
 
 
-def create_deprecation_response() -> Response:
+def create_deprecation_response(notes: list[str] | None = None) -> Response:
     """Creates a standardized JSON response for a deprecated tool endpoint."""
-    deprecation_notes = [
+    deprecation_notes = notes or [
         "This endpoint is deprecated and will be removed in a future version.",
         (
             "Please use the recommended workflow: first, call `get_transactions_by_address` "
