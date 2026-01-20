@@ -7,6 +7,7 @@ from blockscout_mcp_server.constants import (
     DIRECT_API_CALL_RULES,
     ERROR_HANDLING_RULES,
     PAGINATION_RULES,
+    PORTFOLIO_ANALYSIS_RULES,
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
@@ -81,6 +82,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         pagination_rules=PAGINATION_RULES,
         time_based_query_rules=TIME_BASED_QUERY_RULES,
         binary_search_rules=BINARY_SEARCH_RULES,
+        portfolio_analysis_rules=PORTFOLIO_ANALYSIS_RULES,
         direct_api_call_rules=DIRECT_API_CALL_RULES,
         direct_api_endpoints=direct_api_endpoints,
     )

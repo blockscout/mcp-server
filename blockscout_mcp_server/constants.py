@@ -62,6 +62,12 @@ get_transactions_by_address(age_from: START, age_to: MID)
 **Result: 5 API calls instead of potentially hundreds of pagination calls.**
 """
 
+PORTFOLIO_ANALYSIS_RULES = """
+PORTFOLIO ANALYSIS: When asked to analyze a portfolio, net worth, or total assets, you MUST check BOTH the
+native coin balance via `get_address_info` AND ERC-20 token holdings via `get_tokens_by_address`. Checking only
+one results in an incomplete and incorrect analysis.
+"""
+
 DIRECT_API_CALL_RULES = """
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools,
 you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
