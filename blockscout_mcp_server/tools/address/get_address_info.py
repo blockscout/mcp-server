@@ -6,6 +6,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
+    FirstTransactionDetails,
     ToolResponse,
 )
 from blockscout_mcp_server.tools.common import (
@@ -25,15 +26,9 @@ async def get_address_info(
     ctx: Context,
 ) -> ToolResponse[AddressInfoData]:
     """
-    Get comprehensive information about an address, including:
-    - Address existence check
-    - Native token (ETH) balance (provided as is, without adjusting by decimals)
-    - ENS name association (if any)
-    - Contract status (whether the address is a contract, whether it is verified)
-    - Proxy contract information (if applicable): determines if a smart contract is a proxy contract (which forwards calls to implementation contracts), including proxy type and implementation addresses
-    - Token details (if the contract is a token): name, symbol, decimals, total supply, etc.
-    Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
-    """  # noqa: E501
+    Retrieve on-chain and metadata details for an address, including first transaction block/timestamp.
+    Use for address overviews or age checks; metadata may be unavailable.
+    """
     await report_and_log_progress(
         ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
@@ -44,19 +39,33 @@ async def get_address_info(
     )
 
     blockscout_api_path = f"/api/v2/addresses/{address}"
+    first_tx_api_path = f"/api/v2/addresses/{address}/transactions"
+    first_tx_params = {"sort": "block_number", "order": "asc"}
     metadata_api_path = "/api/v1/metadata"
     metadata_params = {"addresses": address, "chainId": chain_id}
 
-    address_info_result, metadata_result = await asyncio.gather(
+    address_info_result, metadata_result, first_tx_result = await asyncio.gather(
         make_blockscout_request(base_url=base_url, api_path=blockscout_api_path),
         make_metadata_request(api_path=metadata_api_path, params=metadata_params),
+        make_blockscout_request(base_url=base_url, api_path=first_tx_api_path, params=first_tx_params),
         return_exceptions=True,
     )
 
     if isinstance(address_info_result, Exception):
         raise address_info_result
+    if isinstance(first_tx_result, Exception):
+        raise first_tx_result
 
     await report_and_log_progress(ctx, progress=2.0, total=3.0, message="Fetched basic address info.")
+
+    first_transaction_details = None
+    first_tx_items = first_tx_result.get("items") if isinstance(first_tx_result, dict) else None
+    if first_tx_items:
+        first_tx = first_tx_items[0]
+        first_transaction_details = FirstTransactionDetails(
+            block_number=first_tx.get("block_number"),
+            timestamp=first_tx.get("timestamp"),
+        )
 
     notes = None
     if isinstance(metadata_result, Exception):
@@ -71,7 +80,11 @@ async def get_address_info(
     else:
         metadata_data = None
 
-    address_data = AddressInfoData(basic_info=address_info_result, metadata=metadata_data)
+    address_data = AddressInfoData(
+        basic_info=address_info_result,
+        first_transaction_details=first_transaction_details,
+        metadata=metadata_data,
+    )
 
     await report_and_log_progress(ctx, progress=3.0, total=3.0, message="Successfully fetched all address data.")
     instructions = [

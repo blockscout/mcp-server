@@ -312,7 +312,7 @@ curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address
 
 #### Get Address Info (`get_address_info`)
 
-Gets comprehensive information about an address, including balance and contract details.
+Gets comprehensive information about an address, including balance, contract details, and first transaction timestamp.
 
 `GET /v1/get_address_info`
 
