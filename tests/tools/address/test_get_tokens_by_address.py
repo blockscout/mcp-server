@@ -100,6 +100,35 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_get_tokens_by_address_includes_portfolio_instruction(mock_ctx):
+    """Verify get_tokens_by_address includes portfolio analysis guidance."""
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"items": []}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_api_response
+
+        result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert result.instructions is not None
+        assert (
+            "This list only contains ERC-20 tokens. You MUST also call `get_address_info` to get the native coin "
+            "balance." in result.instructions
+        )
+
+
+@pytest.mark.asyncio
 async def test_get_tokens_by_address_without_pagination(mock_ctx):
     """
     Verify get_tokens_by_address works correctly when there are no next page parameters.

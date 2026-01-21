@@ -63,7 +63,17 @@ instructions_data = InstructionsData(
 </category_rules>
 ```
 
-### Step 5: Update Tests
+### Step 5: Update Initialization + External Instruction Mirrors
+
+Whenever instructions change, ensure the initialization payload and external instruction mirrors are updated so
+tool output and published docs stay in sync.
+
+- `blockscout_mcp_server/tools/initialization/unlock_blockchain_analysis.py`: pass the new rule into
+  `InstructionsData`.
+- `gpt/instructions.md`: add the matching XML block in the same relative position as `server.py`.
+- `tests/evals/GEMINI-evals.md`: add the matching XML block in the same relative position as `server.py`.
+
+### Step 6: Update Tests
 
 **Both:** Update mocks and assertions
 
