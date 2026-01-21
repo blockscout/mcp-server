@@ -436,7 +436,7 @@ paths:
     get:
       summary: Get address info
       description: |
-        Get comprehensive information about an address.
+        Get comprehensive information about an address, including balances, contract status, and first transaction details.
       operationId: getAddressInfo
       tags:
         - Addresses
