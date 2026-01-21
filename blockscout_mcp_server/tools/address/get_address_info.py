@@ -60,13 +60,19 @@ async def get_address_info(
 
     if isinstance(address_info_result, Exception):
         raise address_info_result
-    if isinstance(first_tx_result, Exception):
-        raise first_tx_result
 
-    await report_and_log_progress(ctx, progress=2.0, total=3.0, message="Fetched basic address info.")
+    notes = []
 
     first_transaction_details = None
-    first_tx_items = first_tx_result.get("items") if isinstance(first_tx_result, dict) else None
+    first_tx_items = None
+    if isinstance(first_tx_result, Exception):
+        notes.append(
+            "Could not retrieve first transaction details. The 'first_transaction_details' field is null. "
+            f"Error: {first_tx_result}"
+        )
+    elif isinstance(first_tx_result, dict):
+        first_tx_items = first_tx_result.get("items")
+
     if first_tx_items:
         first_tx = first_tx_items[0]
         first_transaction_details = FirstTransactionDetails(
@@ -74,9 +80,15 @@ async def get_address_info(
             timestamp=first_tx.get("timestamp"),
         )
 
-    notes = None
+    await report_and_log_progress(
+        ctx,
+        progress=2.0,
+        total=3.0,
+        message="Fetched first transaction details.",
+    )
+
     if isinstance(metadata_result, Exception):
-        notes = [f"Could not retrieve address metadata. The 'metadata' field is null. Error: {metadata_result}"]
+        notes.append(f"Could not retrieve address metadata. The 'metadata' field is null. Error: {metadata_result}")
         metadata_data = None
     elif metadata_result.get("addresses"):
         address_key = next(
@@ -119,4 +131,4 @@ async def get_address_info(
         ),
     ]
 
-    return build_tool_response(data=address_data, notes=notes, instructions=instructions)
+    return build_tool_response(data=address_data, notes=notes or None, instructions=instructions)
