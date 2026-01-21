@@ -88,6 +88,7 @@ Get comprehensive information about an address, including:
 
 - Address existence check
 - Native token (ETH) balance (provided as is, without adjusting by decimals)
+- First transaction details (block number and timestamp) for age calculation
 - ENS name association (if any)
 - Contract status (whether the address is a contract, whether it is verified)
 - Proxy contract information (if applicable): determines if a smart contract is a proxy contract (which forwards calls to implementation contracts), including proxy type and implementation addresses

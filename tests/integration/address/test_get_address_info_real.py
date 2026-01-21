@@ -23,9 +23,19 @@ async def test_get_address_info_integration(mock_ctx):
     assert result.data.basic_info["is_contract"] is True
 
     if result.notes:
+        if any("Could not retrieve first transaction details" in note for note in result.notes):
+            pytest.skip("First-transaction endpoint unavailable; skipping first-tx assertions.")
         assert "Could not retrieve address metadata" in result.notes[0]
         assert result.data.metadata is None
         pytest.skip("Metadata service was unavailable, but the tool handled it gracefully as expected.")
+
+    # Verify first transaction details
+    assert result.data.first_transaction_details is not None, "First transaction details should be populated"
+    assert result.data.first_transaction_details.block_number is not None
+    assert isinstance(result.data.first_transaction_details.block_number, int)
+    assert result.data.first_transaction_details.block_number > 0
+    assert result.data.first_transaction_details.timestamp is not None
+    assert isinstance(result.data.first_transaction_details.timestamp, str)
 
     metadata = result.data.metadata
     assert isinstance(metadata, dict)

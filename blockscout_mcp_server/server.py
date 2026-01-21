@@ -17,7 +17,9 @@ from blockscout_mcp_server.constants import (
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
     ERROR_HANDLING_RULES,
+    FUNDS_MOVEMENT_RULES,
     PAGINATION_RULES,
+    PORTFOLIO_ANALYSIS_RULES,
     RECOMMENDED_CHAINS,
     SERVER_NAME,
     SERVER_VERSION,
@@ -97,6 +99,14 @@ Here is the list of IDs of most popular chains:
 <binary_search_rules>
 {BINARY_SEARCH_RULES.strip()}
 </binary_search_rules>
+
+<portfolio_analysis_rules>
+{PORTFOLIO_ANALYSIS_RULES.strip()}
+</portfolio_analysis_rules>
+
+<funds_movement_rules>
+{FUNDS_MOVEMENT_RULES.strip()}
+</funds_movement_rules>
 
 <direct_call_endpoint_list>
 {DIRECT_API_CALL_RULES.strip()}

@@ -16,7 +16,7 @@ services:
     image: us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:${GEMINI_CLI_DOCKER_IMAGE_VERSION:-0.2.0}
     command: gemini --yolo
     volumes:
-      - ${HOME}/.gemini:/home/node/.gemini
+      - ${GEMINI_USER_PROFILE:-${HOME}/.gemini}:/home/node/.gemini
       - .:/workspace/mcp-server-evals
     working_dir: /workspace/mcp-server-evals
     stdin_open: true
@@ -26,3 +26,4 @@ services:
         condition: service_healthy
     environment:
       - MCP_SERVER_URL=${MCP_SERVER_URL:-http://mcp-server:8080}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-no-key}

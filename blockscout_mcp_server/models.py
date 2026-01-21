@@ -110,6 +110,8 @@ class InstructionsData(BaseModel):
     pagination_rules: str = Field(description="Rules for handling paginated responses and data retrieval.")
     time_based_query_rules: str = Field(description="Rules for executing time-based blockchain queries efficiently.")
     binary_search_rules: str = Field(description="Rules for using binary search for historical blockchain data.")
+    portfolio_analysis_rules: str = Field(description="Rules for conducting comprehensive portfolio analysis.")
+    funds_movement_rules: str = Field(description="Rules for analyzing funds movement and transfer activity.")
     direct_api_call_rules: str = Field(description="Rules and guidance for using the direct_api_call tool.")
     direct_api_endpoints: "DirectApiEndpointList" = Field(
         description="Curated list of endpoints available for direct API calls."
@@ -185,11 +187,23 @@ class TokenSearchResult(BaseModel):
     is_verified_via_admin_panel: bool = Field(description="Indicates if the token is verified by the Blockscout team.")
 
 
+# --- Model for get_address_info First Transaction Details ---
+class FirstTransactionDetails(BaseModel):
+    """Details about the earliest transaction for an address."""
+
+    block_number: int = Field(description="The block number of the first transaction.")
+    timestamp: str = Field(description="The timestamp of the first transaction (ISO format).")
+
+
 # --- Model for get_address_info Data Payload ---
 class AddressInfoData(BaseModel):
     """A structured representation of the combined address information."""
 
     basic_info: dict[str, Any] = Field(description="Core on-chain data for the address from the Blockscout API.")
+    first_transaction_details: FirstTransactionDetails | None = Field(
+        default=None,
+        description="Details about the first transaction made to or from this address, if any.",
+    )
     metadata: dict[str, Any] | None = Field(
         None,
         description="Optional metadata, such as public tags, from the Metadata service.",
