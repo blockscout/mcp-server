@@ -56,6 +56,8 @@ def test_tool_response_complex_data():
         pagination_rules="Pagination rule",
         time_based_query_rules="Time rule",
         binary_search_rules="Binary search rule",
+        portfolio_analysis_rules="Portfolio rules",
+        funds_movement_rules="Funds movement rules",
         direct_api_call_rules="Direct API rule",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -172,6 +174,8 @@ def test_instructions_data():
         pagination_rules="Pagination rules",
         time_based_query_rules="Time rules",
         binary_search_rules="Binary search rules",
+        portfolio_analysis_rules="Portfolio rules",
+        funds_movement_rules="Funds movement rules",
         direct_api_call_rules="Direct API rules",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -184,6 +188,8 @@ def test_instructions_data():
     assert instructions.pagination_rules == "Pagination rules"
     assert instructions.time_based_query_rules == "Time rules"
     assert instructions.binary_search_rules == "Binary search rules"
+    assert instructions.portfolio_analysis_rules == "Portfolio rules"
+    assert instructions.funds_movement_rules == "Funds movement rules"
 
 
 def test_tool_response_serialization():

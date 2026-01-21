@@ -65,6 +65,10 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         assert result.data.metadata == mock_metadata_response["addresses"][address]
         assert result.notes is None
         expected_instructions = [
+            (
+                "This is only the native coin balance. You MUST also call `get_tokens_by_address` to get the full "
+                "portfolio."
+            ),
             (f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address."),
             (
                 f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history-by-day` "
@@ -93,6 +97,40 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
 
         assert mock_ctx.report_progress.await_count == 4
         assert mock_ctx.info.await_count == 4
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_includes_portfolio_instruction(mock_ctx):
+    """Verify get_address_info includes portfolio analysis guidance."""
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_blockscout_response = {"hash": address, "is_contract": True}
+    mock_metadata_response = {"addresses": {address: {"tags": [{"name": "Test Tag"}]}}}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request", new_callable=AsyncMock
+        ) as mock_meta_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_bs_request.return_value = mock_blockscout_response
+        mock_meta_request.return_value = mock_metadata_response
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert result.instructions is not None
+        assert (
+            "This is only the native coin balance. You MUST also call `get_tokens_by_address` to get the full "
+            "portfolio." in result.instructions
+        )
 
 
 @pytest.mark.asyncio

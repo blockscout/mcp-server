@@ -104,4 +104,8 @@ async def get_tokens_by_address(
             )
         )
 
-    return build_tool_response(data=token_holdings, pagination=pagination)
+    instructions = [
+        "This list only contains ERC-20 tokens. You MUST also call `get_address_info` to get the native coin balance.",
+    ]
+
+    return build_tool_response(data=token_holdings, pagination=pagination, instructions=instructions)
