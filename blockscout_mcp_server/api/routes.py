@@ -270,7 +270,15 @@ async def get_transaction_info_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_address_logs_rest(request: Request) -> Response:
     """REST wrapper for the get_address_logs tool. This endpoint is deprecated."""
-    return create_deprecation_response()
+    deprecation_notes = [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use the recommended workflow: first, call `get_transactions_by_address` "
+            "(which supports time filtering), and then use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
+        ),
+    ]
+    return create_deprecation_response(deprecation_notes)
 
 
 @handle_rest_errors

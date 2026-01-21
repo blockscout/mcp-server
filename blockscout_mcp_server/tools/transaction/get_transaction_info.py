@@ -76,6 +76,9 @@ async def get_transaction_info(
             f"`direct_api_call` with endpoint `/api/v2/proxy/account-abstraction/operations` "
             f"with query_params={{'transaction_hash': '{transaction_hash}'}}."
         ),
-        "To get event logs, use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'`.",
+        (
+            "To get event logs, use `direct_api_call` with "
+            f"`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'`."
+        ),
     ]
     return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)
