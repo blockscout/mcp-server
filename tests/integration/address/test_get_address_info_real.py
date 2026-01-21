@@ -22,6 +22,14 @@ async def test_get_address_info_integration(mock_ctx):
     assert result.data.basic_info["hash"].lower() == address.lower()
     assert result.data.basic_info["is_contract"] is True
 
+    # Verify first transaction details
+    assert result.data.first_transaction_details is not None, "First transaction details should be populated"
+    assert result.data.first_transaction_details.block_number is not None
+    assert isinstance(result.data.first_transaction_details.block_number, int)
+    assert result.data.first_transaction_details.block_number > 0
+    assert result.data.first_transaction_details.timestamp is not None
+    assert isinstance(result.data.first_transaction_details.timestamp, str)
+
     if result.notes:
         assert "Could not retrieve address metadata" in result.notes[0]
         assert result.data.metadata is None
