@@ -361,7 +361,7 @@ class LogItemBase(BaseModel):
     index: int | None = Field(None, description="The log's position within the block.")
 
 
-# --- Model for get_address_logs Data Payload ---
+# --- Model for address log data payload ---
 class AddressLogItem(LogItemBase):
     """Represents a single log item when the address is redundant."""
 

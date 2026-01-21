@@ -93,7 +93,8 @@ mcp-server/
 │   │   │   └── web3py_test_contract_abi.json   # ABI fixture for Web3Py tests
 │   │   ├── direct_api/
 │   │   │   ├── test_address_logs_handler_real.py
-│   │   │   └── test_direct_api_call_real.py
+│   │   │   ├── test_direct_api_call_real.py
+│   │   │   └── test_transaction_logs_handler_real.py
 │   │   ├── ens/
 │   │   │   └── test_get_address_by_ens_name_real.py
 │   │   ├── search/
