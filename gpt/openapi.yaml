@@ -219,49 +219,6 @@ paths:
         '504':
           $ref: '#/components/responses/GatewayTimeout'
 
-  /get_transaction_logs:
-    get:
-      summary: Get transaction logs
-      description: |
-        Get comprehensive transaction logs.
-      operationId: getTransactionLogs
-      tags:
-        - Transactions
-      parameters:
-        - name: chain_id
-          in: query
-          required: true
-          description: The ID of the blockchain
-          schema:
-            type: string
-          example: "1"
-        - name: transaction_hash
-          in: query
-          required: true
-          description: Transaction hash
-          schema:
-            type: string
-          example: "0x..."
-        - name: cursor
-          in: query
-          required: false
-          description: The pagination cursor from a previous response to get the next page of results
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Transaction logs
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
-        '504':
-          $ref: '#/components/responses/GatewayTimeout'
-
   /transaction_summary:
     get:
       summary: Get transaction summary

@@ -56,9 +56,8 @@ All tools are available via both MCP and REST API interfaces:
 13. **`nft_tokens_by_address`** - Retrieves NFT tokens owned by an address
 14. **`get_block_info`** - Returns detailed block information
 15. **`get_transaction_info`** - Gets comprehensive transaction information
-16. **`get_transaction_logs`** - Returns transaction logs with decoded event data
-17. **`read_contract`** - Executes a read-only smart contract function
-18. **`direct_api_call`** - Calls a curated raw Blockscout API endpoint
+16. **`read_contract`** - Executes a read-only smart contract function
+17. **`direct_api_call`** - Calls a curated raw Blockscout API endpoint
 
 ## When to Use Each Interface
 

@@ -1,64 +1,38 @@
-from typing import Annotated
+"""Specialized handler for processing transaction logs responses."""
+
+from __future__ import annotations
+
+import re
+from typing import Any
 
 from mcp.server.fastmcp import Context
-from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
 from blockscout_mcp_server.tools.common import (
-    apply_cursor_to_params,
-    build_tool_response,
-    get_blockscout_base_url,
-    make_blockscout_request,
-    report_and_log_progress,
-)
-from blockscout_mcp_server.tools.decorators import log_tool_invocation
-from blockscout_mcp_server.tools.transaction._shared import (
     _process_and_truncate_log_items,
+    build_tool_response,
     create_items_pagination,
     extract_log_cursor_params,
 )
+from blockscout_mcp_server.tools.direct_api.dispatcher import register_handler
 
 
-@log_tool_invocation
-async def get_transaction_logs(
-    chain_id: Annotated[str, Field(description="The ID of the blockchain")],
-    transaction_hash: Annotated[str, Field(description="Transaction hash")],
-    ctx: Context,
-    cursor: Annotated[
-        str | None,
-        Field(description="The pagination cursor from a previous response to get the next page of results."),
-    ] = None,
+@register_handler(r"^/api/v2/transactions/(?P<transaction_hash>0x[a-fA-F0-9]{64})/logs/?$")
+async def handle_transaction_logs(
+    *,
+    match: re.Match[str],
+    response_json: dict[str, Any],
+    chain_id: str,
+    base_url: str,
+    ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
+    query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
 ) -> ToolResponse[list[TransactionLogItem]]:
-    """
-    Get comprehensive transaction logs.
-    Unlike standard eth_getLogs, this tool returns enriched logs, primarily focusing on decoded event parameters with their types and values (if event decoding is applicable).
-    Essential for analyzing smart contract events, tracking token transfers, monitoring DeFi protocol interactions, debugging event emissions, and understanding complex multi-contract transaction flows.
-    **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
-    """  # noqa: E501
-    api_path = f"/api/v2/transactions/{transaction_hash}/logs"
-    params = {}
+    """Process the raw JSON response for a transaction logs request."""
+    transaction_hash = match.group("transaction_hash")
+    original_items, was_truncated = _process_and_truncate_log_items(response_json.get("items", []))
 
-    apply_cursor_to_params(cursor, params)
-
-    await report_and_log_progress(
-        ctx,
-        progress=0.0,
-        total=2.0,
-        message=f"Starting to fetch transaction logs for {transaction_hash} on chain {chain_id}...",
-    )
-
-    base_url = await get_blockscout_base_url(chain_id)
-
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction logs..."
-    )
-
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
-
-    original_items, was_truncated = _process_and_truncate_log_items(response_data.get("items", []))
-
-    log_items_dicts: list[dict] = []
+    log_items_dicts: list[dict[str, Any]] = []
     for item in original_items:
         address_value = (
             item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else item.get("address")
@@ -111,14 +85,15 @@ async def get_transaction_logs(
     sliced_items, pagination = create_items_pagination(
         items=log_items_dicts,
         page_size=config.logs_page_size,
-        tool_name="get_transaction_logs",
-        next_call_base_params={"chain_id": chain_id, "transaction_hash": transaction_hash},
+        tool_name="direct_api_call",
+        next_call_base_params={
+            "chain_id": chain_id,
+            "endpoint_path": f"/api/v2/transactions/{transaction_hash}/logs",
+        },
         cursor_extractor=extract_log_cursor_params,
     )
 
     log_items = [TransactionLogItem(**item) for item in sliced_items]
-
-    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction logs.")
 
     return build_tool_response(
         data=log_items,

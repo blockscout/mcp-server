@@ -81,11 +81,7 @@ def handle_rest_errors(
     return wrapper
 
 
-def create_deprecation_response() -> Response:
+def create_deprecation_response(notes: list[str]) -> Response:
     """Creates a standardized JSON response for a deprecated tool endpoint."""
-    deprecation_notes = [
-        "This endpoint is deprecated and will be removed in a future version.",
-        "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `get_transaction_logs` for each relevant transaction hash.",  # noqa: E501
-    ]
-    tool_response = ToolResponse(data={"status": "deprecated"}, notes=deprecation_notes)
+    tool_response = ToolResponse(data={"status": "deprecated"}, notes=notes)
     return JSONResponse(tool_response.model_dump(), status_code=410)

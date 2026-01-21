@@ -37,7 +37,6 @@ from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address impo
     get_token_transfers_by_address,
 )
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
-from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
     get_transactions_by_address,
 )
@@ -269,17 +268,30 @@ async def get_transaction_info_rest(request: Request) -> Response:
 
 
 @handle_rest_errors
-async def get_transaction_logs_rest(request: Request) -> Response:
-    """REST wrapper for the get_transaction_logs tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "transaction_hash"], optional=["cursor"])
-    tool_response = await get_transaction_logs(**params, ctx=get_mock_context(request))
-    return JSONResponse(tool_response.model_dump())
+async def get_address_logs_rest(request: Request) -> Response:
+    """REST wrapper for the get_address_logs tool. This endpoint is deprecated."""
+    deprecation_notes = [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use the recommended workflow: first, call `get_transactions_by_address` "
+            "(which supports time filtering), and then use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
+        ),
+    ]
+    return create_deprecation_response(deprecation_notes)
 
 
 @handle_rest_errors
-async def get_address_logs_rest(request: Request) -> Response:
-    """REST wrapper for the get_address_logs tool. This endpoint is deprecated."""
-    return create_deprecation_response()
+async def get_transaction_logs_rest(request: Request) -> Response:
+    """REST wrapper for the get_transaction_logs tool. This endpoint is deprecated."""
+    deprecation_notes = [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` to retrieve logs for a transaction."
+        ),
+    ]
+    return create_deprecation_response(deprecation_notes)
 
 
 @handle_rest_errors
@@ -350,7 +362,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     _add_v1_tool_route(mcp, "/transaction_summary", transaction_summary_rest)
     _add_v1_tool_route(mcp, "/nft_tokens_by_address", nft_tokens_by_address_rest)
     _add_v1_tool_route(mcp, "/get_transaction_info", get_transaction_info_rest)
-    _add_v1_tool_route(mcp, "/get_transaction_logs", get_transaction_logs_rest)
     _add_v1_tool_route(mcp, "/get_address_logs", get_address_logs_rest)
+    _add_v1_tool_route(mcp, "/get_transaction_logs", get_transaction_logs_rest)
     _add_v1_tool_route(mcp, "/get_chains_list", get_chains_list_rest)
     _add_v1_tool_route(mcp, "/direct_api_call", direct_api_call_rest)

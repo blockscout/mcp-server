@@ -3,19 +3,19 @@ import pytest
 
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
-from blockscout_mcp_server.tools.common import get_blockscout_base_url
-from blockscout_mcp_server.tools.transaction.get_transaction_logs import get_transaction_logs
+from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import is_log_a_truncated_call_executed
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_transaction_logs_integration(mock_ctx):
-    """Tests that get_transaction_logs returns a paginated response and validates the schema."""
+async def test_direct_api_call_transaction_logs_integration(mock_ctx):
+    """Tests that direct_api_call dispatches transaction logs and validates the schema."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
+    endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
     try:
-        result = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx)
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
 
@@ -39,12 +39,13 @@ async def test_get_transaction_logs_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_transaction_logs_pagination_integration(mock_ctx):
-    """Tests that get_transaction_logs can successfully use a cursor to fetch a second page."""
+async def test_direct_api_call_transaction_logs_pagination(mock_ctx):
+    """Tests that direct_api_call can use a cursor to fetch a second page."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
+    endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
     try:
-        first_page_response = await get_transaction_logs(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+        first_page_response = await direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx)
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
 
@@ -52,11 +53,11 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
     cursor = first_page_response.pagination.next_call.params["cursor"]
 
     try:
-        second_page_response = await get_transaction_logs(
+        second_page_response = await direct_api_call(
             chain_id="1",
-            transaction_hash=tx_hash,
-            ctx=mock_ctx,
+            endpoint_path=endpoint_path,
             cursor=cursor,
+            ctx=mock_ctx,
         )
     except httpx.HTTPStatusError as exc:
         pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {exc}")
@@ -68,14 +69,13 @@ async def test_get_transaction_logs_pagination_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
-    """Tests that get_transaction_logs correctly truncates oversized data fields."""
+async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
+    """Tests that direct_api_call correctly truncates oversized data fields."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
-    chain_id = "1"
+    endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
-    await get_blockscout_base_url(chain_id)
     try:
-        result = await get_transaction_logs(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx)
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
 
@@ -95,21 +95,21 @@ async def test_get_transaction_logs_with_truncation_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_get_transaction_logs_paginated_search_for_truncation(mock_ctx):
-    """Tests that get_transaction_logs can find truncated data by searching across pages."""
+async def test_direct_api_call_transaction_logs_paginated_search_for_truncation(mock_ctx):
+    """Tests that direct_api_call can find truncated data by searching across pages."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
-    chain_id = "1"
+    endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
     max_pages_to_check = 20
     cursor = None
     found_truncated_log = False
 
     for page_num in range(max_pages_to_check):
         try:
-            result = await get_transaction_logs(
-                chain_id=chain_id,
-                transaction_hash=tx_hash,
-                ctx=mock_ctx,
+            result = await direct_api_call(
+                chain_id="1",
+                endpoint_path=endpoint_path,
                 cursor=cursor,
+                ctx=mock_ctx,
             )
         except httpx.HTTPStatusError as exc:
             pytest.skip(f"API request failed on page {page_num + 1}: {exc}")
