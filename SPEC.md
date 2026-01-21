@@ -133,7 +133,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 4. **Optimized Data Retrieval with Concurrent API Calls**:
    - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
-     - `get_address_info`: Concurrent requests to Blockscout API (for on-chain data), Metadata API (for public tags), and Blockscout API (for first transaction details)
+     - `get_address_info`: Concurrent requests to Blockscout API (for on-chain data and for first transaction details) and Metadata API (for public tags)
      - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
