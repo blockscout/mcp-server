@@ -195,7 +195,7 @@ Returns detailed information for a specific block.
 | `number_or_hash`       | `string`  | Yes      | The block number or its hash.                        |
 | `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
@@ -217,7 +217,7 @@ Gets comprehensive information for a single transaction.
 | `transaction_hash`  | `string`  | Yes      | The hash of the transaction.                     |
 | `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
@@ -237,7 +237,7 @@ This endpoint is deprecated and always returns a static notice.
 | `transaction_hash`  | `string` | Yes      | The transaction hash to fetch logs for.            |
 | `cursor`            | `string` | No       | The cursor for pagination from a previous response.|
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
@@ -316,7 +316,7 @@ Returns ERC-20 token transfers for an address.
 | `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
-**Example Request**
+### Example Request
 
 ```bash
 curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z&token=0x..."
