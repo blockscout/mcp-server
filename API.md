@@ -288,7 +288,7 @@ Gets native currency transfers and contract interactions for an address.
 | ---------- | -------- | -------- | -------------------------------------------------- |
 | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
 | `address`  | `string` | Yes      | The address to query.                              |
-| `age_from` | `string` | No       | Start date and time (ISO 8601 format).             |
+| `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).             |
 | `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
 | `methods`  | `string` | No       | A method signature to filter by (e.g., `0x304e6ade`).|
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
@@ -311,7 +311,7 @@ Returns ERC-20 token transfers for an address.
 | ---------- | -------- | -------- | -------------------------------------------------- |
 | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
 | `address`  | `string` | Yes      | The address to query.                              |
-| `age_from` | `string` | No       | Start date and time (ISO 8601 format).             |
+| `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).             |
 | `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
 | `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
 | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
@@ -319,7 +319,7 @@ Returns ERC-20 token transfers for an address.
 **Example Request**
 
 ```bash
-curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&token=0x..."
+curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z&token=0x..."
 ```
 
 ### Address Tools

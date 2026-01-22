@@ -453,6 +453,14 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
 
+10. **Research Optimization and Workflow Simplification**
+
+    To improve system stability and encourage efficient research workflows, the `age_from` parameter is mandatory for all transaction-fetching tools (`get_transactions_by_address`, `get_token_transfers_by_address`).
+
+    - **Intentionality**: This requirement forces AI agents to formulate a specific temporal hypothesis (e.g., "Analyze activity in Q1 2024") rather than defaulting to expensive "full history" queries.
+    - **Performance**: It prevents inadvertent database scans of an address's entire history, significantly reducing timeout risks and backend load.
+    - **Context Safety**: By limiting the temporal scope, the volume of returned data is more likely to stay within the LLM's context window.
+
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
 #### The Initial Problem: Bypassed Server Instructions

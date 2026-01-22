@@ -88,6 +88,7 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
     mock_filtered_items = [{"hash": "0xabc123"}]
     mock_has_more_pages = False
@@ -107,7 +108,12 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
 
         # ACT - Only provide required parameters
-        result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        result = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         # ASSERT
         assert isinstance(result, ToolResponse)
@@ -123,6 +129,7 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
         expected_params = {
             "to_address_hashes_to_include": address,
             "from_address_hashes_to_include": address,
+            "age_from": age_from,
             # No optional parameters should be included
         }
         assert call_kwargs["initial_params"] == expected_params
@@ -133,6 +140,7 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
     """Verify that get_transactions_by_address correctly transforms its response."""
     chain_id = "1"
     address = "0x123"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     # Mock the filtered items returned by smart pagination (ERC-20 transactions already filtered out)
@@ -181,7 +189,12 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
 
-        result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        result = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
@@ -206,5 +219,18 @@ async def test_get_transactions_by_address_invalid_cursor(mock_ctx):
         side_effect=ValueError("Invalid cursor"),
     ) as mock_apply:
         with pytest.raises(ValueError, match="Invalid cursor"):
-            await get_transactions_by_address(chain_id="1", address="0x123", cursor="bad", ctx=mock_ctx)
+            await get_transactions_by_address(
+                chain_id="1",
+                address="0x123",
+                age_from="2024-01-01T00:00:00Z",
+                cursor="bad",
+                ctx=mock_ctx,
+            )
     mock_apply.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_missing_age_from_raises_error(mock_ctx):
+    """Verify a missing age_from raises a TypeError."""
+    with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        await get_transactions_by_address(chain_id="1", address="0x123", ctx=mock_ctx)

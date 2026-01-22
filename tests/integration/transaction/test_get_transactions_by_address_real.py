@@ -13,11 +13,13 @@ from blockscout_mcp_server.tools.transaction.get_transactions_by_address import 
 async def test_get_transactions_by_address_integration(mock_ctx):
     """Tests that get_transactions_by_address returns a transformed list of transactions."""
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    age_from = "2016-01-01T00:00:00Z"
 
     try:
         result = await get_transactions_by_address(
             chain_id="1",
             address=address,
+            age_from=age_from,
             age_to="2017-01-01T00:00:00.00Z",
             ctx=mock_ctx,
         )
@@ -54,9 +56,15 @@ async def test_get_transactions_by_address_pagination_integration(mock_ctx):
     """Tests that get_transactions_by_address can successfully use a cursor to fetch a second page."""
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
     chain_id = "1"
+    age_from = "2016-01-01T00:00:00Z"
 
     try:
-        first_page = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        first_page = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
     except httpx.HTTPError as exc:
         pytest.skip(f"API request failed: {exc}")
 
@@ -66,7 +74,13 @@ async def test_get_transactions_by_address_pagination_integration(mock_ctx):
     cursor = first_page.pagination.next_call.params["cursor"]
 
     try:
-        second_page = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx, cursor=cursor)
+        second_page = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+            cursor=cursor,
+        )
     except httpx.HTTPError as exc:
         pytest.fail(f"Failed to fetch second page: {exc}")
 
