@@ -137,10 +137,10 @@ This architecture provides the flexibility of a multi-protocol server without th
 4. **Optimized Data Retrieval with Concurrent API Calls**:
    - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
      - `get_address_info`: Executes three concurrent requests to gather a comprehensive profile in a single turn:
-       1. **Address Info**: Basic on-chain data from Blockscout (balance, contract status).
-       2. **First Transaction**: Specific request (`?sort=block_number&order=asc`) to identify the account's inception block and timestamp.
+       1. **Basic Info**: Basic on-chain data from Blockscout (balance, contract status).
+       2. **First Transaction**: Retrieves the account's earliest transaction to identify inception block and timestamp.
        3. **Metadata**: Public tags and name resolution from the Metadata API.
-       *Robustness Note*: The server employs a "partial success" strategy for this tool. Failures in fetching metadata or first transaction details are caught gracefully and reported in the response `notes` field, ensuring the primary address information is always returned.
+       *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request, ensuring the primary address information is always returned.
      - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
