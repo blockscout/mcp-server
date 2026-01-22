@@ -8,11 +8,11 @@ The base URL for all Version 1 endpoints is: `http://<host>:<port>/v1`
 
 These endpoints provide general information and are not part of the versioned API.
 
-| Method | Path         | Description                                         |
-| ------ | ------------ | --------------------------------------------------- |
-| `GET`  | `/`          | Serves a static HTML landing page.                  |
+| Method | Path         | Description                                                 |
+| ------ | ------------ | ----------------------------------------------------------- |
+| `GET`  | `/`          | Serves a static HTML landing page.                          |
 | `GET`  | `/health`    | A simple health check endpoint. Returns `{"status": "ok"}`. |
-| `GET`  | `/llms.txt`  | A machine-readable guidance file for AI crawlers.   |
+| `GET`  | `/llms.txt`  | A machine-readable guidance file for AI crawlers.           |
 
 ## Authentication
 
@@ -89,6 +89,7 @@ For endpoints that return large datasets, the response will include a `paginatio
 ## Safety & Limits
 
 ### Response Size Limits
+
 To prevent system overload and context exhaustion, the `direct_api_call` endpoint enforces a maximum response size limit (default: 100,000 characters).
 
 If you receive a `413 Payload Too Large` (or similar error) indicating the response is too large, you can bypass this check by adding the following header to your request:
@@ -111,15 +112,15 @@ Retrieves a list of all available tools and their MCP schemas.
 
 `GET /v1/tools`
 
-### Parameters
+- **Parameters**
 
-*None*
+  *None*
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/tools"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/tools"
+  ```
 
 ### General Tools
 
@@ -130,15 +131,15 @@ Provides custom instructions and operational guidance for using the server. This
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
 
-### Parameters
+- **Parameters**
 
-*None*
+  *None*
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/unlock_blockchain_analysis"
+  ```
 
 #### Get Chains List (`get_chains_list`)
 
@@ -146,15 +147,15 @@ Returns a list of all known blockchain chains, including whether each is a testn
 
 `GET /v1/get_chains_list`
 
-### Parameters
+- **Parameters**
 
-*None*
+  *None*
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_chains_list"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_chains_list"
+  ```
 
 ### Block Tools
 
@@ -164,22 +165,18 @@ Retrieves the block number and timestamp for a specific date/time or the latest 
 
 `GET /v1/get_block_number`
 
-### Parameters
+- **Parameters**
 
-| Name       | Type     | Required | Description                                                                                                   |
-| ---------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                                                                                     |
-| `datetime` | `string` | No       | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
+  | Name | Type | Required | Description |
+  | ---- | ---- | -------- | ----------- |
+  | `chain_id` | `string` | Yes | The ID of the blockchain. |
+  | `datetime` | `string` | No | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
-```
-
-### Deprecated
-
-`GET /v1/get_latest_block` is deprecated but still supported for backward compatibility.
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
+  ```
 
 #### Get Block Info (`get_block_info`)
 
@@ -187,19 +184,19 @@ Returns detailed information for a specific block.
 
 `GET /v1/get_block_info`
 
-**Parameters**
+- **Parameters**
 
-| Name                   | Type      | Required | Description                                          |
-| ---------------------- | --------- | -------- | ---------------------------------------------------- |
-| `chain_id`             | `string`  | Yes      | The ID of the blockchain.                            |
-| `number_or_hash`       | `string`  | Yes      | The block number or its hash.                        |
-| `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
+  | Name                   | Type      | Required | Description                                          |
+  | ---------------------- | --------- | -------- | ---------------------------------------------------- |
+  | `chain_id`             | `string`  | Yes      | The ID of the blockchain.                            |
+  | `number_or_hash`       | `string`  | Yes      | The block number or its hash.                        |
+  | `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_block_info?chain_id=1&number_or_hash=19000000&include_transactions=true"
+  ```
 
 ### Transaction Tools
 
@@ -209,19 +206,19 @@ Gets comprehensive information for a single transaction.
 
 `GET /v1/get_transaction_info`
 
-**Parameters**
+- **Parameters**
 
-| Name                | Type      | Required | Description                                      |
-| ------------------- | --------- | -------- | ------------------------------------------------ |
-| `chain_id`          | `string`  | Yes      | The ID of the blockchain.                        |
-| `transaction_hash`  | `string`  | Yes      | The hash of the transaction.                     |
-| `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
+  | Name                | Type      | Required | Description                                      |
+  | ------------------- | --------- | -------- | ------------------------------------------------ |
+  | `chain_id`          | `string`  | Yes      | The ID of the blockchain.                        |
+  | `transaction_hash`  | `string`  | Yes      | The hash of the transaction.                     |
+  | `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_transaction_info?chain_id=1&transaction_hash=0x...&include_raw_input=true"
+  ```
 
 #### Get Transaction Logs (Deprecated) (`get_transaction_logs`)
 
@@ -229,33 +226,33 @@ This endpoint is deprecated and always returns a static notice.
 
 `GET /v1/get_transaction_logs`
 
-**Parameters**
+- **Parameters**
 
-| Name                | Type     | Required | Description                                        |
-| ------------------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id`          | `string` | Yes      | The ID of the blockchain.                          |
-| `transaction_hash`  | `string` | Yes      | The transaction hash to fetch logs for.            |
-| `cursor`            | `string` | No       | The cursor for pagination from a previous response.|
+  | Name                | Type     | Required | Description                                        |
+  | ------------------- | -------- | -------- | -------------------------------------------------- |
+  | `chain_id`          | `string` | Yes      | The ID of the blockchain.                          |
+  | `transaction_hash`  | `string` | Yes      | The transaction hash to fetch logs for.            |
+  | `cursor`            | `string` | No       | The cursor for pagination from a previous response.|
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_transaction_logs?chain_id=1&transaction_hash=0x..."
+  ```
 
-**Example Response**
+- **Example Response**
 
-```json
-{
-  "data": {"status": "deprecated"},
-  "notes": [
-    "This endpoint is deprecated and will be removed in a future version.",
-    "Please use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` to retrieve logs for a transaction."
-  ],
-  "pagination": null,
-  "instructions": null
-}
-```
+  ```json
+  {
+    "data": {"status": "deprecated"},
+    "notes": [
+      "This endpoint is deprecated and will be removed in a future version.",
+      "Please use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` to retrieve logs for a transaction."
+    ],
+    "pagination": null,
+    "instructions": null
+  }
+  ```
 
 #### Get Transaction Summary (`transaction_summary`)
 
@@ -263,18 +260,18 @@ Provides a human-readable summary of a transaction's purpose.
 
 `GET /v1/transaction_summary`
 
-**Parameters**
+- **Parameters**
 
-| Name               | Type     | Required | Description                  |
-| ------------------ | -------- | -------- | ---------------------------- |
-| `chain_id`         | `string` | Yes      | The ID of the blockchain.    |
-| `transaction_hash` | `string` | Yes      | The hash of the transaction. |
+  | Name               | Type     | Required | Description                  |
+  | ------------------ | -------- | -------- | ---------------------------- |
+  | `chain_id`         | `string` | Yes      | The ID of the blockchain.    |
+  | `transaction_hash` | `string` | Yes      | The hash of the transaction. |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/transaction_summary?chain_id=1&transaction_hash=0x..."
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/transaction_summary?chain_id=1&transaction_hash=0x..."
+  ```
 
 #### Get Transactions by Address (`get_transactions_by_address`)
 
@@ -282,22 +279,22 @@ Gets native currency transfers and contract interactions for an address.
 
 `GET /v1/get_transactions_by_address`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                                        |
-| ---------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
-| `address`  | `string` | Yes      | The address to query.                              |
-| `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).             |
-| `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
-| `methods`  | `string` | No       | A method signature to filter by (e.g., `0x304e6ade`).|
-| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | Name       | Type     | Required | Description                                          |
+  | ---------- | -------- | -------- | ---------------------------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                            |
+  | `address`  | `string` | Yes      | The address to query.                                |
+  | `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).               |
+  | `age_to`   | `string` | No       | End date and time (ISO 8601 format).                 |
+  | `methods`  | `string` | No       | A method signature to filter by (e.g., `0x304e6ade`).|
+  | `cursor`   | `string` | No       | The cursor for pagination from a previous response.  |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_transactions_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z"
+  ```
 
 #### Get Token Transfers by Address (`get_token_transfers_by_address`)
 
@@ -305,22 +302,22 @@ Returns ERC-20 token transfers for an address.
 
 `GET /v1/get_token_transfers_by_address`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                                        |
-| ---------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
-| `address`  | `string` | Yes      | The address to query.                              |
-| `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).             |
-| `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
-| `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
-| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | Name       | Type     | Required | Description                                        |
+  | ---------- | -------- | -------- | -------------------------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+  | `address`  | `string` | Yes      | The address to query.                              |
+  | `age_from` | `string` | Yes      | Start date and time (ISO 8601 format).             |
+  | `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
+  | `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
+  | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
-### Example Request
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z&token=0x..."
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_token_transfers_by_address?chain_id=1&address=0x...&age_from=2024-01-01T00:00:00Z&token=0x..."
+  ```
 
 ### Address Tools
 
@@ -330,18 +327,18 @@ Gets comprehensive information about an address, including balance, contract det
 
 `GET /v1/get_address_info`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                  |
-| ---------- | -------- | -------- | ---------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.    |
-| `address`  | `string` | Yes      | The address to get info for. |
+  | Name       | Type     | Required | Description                  |
+  | ---------- | -------- | -------- | ---------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
+  | `address`  | `string` | Yes      | The address to get info for. |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_address_info?chain_id=1&address=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+  ```
 
 #### Get Address Logs (Deprecated) (`get_address_logs`)
 
@@ -349,33 +346,33 @@ This endpoint is deprecated and always returns a static notice.
 
 `GET /v1/get_address_logs`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                                        |
-| ---------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
-| `address`  | `string` | Yes      | The address that emitted the logs.                 |
-| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | Name       | Type     | Required | Description                                        |
+  | ---------- | -------- | -------- | -------------------------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+  | `address`  | `string` | Yes      | The address that emitted the logs.                 |
+  | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0xabc"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_address_logs?chain_id=1&address=0xabc"
+  ```
 
-**Example Response**
+- **Example Response**
 
-```json
-{
-  "data": {"status": "deprecated"},
-  "notes": [
-    "This endpoint is deprecated and will be removed in a future version.",
-    "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
-  ],
-  "pagination": null,
-  "instructions": null
-}
-```
+  ```json
+  {
+    "data": {"status": "deprecated"},
+    "notes": [
+      "This endpoint is deprecated and will be removed in a future version.",
+      "Please use the recommended workflow: first, call `get_transactions_by_address` (which supports time filtering), and then use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/logs'` for each relevant transaction hash."
+    ],
+    "pagination": null,
+    "instructions": null
+  }
+  ```
 
 ### Token & NFT Tools
 
@@ -385,19 +382,19 @@ Returns ERC-20 token holdings for an address.
 
 `GET /v1/get_tokens_by_address`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                                        |
-| ---------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
-| `address`  | `string` | Yes      | The wallet address to query.                       |
-| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | Name       | Type     | Required | Description                                        |
+  | ---------- | -------- | -------- | -------------------------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+  | `address`  | `string` | Yes      | The wallet address to query.                       |
+  | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_tokens_by_address?chain_id=1&address=0x..."
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_tokens_by_address?chain_id=1&address=0x..."
+  ```
 
 #### Get NFT Tokens by Address (`nft_tokens_by_address`)
 
@@ -405,19 +402,19 @@ Retrieves NFT tokens (ERC-721, etc.) owned by an address.
 
 `GET /v1/nft_tokens_by_address`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                                        |
-| ---------- | -------- | -------- | -------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
-| `address`  | `string` | Yes      | The NFT owner's address.                           |
-| `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | Name       | Type     | Required | Description                                        |
+  | ---------- | -------- | -------- | -------------------------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
+  | `address`  | `string` | Yes      | The NFT owner's address.                           |
+  | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/nft_tokens_by_address?chain_id=1&address=0x..."
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/nft_tokens_by_address?chain_id=1&address=0x..."
+  ```
 
 ### Search Tools
 
@@ -427,59 +424,20 @@ Searches for tokens by their symbol or name.
 
 `GET /v1/lookup_token_by_symbol`
 
-**Parameters**
+- **Parameters**
 
-| Name       | Type     | Required | Description                       |
-| ---------- | -------- | -------- | --------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.         |
-| `symbol`   | `string` | Yes      | The token symbol to search for.   |
+  | Name       | Type     | Required | Description                       |
+  | ---------- | -------- | -------- | --------------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.         |
+  | `symbol`   | `string` | Yes      | The token symbol to search for.   |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/lookup_token_by_symbol?chain_id=1&symbol=WETH"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/lookup_token_by_symbol?chain_id=1&symbol=WETH"
+  ```
 
-### Contract & Name Service Tools
-
-#### Get Contract ABI (`get_contract_abi`)
-
-Retrieves the Application Binary Interface (ABI) for a smart contract.
-
-`GET /v1/get_contract_abi`
-
-**Parameters**
-
-| Name       | Type     | Required | Description                  |
-| ---------- | -------- | -------- | ---------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.    |
-| `address`  | `string` | Yes      | The smart contract address.  |
-
-**Example Request**
-
-```bash
-curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
-```
-
-#### Inspect Contract Code (`inspect_contract_code`)
-
-Returns contract metadata or the content of a specific source file for a verified smart contract.
-
-`GET /v1/inspect_contract_code`
-
-**Parameters**
-
-| Name       | Type     | Required | Description                                                                 |
-| ---------- | -------- | -------- | --------------------------------------------------------------------------- |
-| `chain_id` | `string` | Yes      | The ID of the blockchain.                                                   |
-| `address`  | `string` | Yes      | The smart contract address.                                                 |
-| `file_name`| `string` | No       | The name of the source file to fetch. Omit to retrieve metadata and file list. |
-
-**Example Request**
-
-```bash
-curl "http://127.0.0.1:8000/v1/inspect_contract_code?chain_id=1&address=0x..."
-```
+### Name Service Tools
 
 #### Get Address by ENS Name (`get_address_by_ens_name`)
 
@@ -487,90 +445,135 @@ Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum addre
 
 `GET /v1/get_address_by_ens_name`
 
-**Parameters**
+- **Parameters**
 
-| Name   | Type     | Required | Description                |
-| ------ | -------- | -------- | -------------------------- |
-| `name` | `string` | Yes      | The ENS name to resolve.   |
+  | Name   | Type     | Required | Description                |
+  | ------ | -------- | -------- | -------------------------- |
+  | `name` | `string` | Yes      | The ENS name to resolve.   |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/get_address_by_ens_name?name=vitalik.eth"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_address_by_ens_name?name=vitalik.eth"
+  ```
 
-### Read Contract (`read_contract`)
+### Contract Tools
+
+#### Get Contract ABI (`get_contract_abi`)
+
+Retrieves the Application Binary Interface (ABI) for a smart contract.
+
+`GET /v1/get_contract_abi`
+
+- **Parameters**
+
+  | Name       | Type     | Required | Description                  |
+  | ---------- | -------- | -------- | ---------------------------- |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
+  | `address`  | `string` | Yes      | The smart contract address.  |
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_contract_abi?chain_id=1&address=0x..."
+  ```
+
+#### Inspect Contract Code (`inspect_contract_code`)
+
+Returns contract metadata or the content of a specific source file for a verified smart contract.
+
+`GET /v1/inspect_contract_code`
+
+- **Parameters**
+
+  | Name       | Type     | Required | Description                                                                    |
+  | ---------- | -------- | -------- | ------------------------------------------------------------------------------ |
+  | `chain_id` | `string` | Yes      | The ID of the blockchain.                                                      |
+  | `address`  | `string` | Yes      | The smart contract address.                                                    |
+  | `file_name`| `string` | No       | The name of the source file to fetch. Omit to retrieve metadata and file list. |
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/inspect_contract_code?chain_id=1&address=0x..."
+  ```
+
+#### Read Contract (`read_contract`)
 
 Executes a read-only smart contract function and returns its result.
 
 `GET /v1/read_contract`
 
-**Parameters**
+- **Parameters**
 
-| Name           | Type     | Required | Description                                     |
-| -------------- | -------- | -------- | ----------------------------------------------- |
-| `chain_id`     | `string` | Yes      | The ID of the blockchain.                       |
-| `address`      | `string` | Yes      | Smart contract address.                         |
-| `abi`          | `string` | Yes      | JSON-encoded function ABI dictionary.           |
-| `function_name`| `string` | Yes      | Name of the function to call.                   |
-| `args`         | `string` | No       | JSON-encoded array of function arguments.       |
-| `block`        | `string` | No       | Block identifier or number (`latest` by default). |
+  | Name           | Type     | Required | Description                                       |
+  | -------------- | -------- | -------- | ------------------------------------------------- |
+  | `chain_id`     | `string` | Yes      | The ID of the blockchain.                         |
+  | `address`      | `string` | Yes      | Smart contract address.                           |
+  | `abi`          | `string` | Yes      | JSON-encoded function ABI dictionary.             |
+  | `function_name`| `string` | Yes      | Name of the function to call.                     |
+  | `args`         | `string` | No       | JSON-encoded array of function arguments.         |
+  | `block`        | `string` | No       | Block identifier or number (`latest` by default). |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee523a2206206994597C13D831ec7&function_name=balanceOf&abi=%7B%22constant%22%3Atrue%2C%22inputs%22%3A%5B%7B%22name%22%3A%22_owner%22%2C%22type%22%3A%22address%22%7D%5D%2C%22name%22%3A%22balanceOf%22%2C%22outputs%22%3A%5B%7B%22name%22%3A%22balance%22%2C%22type%22%3A%22uint256%22%7D%5D%2C%22payable%22%3Afalse%2C%22stateMutability%22%3A%22view%22%2C%22type%22%3A%22function%22%7D&args=%5B%220xF977814e90dA44bFA03b6295A0616a897441aceC%22%5D"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee523a2206206994597C13D831ec7&function_name=balanceOf&abi=%7B%22constant%22%3Atrue%2C%22inputs%22%3A%5B%7B%22name%22%3A%22_owner%22%2C%22type%22%3A%22address%22%7D%5D%2C%22name%22%3A%22balanceOf%22%2C%22outputs%22%3A%5B%7B%22name%22%3A%22balance%22%2C%22type%22%3A%22uint256%22%7D%5D%2C%22payable%22%3Afalse%2C%22stateMutability%22%3A%22view%22%2C%22type%22%3A%22function%22%7D&args=%5B%220xF977814e90dA44bFA03b6295A0616a897441aceC%22%5D"
+  ```
 
-### Direct API Call (`direct_api_call`)
+### Advanced Tools
+
+#### Direct API Call (`direct_api_call`)
 
 Allows calling a curated raw Blockscout API endpoint for advanced or chain-specific data.
 
 `GET /v1/direct_api_call`
 
-**Parameters**
+- **Parameters**
 
-| Name | Type | Required | Description |
-| ---- | ---- | -------- | ----------- |
-| `chain_id` | `string` | Yes | The ID of the blockchain. |
-| `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
-| `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax in the query string, e.g., `query_params[page]=1`. |
-| `cursor` | `string` | No | The cursor for pagination from a previous response. |
+  | Name | Type | Required | Description |
+  | ---- | ---- | -------- | ----------- |
+  | `chain_id` | `string` | Yes | The ID of the blockchain. |
+  | `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
+  | `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax in the query string, e.g., `query_params[page]=1`. |
+  | `cursor` | `string` | No | The cursor for pagination from a previous response. |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
-```
+  ```bash
+  curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
+  ```
 
-### Report Tool Usage (`report_tool_usage`)
+### Reporting Tools
+
+#### Report Tool Usage (`report_tool_usage`)
 
 Receive an anonymous tool usage report from a community-run server.
 
 `POST /v1/report_tool_usage`
 
-**Headers**
+- **Headers**
 
-| Name | Required | Description |
-| ---- | -------- | ----------- |
-| `User-Agent` | Yes | Identifies the reporting server version. |
-| `Content-Type` | Yes | Must be `application/json`. |
+  | Name | Required | Description |
+  | ---- | -------- | ----------- |
+  | `User-Agent` | Yes | Identifies the reporting server version. |
+  | `Content-Type` | Yes | Must be `application/json`. |
 
-**Parameters**
+- **Parameters**
 
-| Name | Type | Required | Description |
-| ---- | ---- | -------- | ----------- |
-| `tool_name` | `string` | Yes | Name of the tool being reported. |
-| `tool_args` | `object` | Yes | Arguments provided to the tool. |
-| `client_name` | `string` | Yes | Name of the MCP client invoking the tool. |
-| `client_version` | `string` | Yes | Version of the MCP client. |
-| `protocol_version` | `string` | Yes | Model Context Protocol version used. |
+  | Name | Type | Required | Description |
+  | ---- | ---- | -------- | ----------- |
+  | `tool_name` | `string` | Yes | Name of the tool being reported. |
+  | `tool_args` | `object` | Yes | Arguments provided to the tool. |
+  | `client_name` | `string` | Yes | Name of the MCP client invoking the tool. |
+  | `client_version` | `string` | Yes | Version of the MCP client. |
+  | `protocol_version` | `string` | Yes | Model Context Protocol version used. |
 
-**Example Request**
+- **Example Request**
 
-```bash
-curl -X POST "http://127.0.0.1:8000/v1/report_tool_usage" \\
-  -H "User-Agent: BlockscoutMCP/0.11.0" \\
-  -H "Content-Type: application/json" \\
-  -d '{"tool_name": "get_block_number", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
-```
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/v1/report_tool_usage" \\
+    -H "User-Agent: BlockscoutMCP/0.11.0" \\
+    -H "Content-Type: application/json" \\
+    -d '{"tool_name": "get_block_number", "tool_args": {"chain_id": "1"}, "client_name": "test-client", "client_version": "1.2.3", "protocol_version": "2024-11-05"}'
+  ```
