@@ -65,11 +65,14 @@ sequenceDiagram
     MCP->>CS: GET /api/chains/:id
     CS-->>MCP: Chain metadata (includes Blockscout URL)
     par Concurrent API Calls (when applicable)
-        MCP->>BS: Request to Blockscout API
+        MCP->>BS: Request to Blockscout API (Basic Info)
         BS-->>MCP: Primary data response
     and
+        MCP->>BS: Request to Blockscout API (First Transaction)
+        BS-->>MCP: First transaction response
+    and
         MCP->>Metadata: Request to Metadata API (for enriched data)
-        Metadata-->>MCP: Secondary data response
+        Metadata-->>MCP: Metadata response
     end
     MCP-->>AI: Formatted & combined information
 ```
@@ -133,7 +136,11 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 4. **Optimized Data Retrieval with Concurrent API Calls**:
    - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
-     - `get_address_info`: Concurrent requests to Blockscout API (for on-chain data and for first transaction details) and Metadata API (for public tags)
+     - `get_address_info`: Executes three concurrent requests to gather a comprehensive profile in a single turn:
+       1. **Basic Info**: Basic on-chain data from Blockscout (balance, contract status).
+       2. **First Transaction**: Retrieves the account's earliest transaction to identify inception block and timestamp.
+       3. **Metadata**: Public tags and name resolution from the Metadata API.
+       *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request, ensuring the primary address information is always returned.
      - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
@@ -452,6 +459,16 @@ This architecture provides the flexibility of a multi-protocol server without th
 9. **Standardized Tool Annotations**:
 
     To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
+
+10. **Research Optimization and Workflow Simplification**
+
+    Beyond technical performance, the server is architected to minimize the "reasoning load" on AI agents by providing high-leverage metadata upfront.
+
+    - **Temporal Bounding**: Tools like `get_address_info` proactively fetch critical boundary data (e.g., `first_transaction_details`) that agents would otherwise have to derive through complex, multi-step discovery processes. For EOAs, the first transaction offers the most reliable account-age anchor. For contracts, the creation transaction is the better bottom line, and `creation_transaction_hash` is already surfaced in the tool's `basic_info` payload.
+    - **Strategic Anchoring**: By providing this "bottom line" information immediately, the server enables agents to construct precise, bounded queries for subsequent steps (e.g., correctly setting the `age_from` parameter in `get_transactions_by_address`).
+    - **Deferred Validator Age**: While the first validated/mined block could also serve as an account-age signal for validators, the server does not currently fetch it because Blockscout's `api/v2/addresses/{address_hash}/blocks-validated` endpoint only returns the most recent blocks and does not expose a sort-order override for earliest-first retrieval.
+
+    This approach flattens the reasoning tree required for tasks like account age analysis or history reconstruction, allowing agents to move from "discovery" to "analysis" in a single step.
 
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
