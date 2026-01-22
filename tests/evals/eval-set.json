@@ -45,7 +45,7 @@
     "id": "eval-006",
     "model": "gemini-2.5-pro",
     "question": "Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum Mainnet could emit `SequencerBatchDelivered`?",
-    "expected_result_format": "The final answer is a comma-separated list of method names (e.g., [\"addLiquidity\", \"removeLiquidity\"]).",
+    "expected_result_format": "The final answer is a JSON array of method names (e.g., [\"addLiquidity\", \"removeLiquidity\"]).",
     "ground_truth": {}
   },
   {
@@ -59,7 +59,7 @@
     "id": "eval-008",
     "model": "gemini-2.5-pro",
     "question": "How many different stablecoins does `0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1` (Optimism Gateway) on Ethereum Mainnet hold with a balance exceeding $1,000,000?",
-    "expected_result_format": "The final answer is a list of token symbols (e.g., [\"USDT\", \"FRAX\"]).",
+    "expected_result_format": "The final answer is a JSON array of token symbols (e.g., [\"USDT\", \"FRAX\"]).",
     "ground_truth": {}
   },
   {
