@@ -240,13 +240,14 @@ async def test_get_address_by_ens_name_missing_param(client: AsyncClient):
 async def test_get_transactions_by_address_success(mock_tool, client: AsyncClient):
     """Test the /get_transactions_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data={"items": []})
-    url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&cursor=foo"
+    url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z&cursor=foo"
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"] == {"items": []}
     mock_tool.assert_called_once_with(
         chain_id="1",
         address="0xabc",
+        age_from="2025-01-01T00:00:00.00Z",
         cursor="foo",
         ctx=ANY,
     )
@@ -260,19 +261,27 @@ async def test_get_transactions_by_address_success(mock_tool, client: AsyncClien
 async def test_get_transactions_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works with required params only."""
     mock_tool.return_value = ToolResponse(data={"items": []})
-    url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc"
+    url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z"
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"] == {"items": []}
-    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", ctx=ANY)
+    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", age_from="2025-01-01T00:00:00.00Z", ctx=ANY)
 
 
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_missing_param(client: AsyncClient):
     """Missing chain_id returns an error."""
-    response = await client.get("/v1/get_transactions_by_address?address=0xabc")
+    response = await client.get("/v1/get_transactions_by_address?address=0xabc&age_from=2025-01-01T00:00:00.00Z")
     assert response.status_code == 400
     assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_missing_age_from(client: AsyncClient):
+    """Missing age_from returns an error."""
+    response = await client.get("/v1/get_transactions_by_address?chain_id=1&address=0xabc")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'age_from'"}
 
 
 @pytest.mark.asyncio
@@ -283,13 +292,14 @@ async def test_get_transactions_by_address_missing_param(client: AsyncClient):
 async def test_get_token_transfers_by_address_success(mock_tool, client: AsyncClient):
     """Test /get_token_transfers_by_address endpoint."""
     mock_tool.return_value = ToolResponse(data={"items": []})
-    url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc&cursor=foo"
+    url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z&cursor=foo"
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"] == {"items": []}
     mock_tool.assert_called_once_with(
         chain_id="1",
         address="0xabc",
+        age_from="2025-01-01T00:00:00.00Z",
         cursor="foo",
         ctx=ANY,
     )
@@ -303,19 +313,27 @@ async def test_get_token_transfers_by_address_success(mock_tool, client: AsyncCl
 async def test_get_token_transfers_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works with required params only."""
     mock_tool.return_value = ToolResponse(data={"items": []})
-    url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc"
+    url = "/v1/get_token_transfers_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z"
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"] == {"items": []}
-    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", ctx=ANY)
+    mock_tool.assert_called_once_with(chain_id="1", address="0xabc", age_from="2025-01-01T00:00:00.00Z", ctx=ANY)
 
 
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_missing_param(client: AsyncClient):
     """Missing chain_id parameter."""
-    response = await client.get("/v1/get_token_transfers_by_address?address=0xabc")
+    response = await client.get("/v1/get_token_transfers_by_address?address=0xabc&age_from=2025-01-01T00:00:00.00Z")
     assert response.status_code == 400
     assert response.json() == {"error": "Missing required query parameter: 'chain_id'"}
+
+
+@pytest.mark.asyncio
+async def test_get_token_transfers_by_address_missing_age_from(client: AsyncClient):
+    """Missing age_from parameter."""
+    response = await client.get("/v1/get_token_transfers_by_address?chain_id=1&address=0xabc")
+    assert response.status_code == 400
+    assert response.json() == {"error": "Missing required query parameter: 'age_from'"}
 
 
 @pytest.mark.asyncio

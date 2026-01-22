@@ -25,11 +25,9 @@ async def get_token_transfers_by_address(
     address: Annotated[str, Field(description="Address which either transfer initiator or transfer receiver")],
     ctx: Context,
     age_from: Annotated[
-        str | None,
-        Field(
-            description="Start date and time (e.g 2025-05-22T23:00:00.00Z). This parameter should be provided in most cases to limit transfers and avoid heavy database queries. Omit only if you absolutely need the full history."  # noqa: E501
-        ),
-    ] = None,
+        str,
+        Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z)."),
+    ],
     age_to: Annotated[
         str | None,
         Field(
@@ -60,10 +58,9 @@ async def get_token_transfers_by_address(
         "transaction_types": "ERC-20",
         "to_address_hashes_to_include": address,
         "from_address_hashes_to_include": address,
+        "age_from": age_from,
     }
 
-    if age_from:
-        query_params["age_from"] = age_from
     if age_to:
         query_params["age_to"] = age_to
     if token:

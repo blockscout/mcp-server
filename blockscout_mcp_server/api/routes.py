@@ -159,8 +159,8 @@ async def get_transactions_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_transactions_by_address tool."""
     params = extract_and_validate_params(
         request,
-        required=["chain_id", "address"],
-        optional=["age_from", "age_to", "methods", "cursor"],
+        required=["chain_id", "address", "age_from"],
+        optional=["age_to", "methods", "cursor"],
     )
     tool_response = await get_transactions_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump())
@@ -171,8 +171,8 @@ async def get_token_transfers_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_token_transfers_by_address tool."""
     params = extract_and_validate_params(
         request,
-        required=["chain_id", "address"],
-        optional=["age_from", "age_to", "token", "cursor"],
+        required=["chain_id", "address", "age_from"],
+        optional=["age_to", "token", "cursor"],
     )
     tool_response = await get_token_transfers_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump())

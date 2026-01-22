@@ -462,7 +462,19 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 10. **Research Optimization and Workflow Simplification**
 
-    Beyond technical performance, the server is architected to minimize the "reasoning load" on AI agents by providing high-leverage metadata upfront.
+    This architecture reduces both technical load and the reasoning burden on AI agents by combining mandatory temporal scoping with high-leverage metadata that anchors analysis workflows.
+
+    **a. Mandatory Temporal Scoping**
+
+    The `age_from` parameter is mandatory for all transaction-fetching tools (`get_transactions_by_address`, `get_token_transfers_by_address`).
+
+    - **Intentionality**: This requirement forces AI agents to formulate a specific temporal hypothesis (e.g., "Analyze activity in Q1 2024") rather than defaulting to expensive "full history" queries.
+    - **Performance**: It prevents inadvertent database scans of an address's entire history, significantly reducing timeout risks and backend load.
+    - **Context Safety**: By limiting the temporal scope, the volume of returned data is more likely to stay within the LLM's context window.
+
+    **b. Upfront Anchoring Metadata**
+
+    Beyond performance, the server is architected to minimize the "reasoning load" on AI agents by providing high-leverage metadata upfront.
 
     - **Temporal Bounding**: Tools like `get_address_info` proactively fetch critical boundary data (e.g., `first_transaction_details`) that agents would otherwise have to derive through complex, multi-step discovery processes. For EOAs, the first transaction offers the most reliable account-age anchor. For contracts, the creation transaction is the better bottom line, and `creation_transaction_hash` is already surfaced in the tool's `basic_info` payload.
     - **Strategic Anchoring**: By providing this "bottom line" information immediately, the server enables agents to construct precise, bounded queries for subsequent steps (e.g., correctly setting the `age_from` parameter in `get_transactions_by_address`).

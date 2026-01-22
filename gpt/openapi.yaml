@@ -281,7 +281,7 @@ paths:
           example: "0x..."
         - name: age_from
           in: query
-          required: false
+          required: true
           description: Start date and time (ISO 8601 format)
           schema:
             type: string
@@ -347,8 +347,8 @@ paths:
           example: "0x..."
         - name: age_from
           in: query
-          required: false
-          description: Start date and time (ISO 8601 format). Should be provided in most cases to limit transfers and avoid heavy database queries
+          required: true
+          description: Start date and time (ISO 8601 format)
           schema:
             type: string
             format: date-time

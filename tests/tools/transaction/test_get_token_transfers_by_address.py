@@ -92,6 +92,7 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
     # ARRANGE
     chain_id = "999999"  # Invalid chain ID
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
 
     from blockscout_mcp_server.tools.common import ChainNotFoundError
 
@@ -112,7 +113,12 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
 
         # ACT & ASSERT
         with pytest.raises(ChainNotFoundError):
-            await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+            await get_token_transfers_by_address(
+                chain_id=chain_id,
+                address=address,
+                age_from=age_from,
+                ctx=mock_ctx,
+            )
 
         # Verify the chain lookup was attempted
         mock_get_url.assert_called_once_with(chain_id)
@@ -130,6 +136,7 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
     """Verify that get_token_transfers_by_address correctly transforms its response."""
     chain_id = "1"
     address = "0x123"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
@@ -170,7 +177,12 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
 
-        result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        result = await get_token_transfers_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
@@ -193,6 +205,7 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
 async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
@@ -223,7 +236,12 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
             ),
         )
 
-        result = await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        result = await get_token_transfers_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         mock_create_pagination.assert_called_once()
         assert isinstance(result.pagination, PaginationInfo)
@@ -235,6 +253,7 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
 async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
     chain_id = "1"
     address = "0x123"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     items = [{"block_number": i} for i in range(10)]
@@ -259,7 +278,12 @@ async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
         mock_wrapper.return_value = mock_api_response
         mock_create_pagination.return_value = (items[:5], None)
 
-        await get_token_transfers_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        await get_token_transfers_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         mock_create_pagination.assert_called_once()
         assert mock_create_pagination.call_args.kwargs["page_size"] == 5
@@ -271,6 +295,7 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
     address = "0x123abc"
     cursor = "CURSOR"
     decoded = {"page": 2}
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     with (
@@ -294,6 +319,7 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
         await get_token_transfers_by_address(
             chain_id=chain_id,
             address=address,
+            age_from=age_from,
             cursor=cursor,
             ctx=mock_ctx,
         )
@@ -305,6 +331,7 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
             "transaction_types": "ERC-20",
             "to_address_hashes_to_include": address,
             "from_address_hashes_to_include": address,
+            "age_from": age_from,
             **decoded,
         }
         assert params == expected_params
@@ -318,5 +345,11 @@ async def test_get_token_transfers_by_address_invalid_cursor(mock_ctx):
         side_effect=ValueError("invalid"),
     ) as mock_apply:
         with pytest.raises(ValueError, match="invalid"):
-            await get_token_transfers_by_address(chain_id="1", address="0xabc", cursor="bad", ctx=mock_ctx)
+            await get_token_transfers_by_address(
+                chain_id="1",
+                address="0xabc",
+                age_from="2024-01-01T00:00:00Z",
+                cursor="bad",
+                ctx=mock_ctx,
+            )
     mock_apply.assert_called_once()

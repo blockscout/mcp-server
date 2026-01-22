@@ -12,6 +12,7 @@ from blockscout_mcp_server.tools.transaction.get_transactions_by_address import 
 async def test_get_transactions_by_address_with_pagination(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     mock_filtered_items = []
@@ -43,7 +44,12 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
             ),
         )
 
-        result = await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        result = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         mock_create_pagination.assert_called_once()
         # Verify that force_pagination was set to True due to has_more_pages
@@ -55,6 +61,7 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
 async def test_get_transactions_by_address_custom_page_size(mock_ctx):
     chain_id = "1"
     address = "0x123"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     items = [{"block_number": i} for i in range(10)]
@@ -80,7 +87,12 @@ async def test_get_transactions_by_address_custom_page_size(mock_ctx):
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
         mock_create_pagination.return_value = (items[:5], None)
 
-        await get_transactions_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
+        await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+        )
 
         mock_create_pagination.assert_called_once()
         assert mock_create_pagination.call_args.kwargs["page_size"] == 5
@@ -92,6 +104,7 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
     address = "0x123abc"
     cursor = "CURSOR"
     decoded = {"page": 2}
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     mock_filtered_items = []
@@ -118,6 +131,7 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
         await get_transactions_by_address(
             chain_id=chain_id,
             address=address,
+            age_from=age_from,
             cursor=cursor,
             ctx=mock_ctx,
         )
@@ -128,6 +142,7 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
         expected_params = {
             "to_address_hashes_to_include": address,
             "from_address_hashes_to_include": address,
+            "age_from": age_from,
             **decoded,
         }
         assert params == expected_params
@@ -141,6 +156,7 @@ async def test_get_transactions_by_address_smart_pagination_error(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     # Simulate an error from the smart pagination function
@@ -167,6 +183,7 @@ async def test_get_transactions_by_address_smart_pagination_error(mock_ctx):
             await get_transactions_by_address(
                 chain_id=chain_id,
                 address=address,
+                age_from=age_from,
                 ctx=mock_ctx,
             )
 
@@ -186,6 +203,7 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     # Create a scenario where we have many filtered transactions but few valid ones
@@ -253,6 +271,7 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
         result = await get_transactions_by_address(
             chain_id=chain_id,
             address=address,
+            age_from=age_from,
             ctx=mock_ctx,
         )
 
@@ -301,6 +320,7 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
     mock_base_url = "https://eth.blockscout.com"
 
     # Mock data that would be returned by smart pagination
@@ -332,6 +352,7 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
         result = await get_transactions_by_address(
             chain_id=chain_id,
             address=address,
+            age_from=age_from,
             ctx=mock_ctx,
         )
 
