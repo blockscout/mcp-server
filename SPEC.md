@@ -462,13 +462,13 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 10. **Research Optimization and Workflow Simplification**
 
-   Beyond technical performance, the server is architected to minimize the "reasoning load" on AI agents by providing high-leverage metadata upfront.
+    Beyond technical performance, the server is architected to minimize the "reasoning load" on AI agents by providing high-leverage metadata upfront.
 
-   *   **Temporal Bounding**: Tools like `get_address_info` proactively fetch critical boundary data (e.g., `first_transaction_details`) that agents would otherwise have to derive through complex, multi-step discovery processes. For EOAs, the first transaction offers the most reliable account-age anchor. For contracts, the creation transaction is the better bottom line, and `creation_transaction_hash` is already surfaced in the tool's `basic_info` payload.
-   *   **Strategic Anchoring**: By providing this "bottom line" information immediately, the server enables agents to construct precise, bounded queries for subsequent steps (e.g., correctly setting the `age_from` parameter in `get_transactions_by_address`).
-   *   **Deferred Validator Age**: While the first validated/mined block could also serve as an account-age signal for validators, the server does not currently fetch it because Blockscout's `api/v2/addresses/{address_hash}/blocks-validated` endpoint only returns the most recent blocks and does not expose a sort-order override for earliest-first retrieval.
+    - **Temporal Bounding**: Tools like `get_address_info` proactively fetch critical boundary data (e.g., `first_transaction_details`) that agents would otherwise have to derive through complex, multi-step discovery processes. For EOAs, the first transaction offers the most reliable account-age anchor. For contracts, the creation transaction is the better bottom line, and `creation_transaction_hash` is already surfaced in the tool's `basic_info` payload.
+    - **Strategic Anchoring**: By providing this "bottom line" information immediately, the server enables agents to construct precise, bounded queries for subsequent steps (e.g., correctly setting the `age_from` parameter in `get_transactions_by_address`).
+    - **Deferred Validator Age**: While the first validated/mined block could also serve as an account-age signal for validators, the server does not currently fetch it because Blockscout's `api/v2/addresses/{address_hash}/blocks-validated` endpoint only returns the most recent blocks and does not expose a sort-order override for earliest-first retrieval.
 
-   This approach flattens the reasoning tree required for tasks like account age analysis or history reconstruction, allowing agents to move from "discovery" to "analysis" in a single step.
+    This approach flattens the reasoning tree required for tasks like account age analysis or history reconstruction, allowing agents to move from "discovery" to "analysis" in a single step.
 
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
