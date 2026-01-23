@@ -46,7 +46,13 @@ async def transaction_summary(
 
     summary = response_data.get("data", {}).get("summaries")
 
-    if summary is not None and not isinstance(summary, list):
+    if summary is None:
+        return build_tool_response(
+            data=TransactionSummaryData(summary=None),
+            notes=["No summary available. This usually indicates the transaction failed."],
+        )
+
+    if not isinstance(summary, list):
         raise RuntimeError("Blockscout API returned an unexpected format for transaction summary")
 
     summary_data = TransactionSummaryData(summary=summary)
