@@ -20,7 +20,7 @@ async def retry_on_network_error(
     for attempt in range(1, max_retries + 1):
         try:
             return await action()
-        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+        except httpx.RequestError as exc:
             if attempt == max_retries:
                 pytest.skip(
                     f"Network connectivity issue after {max_retries} attempts while {action_description}: {exc}"
