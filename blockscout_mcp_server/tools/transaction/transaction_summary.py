@@ -44,12 +44,15 @@ async def transaction_summary(
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction summary.")
 
-    if not response_data:
+    # Treat an absent or explicitly empty object response as "no summary available".
+    if response_data is None or response_data == {}:
         return build_tool_response(
             data=TransactionSummaryData(summary=None),
             notes=["No summary available. This usually indicates the transaction failed."],
         )
 
+    if not isinstance(response_data, dict):
+        raise RuntimeError("Blockscout API returned an unexpected format for transaction summary")
     data = response_data.get("data")
     if not isinstance(data, dict) or "summaries" not in data:
         raise RuntimeError("Blockscout API returned an unexpected format for transaction summary")
