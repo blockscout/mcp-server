@@ -121,6 +121,27 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        assert any(
+            "Starting to fetch transaction info" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
+        assert any(
+            "Resolved Blockscout instance URL" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
         assert result.data.user_operations is not None
         assert len(result.data.user_operations) == 2
         assert result.data.user_operations[0].sender == "0xsender1"
@@ -153,6 +174,27 @@ async def test_get_transaction_info_no_user_ops(mock_ctx):
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        assert any(
+            "Starting to fetch transaction info" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
+        assert any(
+            "Resolved Blockscout instance URL" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
         assert result.data.user_operations is None
         assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
 
@@ -182,6 +224,27 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        assert any(
+            "Starting to fetch transaction info" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
+        assert any(
+            "Resolved Blockscout instance URL" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
         assert result.data.user_operations is None
         assert result.notes is not None
         assert any("Could not retrieve user operations" in note for note in result.notes)
@@ -217,6 +280,27 @@ async def test_get_transaction_info_pagination_note(mock_ctx):
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
+        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        assert any(
+            "Starting to fetch transaction info" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
+        assert any(
+            "Resolved Blockscout instance URL" in call.kwargs.get("message", "")
+            for call in mock_ctx.report_progress.await_args_list
+        )
         assert result.notes is not None
         assert any("user_operations" in note for note in result.notes)
 
