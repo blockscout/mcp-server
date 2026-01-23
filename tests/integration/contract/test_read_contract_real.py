@@ -1,4 +1,3 @@
-import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -11,6 +10,7 @@ from eth_utils import to_checksum_address
 from blockscout_mcp_server.models import ContractReadData, ToolResponse
 from blockscout_mcp_server.tools.contract.read_contract import read_contract
 from blockscout_mcp_server.web3_pool import WEB3_POOL
+from tests.integration.helpers import retry_on_network_error
 
 CHAIN_ID_MAINNET = "1"
 CHAIN_ID_SEPOLIA = "11155111"
@@ -31,8 +31,7 @@ async def _read_contract_with_retry(
     args: str,
     action_description: str,
 ) -> ToolResponse:
-    max_retries = 3
-    for attempt in range(1, max_retries + 1):
+    async def action() -> ToolResponse:
         try:
             return await read_contract(
                 chain_id=chain_id,
@@ -42,22 +41,16 @@ async def _read_contract_with_retry(
                 args=args,
                 ctx=mock_ctx,
             )
-        except (httpx.TimeoutException, httpx.ConnectError) as exc:
-            if attempt == max_retries:
-                pytest.skip(f"Network connectivity issue after {max_retries} attempts: {exc}")
-            await asyncio.sleep(0.5)
         except RuntimeError as exc:
             if "Cannot connect to host" in str(exc) or "Network is unreachable" in str(exc):
-                if attempt == max_retries:
-                    pytest.skip(f"Network connectivity issue after {max_retries} attempts: {exc}")
-                await asyncio.sleep(0.5)
-            else:
-                raise
-        except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
-            pytest.skip(f"Network connectivity issue: {exc}")
+                raise httpx.RequestError(str(exc)) from exc
+            raise
+        except (aiohttp.ClientError, OSError) as exc:
+            raise httpx.RequestError(str(exc)) from exc
         finally:
             await WEB3_POOL.close()
-    raise AssertionError(f"{action_description} exhausted without returning.")
+
+    return await retry_on_network_error(action, action_description=action_description)
 
 
 async def _invoke(mock_ctx, function_name: str, args: str) -> Any:
