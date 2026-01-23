@@ -773,3 +773,18 @@ async def test_make_blockscout_request_success():
         result = await make_blockscout_request("https://example.com", "/api/v2/test")
 
     assert result == {"result": "success"}
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_returns_empty_dict_on_null_response():
+    """Verify null JSON bodies return an empty dictionary."""
+    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    response = httpx.Response(200, content=b"null", request=request)
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=MockAsyncClient(response),
+    ):
+        result = await make_blockscout_request("https://example.com", "/api/v2/test")
+
+    assert result == {}
