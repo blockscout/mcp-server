@@ -59,17 +59,17 @@ async def test_transaction_summary_without_wrapper(mock_ctx):
 
 
 @pytest.mark.asyncio
-async def test_transaction_summary_no_summary_available(mock_ctx):
+async def test_transaction_summary_missing_summaries_key_raises_error(mock_ctx):
     """
-    Test transaction_summary when no summary is available in the response.
+    Test transaction_summary when the summaries key is missing.
     """
     # ARRANGE
     chain_id = "1"
     tx_hash = "0x123abc"
     mock_base_url = "https://eth.blockscout.com"
 
-    # Response with no summary data
-    mock_api_response = {"data": {}}
+    # Response with missing summaries key
+    mock_api_response = {"data": {"foo": "bar"}}
 
     with (
         patch(
@@ -84,14 +84,9 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
-        # ACT
-        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        with pytest.raises(RuntimeError, match="unexpected format"):
+            await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
-        # ASSERT
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, TransactionSummaryData)
-        assert result.data.summary is None
-        assert result.notes == ["No summary available. This usually indicates the transaction failed."]
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
         assert mock_ctx.report_progress.await_count == 3
@@ -99,11 +94,11 @@ async def test_transaction_summary_no_summary_available(mock_ctx):
 
 
 @pytest.mark.asyncio
-async def test_transaction_summary_missing_data_key_treated_as_none(mock_ctx):
+async def test_transaction_summary_missing_data_key_raises_error(mock_ctx):
     chain_id = "1"
     tx_hash = "0xno_data"
     mock_base_url = "https://eth.blockscout.com"
-    mock_api_response = {}
+    mock_api_response = {"foo": "bar"}
 
     with (
         patch(
@@ -118,12 +113,9 @@ async def test_transaction_summary_missing_data_key_treated_as_none(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
-        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        with pytest.raises(RuntimeError, match="unexpected format"):
+            await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, TransactionSummaryData)
-        assert result.data.summary is None
-        assert result.notes == ["No summary available. This usually indicates the transaction failed."]
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}/summary")
         assert mock_ctx.report_progress.await_count == 3
@@ -182,12 +174,9 @@ async def test_transaction_summary_summary_explicit_none(mock_ctx):
         mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
-        result = await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        with pytest.raises(RuntimeError, match="unexpected format"):
+            await transaction_summary(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
-        assert isinstance(result, ToolResponse)
-        assert isinstance(result.data, TransactionSummaryData)
-        assert result.data.summary is None
-        assert result.notes == ["No summary available. This usually indicates the transaction failed."]
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
 
