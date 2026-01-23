@@ -98,7 +98,7 @@ async def get_transaction_info(
         notes = notes or []
         notes.append(ops_error_note)
         notes.append(
-            "Since it is not clear if the transaction contains user operations or not call `direct_api_call` with "
+            "Since it is not clear if the transaction contains user operations or not, call `direct_api_call` with "
             f"endpoint `/api/v2/proxy/account-abstraction/operations` with "
             f"query_params={{'transaction_hash': '{transaction_hash}'}} to figure this out."
         )
