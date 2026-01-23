@@ -66,6 +66,9 @@ async def get_transaction_info(
 
     response_data = transaction_result
     raw_ops_response = None if isinstance(ops_result, Exception) else ops_result
+    ops_error_note = None
+    if isinstance(ops_result, Exception):
+        ops_error_note = f"Could not retrieve user operations. The 'user_operations' field is null. Error: {ops_result}"
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction data.")
 
@@ -90,6 +93,15 @@ async def get_transaction_info(
                 f'For example, using curl:\n`curl "{str(base_url).rstrip("/")}/api/v2/transactions/{transaction_hash}"`'
             ),
         ]
+
+    if ops_error_note:
+        notes = notes or []
+        notes.append(ops_error_note)
+        notes.append(
+            "Since it is not clear if the transaction contains user operations or not call `direct_api_call` with "
+            f"endpoint `/api/v2/proxy/account-abstraction/operations` with "
+            f"query_params={{'transaction_hash': '{transaction_hash}'}} to figure this out."
+        )
 
     if raw_ops_response and isinstance(raw_ops_response, dict) and raw_ops_response.get("next_page_params"):
         pagination_note = (

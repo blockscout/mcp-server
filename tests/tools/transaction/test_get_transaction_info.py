@@ -183,6 +183,9 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         assert result.data.user_operations is None
+        assert result.notes is not None
+        assert any("Could not retrieve user operations" in note for note in result.notes)
+        assert any("Since it is not clear if the transaction contains user operations" in note for note in result.notes)
         assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
 
 
