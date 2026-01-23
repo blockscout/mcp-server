@@ -256,6 +256,13 @@ async def test_with_retry_logic():
     assert result is not None
 ```
 
+### Shared Retry Helper
+
+If you're writing or updating integration tests, prefer using the shared helper in
+`tests/integration/helpers.py` (`retry_on_network_error`) to keep retry behavior
+consistent across modules. It wraps async calls with the same retry policy described
+above and skips after exhausting retries.
+
 ### Avoid Hardcoding Environment-Specific URLs
 
 When asserting on output that contains a URL resolved by the server, **DO NOT** hardcode the URL in your test. The server dynamically resolves URLs (e.g., using `get_blockscout_base_url`), and these resolved values can change.
@@ -295,4 +302,3 @@ async def test_tool_with_dynamic_url(mock_ctx):
 - Use descriptive test names that indicate what contract/schema is being validated
 - Separate helper-level tests from tool-level tests into different files when appropriate
 - Include clear comments explaining why specific test data was chosen (especially for stable targets)
-
