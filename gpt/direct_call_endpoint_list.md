@@ -8,6 +8,9 @@ ADVANCED API USAGE: For specialized or chain-specific data not covered by other 
 <group name="User Operations">
 "/api/v2/proxy/account-abstraction/operations/{user_operation_hash}" - "Get details for a specific User Operation by its hash."
 </group>
+<group name="Transactions">
+"/api/v2/transactions/{transaction_hash}/logs" - "Get event logs for a specific transaction by its hash."
+</group>
 <group name="Tokens & NFTs">
 "/api/v2/tokens/{token_contract_address}/instances" - "Get all NFT instances for a given token contract address."
 "/api/v2/tokens/{token_contract_address}/holders" - "Get a list of holders for a given token."

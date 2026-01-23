@@ -119,6 +119,15 @@ DIRECT_API_CALL_ENDPOINT_LIST = {
             ],
         },
         {
+            "group": "Transactions",
+            "endpoints": [
+                {
+                    "path": "/api/v2/transactions/{transaction_hash}/logs",
+                    "description": "Get event logs for a specific transaction by its hash.",
+                },
+            ],
+        },
+        {
             "group": "Tokens & NFTs",
             "endpoints": [
                 {

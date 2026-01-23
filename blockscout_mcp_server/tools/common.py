@@ -179,7 +179,7 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         params: Optional query parameters
 
     Returns:
-        The JSON response as a dictionary
+        The JSON response as a dictionary. If the API returns a JSON null body, returns an empty dictionary {}.
 
     Raises:
         httpx.HTTPStatusError: If the HTTP request returns an error status code
@@ -223,7 +223,8 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
                     else:
                         message = f"{e.response.status_code} {reason}"
                     raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
-                return response.json()
+                data = response.json()
+                return data if data is not None else {}
             except httpx.RequestError as e:
                 last_error = e
                 if attempt == (config.bs_request_max_retries - 1):
