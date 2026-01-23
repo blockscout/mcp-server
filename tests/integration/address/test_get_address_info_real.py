@@ -1,8 +1,8 @@
-import httpx
 import pytest
 
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
@@ -11,10 +11,10 @@ async def test_get_address_info_integration(mock_ctx):
     """Validate get_address_info against the live API for a well-known contract."""
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
 
-    try:
-        result = await get_address_info(chain_id="1", address=address, ctx=mock_ctx)
-    except httpx.RequestError as exc:
-        pytest.skip(f"Skipping test due to network error on primary API call: {exc}")
+    result = await retry_on_network_error(
+        lambda: get_address_info(chain_id="1", address=address, ctx=mock_ctx),
+        action_description="get_address_info request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, AddressInfoData)

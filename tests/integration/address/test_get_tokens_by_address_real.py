@@ -1,18 +1,18 @@
-import httpx
 import pytest
 
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_tokens_by_address_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"  # Binance wallet
-    try:
-        result = await get_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx)
-    except httpx.HTTPError as exc:
-        pytest.skip(f"Skipping get_tokens_by_address integration test due to network issue: {exc}")
+    result = await retry_on_network_error(
+        lambda: get_tokens_by_address(chain_id="1", address=address, ctx=mock_ctx),
+        action_description="get_tokens_by_address request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, list) and len(result.data) > 0
@@ -26,10 +26,10 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"
     chain_id = "1"
 
-    try:
-        first_page_response = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
-    except httpx.HTTPError as exc:
-        pytest.skip(f"API request failed, skipping pagination test: {exc}")
+    first_page_response = await retry_on_network_error(
+        lambda: get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx),
+        action_description="get_tokens_by_address first page request",
+    )
 
     assert first_page_response.pagination is not None, "Pagination info is missing."
     next_call_info = first_page_response.pagination.next_call
@@ -38,10 +38,10 @@ async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     cursor = next_call_info.params.get("cursor")
     assert cursor is not None, "Cursor is missing from next_call params."
 
-    try:
-        second_page_response = await get_tokens_by_address(**next_call_info.params, ctx=mock_ctx)
-    except httpx.HTTPError as exc:
-        pytest.fail(f"API request for the second page failed with cursor: {exc}")
+    second_page_response = await retry_on_network_error(
+        lambda: get_tokens_by_address(**next_call_info.params, ctx=mock_ctx),
+        action_description="get_tokens_by_address second page request",
+    )
 
     assert isinstance(second_page_response, ToolResponse)
     assert isinstance(second_page_response.data, list)

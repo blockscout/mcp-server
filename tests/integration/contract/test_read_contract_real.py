@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -20,20 +21,55 @@ TEST_CONTRACT_ABI = json.loads(ABI_PATH.read_text())
 ABI_BY_NAME = {entry["name"]: entry for entry in TEST_CONTRACT_ABI}
 
 
+async def _read_contract_with_retry(
+    mock_ctx,
+    *,
+    chain_id: str,
+    address: str,
+    abi: dict[str, Any],
+    function_name: str,
+    args: str,
+    action_description: str,
+) -> ToolResponse:
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            return await read_contract(
+                chain_id=chain_id,
+                address=address,
+                abi=abi,
+                function_name=function_name,
+                args=args,
+                ctx=mock_ctx,
+            )
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            if attempt == max_retries:
+                pytest.skip(f"Network connectivity issue after {max_retries} attempts: {exc}")
+            await asyncio.sleep(0.5)
+        except RuntimeError as exc:
+            if "Cannot connect to host" in str(exc) or "Network is unreachable" in str(exc):
+                if attempt == max_retries:
+                    pytest.skip(f"Network connectivity issue after {max_retries} attempts: {exc}")
+                await asyncio.sleep(0.5)
+            else:
+                raise
+        except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+            pytest.skip(f"Network connectivity issue: {exc}")
+        finally:
+            await WEB3_POOL.close()
+    raise AssertionError(f"{action_description} exhausted without returning.")
+
+
 async def _invoke(mock_ctx, function_name: str, args: str) -> Any:
-    try:
-        result = await read_contract(
-            chain_id=CHAIN_ID_SEPOLIA,
-            address=CONTRACT_ADDRESS,
-            abi=ABI_BY_NAME[function_name],
-            function_name=function_name,
-            args=args,
-            ctx=mock_ctx,
-        )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
-        pytest.skip(f"Network connectivity issue: {exc}")
-    finally:
-        await WEB3_POOL.close()
+    result = await _read_contract_with_retry(
+        mock_ctx,
+        chain_id=CHAIN_ID_SEPOLIA,
+        address=CONTRACT_ADDRESS,
+        abi=ABI_BY_NAME[function_name],
+        function_name=function_name,
+        args=args,
+        action_description=f"read_contract sepolia {function_name} request",
+    )
     return result.data.result
 
 
@@ -52,19 +88,15 @@ async def test_read_contract_integration(mock_ctx):
     }
     owner = "0xF977814e90dA44bFA03b6295A0616a897441aceC"
 
-    try:
-        result = await read_contract(
-            chain_id=CHAIN_ID_MAINNET,
-            address=address,
-            abi=abi,
-            function_name="balanceOf",
-            args=json.dumps([owner]),
-            ctx=mock_ctx,
-        )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
-        pytest.skip(f"Network connectivity issue: {exc}")
-    finally:
-        await WEB3_POOL.close()
+    result = await _read_contract_with_retry(
+        mock_ctx,
+        chain_id=CHAIN_ID_MAINNET,
+        address=address,
+        abi=abi,
+        function_name="balanceOf",
+        args=json.dumps([owner]),
+        action_description="read_contract mainnet balanceOf request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractReadData)
@@ -99,19 +131,15 @@ async def test_read_contract_decodes_tuple_result(mock_ctx):
         "type": "function",
     }
 
-    try:
-        result = await read_contract(
-            chain_id=CHAIN_ID_MAINNET,
-            address=address,
-            abi=abi,
-            function_name="buffer",
-            args=json.dumps([]),
-            ctx=mock_ctx,
-        )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
-        pytest.skip(f"Network connectivity issue: {exc}")
-    finally:
-        await WEB3_POOL.close()
+    result = await _read_contract_with_retry(
+        mock_ctx,
+        chain_id=CHAIN_ID_MAINNET,
+        address=address,
+        abi=abi,
+        function_name="buffer",
+        args=json.dumps([]),
+        action_description="read_contract mainnet buffer request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractReadData)

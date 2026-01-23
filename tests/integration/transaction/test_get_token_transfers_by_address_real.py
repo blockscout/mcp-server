@@ -1,10 +1,10 @@
-import httpx
 import pytest
 
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
 from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address import (
     get_token_transfers_by_address,
 )
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
@@ -14,16 +14,16 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
     age_from = "2016-01-01T00:00:00Z"
 
-    try:
-        result = await get_token_transfers_by_address(
+    result = await retry_on_network_error(
+        lambda: get_token_transfers_by_address(
             chain_id="1",
             address=address,
             age_from=age_from,
             age_to="2017-01-01T00:00:00.00Z",
             ctx=mock_ctx,
-        )
-    except httpx.HTTPError as exc:
-        pytest.skip(f"Skipping get_token_transfers_by_address integration test due to network issue: {exc}")
+        ),
+        action_description="get_token_transfers_by_address request",
+    )
 
     assert isinstance(result, ToolResponse)
     items = result.data
@@ -57,31 +57,31 @@ async def test_get_token_transfers_by_address_pagination_integration(mock_ctx):
     chain_id = "1"
     age_from = "2016-01-01T00:00:00Z"
 
-    try:
-        first_page = await get_token_transfers_by_address(
+    first_page = await retry_on_network_error(
+        lambda: get_token_transfers_by_address(
             chain_id=chain_id,
             address=address,
             age_from=age_from,
             ctx=mock_ctx,
-        )
-    except httpx.HTTPError as exc:
-        pytest.skip(f"API request failed: {exc}")
+        ),
+        action_description="get_token_transfers_by_address first page request",
+    )
 
     if not first_page.pagination:
         pytest.skip("Pagination info missing from first page.")
 
     cursor = first_page.pagination.next_call.params["cursor"]
 
-    try:
-        second_page = await get_token_transfers_by_address(
+    second_page = await retry_on_network_error(
+        lambda: get_token_transfers_by_address(
             chain_id=chain_id,
             address=address,
             age_from=age_from,
             ctx=mock_ctx,
             cursor=cursor,
-        )
-    except httpx.HTTPError as exc:
-        pytest.fail(f"Failed to fetch second page: {exc}")
+        ),
+        action_description="get_token_transfers_by_address second page request",
+    )
 
     assert isinstance(second_page.data, list)
     if second_page.data:
