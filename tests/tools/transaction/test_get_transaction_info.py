@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import httpx
 import pytest
@@ -50,6 +50,8 @@ async def test_get_transaction_info_success(mock_ctx):
         "nonce": 123,
     }
 
+    ops_response = {"items": []}
+
     with (
         patch(
             "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
@@ -61,14 +63,23 @@ async def test_get_transaction_info_success(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         # ACT
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}")
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, TransactionInfoData)
         data = result.data.model_dump(by_alias=True)
@@ -77,10 +88,134 @@ async def test_get_transaction_info_success(mock_ctx):
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
         assert result.instructions is not None
-        assert any(
-            "/api/v2/proxy/account-abstraction/operations" in instr and f"{tx_hash}" in instr
-            for instr in result.instructions
-        )
+        assert all("/api/v2/proxy/account-abstraction/operations" not in instr for instr in result.instructions)
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_with_user_ops(mock_ctx):
+    """Verify get_transaction_info includes user operations when present."""
+    chain_id = "1"
+    tx_hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_response = {
+        "items": [
+            {"hash": "0xop1", "address": {"hash": "0xsender1"}},
+            {"hash": "0xop2", "address": {"hash": "0xsender2"}},
+        ]
+    }
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = [mock_api_response, ops_response]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.data.user_operations is not None
+        assert len(result.data.user_operations) == 2
+        assert result.data.user_operations[0].sender == "0xsender1"
+        assert result.data.user_operations[0].operation_hash == "0xop1"
+        assert any("ERC-4337 User Operations" in instr for instr in result.instructions)
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_no_user_ops(mock_ctx):
+    """Verify get_transaction_info omits user operations when none exist."""
+    chain_id = "1"
+    tx_hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_response = {"items": []}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = [mock_api_response, ops_response]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.data.user_operations is None
+        assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_ops_api_failure(mock_ctx):
+    """Verify get_transaction_info succeeds when user ops API fails."""
+    chain_id = "1"
+    tx_hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_error = httpx.HTTPStatusError("Server Error", request=MagicMock(), response=MagicMock(status_code=500))
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = [mock_api_response, ops_error]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.data.user_operations is None
+        assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_pagination_note(mock_ctx):
+    """Verify get_transaction_info adds a pagination note for user ops."""
+    chain_id = "1"
+    tx_hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_response = {
+        "items": [{"hash": "0xop1", "address": {"hash": "0xsender1"}}],
+        "next_page_params": {"page": 2},
+    }
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = [mock_api_response, ops_response]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.notes is not None
+        assert any("user_operations" in note for note in result.notes)
 
 
 @pytest.mark.asyncio
@@ -98,6 +233,7 @@ async def test_get_transaction_info_no_truncation(mock_ctx):
         },
         "raw_input": "0xshort",
     }
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -110,7 +246,7 @@ async def test_get_transaction_info_no_truncation(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
@@ -129,6 +265,7 @@ async def test_get_transaction_info_truncates_raw_input(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
     long_raw_input = "0x" + "a" * INPUT_DATA_TRUNCATION_LIMIT
     mock_api_response = {"hash": tx_hash, "decoded_input": None, "raw_input": long_raw_input}
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -141,7 +278,7 @@ async def test_get_transaction_info_truncates_raw_input(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
@@ -168,6 +305,7 @@ async def test_get_transaction_info_truncates_decoded_input(mock_ctx):
         },
         "raw_input": "0xshort",
     }
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -180,7 +318,7 @@ async def test_get_transaction_info_truncates_decoded_input(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
@@ -208,6 +346,7 @@ async def test_get_transaction_info_keeps_and_truncates_raw_input_when_flagged(m
         },
         "raw_input": long_raw_input,
     }
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -220,7 +359,7 @@ async def test_get_transaction_info_keeps_and_truncates_raw_input_when_flagged(m
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         result = await get_transaction_info(
             chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx, include_raw_input=True
@@ -245,6 +384,7 @@ async def test_get_transaction_info_not_found(mock_ctx):
     mock_base_url = "https://eth.blockscout.com"
 
     api_error = httpx.HTTPStatusError("Not Found", request=MagicMock(), response=MagicMock(status_code=404))
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -257,14 +397,23 @@ async def test_get_transaction_info_not_found(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.side_effect = api_error
+        mock_request.side_effect = [api_error, ops_response]
 
         # ACT & ASSERT
         with pytest.raises(httpx.HTTPStatusError):
             await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}")
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
         assert mock_ctx.report_progress.await_count == 2
         assert mock_ctx.info.await_count == 2
 
@@ -309,6 +458,7 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         "status": "pending",
         # Minimal response with most fields missing
     }
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -321,14 +471,23 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         # ACT
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}")
+        mock_request.assert_has_calls(
+            [
+                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path="/api/v2/proxy/account-abstraction/operations",
+                    params={"transaction_hash": tx_hash},
+                ),
+            ]
+        )
         expected_result = {"status": "pending", "token_transfers": []}
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, TransactionInfoData)
@@ -368,6 +527,7 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
             }
         ],
     }
+    ops_response = {"items": []}
 
     with (
         patch(
@@ -380,7 +540,7 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
         ) as mock_request,
     ):
         mock_get_url.return_value = mock_base_url
-        mock_request.return_value = mock_api_response
+        mock_request.side_effect = [mock_api_response, ops_response]
 
         # ACT
         result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)

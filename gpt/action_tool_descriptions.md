@@ -119,7 +119,7 @@ Essential for a detailed overview of an address's digital collectibles and their
 
 <get_transaction_info>
 Get comprehensive transaction information.
-Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees) and categorized transaction types.
+Unlike standard eth_getTransactionByHash, this tool returns enriched data including decoded input parameters, detailed token transfers with token metadata, transaction fee breakdown (priority fees, burnt fees), categorized transaction types, and a summary of ERC-4337 User Operations when present.
 By default, the raw transaction input is omitted if a decoded version is available to save context; request it with `include_raw_input=True` only when you truly need the raw hex data.
 Essential for transaction analysis, debugging smart contract interactions, tracking DeFi operations.
 </get_transaction_info>

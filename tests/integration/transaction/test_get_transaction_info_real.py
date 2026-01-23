@@ -85,3 +85,23 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     truncated_value = calldatas_param["value"][0]
     assert truncated_value["value_truncated"] is True
     assert len(truncated_value["value_sample"]) == INPUT_DATA_TRUNCATION_LIMIT
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transaction_info_integration_user_ops(mock_ctx):
+    """Tests that get_transaction_info returns user operations for an AA transaction on Base."""
+    tx_hash = "0xf477d77e222a8ba10923a5c8876af11a01845795bc5bfe7cb1a5e1eaecc898fc"
+    chain_id = "8453"
+
+    try:
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+    except (httpx.TimeoutException, httpx.ConnectError) as exc:
+        pytest.skip(f"Network connectivity issue while fetching AA transaction: {exc}")
+    except httpx.HTTPStatusError as exc:
+        pytest.skip(f"AA transaction data unavailable from the API: {exc}")
+
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    assert result.data.user_operations is not None
+    assert len(result.data.user_operations) > 0

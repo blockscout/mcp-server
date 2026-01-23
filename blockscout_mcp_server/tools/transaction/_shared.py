@@ -105,6 +105,27 @@ def _transform_transaction_info(data: dict) -> dict:
     return transformed_data
 
 
+def _transform_user_ops(raw_ops_response: dict | None) -> list[dict] | None:
+    """Transforms the raw account abstraction operations response into a concise list."""
+    if not isinstance(raw_ops_response, dict):
+        return None
+
+    items = raw_ops_response.get("items")
+    if not isinstance(items, list) or not items:
+        return None
+
+    transformed_ops = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        sender = item.get("address", {}).get("hash") if isinstance(item.get("address"), dict) else None
+        operation_hash = item.get("hash")
+        if sender and operation_hash:
+            transformed_ops.append({"sender": sender, "operation_hash": operation_hash})
+
+    return transformed_ops or None
+
+
 async def _fetch_filtered_transactions_with_smart_pagination(
     base_url: str,
     api_path: str,
@@ -177,6 +198,7 @@ __all__ = [
     "_process_and_truncate_log_items",
     "_process_and_truncate_tx_info_data",
     "_recursively_truncate_and_flag_long_strings",
+    "_transform_user_ops",
     "_transform_advanced_filter_item",
     "_transform_transaction_info",
     "create_items_pagination",
