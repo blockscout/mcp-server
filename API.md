@@ -202,7 +202,7 @@ Returns detailed information for a specific block.
 
 #### Get Transaction Info (`get_transaction_info`)
 
-Gets comprehensive information for a single transaction.
+Gets comprehensive information for a single transaction, including a summary of ERC-4337 User Operations when present.
 
 `GET /v1/get_transaction_info`
 

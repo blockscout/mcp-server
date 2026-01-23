@@ -142,6 +142,7 @@ This architecture provides the flexibility of a multi-protocol server without th
        3. **Metadata**: Public tags and name resolution from the Metadata API.
        *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request, ensuring the primary address information is always returned.
      - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
+     - `get_transaction_info`: Concurrent requests to fetch transaction details and check for associated ERC-4337 User Operations
    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
 5. **Blockchain Data Retrieval**:

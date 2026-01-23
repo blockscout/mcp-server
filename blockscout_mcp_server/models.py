@@ -256,6 +256,14 @@ class DecodedInput(BaseModel):
     parameters: list[Any] = Field(description="List of decoded input parameters for the method call.")
 
 
+# --- Model for User Operations in get_transaction_info ---
+class UserOpsLite(BaseModel):
+    """Represents a summary of an ERC-4337 User Operation."""
+
+    sender: str = Field(description="The address that sent the user operation")
+    operation_hash: str = Field(description="The hash of the user operation")
+
+
 # --- Model for get_transaction_info Data Payload ---
 class TransactionInfoData(BaseModel):
     """Structured representation of get_transaction_info data."""
@@ -279,6 +287,11 @@ class TransactionInfoData(BaseModel):
     decoded_input: DecodedInput | None = Field(
         default=None,
         description="Decoded method input if available.",
+    )
+
+    user_operations: list[UserOpsLite] | None = Field(
+        default=None,
+        description="List of ERC-4337 User Operations associated with this transaction",
     )
 
     raw_input: str | None = Field(default=None, description="Raw transaction input data if returned.")
