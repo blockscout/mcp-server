@@ -47,10 +47,11 @@ async def _read_contract_with_retry(
             raise
         except (aiohttp.ClientError, OSError) as exc:
             raise httpx.RequestError(str(exc)) from exc
-        finally:
-            await WEB3_POOL.close()
 
-    return await retry_on_network_error(action, action_description=action_description)
+    try:
+        return await retry_on_network_error(action, action_description=action_description)
+    finally:
+        await WEB3_POOL.close()
 
 
 async def _invoke(mock_ctx, function_name: str, args: str) -> Any:
