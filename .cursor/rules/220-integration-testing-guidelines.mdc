@@ -236,22 +236,16 @@ Integration tests should be resilient to temporary network issues:
 
 ```python
 import pytest
-import httpx
+from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 async def test_with_retry_logic():
     """Integration test with basic retry for network issues."""
-    max_retries = 3
-    
-    for attempt in range(max_retries):
-        try:
-            result = await some_tool_function(...)
-            break  # Success, exit retry loop
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            if attempt == max_retries - 1:
-                pytest.skip(f"Network connectivity issue after {max_retries} attempts: {e}")
-            continue
-    
+    result = await retry_on_network_error(
+        lambda: some_tool_function(...),
+        action_description="some_tool_function request",
+    )
+
     # Proceed with assertions
     assert result is not None
 ```
@@ -295,4 +289,3 @@ async def test_tool_with_dynamic_url(mock_ctx):
 - Use descriptive test names that indicate what contract/schema is being validated
 - Separate helper-level tests from tool-level tests into different files when appropriate
 - Include clear comments explaining why specific test data was chosen (especially for stable targets)
-

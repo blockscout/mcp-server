@@ -1,5 +1,3 @@
-import asyncio
-
 import httpx
 import pytest
 
@@ -7,6 +5,7 @@ from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
@@ -14,7 +13,10 @@ from blockscout_mcp_server.tools.transaction.get_transaction_info import get_tra
 async def test_get_transaction_info_integration(mock_ctx):
     """Tests that get_transaction_info returns full data and omits raw_input by default."""
     tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
-    result = await get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx)
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info default request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
@@ -39,7 +41,10 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     chain_id = "1"
 
     base_url = await get_blockscout_base_url(chain_id)
-    result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info no decoded input request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
@@ -69,7 +74,10 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
 
     base_url = await get_blockscout_base_url(chain_id)
     try:
-        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+        result = await retry_on_network_error(
+            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+            action_description="get_transaction_info truncation request",
+        )
     except httpx.HTTPStatusError as exc:
         pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
 
@@ -96,18 +104,13 @@ async def test_get_transaction_info_integration_user_ops(mock_ctx):
     tx_hash = "0xf477d77e222a8ba10923a5c8876af11a01845795bc5bfe7cb1a5e1eaecc898fc"
     chain_id = "8453"
 
-    result = None
-    max_retries = 3
-    for attempt in range(1, max_retries + 1):
-        try:
-            result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
-            break
-        except (httpx.TimeoutException, httpx.ConnectError) as exc:
-            if attempt == max_retries:
-                pytest.skip(f"Network connectivity issue while fetching AA transaction: {exc}")
-            await asyncio.sleep(0.5)
-        except httpx.HTTPStatusError as exc:
-            pytest.skip(f"AA transaction data unavailable from the API: {exc}")
+    try:
+        result = await retry_on_network_error(
+            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+            action_description="get_transaction_info AA transaction request",
+        )
+    except httpx.HTTPStatusError as exc:
+        pytest.skip(f"AA transaction data unavailable from the API: {exc}")
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
