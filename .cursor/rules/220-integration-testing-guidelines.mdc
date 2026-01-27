@@ -230,25 +230,36 @@ pytest -m integration -v
 
 This verbose output will show you why specific tests were skipped (e.g., network connectivity issues, missing API keys, or external service unavailability), which is crucial for understanding the test results and debugging integration issues.
 
-### Error Handling
+### Error Handling and Retry Logic
 
-Integration tests should be resilient to temporary network issues:
+Integration tests must be resilient to transient failures:
+- **Network errors:** Connection failures, DNS errors, request timeouts
+- **Transient server errors:** 5xx status codes (500, 502, 503, 504)
+
+Use the `retry_on_network_error` helper to automatically retry these conditions. After max retries, tests will skip
+(not fail) with a descriptive message. Client errors (4xx) are NOT retried and raise immediately.
 
 ```python
 import pytest
 from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
-async def test_with_retry_logic():
-    """Integration test with basic retry for network issues."""
+@pytest.mark.asyncio
+async def test_with_retry_logic(mock_ctx):
+    """Integration test with retry for network and server errors."""
     result = await retry_on_network_error(
-        lambda: some_tool_function(...),
+        lambda: some_tool_function(chain_id="1", ctx=mock_ctx),
         action_description="some_tool_function request",
     )
 
     # Proceed with assertions
     assert result is not None
 ```
+
+The helper retries on network errors and 5xx server errors (up to 3 attempts), skips the test if all retries fail,
+and raises immediately on 4xx client errors. Do not catch `httpx.HTTPStatusError` or `httpx.RequestError` around
+`retry_on_network_error`—let the helper decide whether to retry or skip. It is still appropriate to use patterns
+like `pytest.raises(...)` for expected non-network exceptions (e.g., `ResponseTooLargeError`) in your tests.
 
 ### Avoid Hardcoding Environment-Specific URLs
 
