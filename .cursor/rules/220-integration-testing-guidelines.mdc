@@ -244,6 +244,7 @@ import pytest
 from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_with_retry_logic(mock_ctx):
     """Integration test with retry for network and server errors."""
     result = await retry_on_network_error(
@@ -256,7 +257,9 @@ async def test_with_retry_logic(mock_ctx):
 ```
 
 The helper retries on network errors and 5xx server errors (up to 3 attempts), skips the test if all retries fail,
-and raises immediately on 4xx client errors. Do not wrap the helper in try/except blocks.
+and raises immediately on 4xx client errors. Do not catch `httpx.HTTPStatusError` or `httpx.RequestError` around
+`retry_on_network_error`—let the helper decide whether to retry or skip. It is still appropriate to use patterns
+like `pytest.raises(...)` for expected non-network exceptions (e.g., `ResponseTooLargeError`) in your tests.
 
 ### Avoid Hardcoding Environment-Specific URLs
 

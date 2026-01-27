@@ -7,6 +7,8 @@ import pytest
 
 from blockscout_mcp_server.models import AddressLogItem, TransactionLogItem
 
+RETRYABLE_HTTP_STATUSES = {500, 502, 503, 504}
+
 T = TypeVar("T")
 
 
@@ -17,13 +19,12 @@ async def retry_on_network_error(
     max_retries: int = 3,
     delay_seconds: float = 0.5,
 ) -> T:
-    retryable_statuses = {500, 502, 503, 504}
     for attempt in range(1, max_retries + 1):
         try:
             return await action()
         except httpx.HTTPStatusError as exc:
             status_code = exc.response.status_code
-            if status_code not in retryable_statuses:
+            if status_code not in RETRYABLE_HTTP_STATUSES:
                 raise
             if attempt == max_retries:
                 pytest.skip(
