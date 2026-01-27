@@ -43,6 +43,7 @@ async def test_retry_on_network_error_retries_request_errors_then_succeeds():
     result = await retry_on_network_error(
         action,
         action_description="request with retries",
+        delay_seconds=0,
     )
 
     assert result == "ok"
@@ -64,6 +65,7 @@ async def test_retry_on_network_error_skips_after_request_errors_exhausted():
         await retry_on_network_error(
             action,
             action_description="request with retries",
+            delay_seconds=0,
         )
 
     assert action.call_count == 3
@@ -82,6 +84,7 @@ async def test_retry_on_network_error_retries_server_errors_then_succeeds():
     result = await retry_on_network_error(
         action,
         action_description="server errors",
+        delay_seconds=0,
     )
 
     assert result == "ok"
@@ -102,6 +105,7 @@ async def test_retry_on_network_error_skips_after_server_errors_exhausted():
         await retry_on_network_error(
             action,
             action_description="server errors",
+            delay_seconds=0,
         )
 
     assert action.call_count == 3
@@ -135,6 +139,7 @@ async def test_retry_on_network_error_retries_each_retryable_status(status_code)
         await retry_on_network_error(
             action,
             action_description="server errors",
+            delay_seconds=0,
         )
 
     assert action.call_count == 3
