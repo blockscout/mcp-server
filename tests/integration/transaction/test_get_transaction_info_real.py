@@ -116,3 +116,33 @@ async def test_get_transaction_info_integration_user_ops(mock_ctx):
     assert isinstance(result.data, TransactionInfoData)
     assert result.data.user_operations is not None
     assert len(result.data.user_operations) > 0
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transaction_info_integration_null_token_metadata(mock_ctx):
+    """Tests that get_transaction_info accepts null token metadata on Base."""
+    tx_hash = "0xc24036ecca307090efee492f1da40d3abda9f86b9e8edde1f77e4a79fb99853f"
+    chain_id = "8453"
+
+    try:
+        result = await retry_on_network_error(
+            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+            action_description="get_transaction_info null token metadata request",
+        )
+    except httpx.HTTPStatusError as exc:
+        pytest.skip(f"Transaction data unavailable from the API: {exc}")
+
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    assert isinstance(result.data.token_transfers, list)
+
+    if not result.data.token_transfers:
+        pytest.skip("Token transfers were empty for the Base transaction.")
+
+    has_null_token = any(transfer.token is None for transfer in result.data.token_transfers)
+    if not has_null_token:
+        pytest.skip("No token transfers with null metadata were returned by the API.")
+
+    for transfer in result.data.token_transfers:
+        assert isinstance(transfer, TokenTransfer)

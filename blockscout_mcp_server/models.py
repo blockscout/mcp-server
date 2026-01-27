@@ -241,7 +241,9 @@ class TokenTransfer(BaseModel):
 
     from_address: str | None = Field(alias="from", description="Sender address of the token transfer if available.")
     to_address: str | None = Field(alias="to", description="Recipient address of the token transfer if available.")
-    token: dict[str, Any] = Field(description="Token metadata dictionary associated with the transfer.")
+    token: dict[str, Any] | None = Field(
+        default=None, description="Token metadata dictionary associated with the transfer."
+    )
     transfer_type: str = Field(alias="type", description="Type of transfer (e.g., 'transfer', 'mint').")
 
 
