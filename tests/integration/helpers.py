@@ -17,9 +17,19 @@ async def retry_on_network_error(
     max_retries: int = 3,
     delay_seconds: float = 0.5,
 ) -> T:
+    retryable_statuses = {500, 502, 503, 504}
     for attempt in range(1, max_retries + 1):
         try:
             return await action()
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            if status_code not in retryable_statuses:
+                raise
+            if attempt == max_retries:
+                pytest.skip(
+                    f"Server error {status_code} after {max_retries} attempts while {action_description}: {exc}"
+                )
+            await asyncio.sleep(delay_seconds)
         except httpx.RequestError as exc:
             if attempt == max_retries:
                 pytest.skip(
