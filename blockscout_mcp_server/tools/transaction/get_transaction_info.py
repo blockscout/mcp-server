@@ -103,6 +103,13 @@ async def get_transaction_info(
             f"query_params={{'transaction_hash': '{transaction_hash}'}} to figure this out."
         )
 
+    if user_operations:
+        notes = notes or []
+        notes.append(
+            "⚠️ IMPORTANT: A successful bundle transaction does not guarantee individual user operation success. "
+            "ERC-4337 allows operations to fail within a successful bundle."
+        )
+
     if raw_ops_response and isinstance(raw_ops_response, dict) and raw_ops_response.get("next_page_params"):
         pagination_note = (
             "The 'user_operations' list is truncated. Use 'direct_api_call' with "
@@ -122,8 +129,10 @@ async def get_transaction_info(
         instructions.insert(
             0,
             (
-                "This transaction contains ERC-4337 User Operations. Use 'direct_api_call' with endpoint "
-                "'/api/v2/proxy/account-abstraction/operations/{operation_hash}' for details."
+                "⚠️ VERIFY OPERATION STATUS: Each user operation may have succeeded or failed independently. "
+                "Retrieve each operation individually using 'direct_api_call' with endpoint "
+                "'/api/v2/proxy/account-abstraction/operations/{operation_hash}' to check its actual execution status "
+                "and revert reason (if failed)."
             ),
         )
     return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)
