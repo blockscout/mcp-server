@@ -2,12 +2,16 @@ import pytest
 
 from blockscout_mcp_server.models import EnsAddressData, ToolResponse
 from blockscout_mcp_server.tools.ens.get_address_by_ens_name import get_address_by_ens_name
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_address_by_ens_name_integration(mock_ctx):
-    result = await get_address_by_ens_name(name="vitalik.eth", ctx=mock_ctx)
+    result = await retry_on_network_error(
+        lambda: get_address_by_ens_name(name="vitalik.eth", ctx=mock_ctx),
+        action_description="get_address_by_ens_name request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, EnsAddressData)
