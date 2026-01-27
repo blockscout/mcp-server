@@ -5,13 +5,21 @@ alwaysApply: false
 ---
 # Rules Maintenance
 
-**CRITICAL:** When you create, modify, or delete any `.mdc` file in `.cursor/rules/`, you MUST update `.cursor/AGENTS.md` accordingly.
+When you create, modify, or delete any `.mdc` file in `.cursor/rules/`, update `.cursor/AGENTS.md` **only if** the
+change affects:
 
-## Required Action:
-Update the corresponding guidance in the "Rule Application Guidelines" section of `.cursor/AGENTS.md` to reflect the changes made to the rule file.
+- **Applicability scope**: When or where the rule should be applied (e.g., new file patterns, different development
+  phases)
+- **Application triggers**: New conditions that would cause an agent to consult this rule
 
-Keep rule application descriptions brief (1-2 lines) and focused on clearly specifying when the rule should be applied.
+Do **not** update AGENTS.md for:
 
-## Reminder: 
-**Before finishing any task involving rule files, double-check that AGENTS.md is updated!**
+- Implementation details within the same scope
+- Wording refinements that do not change applicability
+- Enhanced examples or clarifications of existing guidance
 
+## Required Action
+
+When an update is required, edit the "Rule Application Guidelines" section of `.cursor/AGENTS.md` to reflect the
+changes. Keep rule application descriptions brief (1-2 lines) and focused on clearly specifying when the rule should
+be applied.
