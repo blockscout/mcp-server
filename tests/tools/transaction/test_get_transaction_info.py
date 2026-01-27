@@ -146,7 +146,9 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
         assert len(result.data.user_operations) == 2
         assert result.data.user_operations[0].sender == "0xsender1"
         assert result.data.user_operations[0].operation_hash == "0xop1"
-        assert any("VERIFY OPERATION STATUS" in instr for instr in result.instructions)
+        assert result.instructions is not None
+        assert "endpoint_path" in result.instructions[0]
+        assert "VERIFY OPERATION STATUS" in result.instructions[1]
 
 
 @pytest.mark.asyncio
