@@ -1,6 +1,7 @@
 """Tests for the Pydantic response models."""
 
 import json
+from typing import Any
 
 from blockscout_mcp_server.models import (
     AddressInfoData,
@@ -311,6 +312,29 @@ def test_transaction_info_data_handles_extra_fields_recursively():
     assert dumped_model["a_new_field_from_api"] == "some_value"
     assert dumped_model["token_transfers"][0]["a_new_token_field"] == "token_extra_value"
     assert dumped_model["decoded_input"]["a_new_decoded_field"] == "decoded_extra_value"
+
+
+def test_token_transfer_allows_null_token_metadata():
+    """Verify TokenTransfer accepts null token metadata from the API."""
+    model = TokenTransfer(**{"from": "0xa", "to": "0xb", "token": None, "type": "mint"})
+
+    assert model.token is None
+
+
+def test_token_transfer_accepts_empty_token_metadata_dict():
+    """Verify TokenTransfer accepts empty token metadata dictionaries."""
+    token_payload: dict[str, Any] = {}
+    model = TokenTransfer(**{"from": "0xa", "to": "0xb", "token": token_payload, "type": "transfer"})
+
+    assert model.token == token_payload
+
+
+def test_token_transfer_accepts_populated_token_metadata_dict():
+    """Verify TokenTransfer accepts populated token metadata dictionaries."""
+    token_payload = {"name": "Token", "symbol": "TOK"}
+    model = TokenTransfer(**{"from": "0xa", "to": "0xb", "token": token_payload, "type": "transfer"})
+
+    assert model.token == token_payload
 
 
 def test_block_info_data_model():
