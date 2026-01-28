@@ -1,4 +1,3 @@
-import httpx
 import pytest
 
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
@@ -14,13 +13,10 @@ async def test_direct_api_call_transaction_logs_integration(mock_ctx):
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
-    try:
-        result = await retry_on_network_error(
-            lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
-            action_description="direct_api_call transaction logs request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
+    result = await retry_on_network_error(
+        lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
+        action_description="direct_api_call transaction logs request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert result.pagination is not None
@@ -47,29 +43,23 @@ async def test_direct_api_call_transaction_logs_pagination(mock_ctx):
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
-    try:
-        first_page_response = await retry_on_network_error(
-            lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
-            action_description="direct_api_call transaction logs first page request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
+    first_page_response = await retry_on_network_error(
+        lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
+        action_description="direct_api_call transaction logs first page request",
+    )
 
     assert first_page_response.pagination is not None
     cursor = first_page_response.pagination.next_call.params["cursor"]
 
-    try:
-        second_page_response = await retry_on_network_error(
-            lambda: direct_api_call(
-                chain_id="1",
-                endpoint_path=endpoint_path,
-                cursor=cursor,
-                ctx=mock_ctx,
-            ),
-            action_description="direct_api_call transaction logs second page request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.fail(f"Failed to fetch the second page of transaction logs due to an API error: {exc}")
+    second_page_response = await retry_on_network_error(
+        lambda: direct_api_call(
+            chain_id="1",
+            endpoint_path=endpoint_path,
+            cursor=cursor,
+            ctx=mock_ctx,
+        ),
+        action_description="direct_api_call transaction logs second page request",
+    )
 
     assert isinstance(second_page_response, ToolResponse)
     assert second_page_response.data
@@ -83,13 +73,10 @@ async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
     endpoint_path = f"/api/v2/transactions/{tx_hash}/logs"
 
-    try:
-        result = await retry_on_network_error(
-            lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
-            action_description="direct_api_call transaction logs truncation request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
+    result = await retry_on_network_error(
+        lambda: direct_api_call(chain_id="1", endpoint_path=endpoint_path, ctx=mock_ctx),
+        action_description="direct_api_call transaction logs truncation request",
+    )
 
     assert result.notes is not None
     assert "One or more log items" in result.notes[0]
@@ -116,18 +103,15 @@ async def test_direct_api_call_transaction_logs_paginated_search_for_truncation(
     found_truncated_log = False
 
     for page_num in range(max_pages_to_check):
-        try:
-            result = await retry_on_network_error(
-                lambda: direct_api_call(
-                    chain_id="1",
-                    endpoint_path=endpoint_path,
-                    cursor=cursor,
-                    ctx=mock_ctx,
-                ),
-                action_description=f"direct_api_call transaction logs page {page_num + 1} request",
-            )
-        except httpx.HTTPStatusError as exc:
-            pytest.skip(f"API request failed on page {page_num + 1}: {exc}")
+        result = await retry_on_network_error(
+            lambda: direct_api_call(
+                chain_id="1",
+                endpoint_path=endpoint_path,
+                cursor=cursor,
+                ctx=mock_ctx,
+            ),
+            action_description=f"direct_api_call transaction logs page {page_num + 1} request",
+        )
 
         if any(is_log_a_truncated_call_executed(log) for log in result.data):
             found_truncated_log = True

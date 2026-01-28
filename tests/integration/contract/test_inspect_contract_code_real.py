@@ -1,5 +1,4 @@
 import aiohttp
-import httpx
 import pytest
 
 from blockscout_mcp_server.tools.contract.inspect_contract_code import inspect_contract_code
@@ -19,7 +18,7 @@ async def test_inspect_vyper_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_MAINNET, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code vyper contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert result.data.language.lower() == "vyper"
@@ -35,7 +34,7 @@ async def test_inspect_flattened_solidity_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_MAINNET, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code flattened solidity contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert result.data.source_code_tree_structure == ["EternalStorageProxy.sol"]
@@ -50,7 +49,7 @@ async def test_inspect_multipart_stylus_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_ARBITRUM, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code stylus contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert len(result.data.source_code_tree_structure) > 1
@@ -73,7 +72,7 @@ async def test_inspect_single_file_solidity_contract(mock_ctx):
             fetch_content,
             action_description="inspect_contract_code single-file contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert "pragma solidity" in content.data.file_content
@@ -88,7 +87,7 @@ async def test_inspect_multipart_solidity_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_MAINNET, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code multipart solidity contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert len(result.data.source_code_tree_structure) > 1
@@ -104,7 +103,7 @@ async def test_inspect_multipart_vyper_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_SEPOLIA, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code multipart vyper contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert result.data.language.lower() == "vyper"
@@ -123,7 +122,7 @@ async def test_inspect_not_verified_contract(mock_ctx):
             lambda: inspect_contract_code(chain_id=CHAIN_ID_MAINNET, address=address, ctx=mock_ctx),
             action_description="inspect_contract_code unverified contract request",
         )
-    except (aiohttp.ClientError, httpx.HTTPError, OSError) as exc:
+    except (aiohttp.ClientError, OSError) as exc:
         pytest.skip(f"Network connectivity issue: {exc}")
 
     assert result.data.source_code_tree_structure == []

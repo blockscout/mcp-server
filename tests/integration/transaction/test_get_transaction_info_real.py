@@ -1,4 +1,3 @@
-import httpx
 import pytest
 
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
@@ -6,6 +5,22 @@ from blockscout_mcp_server.models import TokenTransfer, ToolResponse, Transactio
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
 from tests.integration.helpers import retry_on_network_error
+
+
+def find_truncated_value(value):
+    if isinstance(value, dict):
+        if value.get("value_truncated") is True:
+            return value
+        for item in value.values():
+            found = find_truncated_value(item)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = find_truncated_value(item)
+            if found:
+                return found
+    return None
 
 
 @pytest.mark.integration
@@ -69,17 +84,14 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     """Tests that get_transaction_info correctly truncates oversized decoded_input fields."""
-    tx_hash = "0x31cf78a3d5161fdfd3dd196064d6b8bcb6185d574bf96a66d2a7af38d83e82a4"
+    tx_hash = "0x2daa533b1e4e6fddd9118503a28cde58eadeb965201e5739ca61aafeb83424ed"
     chain_id = "1"
 
     base_url = await get_blockscout_base_url(chain_id)
-    try:
-        result = await retry_on_network_error(
-            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
-            action_description="get_transaction_info truncation request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"Transaction data is currently unavailable from the API: {exc}")
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info truncation request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
@@ -88,11 +100,8 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
 
     data = result.data
     assert data.decoded_input is not None
-    params = data.decoded_input.parameters
-    calldatas_param = next((p for p in params if p["name"] == "calldatas"), None)
-    assert calldatas_param is not None
-
-    truncated_value = calldatas_param["value"][0]
+    truncated_value = find_truncated_value(data.decoded_input.parameters)
+    assert truncated_value is not None
     assert truncated_value["value_truncated"] is True
     assert len(truncated_value["value_sample"]) == INPUT_DATA_TRUNCATION_LIMIT
 
@@ -104,13 +113,10 @@ async def test_get_transaction_info_integration_user_ops(mock_ctx):
     tx_hash = "0xf477d77e222a8ba10923a5c8876af11a01845795bc5bfe7cb1a5e1eaecc898fc"
     chain_id = "8453"
 
-    try:
-        result = await retry_on_network_error(
-            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
-            action_description="get_transaction_info AA transaction request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"AA transaction data unavailable from the API: {exc}")
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info AA transaction request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
@@ -129,13 +135,10 @@ async def test_get_transaction_info_integration_null_token_metadata(mock_ctx):
     tx_hash = "0xc24036ecca307090efee492f1da40d3abda9f86b9e8edde1f77e4a79fb99853f"
     chain_id = "8453"
 
-    try:
-        result = await retry_on_network_error(
-            lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
-            action_description="get_transaction_info null token metadata request",
-        )
-    except httpx.HTTPStatusError as exc:
-        pytest.skip(f"Transaction data unavailable from the API: {exc}")
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info null token metadata request",
+    )
 
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
