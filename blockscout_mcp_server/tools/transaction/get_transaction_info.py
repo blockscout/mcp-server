@@ -127,9 +127,9 @@ async def get_transaction_info(
     ]
     if user_operations:
         instructions.append(
-            "⚠️ VERIFY OPERATION STATUS: Each user operation may have succeeded or failed independently. "
-            "Retrieve each operation individually using 'direct_api_call' with endpoint "
-            "'/api/v2/proxy/account-abstraction/operations/{operation_hash}' to check its actual execution status "
-            "and revert reason (if failed)."
+            "⚠️ USER OPERATIONS REQUIRE EXPANSION: This response shows operation references only. "
+            "Use 'direct_api_call' with endpoint `/api/v2/proxy/account-abstraction/operations/{operation_hash}` "
+            "for each to get: execution status, decoded calldata, gas breakdown, sponsor type, "
+            "paymaster details, smart account type, and revert reasons if failed."
         )
     return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)
