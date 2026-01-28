@@ -76,37 +76,37 @@ mcp-server/
 │   ├── integration/            # Integration tests that make real network calls
 │   │   ├── __init__.py         # Marks integration as a sub-package
 │   │   ├── helpers.py          # Shared utilities for integration assertions
-│   │   ├── test_common_helpers.py  # Helper-level integration tests for API helpers
+│   │   ├── test_common_helpers.py  # Integration tests for shared API helper contracts
 │   │   ├── address/            # Address tool integration tests (one file per tool)
-│   │   │   ├── test_get_address_info_real.py
-│   │   │   ├── test_get_tokens_by_address_real.py
-│   │   │   └── test_nft_tokens_by_address_real.py
+│   │   │   ├── test_get_address_info_real.py  # Integration tests for get_address_info
+│   │   │   ├── test_get_tokens_by_address_real.py  # Integration tests for get_tokens_by_address
+│   │   │   └── test_nft_tokens_by_address_real.py  # Integration tests for nft_tokens_by_address
 │   │   ├── block/
-│   │   │   ├── test_get_block_info_real.py
-│   │   │   └── test_get_block_number_real.py
+│   │   │   ├── test_get_block_info_real.py  # Integration tests for get_block_info
+│   │   │   └── test_get_block_number_real.py  # Integration tests for get_block_number
 │   │   ├── chains/
-│   │   │   └── test_get_chains_list_real.py
+│   │   │   └── test_get_chains_list_real.py  # Integration tests for get_chains_list
 │   │   ├── contract/
 │   │   │   ├── Web3PyTestContract.sol          # Fixture contract for live calls
-│   │   │   ├── test_get_contract_abi_real.py
-│   │   │   ├── test_inspect_contract_code_real.py
-│   │   │   ├── test_read_contract_real.py
+│   │   │   ├── test_get_contract_abi_real.py  # Integration tests for get_contract_abi
+│   │   │   ├── test_inspect_contract_code_real.py  # Integration tests for inspect_contract_code
+│   │   │   ├── test_read_contract_real.py  # Integration tests for read_contract
 │   │   │   └── web3py_test_contract_abi.json   # ABI fixture for Web3Py tests
 │   │   ├── direct_api/
-│   │   │   ├── test_address_logs_handler_real.py
-│   │   │   ├── test_direct_api_call_real.py
-│   │   │   ├── test_transaction_logs_handler_real.py
-│   │   │   └── test_transaction_summary_handler_real.py
+│   │   │   ├── test_address_logs_handler_real.py  # Integration tests for address logs handler
+│   │   │   ├── test_direct_api_call_real.py  # Integration tests for direct_api_call
+│   │   │   ├── test_transaction_logs_handler_real.py  # Integration tests for transaction logs handler
+│   │   │   └── test_transaction_summary_handler_real.py  # Integration tests for transaction summary handler
 │   │   ├── ens/
-│   │   │   └── test_get_address_by_ens_name_real.py
+│   │   │   └── test_get_address_by_ens_name_real.py  # Integration tests for get_address_by_ens_name
 │   │   ├── search/
-│   │   │   └── test_lookup_token_by_symbol_real.py
+│   │   │   └── test_lookup_token_by_symbol_real.py  # Integration tests for lookup_token_by_symbol
 │   │   └── transaction/
-│   │       ├── test_get_token_transfers_by_address_real.py
-│   │       ├── test_get_transaction_info_real.py
-│   │       └── test_get_transactions_by_address_real.py
+│   │       ├── test_get_token_transfers_by_address_real.py  # Integration tests for get_token_transfers_by_address
+│   │       ├── test_get_transaction_info_real.py  # Integration tests for get_transaction_info
+│   │       └── test_get_transactions_by_address_real.py  # Integration tests for get_transactions_by_address
 │   ├── api/                      # Unit tests for the REST API
-│   │   └── test_routes.py        # Tests for static API route definitions
+│   │   └── test_routes.py        # Unit tests for API route definitions
 │   ├── conftest.py
 │   ├── evals/
 │   │   ├── .env.example
@@ -121,55 +121,55 @@ mcp-server/
 │   │   ├── results/
 │   │   │   └── .gitkeep
 │   │   └── run.sh
-│   ├── test_analytics.py
-│   ├── test_analytics_helpers.py
-│   ├── test_analytics_source.py
-│   ├── test_cache.py
-│   ├── test_client_meta.py
-│   ├── test_integration_helpers.py
-│   ├── test_logging_utils.py
-│   ├── test_server.py            # Tests for server CLI and startup logic
-│   ├── test_models.py            # Tests for Pydantic response models
-│   ├── test_telemetry.py
-│   ├── test_web3_pool.py
+│   ├── test_analytics.py  # Unit tests for analytics event tracking
+│   ├── test_analytics_helpers.py  # Unit tests for analytics helper utilities
+│   ├── test_analytics_source.py  # Unit tests for analytics source detection
+│   ├── test_cache.py  # Unit tests for cache behavior
+│   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_integration_helpers.py  # Unit tests for integration test helpers
+│   ├── test_logging_utils.py  # Unit tests for logging utilities
+│   ├── test_server.py            # Unit tests for server CLI and startup logic
+│   ├── test_models.py            # Unit tests for Pydantic response models
+│   ├── test_telemetry.py  # Unit tests for telemetry reporting
+│   ├── test_web3_pool.py  # Unit tests for web3 pool management
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── address/            # Tests for address-related MCP tools
-│       │   ├── test_get_address_info.py        # Tests for get_address_info
-│       │   ├── test_get_tokens_by_address.py         # Tests for get_tokens_by_address
-│       │   ├── test_nft_tokens_by_address.py         # Tests for nft_tokens_by_address
-│       │   └── test_nft_tokens_by_address_pagination.py  # Pagination scenarios for nft_tokens_by_address
+│       │   ├── test_get_address_info.py        # Unit tests for get_address_info
+│       │   ├── test_get_tokens_by_address.py         # Unit tests for get_tokens_by_address
+│       │   ├── test_nft_tokens_by_address.py         # Unit tests for nft_tokens_by_address
+│       │   └── test_nft_tokens_by_address_pagination.py  # Unit tests for nft_tokens_by_address pagination
 │       ├── block/              # Tests for block-related MCP tools
-│       │   ├── test_get_block_info.py          # Tests for get_block_info
-│       │   └── test_get_block_number.py        # Tests for get_block_number
+│       │   ├── test_get_block_info.py          # Unit tests for get_block_info
+│       │   └── test_get_block_number.py        # Unit tests for get_block_number
 │       ├── chains/             # Tests for chain-related MCP tools
-│       │   └── test_get_chains_list.py         # Tests for get_chains_list
+│       │   └── test_get_chains_list.py         # Unit tests for get_chains_list
 │       ├── contract/           # Tests for contract-related MCP tools
-│       │   ├── test_fetch_and_process_contract.py  # Tests for fetch_and_process_contract
-│       │   ├── test_get_contract_abi.py        # Tests for get_contract_abi
-│       │   ├── test_inspect_contract_code.py   # Tests for inspect_contract_code
-│       │   └── test_read_contract.py           # Tests for read_contract
+│       │   ├── test_fetch_and_process_contract.py  # Unit tests for fetch_and_process_contract
+│       │   ├── test_get_contract_abi.py        # Unit tests for get_contract_abi
+│       │   ├── test_inspect_contract_code.py   # Unit tests for inspect_contract_code
+│       │   └── test_read_contract.py           # Unit tests for read_contract
 │       ├── transaction/        # Tests for transaction-related MCP tools
-│       │   ├── test_get_token_transfers_by_address.py      # Tests for get_token_transfers_by_address
-│       │   ├── test_get_transaction_info.py        # Tests for get_transaction_info
-│       │   ├── test_get_transactions_by_address.py      # Tests for get_transactions_by_address
-│       │   ├── test_get_transactions_by_address_pagination.py  # Pagination-focused transaction tests
-│       │   └── test_helpers.py                     # Tests for transaction helper utilities
+│       │   ├── test_get_token_transfers_by_address.py      # Unit tests for get_token_transfers_by_address
+│       │   ├── test_get_transaction_info.py        # Unit tests for get_transaction_info
+│       │   ├── test_get_transactions_by_address.py      # Unit tests for get_transactions_by_address
+│       │   ├── test_get_transactions_by_address_pagination.py  # Unit tests for transactions pagination
+│       │   └── test_helpers.py                     # Unit tests for transaction helper utilities
 │       ├── direct_api/         # Tests for the direct API MCP tool
 │       │   ├── handlers/
-│       │   │   ├── test_address_logs_handler.py
-│       │   │   ├── test_transaction_logs_handler.py
-│       │   │   └── test_transaction_summary_handler.py
-│       │   ├── test_dispatcher.py
-│       │   └── test_direct_api_call.py  # Tests for direct_api_call
+│       │   │   ├── test_address_logs_handler.py  # Unit tests for address logs handler
+│       │   │   ├── test_transaction_logs_handler.py  # Unit tests for transaction logs handler
+│       │   │   └── test_transaction_summary_handler.py  # Unit tests for transaction summary handler
+│       │   ├── test_dispatcher.py  # Unit tests for direct API dispatcher
+│       │   └── test_direct_api_call.py  # Unit tests for direct_api_call
 │       ├── ens/                # Tests for ENS-related MCP tools
-│       │   └── test_get_address_by_ens_name.py  # Tests for get_address_by_ens_name
+│       │   └── test_get_address_by_ens_name.py  # Unit tests for get_address_by_ens_name
 │       ├── initialization/     # Tests for initialization MCP tools
-│       │   └── test___unlock_blockchain_analysis__.py  # Tests for __unlock_blockchain_analysis__
+│       │   └── test___unlock_blockchain_analysis__.py  # Unit tests for __unlock_blockchain_analysis__
 │       ├── search/             # Tests for search-related MCP tools
-│       │   └── test_lookup_token_by_symbol.py  # Tests for lookup_token_by_symbol
-│       ├── test_common.py            # Tests for shared utility functions
-│       ├── test_common_truncate.py   # Tests for truncation helpers
-│       └── test_decorators.py        # Tests for logging decorators
+│       │   └── test_lookup_token_by_symbol.py  # Unit tests for lookup_token_by_symbol
+│       ├── test_common.py            # Unit tests for shared tool utilities
+│       ├── test_common_truncate.py   # Unit tests for truncation helpers
+│       └── test_decorators.py        # Unit tests for logging decorators
 ├── mcpb/                       # MCP Bundle package for Claude Desktop
 │   ├── README.md               # MCPB documentation and build instructions
 │   ├── manifest.json           # Bundle manifest for development builds
