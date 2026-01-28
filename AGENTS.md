@@ -54,6 +54,7 @@ mcp-server/
 │       │   └── handlers/
 │       │       ├── __init__.py
 │       │       ├── address_logs_handler.py
+│       │       ├── transaction_summary_handler.py
 │       │       └── transaction_logs_handler.py
 │       ├── ens/
 │       │   ├── __init__.py
@@ -67,6 +68,7 @@ mcp-server/
 │       └── transaction/
 │           ├── __init__.py
 │           ├── _shared.py             # Shared helpers for transaction tools
+│           ├── transaction_summary.py
 │           ├── get_token_transfers_by_address.py
 │           ├── get_transaction_info.py
 │           └── get_transactions_by_address.py
@@ -93,7 +95,8 @@ mcp-server/
 │   │   ├── direct_api/
 │   │   │   ├── test_address_logs_handler_real.py
 │   │   │   ├── test_direct_api_call_real.py
-│   │   │   └── test_transaction_logs_handler_real.py
+│   │   │   ├── test_transaction_logs_handler_real.py
+│   │   │   └── test_transaction_summary_handler_real.py
 │   │   ├── ens/
 │   │   │   └── test_get_address_by_ens_name_real.py
 │   │   ├── search/
@@ -104,8 +107,31 @@ mcp-server/
 │   │       └── test_get_transactions_by_address_real.py
 │   ├── api/                      # Unit tests for the REST API
 │   │   └── test_routes.py        # Tests for static API route definitions
+│   ├── conftest.py
+│   ├── evals/
+│   │   ├── .env.example
+│   │   ├── .gemini/
+│   │   │   └── settings.json
+│   │   ├── .gitignore
+│   │   ├── docker-compose.yml
+│   │   ├── eval-set.json
+│   │   ├── GEMINI-evals.md
+│   │   ├── output-format-rules.md
+│   │   ├── README.md
+│   │   ├── results/
+│   │   │   └── .gitkeep
+│   │   └── run.sh
+│   ├── test_analytics.py
+│   ├── test_analytics_helpers.py
+│   ├── test_analytics_source.py
+│   ├── test_cache.py
+│   ├── test_client_meta.py
+│   ├── test_integration_helpers.py
+│   ├── test_logging_utils.py
 │   ├── test_server.py            # Tests for server CLI and startup logic
 │   ├── test_models.py            # Tests for Pydantic response models
+│   ├── test_telemetry.py
+│   ├── test_web3_pool.py
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── address/            # Tests for address-related MCP tools
 │       │   ├── test_get_address_info.py        # Tests for get_address_info
@@ -131,7 +157,8 @@ mcp-server/
 │       ├── direct_api/         # Tests for the direct API MCP tool
 │       │   ├── handlers/
 │       │   │   ├── test_address_logs_handler.py
-│       │   │   └── test_transaction_logs_handler.py
+│       │   │   ├── test_transaction_logs_handler.py
+│       │   │   └── test_transaction_summary_handler.py
 │       │   ├── test_dispatcher.py
 │       │   └── test_direct_api_call.py  # Tests for direct_api_call
 │       ├── ens/                # Tests for ENS-related MCP tools
@@ -152,6 +179,7 @@ mcp-server/
 │   ├── README.md               # GPT-specific documentation and configuration instructions
 │   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
+│   ├── direct_call_endpoint_list.md
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
