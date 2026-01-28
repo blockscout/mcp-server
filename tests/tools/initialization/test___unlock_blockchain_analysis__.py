@@ -18,6 +18,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     mock_binary_search_rules = "Binary search rule."
     mock_portfolio_rules = "Portfolio analysis rule."
     mock_funds_movement_rules = "Funds movement rule."
+    mock_data_ordering_rules = "Data ordering rule."
     mock_chains = [
         {
             "name": "TestChain",
@@ -56,6 +57,10 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.FUNDS_MOVEMENT_RULES",
             mock_funds_movement_rules,
         ),
+        patch(
+            "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.DATA_ORDERING_AND_RESUMPTION_RULES",
+            mock_data_ordering_rules,
+        ),
         patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.RECOMMENDED_CHAINS", mock_chains),
         patch(
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.DIRECT_API_CALL_RULES",
@@ -89,6 +94,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert result.data.binary_search_rules == mock_binary_search_rules
         assert result.data.portfolio_analysis_rules == mock_portfolio_rules
         assert result.data.funds_movement_rules == mock_funds_movement_rules
+        assert result.data.data_ordering_and_resumption_rules == mock_data_ordering_rules
         assert result.data.direct_api_call_rules == "Direct API rule"
         assert result.data.direct_api_endpoints.common == []
 
