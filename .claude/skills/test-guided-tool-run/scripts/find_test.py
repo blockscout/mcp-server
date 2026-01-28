@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Helper script to find integration test files for MCP tools."""
-import os
+
 import sys
 from pathlib import Path
-
 
 # Tool category mapping
 TOOL_CATEGORIES = {
@@ -99,12 +98,12 @@ def main():
         sys.exit(1)
 
     # Success - print the file path and helpful information
-    print(f"Integration test file found:")
+    print("Integration test file found:")
     print(f"  {test_file}")
     print()
     print("Next steps:")
     print(f"  1. Read the test file: cat {test_file}")
-    print(f"  2. Or use the Read tool in Claude Code to examine it")
+    print("  2. Or use the Read tool in Claude Code to examine it")
     print()
     print("Key things to look for in the test:")
     print("  - Import statements at the top")

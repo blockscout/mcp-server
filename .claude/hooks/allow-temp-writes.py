@@ -13,8 +13,9 @@ Usage in skill frontmatter:
           - type: command
             command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
 """
-import sys
+
 import json
+import sys
 
 
 def is_temp_path(file_path: str) -> bool:
@@ -30,14 +31,10 @@ def is_temp_path(file_path: str) -> bool:
         return False
 
     # Normalize path separators for consistency
-    normalized = file_path.replace('\\', '/')
+    normalized = file_path.replace("\\", "/")
 
     # Check if path starts with temp/ or ./temp/ or contains /temp/
-    return (
-        normalized.startswith('temp/') or
-        normalized.startswith('./temp/') or
-        '/temp/' in normalized
-    )
+    return normalized.startswith("temp/") or normalized.startswith("./temp/") or "/temp/" in normalized
 
 
 def main():
@@ -46,7 +43,7 @@ def main():
         data = json.load(sys.stdin)
 
         # Extract file path from tool input
-        file_path = data.get('tool_input', {}).get('file_path', '')
+        file_path = data.get("tool_input", {}).get("file_path", "")
 
         # Check if the file path is within temp/ directory
         if is_temp_path(file_path):
@@ -55,7 +52,7 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "allow",
-                    "permissionDecisionReason": "Auto-approved: skill writes to temp/ directory"
+                    "permissionDecisionReason": "Auto-approved: skill writes to temp/ directory",
                 }
             }
             print(json.dumps(output))
