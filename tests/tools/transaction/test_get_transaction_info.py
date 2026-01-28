@@ -148,7 +148,7 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
         assert result.data.user_operations[0].operation_hash == "0xop1"
         assert result.instructions is not None
         assert "endpoint_path" in result.instructions[0]
-        assert "VERIFY OPERATION STATUS" in result.instructions[1]
+        assert "USER OPERATIONS REQUIRE EXPANSION" in result.instructions[1]
 
 
 @pytest.mark.asyncio
@@ -183,7 +183,7 @@ async def test_get_transaction_info_with_user_ops_includes_warning_note(mock_ctx
         assert result.notes is not None
         assert any("successful bundle transaction" in note for note in result.notes)
         assert result.instructions is not None
-        assert any("VERIFY OPERATION STATUS" in instr for instr in result.instructions)
+        assert any("USER OPERATIONS REQUIRE EXPANSION" in instr for instr in result.instructions)
         assert any(
             "/api/v2/proxy/account-abstraction/operations/{operation_hash}" in instr for instr in result.instructions
         )
@@ -236,7 +236,7 @@ async def test_get_transaction_info_no_user_ops(mock_ctx):
             for call in mock_ctx.report_progress.await_args_list
         )
         assert result.data.user_operations is None
-        assert all("VERIFY OPERATION STATUS" not in instr for instr in result.instructions)
+        assert all("USER OPERATIONS REQUIRE EXPANSION" not in instr for instr in result.instructions)
 
 
 @pytest.mark.asyncio
@@ -289,7 +289,7 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
         assert result.notes is not None
         assert any("Could not retrieve user operations" in note for note in result.notes)
         assert any("Since it is not clear if the transaction contains user operations" in note for note in result.notes)
-        assert all("VERIFY OPERATION STATUS" not in instr for instr in result.instructions)
+        assert all("USER OPERATIONS REQUIRE EXPANSION" not in instr for instr in result.instructions)
 
 
 @pytest.mark.asyncio
