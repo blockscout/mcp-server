@@ -121,6 +121,10 @@ async def get_transaction_info(
 
     instructions = [
         (
+            "To get a transaction summary, use `direct_api_call` with "
+            f"`endpoint_path='/api/v2/transactions/{transaction_hash}/summary'`."
+        ),
+        (
             "To get event logs, use `direct_api_call` with "
             f"`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'`."
         ),
