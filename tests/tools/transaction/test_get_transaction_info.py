@@ -146,7 +146,47 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
         assert len(result.data.user_operations) == 2
         assert result.data.user_operations[0].sender == "0xsender1"
         assert result.data.user_operations[0].operation_hash == "0xop1"
-        assert any("ERC-4337 User Operations" in instr for instr in result.instructions)
+        assert result.instructions is not None
+        assert "endpoint_path" in result.instructions[0]
+        assert "USER OPERATIONS REQUIRE EXPANSION" in result.instructions[1]
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_with_user_ops_includes_warning_note(mock_ctx):
+    """Verify get_transaction_info adds warning notes and instructions for user ops."""
+    chain_id = "1"
+    tx_hash = "0xabc123"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_response = {
+        "items": [
+            {"hash": "0xop1", "address": {"hash": "0xsender1"}},
+        ]
+    }
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.side_effect = [mock_api_response, ops_response]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.notes is not None
+        assert any("successful bundle transaction" in note for note in result.notes)
+        assert result.instructions is not None
+        assert any("USER OPERATIONS REQUIRE EXPANSION" in instr for instr in result.instructions)
+        assert any(
+            "/api/v2/proxy/account-abstraction/operations/{operation_hash}" in instr for instr in result.instructions
+        )
 
 
 @pytest.mark.asyncio
@@ -196,7 +236,7 @@ async def test_get_transaction_info_no_user_ops(mock_ctx):
             for call in mock_ctx.report_progress.await_args_list
         )
         assert result.data.user_operations is None
-        assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
+        assert all("USER OPERATIONS REQUIRE EXPANSION" not in instr for instr in result.instructions)
 
 
 @pytest.mark.asyncio
@@ -249,7 +289,7 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
         assert result.notes is not None
         assert any("Could not retrieve user operations" in note for note in result.notes)
         assert any("Since it is not clear if the transaction contains user operations" in note for note in result.notes)
-        assert all("ERC-4337 User Operations" not in instr for instr in result.instructions)
+        assert all("USER OPERATIONS REQUIRE EXPANSION" not in instr for instr in result.instructions)
 
 
 @pytest.mark.asyncio

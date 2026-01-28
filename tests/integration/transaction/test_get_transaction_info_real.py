@@ -116,6 +116,10 @@ async def test_get_transaction_info_integration_user_ops(mock_ctx):
     assert isinstance(result.data, TransactionInfoData)
     assert result.data.user_operations is not None
     assert len(result.data.user_operations) > 0
+    assert result.notes is not None
+    assert any("successful bundle transaction" in note for note in result.notes)
+    assert result.instructions is not None
+    assert any("USER OPERATIONS REQUIRE EXPANSION" in instr for instr in result.instructions)
 
 
 @pytest.mark.integration
