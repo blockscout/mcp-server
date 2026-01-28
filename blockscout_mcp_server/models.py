@@ -220,7 +220,7 @@ class EnsAddressData(BaseModel):
     )
 
 
-# --- Model for transaction_summary Data Payload ---
+# --- Model for transaction summary data payload ---
 class TransactionSummaryData(BaseModel):
     """A structured representation of a transaction summary."""
 

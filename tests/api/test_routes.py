@@ -478,14 +478,19 @@ async def test_get_tokens_by_address_missing_param(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.transaction_summary", new_callable=AsyncMock)
-async def test_transaction_summary_success(mock_tool, client: AsyncClient):
+async def test_transaction_summary_success(client: AsyncClient):
     """Test /transaction_summary endpoint."""
-    mock_tool.return_value = ToolResponse(data={"summary": {}})
     response = await client.get("/v1/transaction_summary?chain_id=1&transaction_hash=0x123")
-    assert response.status_code == 200
-    assert response.json()["data"] == {"summary": {}}
-    mock_tool.assert_called_once_with(chain_id="1", transaction_hash="0x123", ctx=ANY)
+    assert response.status_code == 410
+    payload = response.json()
+    assert payload["data"] == {"status": "deprecated"}
+    assert payload["notes"] == [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/summary'` to retrieve this data."
+        ),
+    ]
 
 
 @pytest.mark.asyncio

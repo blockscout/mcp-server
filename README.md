@@ -124,12 +124,11 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 9. `get_block_number(chain_id, [datetime])` - Retrieves the block number and timestamp for a specific date/time or the latest block.
 10. `get_transactions_by_address(chain_id, address, age_from, age_to, methods, cursor=None)` - Gets transactions for an address within a specific time range with optional method filtering.
 11. `get_token_transfers_by_address(chain_id, address, age_from, age_to, token, cursor=None)` - Returns ERC-20 token transfers for an address within a specific time range.
-12. `transaction_summary(chain_id, hash)` - Provides human-readable transaction summaries using Blockscout Transaction Interpreter.
-13. `nft_tokens_by_address(chain_id, address, cursor=None)` - Retrieves NFT tokens owned by an address, grouped by collection.
-14. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
-15. `get_transaction_info(chain_id, hash, include_raw_input=False)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
-16. `read_contract(chain_id, address, abi, function_name, args='[]', block='latest')` - Executes a read-only smart contract function and returns its result. The `abi` argument is a JSON object describing the specific function's signature.
-17. `direct_api_call(chain_id, endpoint_path, query_params=None, cursor=None)` - Calls a curated raw Blockscout API endpoint for specialized or chain-specific data.
+12. `nft_tokens_by_address(chain_id, address, cursor=None)` - Retrieves NFT tokens owned by an address, grouped by collection.
+13. `get_block_info(chain_id, number_or_hash, include_transactions=False)` - Returns block information including timestamp, gas used, burnt fees, and transaction count. Can optionally include a list of transaction hashes.
+14. `get_transaction_info(chain_id, hash, include_raw_input=False)` - Gets comprehensive transaction information with decoded input parameters and detailed token transfers.
+15. `read_contract(chain_id, address, abi, function_name, args='[]', block='latest')` - Executes a read-only smart contract function and returns its result. The `abi` argument is a JSON object describing the specific function's signature.
+16. `direct_api_call(chain_id, endpoint_path, query_params=None, cursor=None)` - Calls a curated raw Blockscout API endpoint for specialized or chain-specific data.
 
 ## Example Prompts for AI Agents
 

@@ -219,43 +219,6 @@ paths:
         '504':
           $ref: '#/components/responses/GatewayTimeout'
 
-  /transaction_summary:
-    get:
-      summary: Get transaction summary
-      description: |
-        Get human-readable transaction summaries from Blockscout Transaction Interpreter.
-      operationId: getTransactionSummary
-      tags:
-        - Transactions
-      parameters:
-        - name: chain_id
-          in: query
-          required: true
-          description: The ID of the blockchain
-          schema:
-            type: string
-          example: "1"
-        - name: transaction_hash
-          in: query
-          required: true
-          description: Transaction hash
-          schema:
-            type: string
-          example: "0x..."
-      responses:
-        '200':
-          description: Transaction summary
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
-        '504':
-          $ref: '#/components/responses/GatewayTimeout'
-
   /get_transactions_by_address:
     get:
       summary: Get transactions by address
