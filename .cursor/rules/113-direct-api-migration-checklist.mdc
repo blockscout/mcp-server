@@ -1,0 +1,302 @@
+---
+description: Comprehensive checklist for migrating MCP tools to direct_api_call handlers.
+globs:
+alwaysApply: false
+---
+# Migrating MCP Tools to `direct_api_call` Handlers: Checklist
+
+This document provides a comprehensive checklist for migrating an existing MCP tool to become a specialized handler under the `direct_api_call` dispatcher. This migration pattern reduces the number of top-level MCP tools while preserving specialized endpoint processing.
+
+## Reference Implementation
+
+See PR #270 for a complete example of migrating `get_transaction_logs` to a `direct_api_call` handler.
+
+## Migration Checklist
+
+### 1. Create the Handler Module
+
+**Location:** `blockscout_mcp_server/tools/direct_api/handlers/{handler_name}_handler.py`
+
+**Requirements:**
+
+- [ ] Use `@register_handler(regex_pattern)` decorator with the appropriate URL pattern
+- [ ] Extract path parameters from `match.group("parameter_name")`
+- [ ] Reuse shared utility functions from `blockscout_mcp_server.tools.common` (e.g., `_process_and_truncate_log_items`, `create_items_pagination`, `build_tool_response`)
+- [ ] Return `ToolResponse[SpecificModel]` with appropriate data model
+- [ ] Include all required handler parameters (see `.cursor/rules/112-direct-api-handlers.mdc`):
+  - `match: re.Match[str]`
+  - `response_json: dict[str, Any]`
+  - `chain_id: str`
+  - `base_url: str`
+  - `ctx: Context` (use `# noqa: ARG001` if unused)
+  - `query_params: dict[str, Any] | None` (use `# noqa: ARG001` if unused)
+- [ ] Use `tool_name="direct_api_call"` in `create_items_pagination` calls
+- [ ] Update `next_call_base_params` to include `endpoint_path` instead of old tool-specific parameters
+- [ ] Preserve data curation logic (field selection, transformation, truncation handling)
+- [ ] Preserve data descriptions and notes generation
+- [ ] Remove progress reporting calls (dispatcher handles this)
+
+**Example Pattern:**
+
+```python
+@register_handler(r"^/api/v2/resource/(?P<id>0x[a-fA-F0-9]{64})/endpoint/?$")
+async def handle_resource_endpoint(
+    *,
+    match: re.Match[str],
+    response_json: dict[str, Any],
+    chain_id: str,
+    base_url: str,
+    ctx: Context,  # noqa: ARG001
+    query_params: dict[str, Any] | None = None,  # noqa: ARG001
+) -> ToolResponse[list[SpecificModel]]:
+    resource_id = match.group("id")
+    # Process response and return ToolResponse
+```
+
+### 2. Update Unit Tests
+
+**Actions:**
+
+- [ ] Delete old unit test files from `tests/tools/{category}/test_{old_tool_name}.py`
+- [ ] Delete pagination-specific test files if they exist (e.g., `test_{old_tool_name}_pagination.py`)
+- [ ] Create new handler test file at `tests/tools/direct_api/handlers/test_{handler_name}_handler.py`
+
+**New Test Requirements:**
+
+- [ ] Test regex pattern matches correctly (`test_{handler}_regex_match`)
+- [ ] Test success case with basic response processing
+- [ ] Test empty response handling
+- [ ] Test complex item processing
+- [ ] Test truncation notes generation (if applicable)
+- [ ] Test pagination with mocked page size using `patch.object(config, "page_size_setting", value)`
+- [ ] Verify `next_call.tool_name == "direct_api_call"`
+- [ ] Verify `next_call.params` includes `chain_id` and `endpoint_path`
+- [ ] Use helper function like `_build_match()` to create regex match objects for testing
+
+### 3. Update Integration Tests
+
+**Actions:**
+
+- [ ] Delete old integration test from `tests/integration/{category}/test_{old_tool_name}_real.py`
+- [ ] Create new handler integration test at `tests/integration/direct_api/test_{handler_name}_handler_real.py`
+
+**New Integration Test Requirements:**
+
+- [ ] Call `direct_api_call(chain_id=..., endpoint_path=..., ctx=...)` instead of old tool
+- [ ] Wrap calls with `retry_on_network_error` helper
+- [ ] Test basic response schema validation
+- [ ] Test pagination by fetching second page using cursor
+- [ ] Test truncation behavior if applicable
+- [ ] Use `@pytest.mark.integration` and `@pytest.mark.asyncio` decorators
+
+### 4. Update API Routes
+
+**Actions:**
+
+- [ ] Remove import of old tool function from `blockscout_mcp_server/api/routes.py`
+- [ ] Update the REST wrapper function to return a deprecation response instead of calling the tool
+- [ ] Create deprecation notes array with clear migration guidance
+- [ ] Call `create_deprecation_response(deprecation_notes)` instead of processing the request
+
+**Deprecation Response Pattern:**
+
+```python
+@handle_rest_errors
+async def old_tool_rest(request: Request) -> Response:
+    """REST wrapper for the old_tool. This endpoint is deprecated."""
+    deprecation_notes = [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use `direct_api_call` with "
+            "`endpoint_path='/api/v2/resource/{id}/endpoint'` to retrieve this data."
+        ),
+    ]
+    return create_deprecation_response(deprecation_notes)
+```
+
+**Note:** Keep the route registration in place - do not remove the endpoint from the route table. This ensures backward compatibility while providing clear deprecation guidance.
+
+### 5. Update API Route Tests
+
+**File:** `tests/api/test_routes.py`
+
+**Actions:**
+
+- [ ] Update tests for the deprecated endpoint to verify deprecation response structure
+- [ ] Verify response status code is 410 (Gone)
+- [ ] Verify response contains deprecation notes
+- [ ] Remove assertions about actual data processing (since tool now returns static deprecation message)
+
+### 6. Update Server Registration
+
+**File:** `blockscout_mcp_server/server.py`
+
+**Actions:**
+
+- [ ] Remove import of old tool function
+- [ ] Remove `mcp.tool()` decorator registration for the old tool
+
+### 7. Update Models (if needed)
+
+**File:** `blockscout_mcp_server/models.py`
+
+**Actions:**
+
+- [ ] Update model docstring comments to be more generic (remove specific tool references)
+- [ ] Ensure data models are reusable by multiple tools/handlers
+- [ ] Example: Change `# --- Model for get_address_logs and get_transaction_logs Data Payloads ---` to `# --- Model for address and transaction log data payloads ---`
+
+### 8. Update Related Tools
+
+**Actions:**
+
+- [ ] Find any tools that reference the deprecated tool in their `instructions` or `notes`
+- [ ] Update references to use `direct_api_call` with the new `endpoint_path` pattern
+- [ ] Provide concrete examples with the specific endpoint path
+
+**Example:**
+
+```python
+instructions = [
+    (
+        "To get event logs, use `direct_api_call` with "
+        f"`endpoint_path='/api/v2/transactions/{transaction_hash}/logs'`."
+    ),
+]
+```
+
+### 9. Update Documentation Files
+
+**Files to Update:**
+
+- [ ] `README.md` - Remove tool from numbered list, adjust numbering
+- [ ] `AGENTS.md` - Remove tool module from project structure, update test structure
+- [ ] `API.md` - Mark endpoint as deprecated, add deprecation notice with example response
+- [ ] `llms.txt` - Remove tool from numbered list, adjust numbering
+- [ ] `templates/index.html` - Remove tool from available tools list
+- [ ] `SPEC.md` - Update examples to use `direct_api_call` instead of old tool name
+
+**API.md Deprecation Pattern:**
+
+```markdown
+#### Old Tool Name (Deprecated) (`old_tool_name`)
+
+This endpoint is deprecated and always returns a static notice.
+
+**Example Response**
+
+```json
+{
+  "data": {"status": "deprecated"},
+  "notes": [
+    "This endpoint is deprecated and will be removed in a future version.",
+    "Please use `direct_api_call` with `endpoint_path='/api/v2/resource/{id}/endpoint'` to retrieve this data."
+  ],
+  "pagination": null,
+  "instructions": null
+}
+```
+
+### 10. Update GPT Integration Files
+
+**Files to Update:**
+
+- [ ] `gpt/action_tool_descriptions.md` - Remove tool description section
+- [ ] `gpt/openapi.yaml` - Remove endpoint definition
+
+### 11. Update MCP Bundle Manifest
+
+**File:** `mcpb/manifest.json`
+
+**Actions:**
+
+- [ ] Remove the tool from the `tools` array
+- [ ] Bump the `version` field following semver (e.g., `0.6.0` → `0.7.0`)
+- [ ] See `.cursor/rules/135-mcpb-manifest-version.mdc` for versioning rules
+
+### 12. Bump Version Numbers
+
+**Files to Update:**
+
+- [ ] `blockscout_mcp_server/__init__.py` - Increment `__version__`
+- [ ] `pyproject.toml` - Increment `version` field
+- [ ] `server.json` - Increment `version` field
+
+### 13. Run Tests and Linting
+
+**Actions:**
+
+- [ ] Run `ruff check . --fix`
+- [ ] Run `ruff format .`
+- [ ] Run `ruff check .` (verify no issues)
+- [ ] Run `ruff format --check .` (verify formatting)
+- [ ] Run `pytest` (all unit tests)
+- [ ] Run `pytest -m integration -v` (integration tests)
+
+### 14. Verify Handler Registration
+
+**Actions:**
+
+- [ ] Ensure handler module is automatically imported via `blockscout_mcp_server/tools/direct_api/handlers/__init__.py`
+- [ ] Verify the regex pattern is unique and doesn't conflict with other handlers
+- [ ] Test the handler with a real `direct_api_call` invocation
+
+## Common Patterns
+
+### Pagination Parameter Updates
+
+**Old Pattern:**
+
+```python
+next_call_base_params={"chain_id": chain_id, "transaction_hash": transaction_hash}
+```
+
+**New Pattern:**
+
+```python
+next_call_base_params={
+    "chain_id": chain_id,
+    "endpoint_path": f"/api/v2/transactions/{transaction_hash}/logs",
+}
+```
+
+### Tool Name Updates
+
+**Old Pattern:**
+
+```python
+create_items_pagination(
+    items=items,
+    page_size=config.logs_page_size,
+    tool_name="get_transaction_logs",
+    # ...
+)
+```
+
+**New Pattern:**
+
+```python
+create_items_pagination(
+    items=items,
+    page_size=config.logs_page_size,
+    tool_name="direct_api_call",
+    # ...
+)
+```
+
+## Benefits of Migration
+
+1. **Reduced Tool Count**: Fewer top-level MCP tools for AI agents to choose from
+2. **Consistent Interface**: All specialized endpoints use the same `direct_api_call` interface
+3. **Better Organization**: Related processing logic grouped in handlers directory
+4. **Preserved Functionality**: All specialized processing, pagination, and data curation remains intact
+5. **Backward Compatibility**: REST endpoints remain available with clear deprecation guidance
+
+## When to Migrate a Tool
+
+Consider migrating a tool to a `direct_api_call` handler when:
+
+- The tool is a simple wrapper around a specific Blockscout API endpoint
+- The tool doesn't require complex orchestration or multiple API calls
+- The tool's primary value is in response processing and data curation
+- Reducing top-level tool count would improve agent decision-making
