@@ -69,8 +69,7 @@ mcp-server/
 │           ├── _shared.py             # Shared helpers for transaction tools
 │           ├── get_token_transfers_by_address.py
 │           ├── get_transaction_info.py
-│           ├── get_transactions_by_address.py
-│           └── transaction_summary.py
+│           └── get_transactions_by_address.py
 ├── tests/                      # Test suite for all MCP tools
 │   ├── integration/            # Integration tests that make real network calls
 │   │   ├── __init__.py         # Marks integration as a sub-package
@@ -102,8 +101,7 @@ mcp-server/
 │   │   └── transaction/
 │   │       ├── test_get_token_transfers_by_address_real.py
 │   │       ├── test_get_transaction_info_real.py
-│   │       ├── test_get_transactions_by_address_real.py
-│   │       └── test_transaction_summary_real.py
+│   │       └── test_get_transactions_by_address_real.py
 │   ├── api/                      # Unit tests for the REST API
 │   │   └── test_routes.py        # Tests for static API route definitions
 │   ├── test_server.py            # Tests for server CLI and startup logic
@@ -129,8 +127,7 @@ mcp-server/
 │       │   ├── test_get_transaction_info.py        # Tests for get_transaction_info
 │       │   ├── test_get_transactions_by_address.py      # Tests for get_transactions_by_address
 │       │   ├── test_get_transactions_by_address_pagination.py  # Pagination-focused transaction tests
-│       │   ├── test_helpers.py                     # Tests for transaction helper utilities
-│       │   └── test_transaction_summary.py         # Tests for transaction_summary
+│       │   └── test_helpers.py                     # Tests for transaction helper utilities
 │       ├── direct_api/         # Tests for the direct API MCP tool
 │       │   ├── handlers/
 │       │   │   ├── test_address_logs_handler.py

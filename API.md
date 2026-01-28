@@ -254,9 +254,9 @@ This endpoint is deprecated and always returns a static notice.
   }
   ```
 
-#### Get Transaction Summary (`transaction_summary`)
+#### Get Transaction Summary (Deprecated) (`transaction_summary`)
 
-Provides a human-readable summary of a transaction's purpose.
+This endpoint is deprecated and always returns a static notice.
 
 `GET /v1/transaction_summary`
 
@@ -271,6 +271,20 @@ Provides a human-readable summary of a transaction's purpose.
 
   ```bash
   curl "http://127.0.0.1:8000/v1/transaction_summary?chain_id=1&transaction_hash=0x..."
+  ```
+
+- **Example Response**
+
+  ```json
+  {
+    "data": {"status": "deprecated"},
+    "notes": [
+      "This endpoint is deprecated and will be removed in a future version.",
+      "Please use `direct_api_call` with `endpoint_path='/api/v2/transactions/{transaction_hash}/summary'` to retrieve this data."
+    ],
+    "pagination": null,
+    "instructions": null
+  }
   ```
 
 #### Get Transactions by Address (`get_transactions_by_address`)

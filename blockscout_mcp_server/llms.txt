@@ -18,7 +18,7 @@
 - **Claude (Connector):** Install from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout)
 - **Cursor and Gemini CLI:** Direct HTTP URL with 180-second timeout
 
-**Key Tools:** `get_address_info`, `get_transactions_by_address`, `get_tokens_by_address`, `transaction_summary`
+**Key Tools:** `get_address_info`, `get_transactions_by_address`, `get_tokens_by_address`
 
 ### REST API Interface
 
@@ -52,12 +52,11 @@ All tools are available via both MCP and REST API interfaces:
 9. **`get_block_number`** - Retrieves the block number and timestamp for a specific date/time or the latest block
 10. **`get_transactions_by_address`** - Gets transactions for an address with time range filtering
 11. **`get_token_transfers_by_address`** - Returns ERC-20 token transfers for an address
-12. **`transaction_summary`** - Provides human-readable transaction summaries
-13. **`nft_tokens_by_address`** - Retrieves NFT tokens owned by an address
-14. **`get_block_info`** - Returns detailed block information
-15. **`get_transaction_info`** - Gets comprehensive transaction information
-16. **`read_contract`** - Executes a read-only smart contract function
-17. **`direct_api_call`** - Calls a curated raw Blockscout API endpoint
+12. **`nft_tokens_by_address`** - Retrieves NFT tokens owned by an address
+13. **`get_block_info`** - Returns detailed block information
+14. **`get_transaction_info`** - Gets comprehensive transaction information
+15. **`read_contract`** - Executes a read-only smart contract function
+16. **`direct_api_call`** - Calls a curated raw Blockscout API endpoint
 
 ## When to Use Each Interface
 

@@ -40,7 +40,6 @@ from blockscout_mcp_server.tools.transaction.get_transaction_info import get_tra
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
     get_transactions_by_address,
 )
-from blockscout_mcp_server.tools.transaction.transaction_summary import transaction_summary
 
 # Define paths to static files relative to this file's location
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
@@ -242,9 +241,15 @@ async def get_tokens_by_address_rest(request: Request) -> Response:
 @handle_rest_errors
 async def transaction_summary_rest(request: Request) -> Response:
     """REST wrapper for the transaction_summary tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "transaction_hash"], optional=[])
-    tool_response = await transaction_summary(**params, ctx=get_mock_context(request))
-    return JSONResponse(tool_response.model_dump())
+    extract_and_validate_params(request, required=["chain_id", "transaction_hash"], optional=[])
+    deprecation_notes = [
+        "This endpoint is deprecated and will be removed in a future version.",
+        (
+            "Please use `direct_api_call` with "
+            "`endpoint_path='/api/v2/transactions/{transaction_hash}/summary'` to retrieve this data."
+        ),
+    ]
+    return create_deprecation_response(deprecation_notes)
 
 
 @handle_rest_errors

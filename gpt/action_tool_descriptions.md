@@ -103,13 +103,6 @@ Essential for portfolio analysis, wallet auditing, and DeFi position tracking.
 **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
 </get_tokens_by_address>
 
-<transaction_summary>
-Get human-readable transaction summaries from Blockscout Transaction Interpreter.
-Automatically classifies transactions into natural language descriptions (transfers, swaps, NFT sales, DeFi operations)
-Essential for rapid transaction comprehension, dashboard displays, and initial analysis.
-Note: Not all transactions can be summarized and accuracy is not guaranteed for complex patterns.
-</transaction_summary>
-
 <nft_tokens_by_address>
 Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.
 Provides collection details (type, address, name, symbol, total supply, holder count) and individual token instance data (ID, name, description, external URL, metadata attributes).

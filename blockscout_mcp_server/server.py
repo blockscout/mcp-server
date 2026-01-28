@@ -48,7 +48,6 @@ from blockscout_mcp_server.tools.transaction.get_transaction_info import get_tra
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
     get_transactions_by_address,
 )
-from blockscout_mcp_server.tools.transaction.transaction_summary import transaction_summary
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
@@ -189,10 +188,6 @@ mcp.tool(
     structured_output=False,
     annotations=create_tool_annotations("Get Tokens by Address"),
 )(get_tokens_by_address)
-mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Transaction Summary"),
-)(transaction_summary)
 mcp.tool(
     structured_output=False,
     annotations=create_tool_annotations("Get NFT Tokens by Address"),
