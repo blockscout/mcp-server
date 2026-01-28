@@ -180,5 +180,26 @@
     "question": "There is a Uniswap V4 (0.3% fee) FET/ETH pool: PoolManager address `0x000000000004444c5dc75cB358380D2e3dE08A90`, Pool ID `0x80235dd0d2b0fbac1fc5b9e04d4af3e030efd2b1026823affec8f5a6c9306c38`. What are the two most recent trades in this pool?",
     "expected_result_format": "The final answer is a list of tuples, where each tuple contains the trade date, direction (FET→ETH or ETH→FET), volume in FET, volume in ETH/WETH, and transaction hash.",
     "ground_truth": {}
+  },
+  {
+    "id": "eval-026",
+    "model":"gemini-2.5-pro",
+    "question": "How many user operations are in the transaction that includes the user operation `0x23966c0b651bcdb06d097143deec0777b7beba56155efc1c3fa3ee9bade4b6b9`?",
+    "expected_result_format": "The final answer is a number.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-027",
+    "model":"gemini-2.5-pro",
+    "question": "How many user operations were successfully executed in the transaction `0xc24036ecca307090efee492f1da40d3abda9f86b9e8edde1f77e4a79fb99853f` on Base?",
+    "expected_result_format": "The final answer is a number.",
+    "ground_truth": {}
+  },
+  {
+    "id": "eval-028",
+    "model":"gemini-2.5-pro",
+    "question": "For address `0xbdf364D442721d1A02a472ABb91c7Ba3F52d7227` in AAVEv3 (Ethereum Mainnet), show the USDC balance and APY at the end of each of the four months (starting from September 2025) to compare month-to-month APY changes. Calculate the APY based on the account balance, not the total pool balance.",
+    "expected_result_format": "The final answer is a list of tuples, where each tuple contains the month (YYYY-MM), the balance in USDC, and the APY.",
+    "ground_truth": {}
   }
 ]
