@@ -3,6 +3,7 @@ from mcp.server.fastmcp import Context
 from blockscout_mcp_server.constants import (
     BINARY_SEARCH_RULES,
     CHAIN_ID_RULES,
+    DATA_ORDERING_AND_RESUMPTION_RULES,
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
     ERROR_HANDLING_RULES,
@@ -85,6 +86,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         binary_search_rules=BINARY_SEARCH_RULES,
         portfolio_analysis_rules=PORTFOLIO_ANALYSIS_RULES,
         funds_movement_rules=FUNDS_MOVEMENT_RULES,
+        data_ordering_and_resumption_rules=DATA_ORDERING_AND_RESUMPTION_RULES,
         direct_api_call_rules=DIRECT_API_CALL_RULES,
         direct_api_endpoints=direct_api_endpoints,
     )

@@ -13,6 +13,7 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BINARY_SEARCH_RULES,
     CHAIN_ID_RULES,
+    DATA_ORDERING_AND_RESUMPTION_RULES,
     DEFAULT_HTTP_PORT,
     DIRECT_API_CALL_ENDPOINT_LIST,
     DIRECT_API_CALL_RULES,
@@ -106,6 +107,10 @@ Here is the list of IDs of most popular chains:
 <funds_movement_rules>
 {FUNDS_MOVEMENT_RULES.strip()}
 </funds_movement_rules>
+
+<data_ordering_and_resumption_rules>
+{DATA_ORDERING_AND_RESUMPTION_RULES.strip()}
+</data_ordering_and_resumption_rules>
 
 <direct_call_endpoint_list>
 {DIRECT_API_CALL_RULES.strip()}
