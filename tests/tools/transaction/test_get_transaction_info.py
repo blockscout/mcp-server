@@ -148,7 +148,7 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
         assert result.data.user_operations[0].operation_hash == "0xop1"
         assert result.instructions is not None
         assert "endpoint_path" in result.instructions[0]
-        assert "USER OPERATIONS REQUIRE EXPANSION" in result.instructions[1]
+        assert "USER OPERATIONS REQUIRE EXPANSION" in result.instructions[2]
 
 
 @pytest.mark.asyncio
