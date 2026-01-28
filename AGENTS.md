@@ -108,19 +108,19 @@ mcp-server/
 │   ├── api/                      # Unit tests for the REST API
 │   │   └── test_routes.py        # Unit tests for API route definitions
 │   ├── conftest.py
-│   ├── evals/
+│   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
 │   │   ├── .env.example
 │   │   ├── .gemini/
 │   │   │   └── settings.json
 │   │   ├── .gitignore
 │   │   ├── docker-compose.yml
-│   │   ├── eval-set.json
-│   │   ├── GEMINI-evals.md
-│   │   ├── output-format-rules.md
+│   │   ├── eval-set.json  # Evaluation case definitions
+│   │   ├── GEMINI-evals.md  # Notes on Gemini-based eval runs
+│   │   ├── output-format-rules.md  # Output formatting requirements for evals
 │   │   ├── README.md
 │   │   ├── results/
 │   │   │   └── .gitkeep
-│   │   └── run.sh
+│   │   └── run.sh  # Script to execute eval runs
 │   ├── test_analytics.py  # Unit tests for analytics event tracking
 │   ├── test_analytics_helpers.py  # Unit tests for analytics helper utilities
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
@@ -179,7 +179,7 @@ mcp-server/
 │   ├── README.md               # GPT-specific documentation and configuration instructions
 │   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
-│   ├── direct_call_endpoint_list.md
+│   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
