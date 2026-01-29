@@ -67,11 +67,17 @@ async def handle_user_operation(
         raw_copy = raw_data.copy()
         raw_was_truncated = False
         raw_was_truncated |= _truncate_string_field(raw_copy, "call_data", "raw_call_data_truncated")
+        raw_was_truncated |= _truncate_string_field(raw_copy, "init_code", "raw_init_code_truncated")
         raw_was_truncated |= _truncate_string_field(raw_copy, "paymaster_and_data", "raw_paymaster_and_data_truncated")
         raw_was_truncated |= _truncate_string_field(raw_copy, "signature", "raw_signature_truncated")
         transformed_data["raw"] = raw_copy
         if raw_was_truncated:
-            for flag_key in ("raw_call_data_truncated", "raw_paymaster_and_data_truncated", "raw_signature_truncated"):
+            for flag_key in (
+                "raw_call_data_truncated",
+                "raw_init_code_truncated",
+                "raw_paymaster_and_data_truncated",
+                "raw_signature_truncated",
+            ):
                 if raw_copy.get(flag_key):
                     transformed_data[flag_key] = True
             was_truncated = True

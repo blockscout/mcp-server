@@ -290,6 +290,7 @@ class UserOperationData(BaseModel):
         default=None, description="Indicates if aggregator_signature was truncated."
     )
     raw_call_data_truncated: bool | None = Field(default=None, description="Indicates if raw.call_data was truncated.")
+    raw_init_code_truncated: bool | None = Field(default=None, description="Indicates if raw.init_code was truncated.")
     raw_paymaster_and_data_truncated: bool | None = Field(
         default=None, description="Indicates if raw.paymaster_and_data was truncated."
     )

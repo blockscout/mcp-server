@@ -169,6 +169,7 @@ async def test_user_operation_handler_raw_truncation(mock_ctx):
         "hash": user_operation_hash,
         "raw": {
             "call_data": long_data,
+            "init_code": long_data,
             "paymaster_and_data": long_data,
             "signature": long_data,
         },
@@ -185,9 +186,11 @@ async def test_user_operation_handler_raw_truncation(mock_ctx):
     data_dump = result.data.model_dump()
     raw = data_dump["raw"]
     assert len(raw["call_data"]) == INPUT_DATA_TRUNCATION_LIMIT
+    assert len(raw["init_code"]) == INPUT_DATA_TRUNCATION_LIMIT
     assert len(raw["paymaster_and_data"]) == INPUT_DATA_TRUNCATION_LIMIT
     assert len(raw["signature"]) == INPUT_DATA_TRUNCATION_LIMIT
     assert result.data.raw_call_data_truncated is True
+    assert result.data.raw_init_code_truncated is True
     assert result.data.raw_paymaster_and_data_truncated is True
     assert result.data.raw_signature_truncated is True
 
