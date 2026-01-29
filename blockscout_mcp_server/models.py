@@ -266,6 +266,36 @@ class UserOpsLite(BaseModel):
     operation_hash: str = Field(description="The hash of the user operation")
 
 
+# --- Model for direct API user operation data payload ---
+class UserOperationData(BaseModel):
+    """Structured representation of an ERC-4337 user operation."""
+
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
+
+    sender: str | None = Field(default=None, description="Sender address for the user operation.")
+    factory: str | None = Field(default=None, description="Factory address for account deployment, if any.")
+    paymaster: str | None = Field(default=None, description="Paymaster address, if any.")
+    entry_point: str | None = Field(default=None, description="Entry point contract address.")
+    bundler: str | None = Field(default=None, description="Bundler address, if available.")
+    execute_target: str | None = Field(default=None, description="Execute target address, if available.")
+
+    call_data_truncated: bool | None = Field(
+        default=None, description="Indicates if top-level call_data was truncated."
+    )
+    execute_call_data_truncated: bool | None = Field(
+        default=None, description="Indicates if top-level execute_call_data was truncated."
+    )
+    signature_truncated: bool | None = Field(default=None, description="Indicates if signature was truncated.")
+    aggregator_signature_truncated: bool | None = Field(
+        default=None, description="Indicates if aggregator_signature was truncated."
+    )
+    raw_call_data_truncated: bool | None = Field(default=None, description="Indicates if raw.call_data was truncated.")
+    raw_paymaster_and_data_truncated: bool | None = Field(
+        default=None, description="Indicates if raw.paymaster_and_data was truncated."
+    )
+    raw_signature_truncated: bool | None = Field(default=None, description="Indicates if raw.signature was truncated.")
+
+
 # --- Model for get_transaction_info Data Payload ---
 class TransactionInfoData(BaseModel):
     """Structured representation of get_transaction_info data."""
