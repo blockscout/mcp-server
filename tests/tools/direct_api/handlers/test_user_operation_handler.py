@@ -61,7 +61,8 @@ async def test_user_operation_handler_success(mock_ctx):
     assert result.data.sender == "0x" + "1" * 40
     assert result.data.entry_point == "0x" + "2" * 40
     assert result.data.call_data_truncated is None
-    assert result.data.raw_call_data_truncated is None
+    assert result.data.raw is not None
+    assert result.data.raw.call_data_truncated is None
     assert result.notes is None
 
 
@@ -189,10 +190,12 @@ async def test_user_operation_handler_raw_truncation(mock_ctx):
     assert len(raw["init_code"]) == INPUT_DATA_TRUNCATION_LIMIT
     assert len(raw["paymaster_and_data"]) == INPUT_DATA_TRUNCATION_LIMIT
     assert len(raw["signature"]) == INPUT_DATA_TRUNCATION_LIMIT
-    assert result.data.raw_call_data_truncated is True
-    assert result.data.raw_init_code_truncated is True
-    assert result.data.raw_paymaster_and_data_truncated is True
-    assert result.data.raw_signature_truncated is True
+    assert result.data.raw is not None
+    raw_flags = result.data.raw.model_dump()
+    assert raw_flags.get("call_data_truncated") is True
+    assert raw_flags.get("init_code_truncated") is True
+    assert raw_flags.get("paymaster_and_data_truncated") is True
+    assert raw_flags.get("signature_truncated") is True
 
 
 @pytest.mark.asyncio
@@ -301,5 +304,6 @@ async def test_user_operation_handler_complex(mock_ctx):
     assert result.data.sender == "0x" + "a" * 40
     assert result.data.entry_point == "0x" + "b" * 40
     assert result.data.call_data_truncated is True
-    assert result.data.raw_call_data_truncated is True
+    assert result.data.raw is not None
+    assert result.data.raw.call_data_truncated is True
     assert result.notes is not None

@@ -92,7 +92,9 @@ async def test_user_operation_handler_failed_with_init_code_real(mock_ctx):
     data = result.data.model_dump()
     assert data.get("status") is False
     assert isinstance(data.get("factory"), str)
-    assert data.get("raw_init_code_truncated") is True
+    raw = data.get("raw")
+    assert isinstance(raw, dict)
+    assert raw.get("init_code_truncated") is True
 
 
 @pytest.mark.integration
@@ -109,7 +111,9 @@ async def test_user_operation_handler_huge_call_data_real(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, UserOperationData)
     data = result.data.model_dump()
-    assert data.get("raw_call_data_truncated") is True
+    raw = data.get("raw")
+    assert isinstance(raw, dict)
+    assert raw.get("call_data_truncated") is True
     assert data.get("call_data_truncated") is True
 
 

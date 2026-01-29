@@ -66,20 +66,12 @@ async def handle_user_operation(
     if isinstance(raw_data, dict):
         raw_copy = raw_data.copy()
         raw_was_truncated = False
-        raw_was_truncated |= _truncate_string_field(raw_copy, "call_data", "raw_call_data_truncated")
-        raw_was_truncated |= _truncate_string_field(raw_copy, "init_code", "raw_init_code_truncated")
-        raw_was_truncated |= _truncate_string_field(raw_copy, "paymaster_and_data", "raw_paymaster_and_data_truncated")
-        raw_was_truncated |= _truncate_string_field(raw_copy, "signature", "raw_signature_truncated")
+        raw_was_truncated |= _truncate_string_field(raw_copy, "call_data", "call_data_truncated")
+        raw_was_truncated |= _truncate_string_field(raw_copy, "init_code", "init_code_truncated")
+        raw_was_truncated |= _truncate_string_field(raw_copy, "paymaster_and_data", "paymaster_and_data_truncated")
+        raw_was_truncated |= _truncate_string_field(raw_copy, "signature", "signature_truncated")
         transformed_data["raw"] = raw_copy
         if raw_was_truncated:
-            for flag_key in (
-                "raw_call_data_truncated",
-                "raw_init_code_truncated",
-                "raw_paymaster_and_data_truncated",
-                "raw_signature_truncated",
-            ):
-                if raw_copy.get(flag_key):
-                    transformed_data[flag_key] = True
             was_truncated = True
 
     decoded_call_truncated = _truncate_decoded_parameters(transformed_data, "decoded_call_data")
@@ -116,7 +108,7 @@ async def handle_user_operation(
         notes = [
             (
                 "One or more fields in this user operation response were too large and have been truncated. "
-                "Look for `*_truncated` or `raw_*_truncated` flags to identify shortened fields."
+                "Look for `*_truncated` flags in the top-level fields or within `raw`."
             ),
             "To retrieve the full, untruncated data, request the user operation directly. For example:",
             f'`curl "{base_url}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}"`',

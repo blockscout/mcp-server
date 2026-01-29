@@ -266,6 +266,20 @@ class UserOpsLite(BaseModel):
     operation_hash: str = Field(description="The hash of the user operation")
 
 
+# --- Model for direct API user operation raw data ---
+class UserOperationRawData(BaseModel):
+    """Structured representation of raw user operation data."""
+
+    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
+
+    call_data_truncated: bool | None = Field(default=None, description="Indicates if raw.call_data was truncated.")
+    init_code_truncated: bool | None = Field(default=None, description="Indicates if raw.init_code was truncated.")
+    paymaster_and_data_truncated: bool | None = Field(
+        default=None, description="Indicates if raw.paymaster_and_data was truncated."
+    )
+    signature_truncated: bool | None = Field(default=None, description="Indicates if raw.signature was truncated.")
+
+
 # --- Model for direct API user operation data payload ---
 class UserOperationData(BaseModel):
     """Structured representation of an ERC-4337 user operation."""
@@ -278,6 +292,9 @@ class UserOperationData(BaseModel):
     entry_point: str | None = Field(default=None, description="Entry point contract address.")
     bundler: str | None = Field(default=None, description="Bundler address, if available.")
     execute_target: str | None = Field(default=None, description="Execute target address, if available.")
+    raw: UserOperationRawData | None = Field(
+        default=None, description="Raw user operation payload, including truncation flags."
+    )
 
     call_data_truncated: bool | None = Field(
         default=None, description="Indicates if top-level call_data was truncated."
@@ -289,12 +306,6 @@ class UserOperationData(BaseModel):
     aggregator_signature_truncated: bool | None = Field(
         default=None, description="Indicates if aggregator_signature was truncated."
     )
-    raw_call_data_truncated: bool | None = Field(default=None, description="Indicates if raw.call_data was truncated.")
-    raw_init_code_truncated: bool | None = Field(default=None, description="Indicates if raw.init_code was truncated.")
-    raw_paymaster_and_data_truncated: bool | None = Field(
-        default=None, description="Indicates if raw.paymaster_and_data was truncated."
-    )
-    raw_signature_truncated: bool | None = Field(default=None, description="Indicates if raw.signature was truncated.")
 
 
 # --- Model for get_transaction_info Data Payload ---
