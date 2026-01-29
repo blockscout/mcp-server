@@ -49,7 +49,7 @@ Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscou
 To quickly install the Blockscout MCP server for use with Claude Code, run the following command in your terminal:
 
 ```sh
-claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp/
+claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp
 ```
 
 After running this command, Blockscout will be available as an MCP server in Claude Code, allowing you to access and analyze blockchain data directly from your coding environment.
