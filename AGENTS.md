@@ -55,7 +55,8 @@ mcp-server/
 │       │       ├── __init__.py
 │       │       ├── address_logs_handler.py
 │       │       ├── transaction_summary_handler.py
-│       │       └── transaction_logs_handler.py
+│       │       ├── transaction_logs_handler.py
+│       │       └── user_operation_handler.py
 │       ├── ens/
 │       │   ├── __init__.py
 │       │   └── get_address_by_ens_name.py
@@ -96,7 +97,8 @@ mcp-server/
 │   │   │   ├── test_address_logs_handler_real.py  # Integration tests for address logs handler
 │   │   │   ├── test_direct_api_call_real.py  # Integration tests for direct_api_call
 │   │   │   ├── test_transaction_logs_handler_real.py  # Integration tests for transaction logs handler
-│   │   │   └── test_transaction_summary_handler_real.py  # Integration tests for transaction summary handler
+│   │   │   ├── test_transaction_summary_handler_real.py  # Integration tests for transaction summary handler
+│   │   │   └── test_user_operation_handler_real.py  # Integration tests for user operation handler
 │   │   ├── ens/
 │   │   │   └── test_get_address_by_ens_name_real.py  # Integration tests for get_address_by_ens_name
 │   │   ├── search/
@@ -158,7 +160,8 @@ mcp-server/
 │       │   ├── handlers/
 │       │   │   ├── test_address_logs_handler.py  # Unit tests for address logs handler
 │       │   │   ├── test_transaction_logs_handler.py  # Unit tests for transaction logs handler
-│       │   │   └── test_transaction_summary_handler.py  # Unit tests for transaction summary handler
+│       │   │   ├── test_transaction_summary_handler.py  # Unit tests for transaction summary handler
+│       │   │   └── test_user_operation_handler.py  # Unit tests for user operation handler
 │       │   ├── test_dispatcher.py  # Unit tests for direct API dispatcher
 │       │   └── test_direct_api_call.py  # Unit tests for direct_api_call
 │       ├── ens/                # Tests for ENS-related MCP tools
