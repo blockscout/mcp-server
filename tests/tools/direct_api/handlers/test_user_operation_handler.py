@@ -237,6 +237,47 @@ async def test_user_operation_handler_decoded_truncation(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_user_operation_handler_decoded_execute_truncation(mock_ctx):
+    user_operation_hash = "0x" + "3" * 64
+    long_value = "0x" + "e" * (INPUT_DATA_TRUNCATION_LIMIT + 10)
+    response_json = {
+        "hash": user_operation_hash,
+        "decoded_execute_call_data": {
+            "method_call": "executeBatch(address[] dest, bytes[] func)",
+            "method_id": "18dfb3c7",
+            "parameters": [
+                {
+                    "name": "dest",
+                    "type": "address[]",
+                    "value": [
+                        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                    ],
+                },
+                {
+                    "name": "func",
+                    "type": "bytes[]",
+                    "value": [long_value, long_value],
+                },
+            ],
+        },
+    }
+
+    result = await handle_user_operation(
+        match=_build_match(user_operation_hash),
+        response_json=response_json,
+        chain_id="1",
+        base_url="https://example.blockscout",
+        ctx=mock_ctx,
+    )
+
+    decoded = result.data.model_dump()["decoded_execute_call_data"]
+    truncated_values = decoded["parameters"][1]["value"]
+    assert all(isinstance(item, dict) for item in truncated_values)
+    assert all(item["value_truncated"] is True for item in truncated_values)
+
+
+@pytest.mark.asyncio
 async def test_user_operation_handler_complex(mock_ctx):
     user_operation_hash = "0x" + "2" * 64
     long_data = "0x" + "d" * (INPUT_DATA_TRUNCATION_LIMIT + 10)
