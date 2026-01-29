@@ -75,8 +75,10 @@ FUNDS MOVEMENT ANALYSIS: When asked about funds movement, recent transfers, or t
 </funds_movement_rules>
 
 <data_ordering_and_resumption_rules>
-DATA ORDERING AND ANCHOR RESUMPTION: All paginated tools return items in DESCENDING order (newest first).
-When resuming from an anchor item, use the anchor's block as the time boundary and client-side filter.
+DATA ORDERING AND ANCHOR RESUMPTION: Time-ordered tools (transactions, token transfers, logs) return items in
+DESCENDING order (newest first). Other paginated endpoints (e.g., holdings) use endpoint-specific ordering and
+may not be newest-first. When resuming from an anchor item, use the anchor's block as the time boundary and
+client-side filter.
 For DESCENDING (newest-first) pagination, exclude items with ordering keys >= the anchor key.
 For ASCENDING (oldest-first) pagination, exclude items with ordering keys <= the anchor key.
 Never skip the anchor's block.
