@@ -195,10 +195,28 @@ async def test_user_operation_handler_raw_truncation(mock_ctx):
 @pytest.mark.asyncio
 async def test_user_operation_handler_decoded_truncation(mock_ctx):
     user_operation_hash = "0x" + "1" * 64
-    long_value = "c" * (INPUT_DATA_TRUNCATION_LIMIT + 10)
+    long_value = "0x" + "c" * (INPUT_DATA_TRUNCATION_LIMIT + 10)
     response_json = {
         "hash": user_operation_hash,
-        "decoded_call_data": {"parameters": [{"name": "value", "value": long_value}]},
+        "decoded_call_data": {
+            "method_call": "executeBatch(address[] dest, bytes[] func)",
+            "method_id": "18dfb3c7",
+            "parameters": [
+                {
+                    "name": "dest",
+                    "type": "address[]",
+                    "value": [
+                        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                    ],
+                },
+                {
+                    "name": "func",
+                    "type": "bytes[]",
+                    "value": [long_value, long_value],
+                },
+            ],
+        },
     }
 
     result = await handle_user_operation(
@@ -210,9 +228,9 @@ async def test_user_operation_handler_decoded_truncation(mock_ctx):
     )
 
     decoded = result.data.model_dump()["decoded_call_data"]
-    value = decoded["parameters"][0]["value"]
-    assert isinstance(value, dict)
-    assert value["value_truncated"] is True
+    truncated_values = decoded["parameters"][1]["value"]
+    assert all(isinstance(item, dict) for item in truncated_values)
+    assert all(item["value_truncated"] is True for item in truncated_values)
 
 
 @pytest.mark.asyncio
