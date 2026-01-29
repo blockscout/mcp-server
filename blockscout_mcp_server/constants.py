@@ -83,11 +83,8 @@ incomplete and incorrect analysis.
 # - tests/evals/GEMINI-evals.md
 DATA_ORDERING_AND_RESUMPTION_RULES = """
 DATA ORDERING AND ANCHOR RESUMPTION: Time-ordered tools (transactions, token transfers, logs) return items in
-DESCENDING order (newest first). Other paginated endpoints (e.g., holdings) use endpoint-specific ordering and
-may not be newest-first. When resuming from an anchor item, use the anchor's block as the time boundary and
-client-side filter.
-For DESCENDING (newest-first) pagination, exclude items with ordering keys >= the anchor key.
-For ASCENDING (oldest-first) pagination, exclude items with ordering keys <= the anchor key.
+DESCENDING order (newest first). When resuming from an anchor item, use the anchor's block as the time boundary
+and client-side filter.
 Never skip the anchor's block.
 
 Ordering Keys (DESC):
