@@ -69,7 +69,6 @@ mcp-server/
 │       └── transaction/
 │           ├── __init__.py
 │           ├── _shared.py             # Shared helpers for transaction tools
-│           ├── transaction_summary.py
 │           ├── get_token_transfers_by_address.py
 │           ├── get_transaction_info.py
 │           └── get_transactions_by_address.py
