@@ -78,6 +78,33 @@ before answering. Do not assume that "transactions" implies native coin only. Ch
 incomplete and incorrect analysis.
 """
 
+# IMPORTANT: When modifying this constant, also update:
+# - gpt/instructions.md
+# - tests/evals/GEMINI-evals.md
+DATA_ORDERING_AND_RESUMPTION_RULES = """
+DATA ORDERING AND ANCHOR RESUMPTION: Time-ordered tools (transactions, token transfers, logs) return items in
+DESCENDING order (newest first). When resuming from an anchor item, use the anchor's block as the time boundary
+and client-side filter.
+Never skip the anchor's block.
+
+Ordering Keys (DESC):
+- get_transactions_by_address: (block_number, transaction_index, internal_transaction_index)
+- get_token_transfers_by_address: (block_number, transaction_index, token_transfer_batch_index, token_transfer_index)
+- direct_api_call (logs): (block_number, index)  # index is global within block
+
+Resume Pattern:
+• For EARLIER items: age_to=anchor_block_timestamp, keep where ordering_key < anchor_key
+• For LATER items: age_from=anchor_block_timestamp, keep where ordering_key > anchor_key
+
+Example: Found transfer at (block=1000, tx_idx=5, transfer_idx=3). To find earlier transfers:
+  Query: age_to=timestamp_of_block_1000
+  Filter: keep only (block<1000) OR (block=1000 AND tx_idx<5) OR (block=1000 AND tx_idx=5 AND transfer_idx<3)
+
+Critical Notes:
+- Always compare the COMPLETE ordering key, not just block_number.
+- If the anchor is in the boundary block, filter within that block to avoid duplicates or gaps.
+"""
+
 DIRECT_API_CALL_RULES = """
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools,
 you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.

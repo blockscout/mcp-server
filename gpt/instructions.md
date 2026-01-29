@@ -81,3 +81,27 @@ PORTFOLIO BALANCE ANALYSIS: When asked to analyze a portfolio, net worth, or tot
 <funds_movement_rules>
 FUNDS MOVEMENT ANALYSIS: When asked about funds movement, recent transfers, or transaction activity for any address, you MUST check BOTH native-coin transfers AND ERC-20 token transfers. Call `get_transactions_by_address` (native coin transfers) AND `get_token_transfers_by_address` (ERC-20 transfers) before answering. Do not assume that "transactions" implies native coin only. Checking only one results in an incomplete and incorrect analysis.
 </funds_movement_rules>
+
+<data_ordering_and_resumption_rules>
+DATA ORDERING AND ANCHOR RESUMPTION: Time-ordered tools (transactions, token transfers, logs) return items in
+DESCENDING order (newest first). When resuming from an anchor item, use the anchor's block as the time boundary
+and client-side filter.
+Never skip the anchor's block.
+
+Ordering Keys (DESC):
+- get_transactions_by_address: (block_number, transaction_index, internal_transaction_index)
+- get_token_transfers_by_address: (block_number, transaction_index, token_transfer_batch_index, token_transfer_index)
+- direct_api_call (logs): (block_number, index)  # index is global within block
+
+Resume Pattern:
+• For EARLIER items: age_to=anchor_block_timestamp, keep where ordering_key < anchor_key
+• For LATER items: age_from=anchor_block_timestamp, keep where ordering_key > anchor_key
+
+Example: Found transfer at (block=1000, tx_idx=5, transfer_idx=3). To find earlier transfers:
+  Query: age_to=timestamp_of_block_1000
+  Filter: keep only (block<1000) OR (block=1000 AND tx_idx<5) OR (block=1000 AND tx_idx=5 AND transfer_idx<3)
+
+Critical Notes:
+- Always compare the COMPLETE ordering key, not just block_number.
+- If the anchor is in the boundary block, filter within that block to avoid duplicates or gaps.
+</data_ordering_and_resumption_rules>

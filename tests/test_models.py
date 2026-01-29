@@ -61,6 +61,7 @@ def test_tool_response_complex_data():
         binary_search_rules="Binary search rule",
         portfolio_analysis_rules="Portfolio rules",
         funds_movement_rules="Funds movement rules",
+        data_ordering_and_resumption_rules="Data ordering rules",
         direct_api_call_rules="Direct API rule",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -179,6 +180,7 @@ def test_instructions_data():
         binary_search_rules="Binary search rules",
         portfolio_analysis_rules="Portfolio rules",
         funds_movement_rules="Funds movement rules",
+        data_ordering_and_resumption_rules="Data ordering rules",
         direct_api_call_rules="Direct API rules",
         direct_api_endpoints=DirectApiEndpointList(common=[], specific=[]),
     )
@@ -193,6 +195,7 @@ def test_instructions_data():
     assert instructions.binary_search_rules == "Binary search rules"
     assert instructions.portfolio_analysis_rules == "Portfolio rules"
     assert instructions.funds_movement_rules == "Funds movement rules"
+    assert instructions.data_ordering_and_resumption_rules == "Data ordering rules"
 
 
 def test_tool_response_serialization():
