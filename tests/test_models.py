@@ -16,6 +16,8 @@ from blockscout_mcp_server.models import (
     TokenTransfer,
     ToolResponse,
     TransactionInfoData,
+    UserOperationData,
+    UserOperationRawData,
 )
 
 
@@ -449,6 +451,43 @@ def test_nft_collection_info_handles_none_values():
     )
     assert collection_with_values.name == "Test Collection"
     assert collection_with_values.symbol == "TEST"
+
+
+def test_user_operation_raw_data_model():
+    """Verify UserOperationRawData accepts truncation flags and preserves extra fields."""
+    raw_data = UserOperationRawData(
+        call_data_truncated=True,
+        init_code_truncated=False,
+        paymaster_and_data_truncated=True,
+        signature_truncated=None,
+        extra_field="extra",
+    )
+
+    assert raw_data.call_data_truncated is True
+    assert raw_data.init_code_truncated is False
+    assert raw_data.paymaster_and_data_truncated is True
+    assert raw_data.signature_truncated is None
+    assert raw_data.extra_field == "extra"
+
+
+def test_user_operation_data_model_with_raw():
+    """Verify UserOperationData accepts nested raw payload and extra fields."""
+    raw = UserOperationRawData(call_data_truncated=True, signature_truncated=True)
+    data = UserOperationData(
+        sender="0x" + "1" * 40,
+        entry_point="0x" + "2" * 40,
+        raw=raw,
+        call_data_truncated=True,
+        extra_field="value",
+    )
+
+    assert data.sender == "0x" + "1" * 40
+    assert data.entry_point == "0x" + "2" * 40
+    assert data.raw is not None
+    assert data.raw.call_data_truncated is True
+    assert data.raw.signature_truncated is True
+    assert data.call_data_truncated is True
+    assert data.extra_field == "value"
 
 
 def test_build_tool_response_with_pagination_instructions():
