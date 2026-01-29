@@ -314,7 +314,6 @@ mcp-server/
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
         * Includes specific data models for complex payloads, like the response from `__unlock_blockchain_analysis__`.
-        * **`UserOperationData`**: Structured representation of ERC-4337 user operation data with optimized addresses and truncation flags.
     * **`server.py`**:
         * The heart of the MCP server.
         * Initializes a `FastMCP` instance using constants from `constants.py`.

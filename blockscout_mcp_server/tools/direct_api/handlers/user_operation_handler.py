@@ -88,21 +88,6 @@ async def handle_user_operation(
 
     data = UserOperationData(**transformed_data)
 
-    data_description = [
-        "User Operation Fields:",
-        "- `hash`: User operation hash (identifier for ERC-4337 operation)",
-        "- `sender`: Account that initiated the user operation (address string)",
-        "- `entry_point`: ERC-4337 entry point address (string)",
-        "- `paymaster`: Optional paymaster address (string or null)",
-        "- `factory`: Optional factory address (string or null)",
-        "- `bundler`: Bundler address (string or null)",
-        "- `execute_target`: Execute target address (string or null)",
-        "Decoded Call Data:",
-        "- `decoded_call_data`: Decoded call data for the user operation",
-        "- `decoded_execute_call_data`: Decoded call data for execution wrapper (if available)",
-        "- `parameters`: Decoded parameters; long values may be truncated and flagged.",
-    ]
-
     notes = None
     if was_truncated:
         notes = [
@@ -116,6 +101,5 @@ async def handle_user_operation(
 
     return build_tool_response(
         data=data,
-        data_description=data_description,
         notes=notes,
     )

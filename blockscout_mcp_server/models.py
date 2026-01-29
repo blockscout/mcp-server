@@ -272,12 +272,12 @@ class UserOperationRawData(BaseModel):
 
     model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
 
-    call_data_truncated: bool | None = Field(default=None, description="Indicates if raw.call_data was truncated.")
-    init_code_truncated: bool | None = Field(default=None, description="Indicates if raw.init_code was truncated.")
+    call_data_truncated: bool | None = Field(default=None, description="Indicates if call_data was truncated.")
+    init_code_truncated: bool | None = Field(default=None, description="Indicates if init_code was truncated.")
     paymaster_and_data_truncated: bool | None = Field(
-        default=None, description="Indicates if raw.paymaster_and_data was truncated."
+        default=None, description="Indicates if paymaster_and_data was truncated."
     )
-    signature_truncated: bool | None = Field(default=None, description="Indicates if raw.signature was truncated.")
+    signature_truncated: bool | None = Field(default=None, description="Indicates if signature was truncated.")
 
 
 # --- Model for direct API user operation data payload ---
