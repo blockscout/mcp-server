@@ -13,6 +13,8 @@ See PR #270 for a complete example of migrating `get_transaction_logs` to a `dir
 
 ## Migration Checklist
 
+**CRITICAL REQUIREMENT:** Throughout this migration process, `AGENTS.md` must be updated whenever files are added, deleted, or moved. The project structure tree in `AGENTS.md` must always reflect the actual file structure. This is not optional.
+
 ### 1. Create the Handler Module
 
 **Location:** `blockscout_mcp_server/tools/direct_api/handlers/{handler_name}_handler.py`
@@ -36,6 +38,8 @@ See PR #270 for a complete example of migrating `get_transaction_logs` to a `dir
 - [ ] Preserve data descriptions and notes generation
 - [ ] Remove progress reporting calls (dispatcher handles this)
 
+**IMPORTANT:** After creating the new handler file, you must update `AGENTS.md` to add the new handler to the project structure tree.
+
 **Example Pattern:**
 
 ```python
@@ -53,13 +57,27 @@ async def handle_resource_endpoint(
     # Process response and return ToolResponse
 ```
 
-### 2. Update Unit Tests
+### 2. Remove the Old Tool Module
+
+**Location:** `blockscout_mcp_server/tools/{category}/{old_tool_name}.py`
+
+**Actions:**
+
+- [ ] Delete the old tool implementation file `blockscout_mcp_server/tools/{category}/{old_tool_name}.py`
+- [ ] If the category folder becomes empty after deletion, remove the entire folder
+- [ ] Update the category's `__init__.py` to remove the deleted tool's export (if applicable)
+
+**IMPORTANT:** After deleting the old tool file, you must update `AGENTS.md` to remove the file from the project structure tree under `blockscout_mcp_server/tools/{category}/`.
+
+### 3. Update Unit Tests
 
 **Actions:**
 
 - [ ] Delete old unit test files from `tests/tools/{category}/test_{old_tool_name}.py`
 - [ ] Delete pagination-specific test files if they exist (e.g., `test_{old_tool_name}_pagination.py`)
 - [ ] Create new handler test file at `tests/tools/direct_api/handlers/test_{handler_name}_handler.py`
+
+**IMPORTANT:** After deleting old test files and creating new test files, you must update `AGENTS.md` to reflect the changes in the test organization.
 
 **New Test Requirements:**
 
@@ -73,12 +91,14 @@ async def handle_resource_endpoint(
 - [ ] Verify `next_call.params` includes `chain_id` and `endpoint_path`
 - [ ] Use helper function like `_build_match()` to create regex match objects for testing
 
-### 3. Update Integration Tests
+### 4. Update Integration Tests
 
 **Actions:**
 
 - [ ] Delete old integration test from `tests/integration/{category}/test_{old_tool_name}_real.py`
 - [ ] Create new handler integration test at `tests/integration/direct_api/test_{handler_name}_handler_real.py`
+
+**IMPORTANT:** After moving integration test files, you must update `AGENTS.md` to reflect the changes in the test directory structure.
 
 **New Integration Test Requirements:**
 
@@ -89,7 +109,7 @@ async def handle_resource_endpoint(
 - [ ] Test truncation behavior if applicable
 - [ ] Use `@pytest.mark.integration` and `@pytest.mark.asyncio` decorators
 
-### 4. Update API Routes
+### 5. Update API Routes
 
 **Actions:**
 
@@ -116,7 +136,7 @@ async def old_tool_rest(request: Request) -> Response:
 
 **Note:** Keep the route registration in place - do not remove the endpoint from the route table. This ensures backward compatibility while providing clear deprecation guidance.
 
-### 5. Update API Route Tests
+### 6. Update API Route Tests
 
 **File:** `tests/api/test_routes.py`
 
@@ -127,7 +147,7 @@ async def old_tool_rest(request: Request) -> Response:
 - [ ] Verify response contains deprecation notes
 - [ ] Remove assertions about actual data processing (since tool now returns static deprecation message)
 
-### 6. Update Server Registration
+### 7. Update Server Registration
 
 **File:** `blockscout_mcp_server/server.py`
 
@@ -136,7 +156,7 @@ async def old_tool_rest(request: Request) -> Response:
 - [ ] Remove import of old tool function
 - [ ] Remove `mcp.tool()` decorator registration for the old tool
 
-### 7. Update Models (if needed)
+### 8. Update Models (if needed)
 
 **File:** `blockscout_mcp_server/models.py`
 
@@ -146,7 +166,7 @@ async def old_tool_rest(request: Request) -> Response:
 - [ ] Ensure data models are reusable by multiple tools/handlers
 - [ ] Example: Change `# --- Model for get_address_logs and get_transaction_logs Data Payloads ---` to `# --- Model for address and transaction log data payloads ---`
 
-### 8. Update Related Tools
+### 9. Update Related Tools
 
 **Actions:**
 
@@ -165,16 +185,24 @@ instructions = [
 ]
 ```
 
-### 9. Update Documentation Files
+### 10. Update Documentation Files
 
 **Files to Update:**
 
 - [ ] `README.md` - Remove tool from numbered list, adjust numbering
-- [ ] `AGENTS.md` - Remove tool module from project structure, update test structure
+- [ ] `AGENTS.md` - **CRITICAL: Update the entire project structure tree to reflect file changes:**
+  - [ ] Remove old tool module from `blockscout_mcp_server/tools/{category}/` section
+  - [ ] Add new handler file to `blockscout_mcp_server/tools/direct_api/handlers/` section
+  - [ ] Remove old unit test files from `tests/tools/{category}/` section
+  - [ ] Add new handler unit test to `tests/tools/direct_api/handlers/` section
+  - [ ] Remove old integration test from `tests/integration/{category}/` section
+  - [ ] Add new handler integration test to `tests/integration/direct_api/` section
 - [ ] `API.md` - Mark endpoint as deprecated, add deprecation notice with example response
 - [ ] `llms.txt` - Remove tool from numbered list, adjust numbering
 - [ ] `templates/index.html` - Remove tool from available tools list
 - [ ] `SPEC.md` - Update examples to use `direct_api_call` instead of old tool name
+
+**NOTE:** `AGENTS.md` must be kept in sync with the actual file structure at all times. Any files added or deleted during this migration must be reflected in `AGENTS.md`'s project structure tree.
 
 **API.md Deprecation Pattern:**
 
@@ -197,14 +225,14 @@ This endpoint is deprecated and always returns a static notice.
 }
 ```
 
-### 10. Update GPT Integration Files
+### 11. Update GPT Integration Files
 
 **Files to Update:**
 
 - [ ] `gpt/action_tool_descriptions.md` - Remove tool description section
 - [ ] `gpt/openapi.yaml` - Remove endpoint definition
 
-### 11. Update MCP Bundle Manifest
+### 12. Update MCP Bundle Manifest
 
 **File:** `mcpb/manifest.json`
 
@@ -214,7 +242,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] Bump the `version` field following semver (e.g., `0.6.0` → `0.7.0`)
 - [ ] See `.cursor/rules/135-mcpb-manifest-version.mdc` for versioning rules
 
-### 12. Bump Version Numbers
+### 13. Bump Version Numbers
 
 **Files to Update:**
 
@@ -222,7 +250,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] `pyproject.toml` - Increment `version` field
 - [ ] `server.json` - Increment `version` field
 
-### 13. Run Tests and Linting
+### 14. Run Tests and Linting
 
 **Actions:**
 
@@ -233,7 +261,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] Run `pytest` (all unit tests)
 - [ ] Run `pytest -m integration -v` (integration tests)
 
-### 14. Verify Handler Registration
+### 15. Verify Handler Registration
 
 **Actions:**
 
