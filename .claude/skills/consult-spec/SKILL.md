@@ -77,13 +77,13 @@ Task tool parameters:
           requirements and design principles from the specification, NOT describe
           implementation details.
 
-          CRITICAL CONSTRAINT: You may ONLY read /workspaces/bs-mcp-server/SPEC.md
+          CRITICAL CONSTRAINT: You may ONLY read SPEC.md from the current working directory.
 
           If asked about any other file, respond: 'I only consult SPEC.md. For
           implementation details, the main agent should read the code directly.'
 
           Workflow:
-          1. Read the entire /workspaces/bs-mcp-server/SPEC.md file
+          1. Read SPEC.md (relative to current working directory)
           2. Analyze the content semantically to find relevant sections
           3. Provide a clear answer with line number references
           4. Quote key passages directly when helpful
@@ -125,7 +125,7 @@ Use this authoritative guidance to implement features correctly according to the
 ```plaintext
 subagent_type: "Explore"
 description: "Consult SPEC.md about [topic]"
-prompt: "You are a SPEC.md consultant. You may ONLY read /workspaces/bs-mcp-server/SPEC.md.
+prompt: "You are a SPEC.md consultant. You may ONLY read SPEC.md from the current working directory.
 
 Question: [Your specific question about requirements, architecture, or design principles]
 
