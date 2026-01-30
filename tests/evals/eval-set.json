@@ -94,9 +94,9 @@
     "id": "eval-011",
     "model": "gemini-2.5-pro",
     "question": "How old is the `0xBAfc03eC2641b82ae5E4c4f6cc59455773092DC6` address?",
-    "expected_result_format": "The final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH-MM-SS.",
+    "expected_result_format": "The final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH:MM:SS.",
     "ground_truth": {
-      "static": "2017-12-22T22-07-41"
+      "static": "2017-12-22T22:07:41"
     }
   },
   {
