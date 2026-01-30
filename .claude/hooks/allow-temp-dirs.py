@@ -15,7 +15,6 @@ Usage in skill frontmatter:
 """
 
 import json
-import re
 import sys
 
 
@@ -28,6 +27,12 @@ def is_temp_mkdir_command(command: str) -> bool:
     - mkdir -p temp/subdir
     - mkdir -p temp/gh_issues
     - mkdir -p ./temp/impl_plans
+
+    Security: Rejects commands with:
+    - Multiple paths (mkdir temp/ok /etc)
+    - Shell operators (mkdir temp/ok && rm -rf /)
+    - Command substitution (mkdir temp/$(malicious))
+    - Redirections or other shell metacharacters
     """
     if not command:
         return False
@@ -39,13 +44,34 @@ def is_temp_mkdir_command(command: str) -> bool:
     if not normalized.startswith("mkdir"):
         return False
 
-    # Extract the path argument (handles -p flag and other options)
-    # Pattern: mkdir [-p] [other flags] path
-    match = re.search(r"mkdir\s+(?:-[a-z]+\s+)*([^\s]+)", normalized)
-    if not match:
+    # Reject commands with shell operators or metacharacters
+    dangerous_chars = ["&&", "||", ";", "|", "$(", "`", ">", "<", "$", "{", "}"]
+    if any(char in command for char in dangerous_chars):
         return False
 
-    path = match.group(1)
+    # Extract all arguments after flags
+    # Pattern: mkdir [-p] [other flags] path1 [path2...]
+    parts = normalized.split()
+    paths = []
+    skip_next = False
+
+    for part in parts[1:]:  # Skip "mkdir"
+        if skip_next:
+            skip_next = False
+            continue
+        if part.startswith("-"):
+            # Check if this flag takes an argument (like -m mode)
+            if part in ["-m", "--mode", "-Z", "--context"]:
+                skip_next = True
+            continue
+        # This is a path argument
+        paths.append(part)
+
+    # Must have exactly one path
+    if len(paths) != 1:
+        return False
+
+    path = paths[0]
 
     # Normalize path separators
     normalized_path = path.replace("\\", "/")
