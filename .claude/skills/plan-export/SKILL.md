@@ -99,13 +99,14 @@ Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the fo
    pytest tests/tools/category/test_feature.py -v
    ```
 
-2. Run linting and formatting checks:
+1. Run linting and formatting checks:
+
    ```bash
    ruff check path/to/modified/files/
    ruff format --check path/to/modified/files/
    ```
 
-3. Fix any linting or formatting issues before proceeding to the next phase.
+2. Fix any linting or formatting issues before proceeding to the next phase.
 
 ---
 
@@ -134,11 +135,13 @@ Verify the implementation works correctly with real network calls.
 ### Verification
 
 1. Run integration tests for the new test file:
+
    ```bash
    pytest -m integration tests/integration/category/test_feature_real.py -v
    ```
 
 2. Run linting and formatting checks:
+
    ```bash
    ruff check tests/integration/category/test_feature_real.py
    ruff format --check tests/integration/category/test_feature_real.py
@@ -195,6 +198,7 @@ Review all documentation files for accuracy and completeness.
 - [ ] Final formatting check on entire codebase: `ruff format --check .`
 - [ ] Documentation updated (if applicable)
 - [ ] Version bumped (if applicable)
+
 ```
 
 ### 4. Content Guidelines
