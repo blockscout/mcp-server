@@ -67,33 +67,17 @@ Be specific about what you need from the spec:
 
 ### 2. Spawn the Spec Consultant Subagent
 
-Use the Task tool to create an Explore agent with strict SPEC.md-only instructions:
+Use the Task tool to create an Explore agent with a minimal prompt that directs it to read its detailed instructions:
 
 ```plaintext
 Task tool parameters:
 - subagent_type: "Explore"
 - description: "Consult SPEC.md about <specific topic>"
-- prompt: "You are a SPEC.md consultant. Your purpose is to provide authoritative
-          requirements and design principles from the specification, NOT describe
-          implementation details.
-
-          CRITICAL CONSTRAINT: You may ONLY read SPEC.md from the current working directory.
-
-          If asked about any other file, respond: 'I only consult SPEC.md. For
-          implementation details, the main agent should read the code directly.'
-
-          Workflow:
-          1. Read SPEC.md (relative to current working directory)
-          2. Analyze the content semantically to find relevant sections
-          3. Provide a clear answer with line number references
-          4. Quote key passages directly when helpful
-
-          Note: Prefer reading the full file for semantic understanding rather than
-          using grep, which may miss relevant sections due to terminology differences.
-          The file is only 685 lines and well within your context capacity.
-
-          Question: <your specific question>"
+- prompt: "Read your detailed instructions from .claude/skills/consult-spec/agent-instructions.md,
+          then answer this question: <your specific question>"
 ```
+
+This keeps the main agent context clean while giving the subagent full access to its operating constraints and workflow.
 
 ### 3. Resume for Follow-Up Questions
 
@@ -125,11 +109,8 @@ Use this authoritative guidance to implement features correctly according to the
 ```plaintext
 subagent_type: "Explore"
 description: "Consult SPEC.md about [topic]"
-prompt: "You are a SPEC.md consultant. You may ONLY read SPEC.md from the current working directory.
-
-Question: [Your specific question about requirements, architecture, or design principles]
-
-Read the full file, analyze semantically, and provide line references with relevant quotes."
+prompt: "Read your detailed instructions from .claude/skills/consult-spec/agent-instructions.md,
+        then answer this question: [Your specific question about requirements, architecture, or design principles]"
 ```
 
 **Subagent responds** (abstract pattern):
