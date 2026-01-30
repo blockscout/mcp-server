@@ -4,7 +4,9 @@
     "model": "gemini-2.5-pro",
     "question": "What is the block number on the Ethereum Mainnet corresponding to midnight (or the nearest time) on July 1st?",
     "expected_result_format": "The final answer is a block number.",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": 22820673
+    }
   },
   {
     "id": "eval-001",
@@ -32,7 +34,9 @@
     "model": "gemini-2.5-pro",
     "question": "Is there any blacklisting functionality for the USDT token on Arbitrum One?",
     "expected_result_format": "The final answer is 'yes' or 'no.'",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": "yes"
+    }
   },
   {
     "id": "eval-005",
@@ -46,7 +50,17 @@
     "model": "gemini-2.5-pro",
     "question": "Which methods of `0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6` on the Ethereum Mainnet could emit `SequencerBatchDelivered`?",
     "expected_result_format": "The final answer is a JSON array of method names (e.g., [\"addLiquidity\", \"removeLiquidity\"]).",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": [
+        "forceInclusion",
+        "addSequencerL2BatchFromOrigin",
+        "addSequencerL2BatchFromBlobs",
+        "addSequencerL2BatchFromBlobsDelayProof",
+        "addSequencerL2BatchFromOriginDelayProof",
+        "addSequencerL2Batch",
+        "addSequencerL2BatchDelayProof"
+      ]
+    }
   },
   {
     "id": "eval-007",
@@ -80,8 +94,10 @@
     "id": "eval-011",
     "model": "gemini-2.5-pro",
     "question": "How old is the `0xBAfc03eC2641b82ae5E4c4f6cc59455773092DC6` address?",
-    "expected_result_format": "The final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH-MM-SS.",
-    "ground_truth": {}
+    "expected_result_format": "The final answer is the timestamp of the first transaction in the format YYYY-MM-DDTHH:MM:SS.",
+    "ground_truth": {
+      "static": "2017-12-22T22:07:41"
+    }
   },
   {
     "id": "eval-012",
@@ -144,7 +160,18 @@
     "model": "gemini-2.5-pro",
     "question": "Examine the source code of the contract `0x3d610e917130f9D036e85A030596807f57e11093` on Gnosis Chain. Trace the code flow to determine which event is emitted in each of the following cases: (1) An account with sufficient tokens to claim (for example, `0xd15B0342DED129C3baE109f4731ff0AE614592E3`) calls the `claim()` method; (2) the account `0x641edbFE3D62d002725404a5c5de97211F85d64e` calls the method `claimTo(0xe6F43a9dc80d833decF722dF5d0A2C7e6013eF07)`. Both accounts have enough tokens to claim.",
     "expected_result_format": "The final answer is a map with two keys: `claim` and `claimTo`. Each value should be a tuple: the first element is the name of the emitted event, and the second is the most relevant argument for that scenario, substituted with the value you obtained during your tracing.",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": {
+        "claim": [
+          "Claim",
+          "0xd15B0342DED129C3baE109f4731ff0AE614592E3"
+        ],
+        "claimTo": [
+          "Claim",
+          "0xe6F43a9dc80d833decF722dF5d0A2C7e6013eF07"
+        ]
+      }
+    }
   },
   {
     "id": "eval-021",
@@ -186,17 +213,30 @@
     "model":"gemini-2.5-pro",
     "question": "How many user operations are in the transaction that includes the user operation `0x23966c0b651bcdb06d097143deec0777b7beba56155efc1c3fa3ee9bade4b6b9`?",
     "expected_result_format": "The final answer is a number.",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": 2
+    }
   },
   {
     "id": "eval-027",
     "model":"gemini-2.5-pro",
     "question": "How many user operations were successfully executed in the transaction `0xc24036ecca307090efee492f1da40d3abda9f86b9e8edde1f77e4a79fb99853f` on Base?",
     "expected_result_format": "The final answer is a number.",
-    "ground_truth": {}
+    "ground_truth": {
+      "static": 7
+    }
   },
   {
     "id": "eval-028",
+    "model":"gemini-2.5-pro",
+    "question": "How many user operations were successfully executed in the transaction `0xbcbfc2a62e468d2c8c5c00b570b3de23aa07a882bf4f5e1121824fe33639744a`?",
+    "expected_result_format": "The final answer is a number.",
+    "ground_truth": {
+      "static": 1
+    }
+  },
+  {
+    "id": "eval-029",
     "model":"gemini-2.5-pro",
     "question": "For address `0xbdf364D442721d1A02a472ABb91c7Ba3F52d7227` in AAVEv3 (Ethereum Mainnet), show the USDC balance and APY at the end of each of the four months (starting from September 2025) to compare month-to-month APY changes. Calculate the APY based on the account balance, not the total pool balance.",
     "expected_result_format": "The final answer is a list of tuples, where each tuple contains the month (YYYY-MM), the balance in USDC, and the APY.",
