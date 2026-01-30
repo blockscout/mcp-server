@@ -1,31 +1,41 @@
 {
-  "general": {
-    "checkpointing": {
-      "enabled": true
-    },
-    "disableAutoUpdate": true
-  },
   "context": {
     "fileName": [
-      "GEMINI-plan.md",
+      "GEMINI.md",
       "AGENTS.md",
       "SPEC.md",
       "TESTING.md"
     ]
   },
   "ui": {
-    "hideTips": true,
-    "hideBanner": true,
-    "theme": "ANSI",
     "footer": {
       "hideSandboxStatus": true
-    },
-    "showCitations": true
-  },
-  "urlTemplate": "https://github.com/blockscout/mcp-server/issues/new?title={title}&body={info}",
-  "tools": {
-    "shell": {
-      "showColor": true
     }
+  },
+  "security": {
+    "enablePermanentToolApproval": true
+  },
+  "experimental": {
+    "skills": true
+  },
+  "tools": {
+    "enableHooks": true
+  },
+  "hooks": {
+    "enabled": true,
+    "BeforeTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          {
+            "name": "restrict-filesystem-access",
+            "type": "command",
+            "command": "python3 .gemini/hooks/restrict_write_access.py",
+            "description": "Enforces 'research and plan' mode by restricting write operations to the temp/ directory.",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
   }
 }
