@@ -95,18 +95,19 @@ Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the fo
 ### Verification
 
 1. Run unit tests for modified functionality:
+
    ```bash
    pytest tests/tools/category/test_feature.py -v
    ```
 
-1. Run linting and formatting checks:
+2. Run linting and formatting checks:
 
    ```bash
    ruff check path/to/modified/files/
    ruff format --check path/to/modified/files/
    ```
 
-2. Fix any linting or formatting issues before proceeding to the next phase.
+3. Fix any linting or formatting issues before proceeding to the next phase.
 
 ---
 
