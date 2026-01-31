@@ -144,6 +144,45 @@ class TestSecurityRejections:
         assert output is None, "Hook should not approve commands with brace expansion"
 
 
+class TestPathTraversalAndAbsolutePaths:
+    """Test cases for path traversal and absolute path security scenarios."""
+
+    def test_reject_path_traversal_to_other_project(self):
+        """Should reject: mkdir ../other-project/temp/data"""
+        output = run_hook("mkdir ../other-project/temp/data")
+        assert output is None, "Hook should not approve path traversal to other directories"
+
+    def test_reject_path_traversal_with_flag(self):
+        """Should reject: mkdir -p ../other-project/temp/data"""
+        output = run_hook("mkdir -p ../other-project/temp/data")
+        assert output is None, "Hook should not approve path traversal even with -p flag"
+
+    def test_reject_absolute_path_with_temp_in_middle(self):
+        """Should reject: mkdir /etc/malicious/temp/subdir"""
+        output = run_hook("mkdir /etc/malicious/temp/subdir")
+        assert output is None, "Hook should not approve absolute paths with temp in middle"
+
+    def test_reject_absolute_path_with_temp_and_flag(self):
+        """Should reject: mkdir -p /var/log/temp/data"""
+        output = run_hook("mkdir -p /var/log/temp/data")
+        assert output is None, "Hook should not approve absolute paths with temp even with -p"
+
+    def test_reject_parent_references_escaping_temp(self):
+        """Should reject: mkdir temp/../../../etc/shadow"""
+        output = run_hook("mkdir temp/../../../etc/shadow")
+        assert output is None, "Hook should not approve paths with parent references escaping temp"
+
+    def test_reject_parent_references_with_flag(self):
+        """Should reject: mkdir -p temp/../../../../../../etc/passwd"""
+        output = run_hook("mkdir -p temp/../../../../../../etc/passwd")
+        assert output is None, "Hook should not approve parent references even with -p flag"
+
+    def test_reject_complex_parent_traversal(self):
+        """Should reject: mkdir ./temp/../../../usr/local/bin"""
+        output = run_hook("mkdir ./temp/../../../usr/local/bin")
+        assert output is None, "Hook should not approve complex parent directory traversal"
+
+
 class TestNonTempCommands:
     """Test cases for commands that don't target temp/ directory."""
 

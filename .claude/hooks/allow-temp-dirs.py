@@ -33,6 +33,9 @@ def is_temp_mkdir_command(command: str) -> bool:
     - Shell operators (mkdir temp/ok && rm -rf /)
     - Command substitution (mkdir temp/$(malicious))
     - Redirections or other shell metacharacters
+    - Absolute paths (mkdir /etc/malicious/temp/subdir)
+    - Path traversal (mkdir ../other-project/temp/data)
+    - Parent references (mkdir temp/../../../etc/shadow)
     """
     if not command:
         return False
@@ -76,8 +79,18 @@ def is_temp_mkdir_command(command: str) -> bool:
     # Normalize path separators
     normalized_path = path.replace("\\", "/")
 
-    # Check if path is within temp/ directory
-    return normalized_path.startswith("temp/") or normalized_path.startswith("./temp/") or "/temp/" in normalized_path
+    # Reject absolute paths
+    if normalized_path.startswith("/"):
+        return False
+
+    # Reject any path containing parent directory references
+    if ".." in normalized_path:
+        return False
+
+    # Only allow paths that start with temp/ or ./temp/
+    # This ensures we're creating directories within the temp/ directory
+    # and prevents paths like /etc/malicious/temp/subdir
+    return normalized_path.startswith("temp/") or normalized_path.startswith("./temp/")
 
 
 def main():
