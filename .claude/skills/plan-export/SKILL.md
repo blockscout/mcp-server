@@ -9,6 +9,10 @@ hooks:
       hooks:
         - type: command
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-dirs.py"
 ---
 
 # Plan Export Skill
@@ -90,7 +94,20 @@ Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the fo
 
 ### Verification
 
-Run unit tests and linting for modified files.
+1. Run unit tests for modified functionality:
+
+   ```bash
+   pytest tests/tools/category/test_feature.py -v
+   ```
+
+2. Run linting and formatting checks:
+
+   ```bash
+   ruff check path/to/modified/files/
+   ruff format --check path/to/modified/files/
+   ```
+
+3. Fix any linting or formatting issues before proceeding to the next phase.
 
 ---
 
@@ -118,7 +135,20 @@ Verify the implementation works correctly with real network calls.
 
 ### Verification
 
-Run integration tests for the new test file.
+1. Run integration tests for the new test file:
+
+   ```bash
+   pytest -m integration tests/integration/category/test_feature_real.py -v
+   ```
+
+2. Run linting and formatting checks:
+
+   ```bash
+   ruff check tests/integration/category/test_feature_real.py
+   ruff format --check tests/integration/category/test_feature_real.py
+   ```
+
+3. Fix any linting or formatting issues before proceeding to the next phase.
 
 ---
 
@@ -162,13 +192,14 @@ Review all documentation files for accuracy and completeness.
 
 ## Final Checklist
 
-- [ ] All phases completed and verified
-- [ ] Unit tests pass: `pytest tests/tools/`
-- [ ] Integration tests pass: `pytest -m integration tests/integration/`
-- [ ] Linting passes: `ruff check .`
-- [ ] Formatting passes: `ruff format --check .`
-- [ ] Documentation updated
+- [ ] All phases completed and verified (including per-phase linting)
+- [ ] All unit tests pass: `pytest tests/tools/`
+- [ ] All integration tests pass: `pytest -m integration tests/integration/`
+- [ ] Final linting check on entire codebase: `ruff check .`
+- [ ] Final formatting check on entire codebase: `ruff format --check .`
+- [ ] Documentation updated (if applicable)
 - [ ] Version bumped (if applicable)
+
 ```
 
 ### 4. Content Guidelines
@@ -182,7 +213,7 @@ Review all documentation files for accuracy and completeness.
 - References to existing code as pattern examples (file paths, not snippets)
 - Complete documentation text (documentation requires precise wording)
 - Specific test scenarios with clear descriptions
-- Verification steps for each phase
+- Verification steps for each phase (including tests, linting, and formatting checks)
 
 **MUST NOT INCLUDE:**
 
@@ -195,9 +226,27 @@ Review all documentation files for accuracy and completeness.
 **PHASE ORGANIZATION:**
 
 1. Only include phases that have actual work to do - omit empty phases
-2. Organize phases so each can be independently verified
-3. Start with core functionality, then tests, then documentation (if needed)
-4. Each phase should build on the previous one
+2. **Keep phases small and focused**: Each phase should have a single, clear objective that can be completed, tested, and reviewed as an independent unit. Prefer multiple small phases over fewer large ones.
+3. Organize phases so each can be independently verified with its own tests
+4. Start with core functionality, then tests, then documentation (if needed)
+5. Each phase should build on the previous one
+
+**Phase Size Rationale**: Since each phase's code goes through review, smaller phases are easier to review thoroughly. Catching issues early (e.g., in a model definition phase) prevents building faulty logic on top of flawed foundations.
+
+**Examples of Good Phase Breakdown**:
+- ❌ **Too Large**: Phase 1: Create model + handler + all unit tests
+- ✅ **Better**: Phase 1: Create model + model unit tests, Phase 2: Create handler + handler unit tests
+- ❌ **Too Large**: Phase 1: Refactor 5 modules + add new feature + update tests
+- ✅ **Better**: Phase 1: Refactor module A + tests, Phase 2: Refactor module B + tests, Phase 3: Add new feature + tests
+
+**DEPENDENCY ORDERING:**
+
+1. **Between Phases**: Changes in a subsequent phase must build on top of changes from previous phases. Never reference functionality that will be created in a later phase.
+2. **Within a Phase**: In the "Implementation Details" section, describe dependencies before things that use them:
+   - If a handler uses a data model, describe the model first, then the handler
+   - If code imports a helper function, describe the helper first, then the code using it
+   - If a test requires a fixture, describe the fixture first, then the test
+3. **Files Listing Order**: In "Files to Create/Modify" sections, list files in dependency order (dependencies first)
 
 ### 5. Write the Plan File
 
@@ -241,3 +290,4 @@ Awaiting your instructions to proceed.
 - Documentation updates DO require exact text content (prose requires precise wording)
 - If the conversation lacks sufficient context, ask clarifying questions before creating the plan
 - Each phase must have clear verification criteria so the developer knows when it's complete
+- Each phase's verification must include linting and formatting checks for code-quality assurance before proceeding
