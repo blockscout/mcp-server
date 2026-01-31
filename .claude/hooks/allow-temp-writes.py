@@ -25,7 +25,11 @@ def is_temp_path(file_path: str) -> bool:
     Handles various path formats:
     - temp/file.md (relative from project root)
     - ./temp/file.md (explicit relative)
-    - /absolute/path/temp/file.md (absolute with temp/)
+
+    Security: Rejects paths with:
+    - Absolute paths (/etc/malicious/temp/file.txt)
+    - Path traversal (../other-project/temp/data.json)
+    - Parent references (temp/../../../etc/shadow)
     """
     if not file_path:
         return False
@@ -33,8 +37,18 @@ def is_temp_path(file_path: str) -> bool:
     # Normalize path separators for consistency
     normalized = file_path.replace("\\", "/")
 
-    # Check if path starts with temp/ or ./temp/ or contains /temp/
-    return normalized.startswith("temp/") or normalized.startswith("./temp/") or "/temp/" in normalized
+    # Reject absolute paths
+    if normalized.startswith("/"):
+        return False
+
+    # Reject any path containing parent directory references
+    if ".." in normalized:
+        return False
+
+    # Only allow paths that start with temp/ or ./temp/
+    # This ensures we're writing files within the temp/ directory
+    # and prevents paths like /etc/malicious/temp/file.txt
+    return normalized.startswith("temp/") or normalized.startswith("./temp/")
 
 
 def main():
