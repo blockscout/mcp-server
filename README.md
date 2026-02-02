@@ -200,7 +200,7 @@ python -m blockscout_mcp_server
 
 **HTTP Mode (MCP only):**
 
-To run the server in HTTP Streamable mode (stateless, JSON responses):
+To run the server in HTTP Streamable mode (stateless, SSE responses by default):
 
 ```bash
 python -m blockscout_mcp_server --http
@@ -211,6 +211,17 @@ You can also specify the host and port for the HTTP server:
 ```bash
 python -m blockscout_mcp_server --http --http-host 0.0.0.0 --http-port 8080
 ```
+
+**Development Mode (Plain JSON Responses):**
+
+For development and testing with simple HTTP clients (curl, Insomnia), you can enable plain JSON responses instead of SSE streams:
+
+```bash
+export BLOCKSCOUT_DEV_JSON_RESPONSE=true
+python -m blockscout_mcp_server --http
+```
+
+**Note:** This disables Server-Sent Events (SSE) and progress notifications. Only use this for local testing and debugging.
 
 **HTTP Mode with REST API:**
 

@@ -87,6 +87,43 @@ def test_env_var_http_mode_non_container(mock_exists, monkeypatch):
     assert mock_run.call_args.kwargs["host"] == "127.0.0.1"
 
 
+def test_dev_json_response_default_false(monkeypatch):
+    from importlib import reload
+
+    monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE", raising=False)
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    assert cfg.config.dev_json_response is False
+    reload(cfg)
+
+
+def test_dev_json_response_true(monkeypatch):
+    from importlib import reload
+
+    monkeypatch.setenv("BLOCKSCOUT_DEV_JSON_RESPONSE", "true")
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    assert cfg.config.dev_json_response is True
+
+    monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE")
+    reload(cfg)
+
+
+def test_dev_json_response_false(monkeypatch):
+    from importlib import reload
+
+    monkeypatch.setenv("BLOCKSCOUT_DEV_JSON_RESPONSE", "false")
+    from blockscout_mcp_server import config as cfg
+
+    reload(cfg)
+    assert cfg.config.dev_json_response is False
+
+    monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE")
+    reload(cfg)
+
+
 def test_port_from_env_variable(monkeypatch):
     monkeypatch.setenv("PORT", "9999")
     from importlib import reload
