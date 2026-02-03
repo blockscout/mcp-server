@@ -227,3 +227,75 @@ def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
 
     reload(cfg)
     reload(server)
+
+
+def test_split_env_list_none():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list(None) == []
+
+
+def test_split_env_list_empty_string():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("") == []
+
+
+def test_split_env_list_single_value():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("example.ngrok-free.app") == ["example.ngrok-free.app"]
+
+
+def test_split_env_list_multiple_values():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("one, two , ,three") == ["one", "two", "three"]
+
+
+def test_transport_security_settings_disabled_by_default(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is False
+    assert settings.allowed_hosts == []
+    assert settings.allowed_origins == []
+
+
+def test_transport_security_settings_allowed_hosts(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1, host2")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["host1", "host2"]
+    assert settings.allowed_origins == []
+
+
+def test_transport_security_settings_allowed_origins(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one, https://two")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == []
+    assert settings.allowed_origins == ["https://one", "https://two"]
+
+
+def test_transport_security_settings_hosts_and_origins(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["host1"]
+    assert settings.allowed_origins == ["https://one"]

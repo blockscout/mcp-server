@@ -34,6 +34,23 @@ The Blockscout MCP Server supports two primary operational modes:
 
 The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.
 
+#### DNS Rebinding Protection for Tunneling (Development Mode)
+
+The Python MCP SDK enforces DNS rebinding protection by validating `Host` headers in HTTP requests. This blocks ngrok
+tunnels by default since the hostname differs from `localhost`.
+
+**Configuration:**
+
+- `BLOCKSCOUT_MCP_ALLOWED_HOSTS`: Comma-separated allowed `Host` values (e.g., `"abc123.ngrok-free.app"`)
+- `BLOCKSCOUT_MCP_ALLOWED_ORIGINS`: Comma-separated allowed `Origin` values (e.g., `"https://abc123.ngrok-free.app"`)
+
+**Behavior:**
+
+- Both variables empty/unset → DNS rebinding protection **disabled** (backward compatibility)
+- Either variable set → DNS rebinding protection **enabled** with specified allowlists
+
+Reference: [OpenAI Apps SDK Examples](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt)
+
 ### Architecture and Data Flow
 
 ```mermaid
