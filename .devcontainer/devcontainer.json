@@ -11,7 +11,8 @@
 		"safe-directory": "git config --global --add safe.directory ${containerWorkspaceFolder}",
 		"uv": "curl -LsSf https://astral.sh/uv/install.sh | sh && sudo `which uv` pip install --system -e \".[test,dev]\" || exit 0",
 		"known_hosts": "sudo chown ${USER}:${USER} ${HOME}/.ssh && ssh-keyscan github.com > ${HOME}/.ssh/known_hosts",
-		"claude": "curl -fsSL https://claude.ai/install.sh | bash"
+		"claude": "curl -fsSL https://claude.ai/install.sh | bash",
+		"ngrok": "curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-arm64.tgz | sudo tar -xvz -C /usr/local/bin || true"
 	},
 	// Allows to connect to services on the host machine (e.g Ollama) from inside the container.
 	// "runArgs": [ "--add-host=host.docker.internal:host-gateway"],
