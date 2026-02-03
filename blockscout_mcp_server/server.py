@@ -4,6 +4,7 @@ from typing import Annotated
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from starlette.middleware.cors import CORSMiddleware
 
@@ -53,6 +54,31 @@ from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
 chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
+
+
+# The MCP SDK enforces DNS rebinding protection by validating request Host headers, which blocks
+# tunneling tools like ngrok by default. To support development/testing via tunnels, allow
+# operators to configure host and origin allowlists via BLOCKSCOUT_MCP_ALLOWED_HOSTS and
+# BLOCKSCOUT_MCP_ALLOWED_ORIGINS. When both are empty, protection is disabled for backward
+# compatibility; otherwise it is enabled with the provided allowlists.
+# Example: BLOCKSCOUT_MCP_ALLOWED_HOSTS="example.ngrok-free.app"
+# Example: BLOCKSCOUT_MCP_ALLOWED_ORIGINS="https://example.ngrok-free.app"
+def _split_env_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _transport_security_settings() -> TransportSecuritySettings:
+    allowed_hosts = _split_env_list(config.mcp_allowed_hosts)
+    allowed_origins = _split_env_list(config.mcp_allowed_origins)
+    if not allowed_hosts and not allowed_origins:
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    )
 
 
 def format_endpoint_groups(groups):
@@ -137,7 +163,11 @@ def create_tool_annotations(title: str) -> ToolAnnotations:
     )
 
 
-mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
+mcp = FastMCP(
+    name=SERVER_NAME,
+    instructions=composed_instructions,
+    transport_security=_transport_security_settings(),
+)
 
 
 # Register the tools

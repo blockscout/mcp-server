@@ -223,6 +223,31 @@ python -m blockscout_mcp_server --http
 
 **Note:** This disables Server-Sent Events (SSE) and progress notifications. Only use this for local testing and debugging.
 
+**Tunneling with Ngrok (Development Mode):**
+
+The Python MCP SDK enforces DNS rebinding protection, which blocks requests from ngrok tunnels by default. To enable
+tunneling for development and testing:
+
+1. Start an ngrok tunnel to your local server:
+
+   ```bash
+   ngrok http 8000
+   ```
+
+1. Configure the allowed host and origin using your ngrok URL:
+
+   ```bash
+   export BLOCKSCOUT_MCP_ALLOWED_HOSTS="your-tunnel-id.ngrok-free.app"
+   export BLOCKSCOUT_MCP_ALLOWED_ORIGINS="https://your-tunnel-id.ngrok-free.app"
+   python -m blockscout_mcp_server --http
+   ```
+
+**Note:** These settings are for development only. DNS rebinding protection is automatically disabled when these
+variables are not set, providing backward compatibility for existing deployments.
+
+For more details on ngrok tunneling with MCP servers, see the [OpenAI Apps SDK Examples
+documentation](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt).
+
 **HTTP Mode with REST API:**
 
 To enable the versioned REST API alongside the MCP endpoint, use the `--rest` flag (which requires `--http`).
