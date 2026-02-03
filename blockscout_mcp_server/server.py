@@ -267,8 +267,10 @@ def main_command(
 
         # Configure the existing 'mcp' instance for stateless HTTP with JSON responses
         mcp.settings.stateless_http = True  # Enable stateless mode
-        # TODO: As soon as addressed in https://github.com/modelcontextprotocol/python-sdk/issues/1294, we can enable JSON responses instead of SSE for tool calls  # noqa: E501
-        mcp.settings.json_response = False
+        # JSON response mode (configurable via BLOCKSCOUT_DEV_JSON_RESPONSE)
+        # False (default): Enables SSE and progress notifications (production mode)
+        # True: Returns plain JSON for easier testing with curl/Insomnia (dev mode)
+        mcp.settings.json_response = config.dev_json_response
         # Enable analytics in HTTP mode
         analytics.set_http_mode(True)
         asgi_app = mcp.streamable_http_app()

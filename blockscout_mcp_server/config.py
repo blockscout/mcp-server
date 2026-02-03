@@ -51,6 +51,7 @@ class ServerConfig(BaseSettings):
     # Transport mode for the server ("stdio" or "http").
     # Controls the server's operational mode, can be overridden by CLI flags.
     mcp_transport: str = "stdio"
+    dev_json_response: bool = False
 
     # Optional port for the HTTP server, read from the PORT environment variable.
     port: int | None = Field(None, alias="PORT")

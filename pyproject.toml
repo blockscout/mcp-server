@@ -4,8 +4,8 @@ version = "0.13.0"
 description = "MCP server for Blockscout"
 requires-python = ">=3.11"
 dependencies = [
-    # Pinned to 1.11.0 – newer (≥1.12.0) versions break HTTP Streamable mode (see PR #174)
-    "mcp[cli]==1.13.1",
+    # Requires >=1.26.0 for proper json_response support in HTTP mode
+    "mcp[cli]==1.26.0",
     "httpx>=0.27.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",

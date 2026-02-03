@@ -43,6 +43,7 @@ ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin"
 # Set the default transport mode. Can be overridden at runtime with -e.
 # Options: "stdio" (default), "http"
 ENV BLOCKSCOUT_MCP_TRANSPORT="stdio"
+ENV BLOCKSCOUT_DEV_JSON_RESPONSE="false"
 ENV PORT="8000"
 
 # Expose the default port. This can be overridden at runtime by the PORT environment variable.
