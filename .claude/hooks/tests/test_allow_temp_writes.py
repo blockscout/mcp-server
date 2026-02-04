@@ -16,11 +16,15 @@ import pytest
 HOOK_PATH = Path(__file__).parent.parent / "allow-temp-writes.py"
 
 
-def run_hook(file_path: str) -> dict | None:
+def run_hook(file_path: str, env: dict | None = None) -> dict | None:
     """
     Run the hook with a given file path and return the parsed output.
 
     Returns None if the hook produces no output (allowing normal permission flow).
+
+    Args:
+        file_path: The file path to test
+        env: Optional environment variables to pass to the hook
     """
     hook_input = {
         "tool_input": {
@@ -28,12 +32,21 @@ def run_hook(file_path: str) -> dict | None:
         }
     }
 
+    # Merge with current environment if custom env provided
+    run_env = None
+    if env:
+        import os
+
+        run_env = os.environ.copy()
+        run_env.update(env)
+
     result = subprocess.run(
         [sys.executable, str(HOOK_PATH)],
         input=json.dumps(hook_input),
         capture_output=True,
         text=True,
         check=False,
+        env=run_env,
     )
 
     if result.stdout.strip():
@@ -88,12 +101,12 @@ class TestPathTraversalAndAbsolutePaths:
         assert output is None, "Hook should not approve upward path traversal"
 
     def test_reject_absolute_path_with_temp_in_middle(self):
-        """Should reject: /etc/malicious/temp/evil.txt"""
+        """Should reject: /etc/malicious/temp/evil.txt (outside project)"""
         output = run_hook("/etc/malicious/temp/evil.txt")
-        assert output is None, "Hook should not approve absolute paths with temp in middle"
+        assert output is None, "Hook should not approve absolute paths outside project"
 
     def test_reject_absolute_path_system_dir(self):
-        """Should reject: /var/log/temp/data.log"""
+        """Should reject: /var/log/temp/data.log (outside project)"""
         output = run_hook("/var/log/temp/data.log")
         assert output is None, "Hook should not approve absolute paths to system directories"
 
@@ -113,14 +126,70 @@ class TestPathTraversalAndAbsolutePaths:
         assert output is None, "Hook should not approve complex parent directory traversal"
 
     def test_reject_absolute_home_with_temp(self):
-        """Should reject: /home/user/temp/file.txt"""
+        """Should reject: /home/user/temp/file.txt (outside project)"""
         output = run_hook("/home/user/temp/file.txt")
-        assert output is None, "Hook should not approve absolute paths even in user home"
+        assert output is None, "Hook should not approve absolute paths outside project"
 
     def test_reject_mixed_traversal(self):
         """Should reject: temp/subdir/../../../../../../bin/sh"""
         output = run_hook("temp/subdir/../../../../../../bin/sh")
         assert output is None, "Hook should not approve mixed traversal patterns"
+
+
+class TestAbsolutePathsWithProjectDir:
+    """Test cases for absolute paths within CLAUDE_PROJECT_DIR."""
+
+    def test_approve_absolute_path_in_project_temp(self):
+        """Should approve: /workspaces/project/temp/file.md with matching CLAUDE_PROJECT_DIR"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("/workspaces/project/temp/file.md", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_approve_absolute_path_nested_in_project_temp(self):
+        """Should approve: /workspaces/project/temp/subdir/data.json"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("/workspaces/project/temp/subdir/data.json", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_approve_absolute_path_deeply_nested(self):
+        """Should approve: /home/user/myproject/temp/a/b/c/file.txt"""
+        env = {"CLAUDE_PROJECT_DIR": "/home/user/myproject"}
+        output = run_hook("/home/user/myproject/temp/a/b/c/file.txt", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_reject_absolute_path_outside_project(self):
+        """Should reject: /other/project/temp/file.md (different project)"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("/other/project/temp/file.md", env=env)
+        assert output is None, "Hook should not approve paths outside project directory"
+
+    def test_reject_absolute_path_no_project_dir_set(self):
+        """Should reject: /workspaces/project/temp/file.md without CLAUDE_PROJECT_DIR"""
+        # Don't set CLAUDE_PROJECT_DIR - hook should reject all absolute paths
+        output = run_hook("/workspaces/project/temp/file.md", env={})
+        assert output is None, "Hook should reject absolute paths when CLAUDE_PROJECT_DIR not set"
+
+    def test_reject_absolute_path_not_in_temp(self):
+        """Should reject: /workspaces/project/src/file.py (not in temp/)"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("/workspaces/project/src/file.py", env=env)
+        assert output is None, "Hook should not approve paths outside temp/ directory"
+
+    def test_reject_absolute_path_with_traversal(self):
+        """Should reject: /workspaces/project/temp/../../../etc/passwd"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("/workspaces/project/temp/../../../etc/passwd", env=env)
+        assert output is None, "Hook should reject paths with traversal even within project"
+
+    def test_project_dir_with_trailing_slash(self):
+        """Should approve with trailing slash in CLAUDE_PROJECT_DIR"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project/"}
+        output = run_hook("/workspaces/project/temp/file.md", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
 class TestNonTempPaths:
