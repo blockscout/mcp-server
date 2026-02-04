@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
+from mcp.types import RequestParams
 
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
@@ -142,8 +143,6 @@ async def test_log_tool_invocation_logs_meta_fields(caplog: pytest.LogCaptureFix
         return a
 
     # Create context with meta
-    from mcp.types import RequestParams
-
     meta = RequestParams.Meta(
         **{
             "openai/userAgent": "ChatGPT/1.0",

@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+from mcp.types import RequestParams
+
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
     UNDEFINED_CLIENT_VERSION,
@@ -148,8 +150,6 @@ def test_parse_intermediary_header_multiple_values():
 
 def test_extract_client_meta_with_meta_dict_pydantic() -> None:
     """Verify that meta_dict is extracted from Pydantic model (model_dump)."""
-    from mcp.types import RequestParams
-
     # Create meta with OpenAI fields
     meta = RequestParams.Meta(
         **{
