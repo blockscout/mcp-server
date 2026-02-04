@@ -4,7 +4,7 @@ description: Generate a structured bug report for GitHub issues based on convers
 disable-model-invocation: true
 hooks:
   PreToolUse:
-    - matcher: "Write"
+    - matcher: "Write|Edit"
       hooks:
         - type: command
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
