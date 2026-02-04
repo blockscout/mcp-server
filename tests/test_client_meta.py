@@ -146,8 +146,8 @@ def test_parse_intermediary_header_multiple_values():
     assert _parse_intermediary_header(" ,HigressPlugin,Other", allowlist) == "HigressPlugin"
 
 
-def test_extract_client_meta_with_meta_dict() -> None:
-    """Verify that meta_dict is extracted from request context."""
+def test_extract_client_meta_with_meta_dict_pydantic() -> None:
+    """Verify that meta_dict is extracted from Pydantic model (model_dump)."""
     from mcp.types import RequestParams
 
     # Create meta with OpenAI fields
@@ -168,6 +168,28 @@ def test_extract_client_meta_with_meta_dict() -> None:
     assert result.meta_dict is not None
     assert result.meta_dict.get("openai/userAgent") == "ChatGPT/1.0"
     assert result.meta_dict.get("openai/userLocation") == "US-CA"
+
+
+def test_extract_client_meta_with_meta_dict_plain_dict() -> None:
+    """Verify that meta_dict is extracted from plain dict (e.g., parsed JSON for stdio/HTTP)."""
+    # Plain dict without model_dump method
+    meta = {
+        "openai/userAgent": "ChatGPT/1.0",
+        "openai/userLocation": "US-CA",
+        "progressToken": None,  # Should be filtered out
+    }
+
+    ctx = SimpleNamespace(
+        session=None,
+        request_context=SimpleNamespace(meta=meta, request=SimpleNamespace(headers={})),
+    )
+
+    result = extract_client_meta_from_ctx(ctx)
+
+    assert result.meta_dict is not None
+    assert result.meta_dict.get("openai/userAgent") == "ChatGPT/1.0"
+    assert result.meta_dict.get("openai/userLocation") == "US-CA"
+    assert "progressToken" not in result.meta_dict  # None values filtered
 
 
 def test_extract_client_meta_with_empty_meta() -> None:

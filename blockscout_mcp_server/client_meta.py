@@ -115,12 +115,20 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
 
             # Extract MCP meta field (vendor-specific fields like openai/userAgent)
             meta_obj = getattr(request_context, "meta", None)
-            if meta_obj is not None and hasattr(meta_obj, "model_dump"):
+            if meta_obj is not None:
                 try:
-                    extracted = meta_obj.model_dump()
+                    if hasattr(meta_obj, "model_dump"):
+                        # Pydantic model
+                        extracted = meta_obj.model_dump()
+                    elif isinstance(meta_obj, dict):
+                        # Plain dict (e.g., parsed JSON for stdio/HTTP)
+                        extracted = meta_obj
+                    else:
+                        extracted = {}
                     # Remove None values to keep dict clean
                     meta_dict = {k: v for k, v in extracted.items() if v is not None}
                 except Exception:
+                    # Tolerate unexpected meta shapes; don't lose already-extracted fields
                     pass
 
         # If client name is still undefined, fallback to User-Agent
