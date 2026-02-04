@@ -16,11 +16,15 @@ import pytest
 HOOK_PATH = Path(__file__).parent.parent / "allow-temp-dirs.py"
 
 
-def run_hook(command: str) -> dict | None:
+def run_hook(command: str, env: dict | None = None) -> dict | None:
     """
     Run the hook with a given Bash command and return the parsed output.
 
     Returns None if the hook produces no output (allowing normal permission flow).
+
+    Args:
+        command: The Bash command to test
+        env: Optional environment variables to pass to the hook
     """
     hook_input = {
         "tool_input": {
@@ -28,12 +32,21 @@ def run_hook(command: str) -> dict | None:
         }
     }
 
+    # Merge with current environment if custom env provided
+    run_env = None
+    if env:
+        import os
+
+        run_env = os.environ.copy()
+        run_env.update(env)
+
     result = subprocess.run(
         [sys.executable, str(HOOK_PATH)],
         input=json.dumps(hook_input),
         capture_output=True,
         text=True,
         check=False,
+        env=run_env,
     )
 
     if result.stdout.strip():
@@ -158,14 +171,14 @@ class TestPathTraversalAndAbsolutePaths:
         assert output is None, "Hook should not approve path traversal even with -p flag"
 
     def test_reject_absolute_path_with_temp_in_middle(self):
-        """Should reject: mkdir /etc/malicious/temp/subdir"""
+        """Should reject: mkdir /etc/malicious/temp/subdir (outside project)"""
         output = run_hook("mkdir /etc/malicious/temp/subdir")
-        assert output is None, "Hook should not approve absolute paths with temp in middle"
+        assert output is None, "Hook should not approve absolute paths outside project"
 
     def test_reject_absolute_path_with_temp_and_flag(self):
-        """Should reject: mkdir -p /var/log/temp/data"""
+        """Should reject: mkdir -p /var/log/temp/data (outside project)"""
         output = run_hook("mkdir -p /var/log/temp/data")
-        assert output is None, "Hook should not approve absolute paths with temp even with -p"
+        assert output is None, "Hook should not approve absolute paths outside project"
 
     def test_reject_parent_references_escaping_temp(self):
         """Should reject: mkdir temp/../../../etc/shadow"""
@@ -181,6 +194,69 @@ class TestPathTraversalAndAbsolutePaths:
         """Should reject: mkdir ./temp/../../../usr/local/bin"""
         output = run_hook("mkdir ./temp/../../../usr/local/bin")
         assert output is None, "Hook should not approve complex parent directory traversal"
+
+
+class TestAbsolutePathsWithProjectDir:
+    """Test cases for absolute paths within CLAUDE_PROJECT_DIR."""
+
+    def test_approve_absolute_path_in_project_temp(self):
+        """Should approve: mkdir /workspaces/project/temp/subdir with matching CLAUDE_PROJECT_DIR"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir /workspaces/project/temp/subdir", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_approve_absolute_path_with_p_flag(self):
+        """Should approve: mkdir -p /workspaces/project/temp/nested/dir"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir -p /workspaces/project/temp/nested/dir", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_approve_absolute_path_deeply_nested(self):
+        """Should approve: mkdir -p /home/user/myproject/temp/a/b/c"""
+        env = {"CLAUDE_PROJECT_DIR": "/home/user/myproject"}
+        output = run_hook("mkdir -p /home/user/myproject/temp/a/b/c", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_reject_absolute_path_outside_project(self):
+        """Should reject: mkdir /other/project/temp/subdir (different project)"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir /other/project/temp/subdir", env=env)
+        assert output is None, "Hook should not approve paths outside project directory"
+
+    def test_reject_absolute_path_no_project_dir_set(self):
+        """Should reject: mkdir /workspaces/project/temp/subdir without CLAUDE_PROJECT_DIR"""
+        # Don't set CLAUDE_PROJECT_DIR - hook should reject all absolute paths
+        output = run_hook("mkdir /workspaces/project/temp/subdir", env={})
+        assert output is None, "Hook should reject absolute paths when CLAUDE_PROJECT_DIR not set"
+
+    def test_reject_absolute_path_not_in_temp(self):
+        """Should reject: mkdir /workspaces/project/src/newdir (not in temp/)"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir /workspaces/project/src/newdir", env=env)
+        assert output is None, "Hook should not approve paths outside temp/ directory"
+
+    def test_reject_absolute_path_with_traversal(self):
+        """Should reject: mkdir /workspaces/project/temp/../../../etc"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir /workspaces/project/temp/../../../etc", env=env)
+        assert output is None, "Hook should reject paths with traversal even within project"
+
+    def test_project_dir_with_trailing_slash(self):
+        """Should approve with trailing slash in CLAUDE_PROJECT_DIR"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project/"}
+        output = run_hook("mkdir /workspaces/project/temp/subdir", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_approve_absolute_with_mode_flag(self):
+        """Should approve: mkdir -m 755 /workspaces/project/temp/subdir"""
+        env = {"CLAUDE_PROJECT_DIR": "/workspaces/project"}
+        output = run_hook("mkdir -m 755 /workspaces/project/temp/subdir", env=env)
+        assert output is not None
+        assert output["hookSpecificOutput"]["permissionDecision"] == "allow"
 
 
 class TestNonTempCommands:

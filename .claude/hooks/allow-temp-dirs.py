@@ -15,6 +15,7 @@ Usage in skill frontmatter:
 """
 
 import json
+import os
 import sys
 
 
@@ -27,13 +28,14 @@ def is_temp_mkdir_command(command: str) -> bool:
     - mkdir -p temp/subdir
     - mkdir -p temp/gh_issues
     - mkdir -p ./temp/impl_plans
+    - mkdir -p /absolute/path/to/project/temp/subdir (absolute within project)
 
     Security: Rejects commands with:
     - Multiple paths (mkdir temp/ok /etc)
     - Shell operators (mkdir temp/ok && rm -rf /)
     - Command substitution (mkdir temp/$(malicious))
     - Redirections or other shell metacharacters
-    - Absolute paths (mkdir /etc/malicious/temp/subdir)
+    - Absolute paths outside the project directory
     - Path traversal (mkdir ../other-project/temp/data)
     - Parent references (mkdir temp/../../../etc/shadow)
     """
@@ -79,17 +81,21 @@ def is_temp_mkdir_command(command: str) -> bool:
     # Normalize path separators
     normalized_path = path.replace("\\", "/")
 
-    # Reject absolute paths
-    if normalized_path.startswith("/"):
-        return False
-
     # Reject any path containing parent directory references
     if ".." in normalized_path:
         return False
 
+    # Handle absolute paths: allow if within CLAUDE_PROJECT_DIR/temp/
+    if normalized_path.startswith("/"):
+        project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
+        if project_dir:
+            project_temp = f"{project_dir.rstrip('/')}/temp/"
+            if normalized_path.startswith(project_temp):
+                return True
+        return False
+
     # Only allow paths that start with temp/ or ./temp/
     # This ensures we're creating directories within the temp/ directory
-    # and prevents paths like /etc/malicious/temp/subdir
     return normalized_path.startswith("temp/") or normalized_path.startswith("./temp/")
 
 
