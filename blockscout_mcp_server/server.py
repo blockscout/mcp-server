@@ -59,8 +59,8 @@ chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for cha
 # The MCP SDK enforces DNS rebinding protection by validating request Host headers, which blocks
 # tunneling tools like ngrok by default. To support development/testing via tunnels, allow
 # operators to configure host and origin allowlists via BLOCKSCOUT_MCP_ALLOWED_HOSTS and
-# BLOCKSCOUT_MCP_ALLOWED_ORIGINS. When both are empty, protection is disabled for backward
-# compatibility; otherwise it is enabled with the provided allowlists.
+# BLOCKSCOUT_MCP_ALLOWED_ORIGINS. When both are empty, we defer to the MCP SDK defaults so
+# existing DNS rebinding protection behavior remains unchanged.
 # Example: BLOCKSCOUT_MCP_ALLOWED_HOSTS="example.ngrok-free.app"
 # Example: BLOCKSCOUT_MCP_ALLOWED_ORIGINS="https://example.ngrok-free.app"
 def _split_env_list(value: str | None) -> list[str]:
@@ -69,11 +69,11 @@ def _split_env_list(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-def _transport_security_settings() -> TransportSecuritySettings:
+def _transport_security_settings() -> TransportSecuritySettings | None:
     allowed_hosts = _split_env_list(config.mcp_allowed_hosts)
     allowed_origins = _split_env_list(config.mcp_allowed_origins)
     if not allowed_hosts and not allowed_origins:
-        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+        return None
     return TransportSecuritySettings(
         enable_dns_rebinding_protection=True,
         allowed_hosts=allowed_hosts,

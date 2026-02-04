@@ -242,8 +242,8 @@ tunneling for development and testing:
    python -m blockscout_mcp_server --http
    ```
 
-**Note:** These settings are for development only. DNS rebinding protection is automatically disabled when these
-variables are not set, providing backward compatibility for existing deployments.
+**Note:** These settings are for development only. When these variables are not set, the MCP SDK defaults apply
+(DNS rebinding protection remains enabled unless the SDK default changes).
 
 For more details on ngrok tunneling with MCP servers, see the [OpenAI Apps SDK Examples
 documentation](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt).

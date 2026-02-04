@@ -46,7 +46,7 @@ tunnels by default since the hostname differs from `localhost`.
 
 **Behavior:**
 
-- Both variables empty/unset → DNS rebinding protection **disabled** (backward compatibility)
+- Both variables empty/unset → MCP SDK defaults apply (DNS rebinding protection remains enabled unless SDK defaults change)
 - Either variable set → DNS rebinding protection **enabled** with specified allowlists
 
 Reference: [OpenAI Apps SDK Examples](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt)

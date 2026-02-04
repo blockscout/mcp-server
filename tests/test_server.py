@@ -253,16 +253,14 @@ def test_split_env_list_multiple_values():
     assert server._split_env_list("one, two , ,three") == ["one", "two", "three"]
 
 
-def test_transport_security_settings_disabled_by_default(monkeypatch):
+def test_transport_security_settings_default_uses_sdk_defaults(monkeypatch):
     from blockscout_mcp_server import server
 
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
 
     settings = server._transport_security_settings()
-    assert settings.enable_dns_rebinding_protection is False
-    assert settings.allowed_hosts == []
-    assert settings.allowed_origins == []
+    assert settings is None
 
 
 def test_transport_security_settings_allowed_hosts(monkeypatch):
