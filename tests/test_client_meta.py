@@ -144,3 +144,45 @@ def test_parse_intermediary_header_too_long():
 def test_parse_intermediary_header_multiple_values():
     allowlist = "ClaudeDesktop,HigressPlugin"
     assert _parse_intermediary_header(" ,HigressPlugin,Other", allowlist) == "HigressPlugin"
+
+
+def test_extract_client_meta_with_meta_dict() -> None:
+    """Verify that meta_dict is extracted from request context."""
+    from mcp.types import RequestParams
+
+    # Create meta with OpenAI fields
+    meta = RequestParams.Meta(
+        **{
+            "openai/userAgent": "ChatGPT/1.0",
+            "openai/userLocation": "US-CA",
+        }
+    )
+
+    ctx = SimpleNamespace(
+        session=None,
+        request_context=SimpleNamespace(meta=meta, request=SimpleNamespace(headers={})),
+    )
+
+    result = extract_client_meta_from_ctx(ctx)
+
+    assert result.meta_dict is not None
+    assert result.meta_dict.get("openai/userAgent") == "ChatGPT/1.0"
+    assert result.meta_dict.get("openai/userLocation") == "US-CA"
+
+
+def test_extract_client_meta_with_empty_meta() -> None:
+    """Verify that empty meta_dict is handled gracefully."""
+    ctx = SimpleNamespace(session=None, request_context=SimpleNamespace(meta=None, request=None))
+
+    result = extract_client_meta_from_ctx(ctx)
+
+    assert result.meta_dict == {}
+
+
+def test_extract_client_meta_no_request_context() -> None:
+    """Verify that missing request_context doesn't break extraction."""
+    ctx = SimpleNamespace(session=None, request_context=None)
+
+    result = extract_client_meta_from_ctx(ctx)
+
+    assert result.meta_dict == {}
