@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from blockscout_mcp_server.config import config
@@ -18,6 +18,7 @@ class ClientMeta:
     version: str
     protocol: str
     user_agent: str
+    meta_dict: dict[str, Any] = field(default_factory=dict)  # Raw _meta from request context
 
 
 def get_header_case_insensitive(headers: Any, key: str, default: str = "") -> str:
@@ -83,6 +84,7 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
     client_version = UNDEFINED_CLIENT_VERSION
     protocol: str = UNKNOWN_PROTOCOL_VERSION
     user_agent: str = ""
+    meta_dict: dict[str, Any] = {}
     intermediary: str = ""
 
     try:
@@ -97,16 +99,38 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
                     client_name = client_info.name
                 if getattr(client_info, "version", None):
                     client_version = client_info.version
-        # Read User-Agent from HTTP request (if present)
-        request = getattr(getattr(ctx, "request_context", None), "request", None)
-        if request is not None:
-            headers = request.headers or {}
-            user_agent = get_header_case_insensitive(headers, "user-agent", "")
-            header_name = config.intermediary_header
-            allowlist_raw = config.intermediary_allowlist
-            if header_name and allowlist_raw:
-                intermediary_raw = get_header_case_insensitive(headers, header_name, "")
-                intermediary = _parse_intermediary_header(intermediary_raw, allowlist_raw)
+        # Extract request_context once for reuse
+        request_context = getattr(ctx, "request_context", None)
+        if request_context is not None:
+            # Read User-Agent from HTTP request (if present)
+            request = getattr(request_context, "request", None)
+            if request is not None:
+                headers = request.headers or {}
+                user_agent = get_header_case_insensitive(headers, "user-agent", "")
+                header_name = config.intermediary_header
+                allowlist_raw = config.intermediary_allowlist
+                if header_name and allowlist_raw:
+                    intermediary_raw = get_header_case_insensitive(headers, header_name, "")
+                    intermediary = _parse_intermediary_header(intermediary_raw, allowlist_raw)
+
+            # Extract MCP meta field (vendor-specific fields like openai/userAgent)
+            meta_obj = getattr(request_context, "meta", None)
+            if meta_obj is not None:
+                try:
+                    if hasattr(meta_obj, "model_dump"):
+                        # Pydantic model
+                        extracted = meta_obj.model_dump()
+                    elif isinstance(meta_obj, dict):
+                        # Plain dict (e.g., parsed JSON for stdio/HTTP)
+                        extracted = meta_obj
+                    else:
+                        extracted = {}
+                    # Remove None values to keep dict clean
+                    meta_dict = {k: v for k, v in extracted.items() if v is not None}
+                except Exception:
+                    # Tolerate unexpected meta shapes; don't lose already-extracted fields
+                    pass
+
         # If client name is still undefined, fallback to User-Agent
         if client_name == UNDEFINED_CLIENT_NAME and user_agent:
             client_name = user_agent
@@ -115,4 +139,10 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
     except Exception:  # pragma: no cover - tolerate any ctx shape
         pass
 
-    return ClientMeta(name=client_name, version=client_version, protocol=protocol, user_agent=user_agent)
+    return ClientMeta(
+        name=client_name,
+        version=client_version,
+        protocol=protocol,
+        user_agent=user_agent,
+        meta_dict=meta_dict,
+    )

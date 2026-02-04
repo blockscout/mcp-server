@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
+from mcp.types import RequestParams
 
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
@@ -130,3 +131,56 @@ async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> No
         UNDEFINED_CLIENT_VERSION,
         UNKNOWN_PROTOCOL_VERSION,
     )
+
+
+@pytest.mark.asyncio
+async def test_log_tool_invocation_logs_meta_fields(caplog: pytest.LogCaptureFixture, mock_ctx: Context) -> None:
+    """Verify that MCP meta fields including OpenAI fields are logged in Tool invoked message."""
+    caplog.set_level(logging.INFO, logger="blockscout_mcp_server.tools.decorators")
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    # Create context with meta
+    meta = RequestParams.Meta(
+        **{
+            "openai/userAgent": "ChatGPT/1.0",
+            "openai/userLocation": "US-CA",
+        }
+    )
+
+    mock_request = SimpleNamespace(headers={})
+    mock_ctx.request_context = SimpleNamespace(meta=meta, request=mock_request)
+    mock_ctx.session = None
+
+    await dummy_tool(1, ctx=mock_ctx)
+
+    log_text = caplog.text
+    assert "Tool invoked: dummy_tool" in log_text
+    assert "Meta:" in log_text
+    assert "openai/userAgent" in log_text
+    assert "ChatGPT/1.0" in log_text
+    assert "openai/userLocation" in log_text
+    assert "US-CA" in log_text
+
+
+@pytest.mark.asyncio
+async def test_log_tool_invocation_no_meta_no_log(caplog: pytest.LogCaptureFixture, mock_ctx: Context) -> None:
+    """Verify that empty meta_dict doesn't appear in log."""
+    caplog.set_level(logging.INFO, logger="blockscout_mcp_server.tools.decorators")
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    # Context with no meta
+    mock_ctx.request_context = None
+    mock_ctx.session = None
+
+    result = await dummy_tool(1, ctx=mock_ctx)
+    assert result == 1
+
+    log_text = caplog.text
+    assert "Tool invoked: dummy_tool" in log_text
+    assert "Meta:" not in log_text
