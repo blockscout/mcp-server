@@ -42,8 +42,11 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
 
         log_message = (
             f"Tool invoked: {func.__name__} with args: {arg_dict} "
-            f"(Client: {client_name}, Version: {client_version}, Protocol: {protocol_version})"
+            f"(Client: {client_name}, Version: {client_version}, Protocol: {protocol_version}"
         )
+        if meta.meta_dict:
+            log_message += f", Meta: {meta.meta_dict}"
+        log_message += ")"
         logger.info(log_message)
 
         try:

@@ -4,7 +4,7 @@ description: Generate a structured improvement/enhancement proposal for GitHub i
 disable-model-invocation: true
 hooks:
   PreToolUse:
-    - matcher: "Write"
+    - matcher: "Write|Edit"
       hooks:
         - type: command
           command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"

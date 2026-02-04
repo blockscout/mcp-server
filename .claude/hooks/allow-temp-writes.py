@@ -15,6 +15,7 @@ Usage in skill frontmatter:
 """
 
 import json
+import os
 import sys
 
 
@@ -25,9 +26,10 @@ def is_temp_path(file_path: str) -> bool:
     Handles various path formats:
     - temp/file.md (relative from project root)
     - ./temp/file.md (explicit relative)
+    - /absolute/path/to/project/temp/file.md (absolute within project)
 
     Security: Rejects paths with:
-    - Absolute paths (/etc/malicious/temp/file.txt)
+    - Absolute paths outside the project directory
     - Path traversal (../other-project/temp/data.json)
     - Parent references (temp/../../../etc/shadow)
     """
@@ -37,17 +39,21 @@ def is_temp_path(file_path: str) -> bool:
     # Normalize path separators for consistency
     normalized = file_path.replace("\\", "/")
 
-    # Reject absolute paths
-    if normalized.startswith("/"):
-        return False
-
     # Reject any path containing parent directory references
     if ".." in normalized:
         return False
 
+    # Handle absolute paths: allow if within CLAUDE_PROJECT_DIR/temp/
+    if normalized.startswith("/"):
+        project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
+        if project_dir:
+            project_temp = f"{project_dir.rstrip('/')}/temp/"
+            if normalized.startswith(project_temp):
+                return True
+        return False
+
     # Only allow paths that start with temp/ or ./temp/
     # This ensures we're writing files within the temp/ directory
-    # and prevents paths like /etc/malicious/temp/file.txt
     return normalized.startswith("temp/") or normalized.startswith("./temp/")
 
 
