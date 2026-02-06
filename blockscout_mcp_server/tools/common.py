@@ -552,6 +552,7 @@ def build_tool_response(
     notes: list[str] | None = None,
     instructions: list[str] | None = None,
     pagination: PaginationInfo | None = None,
+    content_text: str | None = None,
 ) -> ToolResponse[Any]:
     """
     Construct a standardized ToolResponse object.
@@ -562,6 +563,7 @@ def build_tool_response(
         notes: Optional list of strings for warnings or contextual notes.
         instructions: Optional list of strings for follow-up actions.
         pagination: Optional PaginationInfo object if the data is paginated.
+        content_text: Optional human-readable summary text for MCP content output.
 
     Returns:
         A ToolResponse instance.
@@ -587,6 +589,7 @@ def build_tool_response(
         notes=notes,
         instructions=final_instructions_output,
         pagination=pagination,
+        content_text=content_text,
     )
 
 

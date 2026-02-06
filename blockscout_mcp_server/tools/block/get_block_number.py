@@ -80,7 +80,10 @@ async def get_block_number(
             if block_number is None or timestamp is None:
                 raise ValueError("Blockscout API returned an incomplete latest block response.")
             block_data = BlockNumberData(block_number=int(block_number), timestamp=timestamp)
-            return build_tool_response(data=block_data)
+            return build_tool_response(
+                data=block_data,
+                content_text=(f"Latest block on chain {chain_id}: {block_number} (timestamp: {timestamp})."),
+            )
 
         raise ValueError("Could not retrieve latest block data from the API.")
 
@@ -152,4 +155,10 @@ async def get_block_number(
     )
 
     block_data = BlockNumberData(block_number=block_number_int, timestamp=block_timestamp)
-    return build_tool_response(data=block_data)
+    return build_tool_response(
+        data=block_data,
+        content_text=(
+            f"Block {block_number_int} is the closest block before {datetime} on chain {chain_id} "
+            f"(actual timestamp: {block_timestamp})."
+        ),
+    )

@@ -121,4 +121,12 @@ async def get_transactions_by_address(
         for item in final_items
     ]
 
-    return build_tool_response(data=transformed_items, pagination=pagination)
+    range_text = f"from {age_from}" if age_to is None else f"from {age_from} to {age_to}"
+    content_text = f"Found {len(transformed_items)} transactions for {address} on chain {chain_id} {range_text}."
+    if pagination is not None:
+        content_text = (
+            f"Returned {len(transformed_items)} transactions for {address} on chain {chain_id} {range_text}. "
+            "More pages available."
+        )
+
+    return build_tool_response(data=transformed_items, pagination=pagination, content_text=content_text)

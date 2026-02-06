@@ -56,4 +56,13 @@ async def get_contract_abi(
     # Extract the ABI from the API response as it is
     abi_data = ContractAbiData(abi=response_data.get("abi"))
 
-    return build_tool_response(data=abi_data)
+    abi_entries = abi_data.abi or []
+    function_count = sum(1 for entry in abi_entries if isinstance(entry, dict) and entry.get("type") == "function")
+    event_count = sum(1 for entry in abi_entries if isinstance(entry, dict) and entry.get("type") == "event")
+
+    return build_tool_response(
+        data=abi_data,
+        content_text=(
+            f"ABI for contract {address} on chain {chain_id}: {function_count} functions, {event_count} events."
+        ),
+    )

@@ -139,4 +139,19 @@ async def direct_api_call(
             raise ResponseTooLargeError(message)
 
     data = DirectApiData.model_validate(response_json)
-    return build_tool_response(data=data, pagination=pagination)
+
+    if pagination is not None and isinstance(response_json, dict) and isinstance(response_json.get("items"), list):
+        content_text = (
+            f"Called {endpoint_path} on chain {chain_id}. Returned {len(response_json.get('items', []))} items. "
+            "More pages available."
+        )
+    elif isinstance(response_json, dict):
+        content_text = (
+            f"Called {endpoint_path} on chain {chain_id}. Response type: object with {len(response_json)} keys."
+        )
+    elif isinstance(response_json, list):
+        content_text = f"Called {endpoint_path} on chain {chain_id}. Response type: list of {len(response_json)} items."
+    else:
+        content_text = f"Called {endpoint_path} on chain {chain_id}. Response type: {type(response_json).__name__}."
+
+    return build_tool_response(data=data, pagination=pagination, content_text=content_text)

@@ -544,3 +544,23 @@ def test_build_tool_response_with_pagination_instructions():
     )
 
     assert response_empty_instructions.instructions == []
+
+
+def test_tool_response_content_text_excluded_from_serialization():
+    response = ToolResponse[dict](data={"ok": True}, content_text="summary")
+
+    assert response.content_text == "summary"
+    assert "content_text" not in response.model_dump()
+    assert "content_text" not in json.loads(response.model_dump_json())
+
+
+def test_build_tool_response_supports_content_text():
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    response = build_tool_response(data="test", content_text="Summary text")
+
+    assert response.content_text == "Summary text"
+    assert "content_text" not in response.model_dump()
+
+    response_without = build_tool_response(data="test")
+    assert response_without.content_text is None

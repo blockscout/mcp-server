@@ -74,4 +74,6 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
         message="Successfully fetched chains list." if not from_cache else "Chains list returned from cache.",
     )
 
-    return build_tool_response(data=chains or [])
+    chains = chains or []
+    content_text = f"Retrieved {len(chains)} known blockchain chains."
+    return build_tool_response(data=chains, content_text=content_text)

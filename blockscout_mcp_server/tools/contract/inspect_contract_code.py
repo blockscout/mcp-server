@@ -55,10 +55,18 @@ async def inspect_contract_code(
                     "'file_name' argument using one of the values from 'source_code_tree_structure'."
                 )
             ]
-        return build_tool_response(data=metadata, instructions=instructions, notes=notes)
+        return build_tool_response(
+            data=metadata,
+            instructions=instructions,
+            notes=notes,
+            content_text=(f"Contract {address} on chain {chain_id}: {len(processed.source_files)} source files."),
+        )
     if file_name not in processed.source_files:
         available = ", ".join(processed.source_files.keys())
         raise ValueError(
             f"File '{file_name}' not found in the source code for this contract. Available files: {available}"
         )
-    return build_tool_response(data=ContractSourceFile(file_content=processed.source_files[file_name]))
+    return build_tool_response(
+        data=ContractSourceFile(file_content=processed.source_files[file_name]),
+        content_text=f'Source file "{file_name}" for contract {address} on chain {chain_id}.',
+    )

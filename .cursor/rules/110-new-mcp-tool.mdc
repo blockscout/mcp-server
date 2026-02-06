@@ -210,7 +210,7 @@ async def tool_name(
         # Additional fields preserved automatically if using extra="allow"
     )
     
-    return build_tool_response(data=structured_data)
+    return build_tool_response(data=structured_data, content_text="Human-readable summary of the result.")
 ```
 
 For tools that use fixed API endpoints (like BENS or other services):
@@ -254,7 +254,7 @@ async def tool_name(
         # Additional fields preserved automatically if using extra="allow"
     )
     
-    return build_tool_response(data=structured_data)
+    return build_tool_response(data=structured_data, content_text="Human-readable summary of the result.")
 ```
 
 ## Implementation Patterns

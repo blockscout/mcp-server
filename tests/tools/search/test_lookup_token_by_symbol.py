@@ -80,7 +80,8 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
 
@@ -144,7 +145,8 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert len(result.data) == 7
         assert mock_ctx.report_progress.call_count == 3
         assert mock_ctx.info.call_count == 3
@@ -203,7 +205,8 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert len(result.data) == 7
         assert mock_ctx.report_progress.call_count == 3
 
@@ -238,7 +241,8 @@ async def test_lookup_token_by_symbol_empty_results(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert mock_ctx.report_progress.call_count == 3
 
 
@@ -303,7 +307,8 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert mock_ctx.report_progress.call_count == 3
 
 
@@ -363,7 +368,8 @@ async def test_lookup_token_by_symbol_total_supply_none(mock_ctx):
 
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert result.data[0].total_supply is None
         assert mock_ctx.report_progress.call_count == 3
 
@@ -454,5 +460,6 @@ async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/search", params={"q": symbol})
-        assert result == expected_result
+        assert result.model_dump() == expected_result.model_dump()
+        assert result.content_text is not None
         assert mock_ctx.report_progress.call_count == 3

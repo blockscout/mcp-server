@@ -271,6 +271,9 @@ This endpoint is deprecated and always returns a static notice.
 
 ## Common Patterns
 
+- Include `content_text` in `build_tool_response(...)` for each new handler so MCP clients receive human-readable summaries.
+
+
 ### Pagination Parameter Updates
 
 **Old Pattern:**
