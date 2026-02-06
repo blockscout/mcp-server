@@ -103,6 +103,6 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         data=instructions_data,
         content_text=(
             f"Session initialized (server v{SERVER_VERSION}). "
-            "Pay extra attention on special instructions when use MCP server tools."
+            "Pay extra attention on special instructions when using MCP server tools."
         ),
     )

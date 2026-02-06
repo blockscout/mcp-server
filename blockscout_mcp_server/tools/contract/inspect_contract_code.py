@@ -59,7 +59,7 @@ async def inspect_contract_code(
             data=metadata,
             instructions=instructions,
             notes=notes,
-            content_text=(f"Contract {address} on chain {chain_id}: {len(processed.source_files)} source files."),
+            content_text=f"Contract {address} on chain {chain_id}: {len(processed.source_files)} source files.",
         )
     if file_name not in processed.source_files:
         available = ", ".join(processed.source_files.keys())
