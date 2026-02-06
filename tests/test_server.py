@@ -1,6 +1,7 @@
 import re
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
@@ -301,9 +302,8 @@ def test_transport_security_settings_hosts_and_origins(monkeypatch):
     assert settings.allowed_origins == ["https://one"]
 
 
-def test_wrap_tool_for_structured_output_with_content_text():
-    import asyncio
-
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_with_content_text():
     from blockscout_mcp_server.models import ToolResponse
     from blockscout_mcp_server.server import _wrap_tool_for_structured_output
 
@@ -312,7 +312,7 @@ def test_wrap_tool_for_structured_output_with_content_text():
         return ToolResponse(data={"a": 1}, content_text="hello")
 
     wrapped = _wrap_tool_for_structured_output(_tool)
-    result = asyncio.run(wrapped())
+    result = await wrapped()
 
     assert result.content[0].text == "hello"
     assert result.structuredContent == {
@@ -324,9 +324,8 @@ def test_wrap_tool_for_structured_output_with_content_text():
     }
 
 
-def test_wrap_tool_for_structured_output_fallback_and_metadata():
-    import asyncio
-
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_fallback_and_metadata():
     from blockscout_mcp_server.models import ToolResponse
     from blockscout_mcp_server.server import _wrap_tool_for_structured_output
 
@@ -335,7 +334,7 @@ def test_wrap_tool_for_structured_output_fallback_and_metadata():
         return ToolResponse(data={"a": 1})
 
     wrapped = _wrap_tool_for_structured_output(_tool)
-    result = asyncio.run(wrapped())
+    result = await wrapped()
 
     assert result.content[0].text == "Tool executed successfully."
     assert "content_text" not in result.structuredContent
@@ -344,8 +343,9 @@ def test_wrap_tool_for_structured_output_fallback_and_metadata():
     assert wrapped.__annotations__ == _tool.__annotations__
 
 
-def test_all_registered_tools_have_output_schema():
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_output_schema():
     from blockscout_mcp_server import server
 
-    for tool in server.mcp._tool_manager._tools.values():
-        assert tool.fn_metadata.output_schema is not None
+    for tool in await server.mcp.list_tools():
+        assert tool.outputSchema is not None
