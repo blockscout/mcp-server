@@ -82,7 +82,7 @@ async def get_block_number(
             block_data = BlockNumberData(block_number=int(block_number), timestamp=timestamp)
             return build_tool_response(
                 data=block_data,
-                content_text=(f"Latest block on chain {chain_id}: {block_number} (timestamp: {timestamp})."),
+                content_text=f"Latest block on chain {chain_id}: {block_number} (timestamp: {timestamp}).",
             )
 
         raise ValueError("Could not retrieve latest block data from the API.")
