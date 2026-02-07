@@ -181,4 +181,7 @@ async def read_contract(
         total=2.0,
         message="Contract call successful.",
     )
-    return build_tool_response(data=ContractReadData(result=result))
+    return build_tool_response(
+        data=ContractReadData(result=result),
+        content_text=f"Called {function_name} on {address} (chain {chain_id}), block {block}.",
+    )

@@ -99,4 +99,10 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         message="Server instructions ready.",
     )
 
-    return build_tool_response(data=instructions_data)
+    return build_tool_response(
+        data=instructions_data,
+        content_text=(
+            f"Session initialized (server v{SERVER_VERSION}). "
+            "Pay extra attention to the special instructions when using MCP server tools."
+        ),
+    )
