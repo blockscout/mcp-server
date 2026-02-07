@@ -131,4 +131,9 @@ async def get_address_info(
         ),
     ]
 
-    return build_tool_response(data=address_data, notes=notes or None, instructions=instructions)
+    return build_tool_response(
+        data=address_data,
+        notes=notes or None,
+        instructions=instructions,
+        content_text=f"Received information for address {address} on chain {chain_id}.",
+    )

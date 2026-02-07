@@ -1,6 +1,7 @@
 import re
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
@@ -297,3 +298,52 @@ def test_transport_security_settings_hosts_and_origins(monkeypatch):
     assert settings.enable_dns_rebinding_protection is True
     assert settings.allowed_hosts == ["host1"]
     assert settings.allowed_origins == ["https://one"]
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_with_content_text():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool() -> ToolResponse[dict]:
+        """doc"""
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped()
+
+    assert result.content[0].text == "hello"
+    assert result.structuredContent == {
+        "data": {"a": 1},
+        "data_description": None,
+        "notes": None,
+        "instructions": None,
+        "pagination": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_fallback_and_metadata():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool() -> ToolResponse[dict]:
+        """wrapped doc"""
+        return ToolResponse(data={"a": 1})
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped()
+
+    assert result.content[0].text == "Tool executed successfully."
+    assert "content_text" not in result.structuredContent
+    assert wrapped.__name__ == _tool.__name__
+    assert wrapped.__doc__ == _tool.__doc__
+    assert wrapped.__annotations__ == _tool.__annotations__
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_output_schema():
+    from blockscout_mcp_server import server
+
+    for tool in await server.mcp.list_tools():
+        assert tool.outputSchema is not None

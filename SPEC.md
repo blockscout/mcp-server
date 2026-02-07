@@ -267,6 +267,39 @@ This architecture provides the flexibility of a multi-protocol server without th
     }
     ```
 
+   **Structured Output and Human-Readable Summaries**
+
+   To support platforms that consume both `content` and `structuredContent` from MCP tool results (such as ChatGPT Apps), the server enables structured output for all tools. Each tool response carries both:
+
+   - **`structuredContent`**: The full `ToolResponse` dict, schema-validated by the MCP SDK against the tool's `outputSchema` (derived from the function's return type annotation).
+   - **`content`**: A concise, human-readable summary of the result, constructed by each tool and provided via the `content_text` field on `ToolResponse`.
+
+   **The `content_text` Field and Serialization Exclusion**
+
+   The `ToolResponse` model includes a `content_text: str | None` field with `Field(exclude=True)`. Pydantic's `exclude=True` ensures this field is omitted from `model_dump()` and `model_dump_json()` output. This has three important consequences:
+
+   1. **No data duplication in `structuredContent`**: When the server serializes `ToolResponse` for the `structuredContent` field, `content_text` is automatically excluded.
+   2. **REST API unaffected**: The REST API calls `tool_response.model_dump()` to build JSON responses — `content_text` is not included, preserving backward compatibility.
+   3. **Python-only accessibility**: The `content_text` value is only accessible as a Python attribute on the `ToolResponse` instance, which is exactly what the registration-layer wrapper needs to populate the `content` field of `CallToolResult`.
+
+   **Registration-Layer Conversion**
+
+   Tool functions continue to return `ToolResponse[SomeModel]` with truthful type annotations. A wrapper function applied at tool registration time in `server.py` converts the `ToolResponse` into a `CallToolResult`:
+   - Reads `content_text` from the `ToolResponse` to populate `content`
+   - Calls `model_dump(mode="json")` to populate `structuredContent`
+
+   This conversion is transparent to tool functions, the REST API, and unit tests — all of which interact with the unwrapped tool functions directly.
+
+   **Summary Construction Principles**
+
+   Each tool constructs its `content_text` following consistent conventions:
+
+   - **"Found" vs "Returned"**: "Found N items" indicates a complete result; "Returned N items" indicates a paginated page with more data available.
+   - **Input parameter echo**: Key input parameters (address, chain_id, date range) are included for request-response correlation.
+   - **No data duplication**: Summaries do not repeat data that the model can read from `structuredContent`.
+   - **Pagination signal**: When more pages are available, the summary appends "More pages available."
+   - **Conditional fields**: Optional details (like transaction value or method name) are only included when present and meaningful.
+
 4. **Async Web3 Connection Pool**:
    - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to interact with Blockscout's JSON-RPC interface.
    - Connection pooling reuses TCP connections, reducing latency and resource usage.

@@ -52,3 +52,6 @@ async def handle_my_endpoint(
     # ... process response_json ...
     return build_tool_response(data=processed_data)
 ```
+
+
+- Handlers should set `content_text` in `build_tool_response(...)` to provide a concise human-readable summary for MCP `content` output.
