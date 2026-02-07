@@ -16,13 +16,13 @@
 	},
 	// Allows to connect to services on the host machine (e.g Ollama) from inside the container.
 	// "runArgs": [ "--add-host=host.docker.internal:host-gateway"],
-	"mounts": [
-		"source=${localEnv:HOME}/.ssh/config,target=/home/vscode/.ssh/config,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/.ssh/id_rsa,target=/home/vscode/.ssh/id_rsa,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/.claude.devcontainer.json,target=/home/vscode/.claude.json,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind,consistency=cached"
-	],
+	// "mounts": [
+	// 	"source=${localEnv:HOME}/.ssh/config,target=/home/vscode/.ssh/config,type=bind,consistency=cached",
+	// 	"source=${localEnv:HOME}/.ssh/id_rsa,target=/home/vscode/.ssh/id_rsa,type=bind,consistency=cached",
+	// 	"source=${localEnv:HOME}/.claude.devcontainer.json,target=/home/vscode/.claude.json,type=bind,consistency=cached",
+	// 	"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+	// 	"source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind,consistency=cached"
+	// ],
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
