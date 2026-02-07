@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Session Bootstrap"
+  short_description: "Read mandatory Cursor rules at every session start"
+  default_prompt: "Use $codex-session-bootstrap to run mandatory startup reads before any task in this repository."

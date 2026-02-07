@@ -15,8 +15,19 @@
   },
   "permissions": {
     "allow": [
+      "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(gh pr diff:*)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(gh pr diff:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(git log:*)",
+      "Bash(git clone:*)",
+      "Bash(git ls-remote:*)"
     ]
   }
 }
