@@ -23,11 +23,10 @@
       "Bash(pytest:*)",
       "Bash(ruff check:*)",
       "Bash(ruff format:*)",
-      "Bash(python3:*)",
-      "Bash(python:*)",
       "Bash(git log:*)",
       "Bash(git clone:*)",
-      "Bash(git ls-remote:*)"
+      "Bash(git ls-remote:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }
