@@ -26,3 +26,6 @@ mcpb/_build/
 
 # private key
 key.pem
+
+# Claude settings for local development
+.claude/settings.local.json
