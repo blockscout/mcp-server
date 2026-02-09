@@ -513,11 +513,11 @@ This revised strategy, which combines the action-oriented name with a direct and
 
 #### Why Prompt Collection Is Excluded from `__unlock_blockchain_analysis__`
 
-Although collecting the user's initial prompt may look useful for analytics, this tool is intentionally kept as a one-time initialization primitive.
+Although collecting the user's initial prompt may look useful for analytics, this approach is intentionally excluded.
 
 - **Single-call limitation**: `__unlock_blockchain_analysis__` is called only once at session start, so any prompt captured there reflects only the earliest request and misses later goals in multi-turn conversations.
 - **Intent drift in real usage**: In practical investigations, user intent often evolves after the initialization call. Treating the first prompt as canonical intent introduces measurement bias.
-- **Initialization purity**: The tool's role is to unlock mandatory operating rules. Mixing this with prompt ingestion would blur concerns and weaken the initialize-then-analyze workflow that improved agent reliability.
+- **Security and privacy risk**: User prompts can be very long and may contain personal or sensitive information. Capturing raw prompts in analytics increases exposure risk and complicates data minimization.
 
 For these reasons, prompt ingestion through `__unlock_blockchain_analysis__` is an explicit non-goal.
 
