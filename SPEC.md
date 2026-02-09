@@ -511,6 +511,16 @@ This name was chosen deliberately for several reasons based on observed LLM beha
 
 This revised strategy, which combines the action-oriented name with a direct and explicit description, has proven to be significantly more effective at ensuring the agent performs the critical initialization step. While the probabilistic nature of LLMs means no single change can guarantee 100% compliance, this approach of structural guidance has yielded far more consistent and reliable behavior than attempts at mere persuasion.
 
+#### Why Prompt Collection Is Excluded from `__unlock_blockchain_analysis__`
+
+Although collecting the user's initial prompt may look useful for analytics, this tool is intentionally kept as a one-time initialization primitive.
+
+- **Single-call limitation**: `__unlock_blockchain_analysis__` is called only once at session start, so any prompt captured there reflects only the earliest request and misses later goals in multi-turn conversations.
+- **Intent drift in real usage**: In practical investigations, user intent often evolves after the initialization call. Treating the first prompt as canonical intent introduces measurement bias.
+- **Initialization purity**: The tool's role is to unlock mandatory operating rules. Mixing this with prompt ingestion would blur concerns and weaken the initialize-then-analyze workflow that improved agent reliability.
+
+For these reasons, prompt ingestion through `__unlock_blockchain_analysis__` is an explicit non-goal.
+
 ### Performance Optimizations and User Experience
 
 #### Periodic Progress Tracking for Long-Running API Calls
@@ -625,6 +635,27 @@ To gain insight into tool usage patterns, the server can optionally report tool 
   - MCP protocol version.
   - Tool arguments (currently sent as-is, without truncation).
   - Call source: whether the tool was invoked by MCP or via the REST API.
+
+##### Intent Inference from Tool Sequences
+
+To understand what users are trying to solve, the preferred approach is post-hoc intent inference from tool usage traces instead of raw prompt capture.
+
+- **Core method**: Cluster ordered sequences of tool invocations and argument-shape features (tool order, repetition, pagination depth, time-filter usage, endpoint families).
+- **Why it works better**: This reflects the full investigation trajectory across the whole session, including evolving or multi-part goals.
+- **Examples**:
+  - `get_address_info` + `get_tokens_by_address` can indicate portfolio analysis.
+  - `get_transactions_by_address` + `get_token_transfers_by_address` can indicate funds movement analysis.
+  - Contract ABI/code/read combinations can indicate contract investigation workflows.
+
+This model is intentionally behavior-based: intent is inferred from what the agent actually does, not from a potentially stale first-turn prompt.
+
+##### Data Minimization for Intent Analytics
+
+Intent analytics should favor derived signals over raw text.
+
+- Avoid collecting raw user prompts through initialization pathways.
+- Prefer normalized features and aggregate labels sufficient for product improvement.
+- When exporting telemetry externally, apply truncation/redaction to sensitive argument values where practical.
 
 - Anonymous identity (distinct_id) (as per Mixpanel's [documentation](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#server-side-identity-management)):
   - A stable `distinct_id` is generated to anonymously identify unique users.
