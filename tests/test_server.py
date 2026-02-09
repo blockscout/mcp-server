@@ -321,7 +321,7 @@ async def test_wrap_tool_for_structured_output_with_content_text():
         "instructions": None,
         "pagination": None,
     }
-    assert result.content[0].text == json.dumps(expected_structured)
+    assert json.loads(result.content[0].text) == expected_structured
     assert result.structuredContent == expected_structured
 
 
@@ -337,7 +337,7 @@ async def test_wrap_tool_for_structured_output_fallback_and_metadata():
     wrapped = _wrap_tool_for_structured_output(_tool)
     result = await wrapped()
 
-    assert result.content[0].text == json.dumps(result.structuredContent)
+    assert json.loads(result.content[0].text) == result.structuredContent
     assert "content_text" not in result.structuredContent
     assert wrapped.__name__ == _tool.__name__
     assert wrapped.__doc__ == _tool.__doc__
@@ -378,7 +378,7 @@ async def test_wrap_tool_for_structured_output_non_openai_client_uses_json_conte
     wrapped = _wrap_tool_for_structured_output(_tool)
     result = await wrapped(ctx=ctx)
 
-    assert result.content[0].text == json.dumps(result.structuredContent)
+    assert json.loads(result.content[0].text) == result.structuredContent
 
 
 @pytest.mark.asyncio
