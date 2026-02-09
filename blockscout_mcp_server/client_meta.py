@@ -146,3 +146,11 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
         user_agent=user_agent,
         meta_dict=meta_dict,
     )
+
+
+def is_summary_content_client(meta: ClientMeta) -> bool:
+    """Return True for clients that consume both content and structuredContent.
+
+    Currently this matches OpenAI-affiliated clients identified by `openai/` metadata keys.
+    """
+    return any(key.startswith("openai/") for key in meta.meta_dict)

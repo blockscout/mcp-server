@@ -1,4 +1,6 @@
+import json
 import re
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -312,14 +314,15 @@ async def test_wrap_tool_for_structured_output_with_content_text():
     wrapped = _wrap_tool_for_structured_output(_tool)
     result = await wrapped()
 
-    assert result.content[0].text == "hello"
-    assert result.structuredContent == {
+    expected_structured = {
         "data": {"a": 1},
         "data_description": None,
         "notes": None,
         "instructions": None,
         "pagination": None,
     }
+    assert result.content[0].text == json.dumps(expected_structured)
+    assert result.structuredContent == expected_structured
 
 
 @pytest.mark.asyncio
@@ -334,11 +337,88 @@ async def test_wrap_tool_for_structured_output_fallback_and_metadata():
     wrapped = _wrap_tool_for_structured_output(_tool)
     result = await wrapped()
 
-    assert result.content[0].text == "Tool executed successfully."
+    assert result.content[0].text == json.dumps(result.structuredContent)
     assert "content_text" not in result.structuredContent
     assert wrapped.__name__ == _tool.__name__
     assert wrapped.__doc__ == _tool.__doc__
     assert wrapped.__annotations__ == _tool.__annotations__
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_openai_client_uses_summary_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert result.content[0].text == "hello"
+    assert result.structuredContent["data"] == {"a": 1}
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_non_openai_client_uses_json_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert result.content[0].text == json.dumps(result.structuredContent)
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_openai_client_without_content_text_uses_fallback():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1})
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert result.content[0].text == "Tool executed successfully."
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_structured_content_same_for_all_clients():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    openai_ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+    other_ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    openai_result = await wrapped(ctx=openai_ctx)
+    other_result = await wrapped(ctx=other_ctx)
+
+    assert openai_result.structuredContent == other_result.structuredContent
 
 
 @pytest.mark.asyncio

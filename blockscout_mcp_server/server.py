@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 from pathlib import Path
 from typing import Annotated
@@ -11,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.api.routes import register_api_routes
+from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_summary_content_client
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BINARY_SEARCH_RULES,
@@ -153,14 +155,32 @@ Here is the list of IDs of most popular chains:
 """
 
 
+def _is_summary_needed(*args, **kwargs) -> bool:
+    ctx = kwargs.get("ctx")
+    if ctx is None:
+        ctx = next((arg for arg in args if type(arg).__name__ == "Context"), None)
+    if ctx is None:
+        return False
+
+    meta = extract_client_meta_from_ctx(ctx)
+    return is_summary_content_client(meta)
+
+
+def _generate_content(tool_response, structured_dict: dict, *args, **kwargs) -> str:
+    if _is_summary_needed(*args, **kwargs):
+        return tool_response.content_text or "Tool executed successfully."
+    return json.dumps(structured_dict)
+
+
 def _wrap_tool_for_structured_output(tool_function):
     @wraps(tool_function)
     async def _wrapped_tool(*args, **kwargs):
         tool_response = await tool_function(*args, **kwargs)
-        content_text = tool_response.content_text or "Tool executed successfully."
+        structured = tool_response.model_dump(mode="json")
+        content_text = _generate_content(tool_response, structured, *args, **kwargs)
         return CallToolResult(
             content=[TextContent(type="text", text=content_text)],
-            structuredContent=tool_response.model_dump(mode="json"),
+            structuredContent=structured,
         )
 
     return _wrapped_tool
