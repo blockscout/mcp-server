@@ -169,7 +169,7 @@ def _is_summary_needed(*args, **kwargs) -> bool:
 def _generate_content(tool_response, structured_dict: dict, *args, **kwargs) -> str:
     if _is_summary_needed(*args, **kwargs):
         return tool_response.content_text or "Tool executed successfully."
-    return json.dumps(structured_dict)
+    return json.dumps(structured_dict, ensure_ascii=False, separators=(",", ":"))
 
 
 def _wrap_tool_for_structured_output(tool_function):

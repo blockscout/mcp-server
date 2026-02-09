@@ -382,6 +382,26 @@ async def test_wrap_tool_for_structured_output_non_openai_client_uses_json_conte
 
 
 @pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_non_openai_client_preserves_unicode_in_json_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"label": "привіт 👋"}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert "привіт" in result.content[0].text
+    assert "\\u043f" not in result.content[0].text
+    assert json.loads(result.content[0].text) == result.structuredContent
+
+
+@pytest.mark.asyncio
 async def test_wrap_tool_for_structured_output_openai_client_without_content_text_uses_fallback():
     from blockscout_mcp_server.models import ToolResponse
     from blockscout_mcp_server.server import _wrap_tool_for_structured_output
