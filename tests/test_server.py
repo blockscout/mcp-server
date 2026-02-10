@@ -447,3 +447,26 @@ async def test_all_registered_tools_have_output_schema():
 
     for tool in await server.mcp.list_tools():
         assert tool.outputSchema is not None
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_openai_invocation_status_meta():
+    from blockscout_mcp_server import server
+
+    tools = await server.mcp.list_tools()
+    tools_with_statuses = 0
+
+    for tool in tools:
+        assert tool.meta is not None
+
+        invoking = tool.meta.get("openai/toolInvocation/invoking")
+        invoked = tool.meta.get("openai/toolInvocation/invoked")
+
+        assert isinstance(invoking, str)
+        assert invoking
+        assert isinstance(invoked, str)
+        assert invoked
+
+        tools_with_statuses += 1
+
+    assert tools_with_statuses == len(tools)

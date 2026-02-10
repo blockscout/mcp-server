@@ -29,6 +29,7 @@ from blockscout_mcp_server.constants import (
     SERVER_NAME,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
+    TOOL_INVOCATION_STATUSES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
@@ -197,6 +198,14 @@ def create_tool_annotations(title: str) -> ToolAnnotations:
     )
 
 
+def _openai_tool_meta(tool_function) -> dict[str, str]:
+    statuses = TOOL_INVOCATION_STATUSES[tool_function.__name__]
+    return {
+        "openai/toolInvocation/invoking": statuses["invoking"],
+        "openai/toolInvocation/invoked": statuses["invoked"],
+    }
+
+
 mcp = FastMCP(
     name=SERVER_NAME,
     instructions=composed_instructions,
@@ -211,66 +220,82 @@ mcp = FastMCP(
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Unlock Blockchain Analysis"),
+    meta=_openai_tool_meta(__unlock_blockchain_analysis__),
 )(_wrap_tool_for_structured_output(__unlock_blockchain_analysis__))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Block Information"),
+    meta=_openai_tool_meta(get_block_info),
 )(_wrap_tool_for_structured_output(get_block_info))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Block Number"),
+    meta=_openai_tool_meta(get_block_number),
 )(_wrap_tool_for_structured_output(get_block_number))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Address by ENS Name"),
+    meta=_openai_tool_meta(get_address_by_ens_name),
 )(_wrap_tool_for_structured_output(get_address_by_ens_name))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Transactions by Address"),
+    meta=_openai_tool_meta(get_transactions_by_address),
 )(_wrap_tool_for_structured_output(get_transactions_by_address))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Token Transfers by Address"),
+    meta=_openai_tool_meta(get_token_transfers_by_address),
 )(_wrap_tool_for_structured_output(get_token_transfers_by_address))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Lookup Token by Symbol"),
+    meta=_openai_tool_meta(lookup_token_by_symbol),
 )(_wrap_tool_for_structured_output(lookup_token_by_symbol))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Contract ABI"),
+    meta=_openai_tool_meta(get_contract_abi),
 )(_wrap_tool_for_structured_output(get_contract_abi))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Inspect Contract Code"),
+    meta=_openai_tool_meta(inspect_contract_code),
 )(_wrap_tool_for_structured_output(inspect_contract_code))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Read from Contract"),
+    meta=_openai_tool_meta(read_contract),
 )(_wrap_tool_for_structured_output(read_contract))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Address Information"),
+    meta=_openai_tool_meta(get_address_info),
 )(_wrap_tool_for_structured_output(get_address_info))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Tokens by Address"),
+    meta=_openai_tool_meta(get_tokens_by_address),
 )(_wrap_tool_for_structured_output(get_tokens_by_address))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get NFT Tokens by Address"),
+    meta=_openai_tool_meta(nft_tokens_by_address),
 )(_wrap_tool_for_structured_output(nft_tokens_by_address))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get Transaction Information"),
+    meta=_openai_tool_meta(get_transaction_info),
 )(_wrap_tool_for_structured_output(get_transaction_info))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Get List of Chains"),
+    meta=_openai_tool_meta(get_chains_list),
 )(_wrap_tool_for_structured_output(get_chains_list))
 mcp.tool(
     structured_output=True,
     annotations=create_tool_annotations("Direct Blockscout API Call"),
+    meta=_openai_tool_meta(direct_api_call),
 )(_wrap_tool_for_structured_output(direct_api_call))
 
 

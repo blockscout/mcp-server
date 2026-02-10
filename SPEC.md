@@ -523,7 +523,20 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
 
-10. **Research Optimization and Workflow Simplification**
+10. **ChatGPT Apps Tool Invocation Statuses**:
+
+    To provide polished user feedback in the ChatGPT UI when the server is deployed as a ChatGPT App, all tool descriptors include OpenAI-specific metadata in their `_meta` field:
+
+    - `openai/toolInvocation/invoking`: A short status message displayed while the tool is actively running (e.g., "Fetching block information...").
+    - `openai/toolInvocation/invoked`: A short status message displayed after the tool completes (e.g., "Block information ready").
+
+    These fields are **not** part of the MCP specification — they are an OpenAI proprietary extension that leverages the protocol's built-in extensibility (the `_meta` dict on tool descriptors accepts arbitrary keys). Non-OpenAI MCP clients (Claude Desktop, Cursor, IDE plugins, etc.) harmlessly ignore unknown `_meta` keys.
+
+    The status strings are defined as a centralized mapping in `constants.py` and injected into each tool's `_meta` via the `meta` parameter on `FastMCP.tool()` during registration. Each tool has hand-written, descriptive status pairs — they are not derived from tool titles or annotations.
+
+    For informational background on these fields, see the [OpenAI Apps SDK Reference](https://developers.openai.com/apps-sdk/reference) (external, may change).
+
+11. **Research Optimization and Workflow Simplification**
 
     This architecture reduces both technical load and the reasoning burden on AI agents by combining mandatory temporal scoping with high-leverage metadata that anchors analysis workflows.
 
