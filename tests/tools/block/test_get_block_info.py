@@ -37,6 +37,7 @@ async def test_get_block_info_success_no_txs(mock_ctx):
         assert result.notes is None
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
+        assert "mined at" in result.content_text
 
 
 @pytest.mark.asyncio
@@ -83,6 +84,7 @@ async def test_get_block_info_with_txs_success(mock_ctx):
         assert result.notes is None
         assert mock_ctx.report_progress.await_count == 4
         assert mock_ctx.info.await_count == 4
+        assert "transactions, mined at" in result.content_text
 
 
 @pytest.mark.asyncio

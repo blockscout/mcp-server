@@ -83,4 +83,8 @@ async def lookup_token_by_symbol(
         for item in items_to_process
     ]
 
-    return build_tool_response(data=search_results, notes=notes)
+    content_text = f'Found {len(search_results)} tokens matching "{symbol}" on chain {chain_id}.'
+    if len(all_items) > TOKEN_RESULTS_LIMIT:
+        content_text = f'Showing top {len(search_results)} of more tokens matching "{symbol}" on chain {chain_id}.'
+
+    return build_tool_response(data=search_results, notes=notes, content_text=content_text)

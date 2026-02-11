@@ -42,6 +42,8 @@ class ServerConfig(BaseSettings):
 
     # Base name used in the User-Agent header sent to Blockscout RPC
     mcp_user_agent: str = "Blockscout MCP"
+    mcp_allowed_hosts: str = ""
+    mcp_allowed_origins: str = ""
 
     # Analytics configuration
     mixpanel_token: str = ""

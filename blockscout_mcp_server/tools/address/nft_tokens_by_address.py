@@ -140,4 +140,10 @@ async def nft_tokens_by_address(
             )
         )
 
-    return build_tool_response(data=nft_holdings, pagination=pagination)
+    content_text = f"Found {len(nft_holdings)} NFT collections for {address} on chain {chain_id}."
+    if pagination is not None:
+        content_text = (
+            f"Returned {len(nft_holdings)} NFT collections for {address} on chain {chain_id}. More pages available."
+        )
+
+    return build_tool_response(data=nft_holdings, pagination=pagination, content_text=content_text)

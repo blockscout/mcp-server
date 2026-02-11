@@ -6,9 +6,11 @@ from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
     UNDEFINED_CLIENT_VERSION,
     UNKNOWN_PROTOCOL_VERSION,
+    ClientMeta,
     _parse_intermediary_header,
     extract_client_meta_from_ctx,
     get_header_case_insensitive,
+    is_summary_content_client,
 )
 from blockscout_mcp_server.config import config
 
@@ -208,3 +210,27 @@ def test_extract_client_meta_no_request_context() -> None:
     result = extract_client_meta_from_ctx(ctx)
 
     assert result.meta_dict == {}
+
+
+def test_is_summary_content_client_true_for_openai_prefixed_keys() -> None:
+    meta = ClientMeta(name="n", version="v", protocol="p", user_agent="", meta_dict={"openai/userAgent": "ChatGPT/1.0"})
+
+    assert is_summary_content_client(meta) is True
+
+
+def test_is_summary_content_client_false_for_empty_meta_dict() -> None:
+    meta = ClientMeta(name="n", version="v", protocol="p", user_agent="", meta_dict={})
+
+    assert is_summary_content_client(meta) is False
+
+
+def test_is_summary_content_client_false_for_non_openai_prefix() -> None:
+    meta = ClientMeta(name="n", version="v", protocol="p", user_agent="", meta_dict={"someOther/field": "value"})
+
+    assert is_summary_content_client(meta) is False
+
+
+def test_is_summary_content_client_false_for_partial_openai_match() -> None:
+    meta = ClientMeta(name="n", version="v", protocol="p", user_agent="", meta_dict={"not-openai/foo": "bar"})
+
+    assert is_summary_content_client(meta) is False

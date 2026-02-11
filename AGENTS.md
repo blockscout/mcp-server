@@ -335,6 +335,8 @@ mcp-server/
         * Defines a Pydantic `BaseSettings` class to manage server configuration.
         * Loads configuration values (e.g., API keys, timeouts, cache settings) from environment variables.
         * Provides a singleton configuration object that can be imported and used by other modules, especially by `tools/common.py` for API calls.
+        * `mcp_allowed_hosts: str`: Comma-separated list of allowed `Host` header values for DNS rebinding protection (default: empty, MCP SDK defaults apply).
+        * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, MCP SDK defaults apply).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits.
         * Contains server instructions and other configuration strings.

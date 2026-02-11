@@ -136,4 +136,21 @@ async def get_transaction_info(
             "for each to get: execution status, decoded calldata, gas breakdown, sponsor type, "
             "paymaster details, smart account type, and revert reasons if failed."
         )
-    return build_tool_response(data=transaction_data, notes=notes, instructions=instructions)
+    status_raw = getattr(transaction_data, "status", None)
+    status = "successful" if status_raw == "ok" else (status_raw or "unknown status")
+    from_address = transaction_data.from_address or "unknown"
+    to_address = transaction_data.to_address or "unknown"
+    summary = f"Transaction {transaction_hash} on chain {chain_id}: {status}, from {from_address} to {to_address}."
+    value = getattr(transaction_data, "value", None)
+    if value and str(value) != "0":
+        summary = summary[:-1] + f", value {value} wei."
+    method_name = transaction_data.decoded_input.method_call if transaction_data.decoded_input else None
+    if method_name:
+        summary += f" Method: {method_name}."
+
+    return build_tool_response(
+        data=transaction_data,
+        notes=notes,
+        instructions=instructions,
+        content_text=summary,
+    )

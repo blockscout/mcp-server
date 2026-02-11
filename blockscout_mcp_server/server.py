@@ -1,14 +1,18 @@
+import json
+from functools import wraps
 from pathlib import Path
 from typing import Annotated
 
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
-from mcp.types import ToolAnnotations
+from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from starlette.middleware.cors import CORSMiddleware
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.api.routes import register_api_routes
+from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_summary_content_client
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     BINARY_SEARCH_RULES,
@@ -25,6 +29,7 @@ from blockscout_mcp_server.constants import (
     SERVER_NAME,
     SERVER_VERSION,
     TIME_BASED_QUERY_RULES,
+    TOOL_INVOCATION_STATUSES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
@@ -53,6 +58,31 @@ from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
 chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
+
+
+# The MCP SDK enforces DNS rebinding protection by validating request Host headers, which blocks
+# tunneling tools like ngrok by default. To support development/testing via tunnels, allow
+# operators to configure host and origin allowlists via BLOCKSCOUT_MCP_ALLOWED_HOSTS and
+# BLOCKSCOUT_MCP_ALLOWED_ORIGINS. When both are empty, we defer to the MCP SDK defaults so
+# existing DNS rebinding protection behavior remains unchanged.
+# Example: BLOCKSCOUT_MCP_ALLOWED_HOSTS="example.ngrok-free.app"
+# Example: BLOCKSCOUT_MCP_ALLOWED_ORIGINS="https://example.ngrok-free.app"
+def _split_env_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _transport_security_settings() -> TransportSecuritySettings | None:
+    allowed_hosts = _split_env_list(config.mcp_allowed_hosts)
+    allowed_origins = _split_env_list(config.mcp_allowed_origins)
+    if not allowed_hosts and not allowed_origins:
+        return None
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    )
 
 
 def format_endpoint_groups(groups):
@@ -126,89 +156,168 @@ Here is the list of IDs of most popular chains:
 """
 
 
-def create_tool_annotations(title: str) -> ToolAnnotations:
-    """Creates a standard ToolAnnotations object with a given title."""
+def _is_summary_needed(*args, **kwargs) -> bool:
+    ctx = kwargs.get("ctx")
+    if ctx is None:
+        ctx = next((arg for arg in args if type(arg).__name__ == "Context"), None)
+    if ctx is None:
+        return False
+
+    meta = extract_client_meta_from_ctx(ctx)
+    return is_summary_content_client(meta)
+
+
+def _generate_content(tool_response, structured_dict: dict, *args, **kwargs) -> str:
+    if _is_summary_needed(*args, **kwargs):
+        return tool_response.content_text or "Tool executed successfully."
+    return json.dumps(structured_dict, ensure_ascii=False, separators=(",", ":"))
+
+
+def _wrap_tool_for_structured_output(tool_function):
+    @wraps(tool_function)
+    async def _wrapped_tool(*args, **kwargs):
+        tool_response = await tool_function(*args, **kwargs)
+        structured = tool_response.model_dump(mode="json")
+        content_text = _generate_content(tool_response, structured, *args, **kwargs)
+        return CallToolResult(
+            content=[TextContent(type="text", text=content_text)],
+            structuredContent=structured,
+        )
+
+    return _wrapped_tool
+
+
+def create_tool_annotations() -> ToolAnnotations:
+    """Creates standard ToolAnnotations with behavioral hints only."""
 
     return ToolAnnotations(
-        title=title,
         readOnlyHint=True,
         destructiveHint=False,
         openWorldHint=True,
     )
 
 
-mcp = FastMCP(name=SERVER_NAME, instructions=composed_instructions)
+def _openai_tool_meta(tool_function) -> dict[str, str]:
+    tool_name = tool_function.__name__
+    statuses = TOOL_INVOCATION_STATUSES.get(tool_name)
+    if statuses is None:
+        raise KeyError(
+            f"Missing invocation statuses for tool '{tool_name}'. "
+            "Add it to TOOL_INVOCATION_STATUSES in blockscout_mcp_server/constants.py."
+        )
+    return {
+        "openai/toolInvocation/invoking": statuses["invoking"],
+        "openai/toolInvocation/invoked": statuses["invoked"],
+    }
+
+
+mcp = FastMCP(
+    name=SERVER_NAME,
+    instructions=composed_instructions,
+    transport_security=_transport_security_settings(),
+)
 
 
 # Register the tools
 # The name of each tool will be its function name
 # The description will be taken from the function's docstring
 # The arguments (name, type, description) will be inferred from type hints
-# TODO: structured_output is disabled for all tools so far to preserve the LLM context since it adds to the `list/tools` response ~20K tokens.  # noqa: E501
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Unlock Blockchain Analysis"),
-)(__unlock_blockchain_analysis__)
+    structured_output=True,
+    title="Unlock Blockchain Analysis",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(__unlock_blockchain_analysis__),
+)(_wrap_tool_for_structured_output(__unlock_blockchain_analysis__))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Block Information"),
-)(get_block_info)
+    structured_output=True,
+    title="Get Block Information",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_block_info),
+)(_wrap_tool_for_structured_output(get_block_info))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Block Number"),
-)(get_block_number)
+    structured_output=True,
+    title="Get Block Number",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_block_number),
+)(_wrap_tool_for_structured_output(get_block_number))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Address by ENS Name"),
-)(get_address_by_ens_name)
+    structured_output=True,
+    title="Get Address by ENS Name",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_address_by_ens_name),
+)(_wrap_tool_for_structured_output(get_address_by_ens_name))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Transactions by Address"),
-)(get_transactions_by_address)
+    structured_output=True,
+    title="Get Transactions by Address",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_transactions_by_address),
+)(_wrap_tool_for_structured_output(get_transactions_by_address))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Token Transfers by Address"),
-)(get_token_transfers_by_address)
+    structured_output=True,
+    title="Get Token Transfers by Address",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_token_transfers_by_address),
+)(_wrap_tool_for_structured_output(get_token_transfers_by_address))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Lookup Token by Symbol"),
-)(lookup_token_by_symbol)
+    structured_output=True,
+    title="Lookup Token by Symbol",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(lookup_token_by_symbol),
+)(_wrap_tool_for_structured_output(lookup_token_by_symbol))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Contract ABI"),
-)(get_contract_abi)
+    structured_output=True,
+    title="Get Contract ABI",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_contract_abi),
+)(_wrap_tool_for_structured_output(get_contract_abi))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Inspect Contract Code"),
-)(inspect_contract_code)
+    structured_output=True,
+    title="Inspect Contract Code",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(inspect_contract_code),
+)(_wrap_tool_for_structured_output(inspect_contract_code))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Read from Contract"),
-)(read_contract)
+    structured_output=True,
+    title="Read from Contract",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(read_contract),
+)(_wrap_tool_for_structured_output(read_contract))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Address Information"),
-)(get_address_info)
+    structured_output=True,
+    title="Get Address Information",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_address_info),
+)(_wrap_tool_for_structured_output(get_address_info))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Tokens by Address"),
-)(get_tokens_by_address)
+    structured_output=True,
+    title="Get Tokens by Address",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_tokens_by_address),
+)(_wrap_tool_for_structured_output(get_tokens_by_address))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get NFT Tokens by Address"),
-)(nft_tokens_by_address)
+    structured_output=True,
+    title="Get NFT Tokens by Address",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(nft_tokens_by_address),
+)(_wrap_tool_for_structured_output(nft_tokens_by_address))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get Transaction Information"),
-)(get_transaction_info)
+    structured_output=True,
+    title="Get Transaction Information",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_transaction_info),
+)(_wrap_tool_for_structured_output(get_transaction_info))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Get List of Chains"),
-)(get_chains_list)
+    structured_output=True,
+    title="Get List of Chains",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(get_chains_list),
+)(_wrap_tool_for_structured_output(get_chains_list))
 mcp.tool(
-    structured_output=False,
-    annotations=create_tool_annotations("Direct Blockscout API Call"),
-)(direct_api_call)
+    structured_output=True,
+    title="Direct Blockscout API Call",
+    annotations=create_tool_annotations(),
+    meta=_openai_tool_meta(direct_api_call),
+)(_wrap_tool_for_structured_output(direct_api_call))
 
 
 # Initialize logging and override the rich formatter defined in the FastMCP

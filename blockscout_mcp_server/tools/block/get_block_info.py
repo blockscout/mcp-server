@@ -54,7 +54,12 @@ async def get_block_info(
             message="Successfully fetched block data.",
         )
         block_data = BlockInfoData(block_details=response_data)
-        return build_tool_response(data=block_data)
+        return build_tool_response(
+            data=block_data,
+            content_text=(
+                f"Block {number_or_hash} on chain {chain_id} mined at {response_data.get('timestamp', 'unknown')}."
+            ),
+        )
 
     block_api_path = f"/api/v2/blocks/{number_or_hash}"
     txs_api_path = f"/api/v2/blocks/{number_or_hash}/transactions"
@@ -95,4 +100,11 @@ async def get_block_info(
     # Where as for transactions only the hashes are added. AI agents can use the hashes
     # to get the full transaction details using the `get_transaction_info` tool.
     block_data = BlockInfoData(block_details=block_info_result, transaction_hashes=tx_hashes)
-    return build_tool_response(data=block_data, notes=notes)
+    return build_tool_response(
+        data=block_data,
+        notes=notes,
+        content_text=(
+            f"Block {number_or_hash} on chain {chain_id}: {len(tx_hashes) if tx_hashes else 0} "
+            f"transactions, mined at {block_info_result.get('timestamp', 'unknown')}."
+        ),
+    )

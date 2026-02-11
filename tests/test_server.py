@@ -1,6 +1,9 @@
+import json
 import re
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
@@ -227,3 +230,295 @@ def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
 
     reload(cfg)
     reload(server)
+
+
+def test_split_env_list_none():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list(None) == []
+
+
+def test_split_env_list_empty_string():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("") == []
+
+
+def test_split_env_list_single_value():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("example.ngrok-free.app") == ["example.ngrok-free.app"]
+
+
+def test_split_env_list_multiple_values():
+    from blockscout_mcp_server import server
+
+    assert server._split_env_list("one, two , ,three") == ["one", "two", "three"]
+
+
+def test_transport_security_settings_default_uses_sdk_defaults(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._transport_security_settings()
+    assert settings is None
+
+
+def test_transport_security_settings_allowed_hosts(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1, host2")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["host1", "host2"]
+    assert settings.allowed_origins == []
+
+
+def test_transport_security_settings_allowed_origins(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one, https://two")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == []
+    assert settings.allowed_origins == ["https://one", "https://two"]
+
+
+def test_transport_security_settings_hosts_and_origins(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one")
+
+    settings = server._transport_security_settings()
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["host1"]
+    assert settings.allowed_origins == ["https://one"]
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_with_content_text():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool() -> ToolResponse[dict]:
+        """doc"""
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped()
+
+    expected_structured = {
+        "data": {"a": 1},
+        "data_description": None,
+        "notes": None,
+        "instructions": None,
+        "pagination": None,
+    }
+    assert json.loads(result.content[0].text) == expected_structured
+    assert result.structuredContent == expected_structured
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_fallback_and_metadata():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool() -> ToolResponse[dict]:
+        """wrapped doc"""
+        return ToolResponse(data={"a": 1})
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped()
+
+    assert json.loads(result.content[0].text) == result.structuredContent
+    assert "content_text" not in result.structuredContent
+    assert wrapped.__name__ == _tool.__name__
+    assert wrapped.__doc__ == _tool.__doc__
+    assert wrapped.__annotations__ == _tool.__annotations__
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_openai_client_uses_summary_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert result.content[0].text == "hello"
+    assert result.structuredContent["data"] == {"a": 1}
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_non_openai_client_uses_json_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert json.loads(result.content[0].text) == result.structuredContent
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_non_openai_client_preserves_unicode_in_json_content():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"label": "привіт 👋"}, content_text="hello")
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert "привіт" in result.content[0].text
+    assert "\\u043f" not in result.content[0].text
+    assert json.loads(result.content[0].text) == result.structuredContent
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_openai_client_without_content_text_uses_fallback():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1})
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped(ctx=ctx)
+
+    assert result.content[0].text == "Tool executed successfully."
+
+
+@pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_structured_content_same_for_all_clients():
+    from blockscout_mcp_server.models import ToolResponse
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool(**kwargs) -> ToolResponse[dict]:
+        return ToolResponse(data={"a": 1}, content_text="hello")
+
+    openai_ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"openai/userAgent": "ChatGPT/1.0"}, request=SimpleNamespace(headers={})),
+    )
+    other_ctx = SimpleNamespace(
+        request_context=SimpleNamespace(meta={"someOther/field": "value"}, request=SimpleNamespace(headers={})),
+    )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    openai_result = await wrapped(ctx=openai_ctx)
+    other_result = await wrapped(ctx=other_ctx)
+
+    assert openai_result.structuredContent == other_result.structuredContent
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_output_schema():
+    from blockscout_mcp_server import server
+
+    for tool in await server.mcp.list_tools():
+        assert tool.outputSchema is not None
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_openai_invocation_status_meta():
+    from blockscout_mcp_server import server
+
+    tools = await server.mcp.list_tools()
+    tools_with_statuses = 0
+
+    for tool in tools:
+        assert tool.meta is not None
+
+        invoking = tool.meta.get("openai/toolInvocation/invoking")
+        invoked = tool.meta.get("openai/toolInvocation/invoked")
+
+        assert isinstance(invoking, str)
+        assert invoking
+        assert isinstance(invoked, str)
+        assert invoked
+
+        tools_with_statuses += 1
+
+    assert tools_with_statuses == len(tools)
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_expected_titles():
+    from blockscout_mcp_server import server
+
+    expected_titles_by_tool_name = {
+        "__unlock_blockchain_analysis__": "Unlock Blockchain Analysis",
+        "get_block_info": "Get Block Information",
+        "get_block_number": "Get Block Number",
+        "get_address_by_ens_name": "Get Address by ENS Name",
+        "get_transactions_by_address": "Get Transactions by Address",
+        "get_token_transfers_by_address": "Get Token Transfers by Address",
+        "lookup_token_by_symbol": "Lookup Token by Symbol",
+        "get_contract_abi": "Get Contract ABI",
+        "inspect_contract_code": "Inspect Contract Code",
+        "read_contract": "Read from Contract",
+        "get_address_info": "Get Address Information",
+        "get_tokens_by_address": "Get Tokens by Address",
+        "nft_tokens_by_address": "Get NFT Tokens by Address",
+        "get_transaction_info": "Get Transaction Information",
+        "get_chains_list": "Get List of Chains",
+        "direct_api_call": "Direct Blockscout API Call",
+    }
+
+    tools = await server.mcp.list_tools()
+
+    assert len(tools) == len(expected_titles_by_tool_name)
+    for tool in tools:
+        assert tool.title == expected_titles_by_tool_name[tool.name]
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_unique_titles():
+    from blockscout_mcp_server import server
+
+    tools = await server.mcp.list_tools()
+    titles = [tool.title for tool in tools]
+
+    assert len(set(titles)) == len(titles)
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_behavioral_annotations_without_annotation_title():
+    from blockscout_mcp_server import server
+
+    for tool in await server.mcp.list_tools():
+        assert tool.annotations is not None
+        assert tool.annotations.title is None
+        assert tool.annotations.readOnlyHint is True
+        assert tool.annotations.destructiveHint is False
+        assert tool.annotations.openWorldHint is True

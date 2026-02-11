@@ -46,4 +46,4 @@ async def get_address_by_ens_name(
     address_hash = resolved_address_info.get("hash") if resolved_address_info else None
     ens_data = EnsAddressData(resolved_address=address_hash)
 
-    return build_tool_response(data=ens_data)
+    return build_tool_response(data=ens_data, content_text=f"{name} resolved to {address_hash}.")

@@ -34,6 +34,23 @@ The Blockscout MCP Server supports two primary operational modes:
 
 The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.
 
+#### DNS Rebinding Protection for Tunneling (Development Mode)
+
+The Python MCP SDK enforces DNS rebinding protection by validating `Host` headers in HTTP requests. This blocks ngrok
+tunnels by default since the hostname differs from `localhost`.
+
+**Configuration:**
+
+- `BLOCKSCOUT_MCP_ALLOWED_HOSTS`: Comma-separated allowed `Host` values (e.g., `"abc123.ngrok-free.app"`)
+- `BLOCKSCOUT_MCP_ALLOWED_ORIGINS`: Comma-separated allowed `Origin` values (e.g., `"https://abc123.ngrok-free.app"`)
+
+**Behavior:**
+
+- Both variables empty/unset → MCP SDK defaults apply (DNS rebinding protection remains enabled unless SDK defaults change)
+- Either variable set → DNS rebinding protection **enabled** with specified allowlists
+
+Reference: [OpenAI Apps SDK Examples](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt)
+
 ### Architecture and Data Flow
 
 ```mermaid
@@ -250,6 +267,51 @@ This architecture provides the flexibility of a multi-protocol server without th
     }
     ```
 
+   **Structured Output and Client-Aware Content Generation**
+
+   The server enables structured output for all tools, populating both `content` and `structuredContent` in every `CallToolResult`. However, different MCP clients handle these fields differently:
+
+   - **OpenAI ChatGPT Apps** consume both `content` and `structuredContent` (both are surfaced to the model). Duplicating data across the two fields wastes tokens and clutters the model's context.
+   - **Most other MCP clients** (Claude Desktop, Cursor, etc.) ignore `structuredContent` and only analyze `content`. For these clients, `content` must carry the full data payload.
+
+   To accommodate both behaviors, the registration-layer wrapper generates `content` based on the MCP client identity:
+
+   - **`structuredContent`** (always): The full `ToolResponse` dict, schema-validated by the MCP SDK against the tool's `outputSchema` (derived from the function's return type annotation).
+   - **`content`** (client-dependent):
+     - **OpenAI clients**: A concise, human-readable summary constructed by each tool via the `content_text` field on `ToolResponse`. This avoids duplication with `structuredContent`.
+     - **All other clients**: The JSON-serialized `structuredContent` dict, restoring the full data payload in the text content field.
+
+   **Client Detection**
+
+   The wrapper determines the client type by extracting the MCP `Context` from the tool function's arguments and calling `extract_client_meta_from_ctx` to obtain `ClientMeta`. The predicate `is_summary_content_client` checks whether the client's `meta_dict` contains any key prefixed with `openai/` — a reliable indicator that the request originated from an OpenAI-affiliated platform. When `Context` is unavailable (e.g., in tests or REST API calls), the wrapper defaults to JSON content.
+
+   **The `content_text` Field and Serialization Exclusion**
+
+   The `ToolResponse` model includes a `content_text: str | None` field with `Field(exclude=True)`. Pydantic's `exclude=True` ensures this field is omitted from `model_dump()` and `model_dump_json()` output. This has three important consequences:
+
+   1. **No data duplication in `structuredContent`**: When the server serializes `ToolResponse` for the `structuredContent` field, `content_text` is automatically excluded.
+   2. **REST API unaffected**: The REST API calls `tool_response.model_dump()` to build JSON responses — `content_text` is not included, preserving backward compatibility.
+   3. **Python-only accessibility**: The `content_text` value is only accessible as a Python attribute on the `ToolResponse` instance, which is exactly what the registration-layer wrapper needs when generating summary content for OpenAI clients.
+
+   **Registration-Layer Conversion**
+
+   Tool functions continue to return `ToolResponse[SomeModel]` with truthful type annotations. A wrapper function applied at tool registration time in `server.py` converts the `ToolResponse` into a `CallToolResult`:
+   - Calls `model_dump(mode="json")` once to produce the structured dict
+   - Passes the structured dict to a `_generate_content` helper that consults `_is_summary_needed` to decide the content format
+   - Populates `structuredContent` with the same pre-computed structured dict
+
+   This conversion is transparent to tool functions, the REST API, and unit tests — all of which interact with the unwrapped tool functions directly.
+
+   **Summary Construction Principles**
+
+   Each tool constructs its `content_text` following consistent conventions. These summaries are used as `content` for OpenAI clients:
+
+   - **"Found" vs "Returned"**: "Found N items" indicates a complete result; "Returned N items" indicates a paginated page with more data available.
+   - **Input parameter echo**: Key input parameters (address, chain_id, date range) are included for request-response correlation.
+   - **No data duplication**: Summaries do not repeat data that the model can read from `structuredContent`.
+   - **Pagination signal**: When more pages are available, the summary appends "More pages available."
+   - **Conditional fields**: Optional details (like transaction value or method name) are only included when present and meaningful.
+
 4. **Async Web3 Connection Pool**:
    - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to interact with Blockscout's JSON-RPC interface.
    - Connection pooling reuses TCP connections, reducing latency and resource usage.
@@ -457,11 +519,30 @@ This architecture provides the flexibility of a multi-protocol server without th
 
    This ensures that the AI receives the specific feedback needed to adjust its tool usage without overwhelming it with raw HTML or stack traces.
 
-9. **Standardized Tool Annotations**:
+9. **Tool Title and Annotations**:
 
-    To ensure consistent behavior reporting and provide a better user experience, all MCP tools are registered with a `ToolAnnotations` object. This metadata, generated via a helper function in `blockscout_mcp_server/server.py`, serves two functions: it provides a clean, human-readable `title` for each tool, and it explicitly signals to clients that the tools are `readOnlyHint=True` (they do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (they interact with external, dynamic APIs). This convention provides clear, uniform metadata for all tools. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations).
+    Each MCP tool is registered with two separate pieces of metadata that serve distinct purposes:
 
-10. **Research Optimization and Workflow Simplification**
+    - **`Tool.title`** (top-level field): A human-readable display name for the tool (e.g., "Get Block Information"). This is a first-class field on the `Tool` type defined by the MCP specification (2025-11-25) via `BaseMetadata`. MCP clients use the precedence chain `Tool.title` → `annotations.title` → `Tool.name` for display. Placing the title at the top level ensures maximum compatibility with all clients, including OpenAI's ChatGPT Apps.
+
+    - **`Tool.annotations`** (behavioral hints): A `ToolAnnotations` object containing only behavioral signals — `readOnlyHint=True` (tools do not modify the local environment), `destructiveHint=False`, and `openWorldHint=True` (tools interact with external, dynamic APIs). These hints are generated by a helper function in `blockscout_mcp_server/server.py` and are explicitly kept separate from display metadata. The `annotations.title` field is intentionally left unset to avoid duplication with the top-level title.
+
+    This separation aligns with the MCP specification's design intent: display metadata belongs at the top level, while `ToolAnnotations` is reserved for behavioral hints that clients treat as untrusted. More about annotations for MCP tools is in [the MCP specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools).
+
+10. **ChatGPT Apps Tool Invocation Statuses**:
+
+    To provide polished user feedback in the ChatGPT UI when the server is deployed as a ChatGPT App, all tool descriptors include OpenAI-specific metadata in their `_meta` field:
+
+    - `openai/toolInvocation/invoking`: A short status message displayed while the tool is actively running (e.g., "Fetching block information...").
+    - `openai/toolInvocation/invoked`: A short status message displayed after the tool completes (e.g., "Block information ready").
+
+    These fields are **not** part of the MCP specification — they are an OpenAI proprietary extension that leverages the protocol's built-in extensibility (the `_meta` dict on tool descriptors accepts arbitrary keys). Non-OpenAI MCP clients (Claude Desktop, Cursor, IDE plugins, etc.) harmlessly ignore unknown `_meta` keys.
+
+    The status strings are defined as a centralized mapping in `constants.py` and injected into each tool's `_meta` via the `meta` parameter on `FastMCP.tool()` during registration. Each tool has hand-written, descriptive status pairs — they are not derived from tool titles or annotations.
+
+    For informational background on these fields, see the [OpenAI Apps SDK Reference](https://developers.openai.com/apps-sdk/reference) (external, may change).
+
+11. **Research Optimization and Workflow Simplification**
 
     This architecture reduces both technical load and the reasoning burden on AI agents by combining mandatory temporal scoping with high-leverage metadata that anchors analysis workflows.
 

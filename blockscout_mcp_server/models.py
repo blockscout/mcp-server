@@ -480,6 +480,12 @@ class ToolResponse(BaseModel, Generic[T]):
         description="Pagination information, present only if the 'data' is a single page of a larger result set.",
     )
 
+    content_text: str | None = Field(
+        None,
+        description="Optional human-readable summary used for MCP content responses.",
+        exclude=True,
+    )
+
 
 # --- Model for get_block_info Data Payload ---
 class BlockInfoData(BaseModel):

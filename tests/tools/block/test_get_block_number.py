@@ -34,6 +34,7 @@ async def test_get_block_number_latest_success(mock_ctx):
         assert result.data.timestamp == "2023-01-01T00:00:00Z"
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
+        assert "Latest block on chain" in result.content_text
 
 
 @pytest.mark.asyncio
@@ -75,6 +76,7 @@ async def test_get_block_number_by_time_success(mock_ctx):
         }
         assert mock_ctx.report_progress.await_count == 4
         assert mock_ctx.info.await_count == 4
+        assert "closest block before" in result.content_text
 
 
 @pytest.mark.asyncio
