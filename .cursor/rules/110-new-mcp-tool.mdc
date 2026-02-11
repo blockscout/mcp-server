@@ -106,7 +106,7 @@ When adding a new tool to the MCP server, you need to modify these files:
 3. **Register the tool in `blockscout_mcp_server/server.py`**:
    - Import the tool function
    - Register it with the MCP server using the `@mcp.tool()` decorator
-   - In the `mcp.tool()` call, use the `create_tool_annotations()` helper function to generate the `annotations` object, passing the tool's human-readable title.
+   - In the `mcp.tool()` call, pass the tool's human-readable title via the `title=` keyword argument. Use `create_tool_annotations()` (no arguments) to generate the behavioral `annotations` object with standard read-only hints.
 
 4. **Update documentation in `AGENTS.md`**:
    - If you created a new module, add it to the project structure file listing

@@ -470,3 +470,55 @@ async def test_all_registered_tools_have_openai_invocation_status_meta():
         tools_with_statuses += 1
 
     assert tools_with_statuses == len(tools)
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_expected_titles():
+    from blockscout_mcp_server import server
+
+    expected_titles_by_tool_name = {
+        "__unlock_blockchain_analysis__": "Unlock Blockchain Analysis",
+        "get_block_info": "Get Block Information",
+        "get_block_number": "Get Block Number",
+        "get_address_by_ens_name": "Get Address by ENS Name",
+        "get_transactions_by_address": "Get Transactions by Address",
+        "get_token_transfers_by_address": "Get Token Transfers by Address",
+        "lookup_token_by_symbol": "Lookup Token by Symbol",
+        "get_contract_abi": "Get Contract ABI",
+        "inspect_contract_code": "Inspect Contract Code",
+        "read_contract": "Read from Contract",
+        "get_address_info": "Get Address Information",
+        "get_tokens_by_address": "Get Tokens by Address",
+        "nft_tokens_by_address": "Get NFT Tokens by Address",
+        "get_transaction_info": "Get Transaction Information",
+        "get_chains_list": "Get List of Chains",
+        "direct_api_call": "Direct Blockscout API Call",
+    }
+
+    tools = await server.mcp.list_tools()
+
+    assert len(tools) == len(expected_titles_by_tool_name)
+    for tool in tools:
+        assert tool.title == expected_titles_by_tool_name[tool.name]
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_unique_titles():
+    from blockscout_mcp_server import server
+
+    tools = await server.mcp.list_tools()
+    titles = [tool.title for tool in tools]
+
+    assert len(set(titles)) == len(titles)
+
+
+@pytest.mark.asyncio
+async def test_all_registered_tools_have_behavioral_annotations_without_annotation_title():
+    from blockscout_mcp_server import server
+
+    for tool in await server.mcp.list_tools():
+        assert tool.annotations is not None
+        assert tool.annotations.title is None
+        assert tool.annotations.readOnlyHint is True
+        assert tool.annotations.destructiveHint is False
+        assert tool.annotations.openWorldHint is True
