@@ -466,6 +466,73 @@ RECOMMENDED_CHAINS = [
     },
 ]
 
+TOOL_INVOCATION_STATUSES = {
+    "__unlock_blockchain_analysis__": {
+        "invoking": "Initializing blockchain analysis...",
+        "invoked": "Blockchain analysis ready",
+    },
+    "get_block_info": {
+        "invoking": "Fetching block information...",
+        "invoked": "Block information ready",
+    },
+    "get_block_number": {
+        "invoking": "Fetching latest block number...",
+        "invoked": "Block number ready",
+    },
+    "get_address_by_ens_name": {
+        "invoking": "Resolving ENS name...",
+        "invoked": "ENS name resolved",
+    },
+    "get_transactions_by_address": {
+        "invoking": "Fetching transactions...",
+        "invoked": "Transactions ready",
+    },
+    "get_token_transfers_by_address": {
+        "invoking": "Fetching token transfers...",
+        "invoked": "Token transfers ready",
+    },
+    "lookup_token_by_symbol": {
+        "invoking": "Looking up token by symbol...",
+        "invoked": "Token lookup ready",
+    },
+    "get_contract_abi": {
+        "invoking": "Fetching contract ABI...",
+        "invoked": "Contract ABI ready",
+    },
+    "inspect_contract_code": {
+        "invoking": "Inspecting contract code...",
+        "invoked": "Contract code ready",
+    },
+    "read_contract": {
+        "invoking": "Reading from contract...",
+        "invoked": "Contract read complete",
+    },
+    "get_address_info": {
+        "invoking": "Fetching address information...",
+        "invoked": "Address information ready",
+    },
+    "get_tokens_by_address": {
+        "invoking": "Fetching tokens by address...",
+        "invoked": "Tokens ready",
+    },
+    "nft_tokens_by_address": {
+        "invoking": "Fetching NFT tokens...",
+        "invoked": "NFT tokens ready",
+    },
+    "get_transaction_info": {
+        "invoking": "Fetching transaction details...",
+        "invoked": "Transaction details ready",
+    },
+    "get_chains_list": {
+        "invoking": "Fetching chains list...",
+        "invoked": "Chains list ready",
+    },
+    "direct_api_call": {
+        "invoking": "Calling Blockscout API...",
+        "invoked": "API call complete",
+    },
+}
+
 SERVER_NAME = "blockscout-mcp-server"
 DEFAULT_HTTP_PORT = 8000
 
