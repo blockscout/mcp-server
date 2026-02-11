@@ -80,7 +80,7 @@ temp/
 # MCP bundle build
 mcpb/_build/
 
-# Custmom GPT
+# Custom GPT
 gpt/
 
 # MacOS
