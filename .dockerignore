@@ -1,6 +1,7 @@
 # Git
 .git/
 .gitignore
+.github/
 
 # Docker
 Dockerfile
@@ -66,8 +67,12 @@ htmlcov/
 # Devcontainer
 .devcontainer/
 
-# Cursor
+# AIDEs
 .cursor/
+.codex/
+.claude/
+.gemini/
+.mcp.json
 
 # local documents
 temp/
@@ -75,8 +80,16 @@ temp/
 # MCP bundle build
 mcpb/_build/
 
+# Custmom GPT
+gpt/
+
 # MacOS
 .DS_Store
 
 # private key
 key.pem
+
+# MCP marketplaces
+glama.json
+smithery.yaml
+server.json

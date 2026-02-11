@@ -29,3 +29,4 @@ key.pem
 
 # Claude settings for local development
 .claude/settings.local.json
+.mcp.json
