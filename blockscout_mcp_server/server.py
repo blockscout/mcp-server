@@ -199,7 +199,13 @@ def create_tool_annotations(title: str) -> ToolAnnotations:
 
 
 def _openai_tool_meta(tool_function) -> dict[str, str]:
-    statuses = TOOL_INVOCATION_STATUSES[tool_function.__name__]
+    tool_name = tool_function.__name__
+    statuses = TOOL_INVOCATION_STATUSES.get(tool_name)
+    if statuses is None:
+        raise KeyError(
+            f"Missing invocation statuses for tool '{tool_name}'. "
+            "Add it to TOOL_INVOCATION_STATUSES in blockscout_mcp_server/constants.py."
+        )
     return {
         "openai/toolInvocation/invoking": statuses["invoking"],
         "openai/toolInvocation/invoked": statuses["invoked"],
