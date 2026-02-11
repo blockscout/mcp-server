@@ -46,8 +46,12 @@ tunnels by default since the hostname differs from `localhost`.
 
 **Behavior:**
 
-- Both variables empty/unset → MCP SDK defaults apply (DNS rebinding protection remains enabled unless SDK defaults change)
+- Both variables empty/unset → DNS rebinding protection is automatically determined by the server's bind host:
+  - Localhost (`127.0.0.1`, `localhost`, `::1`): protection **enabled** with localhost allowlists
+  - Non-localhost (e.g., `0.0.0.0`): protection **disabled** to preserve compatibility with production deployments behind real domain names. Operators who want protection in this scenario should set the allowlist variables explicitly.
 - Either variable set → DNS rebinding protection **enabled** with specified allowlists
+
+**Note on Host header matching:** Values in `BLOCKSCOUT_MCP_ALLOWED_HOSTS` are matched exactly, with support for a `:*` suffix to accept any port (e.g., `example.com:*` matches `example.com:8080`). If your deployment uses a non-standard port, ensure the allowlist entry accounts for it (e.g., `"example.com:8080"` or `"example.com:*"`).
 
 Reference: [OpenAI Apps SDK Examples](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt)
 

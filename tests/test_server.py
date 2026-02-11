@@ -1,9 +1,11 @@
+import importlib
 import json
 import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from starlette.testclient import TestClient
 from typer.testing import CliRunner
 
 from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
@@ -256,14 +258,28 @@ def test_split_env_list_multiple_values():
     assert server._split_env_list("one, two , ,three") == ["one", "two", "three"]
 
 
-def test_transport_security_settings_default_uses_sdk_defaults(monkeypatch):
+def test_resolve_transport_security_localhost_no_env_vars(monkeypatch):
     from blockscout_mcp_server import server
 
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
 
-    settings = server._transport_security_settings()
-    assert settings is None
+    settings = server._resolve_transport_security("127.0.0.1")
+
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+    assert settings.allowed_origins == ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
+
+
+def test_resolve_transport_security_non_localhost_no_env_vars(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._resolve_transport_security("0.0.0.0")
+
+    assert settings.enable_dns_rebinding_protection is False
 
 
 def test_transport_security_settings_allowed_hosts(monkeypatch):
@@ -272,7 +288,7 @@ def test_transport_security_settings_allowed_hosts(monkeypatch):
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1, host2")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
 
-    settings = server._transport_security_settings()
+    settings = server._resolve_transport_security("0.0.0.0")
     assert settings.enable_dns_rebinding_protection is True
     assert settings.allowed_hosts == ["host1", "host2"]
     assert settings.allowed_origins == []
@@ -284,7 +300,7 @@ def test_transport_security_settings_allowed_origins(monkeypatch):
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one, https://two")
 
-    settings = server._transport_security_settings()
+    settings = server._resolve_transport_security("0.0.0.0")
     assert settings.enable_dns_rebinding_protection is True
     assert settings.allowed_hosts == []
     assert settings.allowed_origins == ["https://one", "https://two"]
@@ -296,10 +312,48 @@ def test_transport_security_settings_hosts_and_origins(monkeypatch):
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "host1")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "https://one")
 
-    settings = server._transport_security_settings()
+    settings = server._resolve_transport_security("0.0.0.0")
     assert settings.enable_dns_rebinding_protection is True
     assert settings.allowed_hosts == ["host1"]
     assert settings.allowed_origins == ["https://one"]
+
+
+def test_resolve_transport_security_env_vars_override_localhost(monkeypatch):
+    from blockscout_mcp_server import server
+
+    monkeypatch.setattr(server.config, "mcp_allowed_hosts", "custom.example.com")
+    monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
+
+    settings = server._resolve_transport_security("127.0.0.1")
+
+    assert settings.enable_dns_rebinding_protection is True
+    assert settings.allowed_hosts == ["custom.example.com"]
+    assert settings.allowed_origins == []
+
+
+def test_non_localhost_host_header_not_rejected_when_env_vars_empty(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_MCP_ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("BLOCKSCOUT_MCP_ALLOWED_ORIGINS", raising=False)
+
+    from blockscout_mcp_server import server
+
+    importlib.reload(server)
+    try:
+        server.mcp.settings.stateless_http = True
+        server.mcp.settings.json_response = True
+        server.mcp.settings.transport_security = server._resolve_transport_security("0.0.0.0")
+
+        app = server.mcp.streamable_http_app()
+        with TestClient(app) as client:
+            response = client.post(
+                "/mcp",
+                json={"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+                headers={"host": "staging.example.com"},
+            )
+
+        assert response.status_code != 421
+    finally:
+        importlib.reload(server)
 
 
 @pytest.mark.asyncio

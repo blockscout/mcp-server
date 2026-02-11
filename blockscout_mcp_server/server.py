@@ -61,10 +61,10 @@ chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for cha
 
 
 # The MCP SDK enforces DNS rebinding protection by validating request Host headers, which blocks
-# tunneling tools like ngrok by default. To support development/testing via tunnels, allow
-# operators to configure host and origin allowlists via BLOCKSCOUT_MCP_ALLOWED_HOSTS and
-# BLOCKSCOUT_MCP_ALLOWED_ORIGINS. When both are empty, we defer to the MCP SDK defaults so
-# existing DNS rebinding protection behavior remains unchanged.
+# tunneling tools like ngrok by default. We resolve transport security at runtime using the final
+# bind host from main_command(): custom allowlists from BLOCKSCOUT_MCP_ALLOWED_HOSTS and
+# BLOCKSCOUT_MCP_ALLOWED_ORIGINS take precedence, localhost hosts use explicit localhost
+# allowlists, and non-localhost hosts explicitly disable protection for compatibility.
 # Example: BLOCKSCOUT_MCP_ALLOWED_HOSTS="example.ngrok-free.app"
 # Example: BLOCKSCOUT_MCP_ALLOWED_ORIGINS="https://example.ngrok-free.app"
 def _split_env_list(value: str | None) -> list[str]:
@@ -73,11 +73,19 @@ def _split_env_list(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-def _transport_security_settings() -> TransportSecuritySettings | None:
+def _resolve_transport_security(http_host: str) -> TransportSecuritySettings:
     allowed_hosts = _split_env_list(config.mcp_allowed_hosts)
     allowed_origins = _split_env_list(config.mcp_allowed_origins)
     if not allowed_hosts and not allowed_origins:
-        return None
+        if http_host in {"127.0.0.1", "localhost", "::1"}:
+            return TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],
+                allowed_origins=["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"],
+            )
+
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
     return TransportSecuritySettings(
         enable_dns_rebinding_protection=True,
         allowed_hosts=allowed_hosts,
@@ -214,7 +222,7 @@ def _openai_tool_meta(tool_function) -> dict[str, str]:
 mcp = FastMCP(
     name=SERVER_NAME,
     instructions=composed_instructions,
-    transport_security=_transport_security_settings(),
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
 )
 
 
@@ -366,6 +374,8 @@ def main_command(
             )
     elif config.port is not None:
         final_http_port = config.port
+
+    mcp.settings.transport_security = _resolve_transport_security(final_http_host)
 
     if run_in_http:
         if rest:

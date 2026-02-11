@@ -242,8 +242,10 @@ tunneling for development and testing:
    python -m blockscout_mcp_server --http
    ```
 
-**Note:** These settings are for development only. When these variables are not set, the MCP SDK defaults apply
-(DNS rebinding protection remains enabled unless the SDK default changes).
+**Note:** These settings are primarily for development use. When these variables are not set, DNS rebinding protection
+is automatically determined by the server's bind host: enabled for localhost, disabled for non-localhost (e.g.,
+`0.0.0.0`). If your Host header includes a non-standard port, use the `:*` wildcard suffix (e.g.,
+`"example.com:*"`) or specify the exact host:port value.
 
 For more details on ngrok tunneling with MCP servers, see the [OpenAI Apps SDK Examples
 documentation](https://github.com/openai/openai-apps-sdk-examples/blob/main/README.md#testing-in-chatgpt).
