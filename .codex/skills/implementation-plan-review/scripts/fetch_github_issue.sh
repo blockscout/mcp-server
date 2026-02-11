@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Fetches a GitHub issue/PR (title + body + labels/state/url) into a local markdown file.
+# Fetches a GitHub issue (title + body + labels/state/url) into a local markdown file.
 #
 # Usage:
 #   fetch_github_issue.sh <issue-number> [--out <path>]
@@ -16,6 +16,7 @@
 #   1 - Missing/invalid arguments
 #   3 - GitHub CLI not authenticated
 #   4 - Failed to fetch issue
+#   5 - Failed to write output file
 
 set -euo pipefail
 
@@ -82,7 +83,19 @@ if [[ $STATUS -ne 0 ]]; then
 fi
 
 if [[ -n "$OUT" ]]; then
-    printf "%s" "$MD" >"$OUT"
+    OUT_DIR="$(dirname -- "$OUT")"
+    if [[ ! -d "$OUT_DIR" ]]; then
+        echo "ERROR Output directory does not exist: ${OUT_DIR}"
+        exit 5
+    fi
+    if [[ ! -w "$OUT_DIR" ]]; then
+        echo "ERROR Output directory is not writable: ${OUT_DIR}"
+        exit 5
+    fi
+    if ! printf "%s" "$MD" >"$OUT"; then
+        echo "ERROR Failed to write output file: ${OUT}"
+        exit 5
+    fi
     echo "OK $OUT"
 else
     printf "%s" "$MD"
