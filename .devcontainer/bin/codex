@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+die() {
+  echo "codex wrapper: $*" >&2
+  exit 1
+}
+
+detect_platform_dir() {
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "$os" in
+    Linux) os="linux" ;;
+    Darwin) os="macos" ;;
+    *) die "unsupported OS: $os" ;;
+  esac
+
+  case "$arch" in
+    x86_64|amd64) arch="x86_64" ;;
+    aarch64|arm64) arch="aarch64" ;;
+    *) die "unsupported architecture: $arch" ;;
+  esac
+
+  echo "${os}-${arch}"
+}
+
+HOME_DIR="${HOME:-}"
+[[ -n "$HOME_DIR" ]] || die "\$HOME is not set"
+
+extensions_dir="${HOME_DIR}/.cursor-server/extensions"
+[[ -d "$extensions_dir" ]] || die "missing Cursor extensions directory: $extensions_dir"
+
+latest_ext_dir="$(
+  shopt -s nullglob
+  for dir in "$extensions_dir"/openai.chatgpt-*-universal; do
+    [[ -d "$dir" ]] || continue
+    base="$(basename "$dir")"
+    ver="${base#openai.chatgpt-}"
+    ver="${ver%-universal}"
+    printf '%s\t%s\n' "$ver" "$dir"
+  done | sort -V | tail -n 1 | cut -f2-
+)"
+[[ -n "$latest_ext_dir" ]] || die "could not find openai.chatgpt extension under: $extensions_dir"
+
+platform_dir="$(detect_platform_dir)"
+bin_dir="${latest_ext_dir}/bin/${platform_dir}"
+[[ -d "$bin_dir" ]] || die "missing platform bin directory: $bin_dir"
+
+codex_bin="${bin_dir}/codex"
+rg_bin="${bin_dir}/rg"
+[[ -x "$codex_bin" ]] || die "missing or non-executable codex binary: $codex_bin"
+[[ -x "$rg_bin" ]] || die "missing or non-executable rg binary: $rg_bin"
+
+# Ensure `rg` resolves for Codex and any subprocesses.
+export PATH="${bin_dir}:${PATH}"
+
+exec "$codex_bin" "$@"
