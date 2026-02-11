@@ -9,7 +9,7 @@ Execute this sequence at the beginning of every session, with no exceptions:
 
 1. Read `.cursor/AGENTS.md` in full.
 2. Read `.cursor/rules/000-role-and-task.mdc` in full.
-3. Read `.cursor/rules/110-new-mcp-tool.mdc` in full.
+3. Read `.cursor/rules/010-implementation-rules.mdc` in full.
 
 Apply these constraints:
 

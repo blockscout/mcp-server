@@ -1,7 +1,7 @@
 ---
 name: plan-export
 description: Export a detailed phased implementation plan for a GitHub issue to a file, reading all applicable rules from .cursor/rules before planning
-argument-hint: [issue-number]
+argument-hint: [issue-number (optional)]
 disable-model-invocation: true
 hooks:
   PreToolUse:
@@ -17,7 +17,7 @@ hooks:
 
 # Plan Export Skill
 
-This skill composes a detailed, phased implementation plan for GitHub issue #$1. The plan is designed for a junior developer with minimal knowledge of MCP, Blockscout, and other 3rd-party components but strong Python experience.
+This skill composes a detailed, phased implementation plan for a GitHub issue. The issue number can be passed as `$1` or discovered from the conversation context (e.g., after a `/gh-issue-publish` invocation). The plan is designed for a junior developer with minimal knowledge of MCP, Blockscout, and other 3rd-party components but strong Python experience.
 
 ## Prerequisites
 
@@ -28,6 +28,19 @@ Before invoking this skill, the agent must already understand the scope of the c
 3. The agent has read the relevant source files that will be modified
 
 ## Workflow
+
+### 0. Determine Issue Number
+
+Before proceeding, resolve the GitHub issue number to use throughout the plan:
+
+1. **If `$1` is provided and non-empty**, use it directly as the issue number.
+2. **Otherwise**, search the current conversation for:
+   - A GitHub issue URL matching `https://github.com/.../issues/<number>` — extract the number from the URL. This is typically present after a preceding `/gh-issue-publish` invocation (which outputs the URL).
+   - An explicit issue number reference like `#<number>` or `issue <number>`.
+3. **If multiple distinct issue numbers are found** in the conversation, list them and ask the user which one to use.
+4. **If no issue number can be determined** from either source, ask the user to provide one before continuing.
+
+Once resolved, use this number as `$1` for all subsequent steps.
 
 ### 1. Identify Applicable Guidelines
 
