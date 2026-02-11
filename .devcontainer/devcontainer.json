@@ -5,7 +5,9 @@
 		"ghcr.io/stuartleeks/dev-container-features/shell-history:0": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
-	"forwardPorts": [8000],
+	"forwardPorts": [
+		8000
+	],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
 		"safe-directory": "git config --global --add safe.directory ${containerWorkspaceFolder}",
@@ -16,8 +18,8 @@
 		"git-editor": "git config --global core.editor /usr/bin/vi"
 	},
 	"remoteEnv": {
-        "PATH": "${containerEnv:PATH}:${containerWorkspaceFolder}/.devcontainer/bin"
-    },
+		"PATH": "${containerEnv:PATH}:${containerWorkspaceFolder}/.devcontainer/bin"
+	},
 	// Allows to connect to services on the host machine (e.g Ollama) from inside the container.
 	// "runArgs": [ "--add-host=host.docker.internal:host-gateway"],
 	// "mounts": [
