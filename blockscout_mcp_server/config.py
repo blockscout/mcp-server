@@ -60,7 +60,7 @@ class ServerConfig(BaseSettings):
 
     # Composite client name configuration
     intermediary_header: str = "Blockscout-MCP-Intermediary"
-    intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin"
+    intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
 
 
 config = ServerConfig()
