@@ -38,7 +38,7 @@ ENV BLOCKSCOUT_MCP_USER_AGENT="Blockscout MCP"
 ENV BLOCKSCOUT_MIXPANEL_API_HOST=""
 ENV BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY="false"
 ENV BLOCKSCOUT_INTERMEDIARY_HEADER="Blockscout-MCP-Intermediary"
-ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin"
+ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin,EvaluationSuite"
 
 # Set the default transport mode. Can be overridden at runtime with -e.
 # Options: "stdio" (default), "http"

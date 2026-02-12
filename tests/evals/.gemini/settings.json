@@ -15,7 +15,10 @@
   "mcpServers": {
     "blockscout": {
       "httpUrl": "${MCP_SERVER_URL}/mcp",
-      "timeout": 180000
+      "timeout": 180000,
+      "headers": {
+        "Blockscout-MCP-Intermediary": "EvaluationSuite"
+      }
     }
   }
 }

@@ -130,6 +130,24 @@ def test_parse_intermediary_header_allowlisted():
     assert _parse_intermediary_header(" claudeDESKTOP ", allowlist) == "claudeDESKTOP"
 
 
+def test_parse_intermediary_header_evaluation_suite_allowlisted():
+    allowlist = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
+    assert _parse_intermediary_header("EvaluationSuite", allowlist) == "EvaluationSuite"
+
+
+def test_intermediary_header_appends_evaluation_suite(monkeypatch):
+    monkeypatch.setattr(
+        config,
+        "intermediary_allowlist",
+        "ClaudeDesktop,HigressPlugin,EvaluationSuite",
+        raising=False,
+    )
+    ctx = _ctx_with_intermediary("EvaluationSuite")
+
+    meta = extract_client_meta_from_ctx(ctx)
+    assert meta.name == "node/EvaluationSuite"
+
+
 def test_parse_intermediary_header_not_allowlisted():
     allowlist = "ClaudeDesktop,HigressPlugin"
     assert _parse_intermediary_header("Unknown", allowlist) == ""

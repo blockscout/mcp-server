@@ -43,7 +43,7 @@ The MCP server URL flows through the configuration chain:
 .env → docker-compose.yml → .gemini/settings.json
 ```
 
-The `.gemini/settings.json` file is kept intentionally minimal, as the main Gemini configuration is expected to be in `${GEMINI_USER_PROFILE}/settings.json`.
+The `.gemini/settings.json` file is kept intentionally minimal, as the main Gemini configuration is expected to be in `${GEMINI_USER_PROFILE}/settings.json`. It intentionally includes one `headers` override (`Blockscout-MCP-Intermediary: EvaluationSuite`) so eval traffic is identified distinctly from regular users in MCP server logs and analytics.
 
 ### Instructions and Output Format
 
