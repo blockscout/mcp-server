@@ -351,7 +351,8 @@ def test_non_localhost_host_header_not_rejected_when_env_vars_empty(monkeypatch)
                 headers={"host": "staging.example.com"},
             )
 
-        assert response.status_code != 421
+        assert response.status_code != 421, "Got 421 Misdirected Request for non-localhost host"
+        assert response.status_code < 500, f"Unexpected server error: {response.status_code}"
     finally:
         importlib.reload(server)
 
