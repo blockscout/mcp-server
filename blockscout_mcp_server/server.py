@@ -76,8 +76,12 @@ def _split_env_list(value: str | None) -> list[str]:
 def _resolve_transport_security(http_host: str) -> TransportSecuritySettings:
     allowed_hosts = _split_env_list(config.mcp_allowed_hosts)
     allowed_origins = _split_env_list(config.mcp_allowed_origins)
+
+    # Normalize bracketed IPv6 literals like "[::1]" to "::1" for localhost detection.
+    normalized_host = http_host[1:-1] if http_host.startswith("[") and http_host.endswith("]") else http_host
+
     if not allowed_hosts and not allowed_origins:
-        if http_host in {"127.0.0.1", "localhost", "::1"}:
+        if normalized_host in {"127.0.0.1", "localhost", "::1"}:
             return TransportSecuritySettings(
                 enable_dns_rebinding_protection=True,
                 allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],

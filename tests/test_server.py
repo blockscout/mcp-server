@@ -93,66 +93,56 @@ def test_env_var_http_mode_non_container(mock_exists, monkeypatch):
 
 
 def test_dev_json_response_default_false(monkeypatch):
-    from importlib import reload
-
     monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE", raising=False)
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     assert cfg.config.dev_json_response is False
-    reload(cfg)
+    importlib.reload(cfg)
 
 
 def test_dev_json_response_true(monkeypatch):
-    from importlib import reload
-
     monkeypatch.setenv("BLOCKSCOUT_DEV_JSON_RESPONSE", "true")
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     assert cfg.config.dev_json_response is True
 
     monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE")
-    reload(cfg)
+    importlib.reload(cfg)
 
 
 def test_dev_json_response_false(monkeypatch):
-    from importlib import reload
-
     monkeypatch.setenv("BLOCKSCOUT_DEV_JSON_RESPONSE", "false")
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     assert cfg.config.dev_json_response is False
 
     monkeypatch.delenv("BLOCKSCOUT_DEV_JSON_RESPONSE")
-    reload(cfg)
+    importlib.reload(cfg)
 
 
 def test_port_from_env_variable(monkeypatch):
     monkeypatch.setenv("PORT", "9999")
-    from importlib import reload
-
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     assert cfg.config.port == 9999
 
     monkeypatch.delenv("PORT")
-    reload(cfg)
+    importlib.reload(cfg)
 
 
 @patch("uvicorn.run")
 def test_cli_flag_overrides_env_port(mock_uvicorn_run, monkeypatch):
     monkeypatch.setenv("PORT", "9001")
-    from importlib import reload
-
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     from blockscout_mcp_server import server
 
-    reload(server)
+    importlib.reload(server)
 
     result = runner.invoke(server.cli_app, ["--http", "--http-port", "9000"])
 
@@ -162,21 +152,19 @@ def test_cli_flag_overrides_env_port(mock_uvicorn_run, monkeypatch):
     assert "Both --http-port (9000) and PORT (9001) are set" in result.output
 
     monkeypatch.delenv("PORT")
-    reload(cfg)
-    reload(server)
+    importlib.reload(cfg)
+    importlib.reload(server)
 
 
 @patch("uvicorn.run")
 def test_same_port_no_warning(mock_uvicorn_run, monkeypatch, capsys):
     monkeypatch.setenv("PORT", "9003")
-    from importlib import reload
-
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     from blockscout_mcp_server import server
 
-    reload(server)
+    importlib.reload(server)
 
     server.main_command(http=True, http_port=9003)
 
@@ -186,21 +174,19 @@ def test_same_port_no_warning(mock_uvicorn_run, monkeypatch, capsys):
     assert mock_uvicorn_run.call_args.kwargs["port"] == 9003
 
     monkeypatch.delenv("PORT")
-    reload(cfg)
-    reload(server)
+    importlib.reload(cfg)
+    importlib.reload(server)
 
 
 @patch("uvicorn.run")
 def test_env_port_used_when_flag_absent(mock_uvicorn_run, monkeypatch):
     monkeypatch.setenv("PORT", "9002")
-    from importlib import reload
-
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     from blockscout_mcp_server import server
 
-    reload(server)
+    importlib.reload(server)
 
     result = runner.invoke(server.cli_app, ["--http"])
 
@@ -209,20 +195,18 @@ def test_env_port_used_when_flag_absent(mock_uvicorn_run, monkeypatch):
     assert mock_uvicorn_run.call_args.kwargs["port"] == 9002
 
     monkeypatch.delenv("PORT")
-    reload(cfg)
-    reload(server)
+    importlib.reload(cfg)
+    importlib.reload(server)
 
 
 @patch("uvicorn.run")
 def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
-    from importlib import reload
-
     from blockscout_mcp_server import config as cfg
 
-    reload(cfg)
+    importlib.reload(cfg)
     from blockscout_mcp_server import server
 
-    reload(server)
+    importlib.reload(server)
 
     result = runner.invoke(server.cli_app, ["--http"])
 
@@ -230,8 +214,8 @@ def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
     mock_uvicorn_run.assert_called_once()
     assert mock_uvicorn_run.call_args.kwargs["port"] == DEFAULT_HTTP_PORT
 
-    reload(cfg)
-    reload(server)
+    importlib.reload(cfg)
+    importlib.reload(server)
 
 
 def test_split_env_list_none():
@@ -258,13 +242,14 @@ def test_split_env_list_multiple_values():
     assert server._split_env_list("one, two , ,three") == ["one", "two", "three"]
 
 
-def test_resolve_transport_security_localhost_no_env_vars(monkeypatch):
+@pytest.mark.parametrize("http_host", ["127.0.0.1", "localhost", "::1", "[::1]"])
+def test_resolve_transport_security_localhost_no_env_vars(monkeypatch, http_host):
     from blockscout_mcp_server import server
 
     monkeypatch.setattr(server.config, "mcp_allowed_hosts", "")
     monkeypatch.setattr(server.config, "mcp_allowed_origins", "")
 
-    settings = server._resolve_transport_security("127.0.0.1")
+    settings = server._resolve_transport_security(http_host)
 
     assert settings.enable_dns_rebinding_protection is True
     assert settings.allowed_hosts == ["127.0.0.1:*", "localhost:*", "[::1]:*"]
