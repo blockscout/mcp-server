@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# cleanup-claude-session - Remove Claude Code session files by title
+# Usage: cleanup-claude-session "session-title"
+
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+    echo "Usage: cleanup-claude-session \"session-title\""
+    echo "Example: cleanup-claude-session \"Fix pagination\""
+    exit 1
+fi
+
+SEARCH_TITLE="$1"
+PROJECTS_DIR="${HOME}/.claude/projects"
+REMOVED_DIR="${HOME}/.claude/.removed_sessions"
+
+# Array to store matching session files
+declare -a MATCHING_FILES=()
+declare -a MATCHING_DIRS=()
+
+echo "Searching for sessions with title: \"${SEARCH_TITLE}\""
+echo ""
+
+# Find all .jsonl files in projects directory
+while IFS= read -r -d '' session_file; do
+    # Extract session ID from filename
+    SESSION_ID=$(basename "$session_file" .jsonl)
+
+    # Look up custom title from session file (last custom-title line wins)
+    TITLE=""
+    if [ -f "$session_file" ]; then
+        TITLE=$(grep '"type":"custom-title"' "$session_file" 2>/dev/null | tail -1 | jq -r '.customTitle // empty' 2>/dev/null || true)
+    fi
+
+    # Fallback to truncated session ID if no custom title
+    [ -z "$TITLE" ] && TITLE="${SESSION_ID:0:12}"
+
+    # Check if title matches
+    if [ "$TITLE" = "$SEARCH_TITLE" ]; then
+        MATCHING_FILES+=("$session_file")
+
+        # Check if there's a corresponding directory
+        session_dir="${session_file%.jsonl}"
+        if [ -d "$session_dir" ]; then
+            MATCHING_DIRS+=("$session_dir")
+        fi
+    fi
+done < <(find "$PROJECTS_DIR" -type f -name "*.jsonl" -print0 2>/dev/null || true)
+
+# Check if any matches found
+if [ ${#MATCHING_FILES[@]} -eq 0 ]; then
+    echo "No sessions found with title: \"${SEARCH_TITLE}\""
+    exit 0
+fi
+
+# Display found sessions
+echo "Found ${#MATCHING_FILES[@]} matching session(s):"
+echo ""
+
+for file in "${MATCHING_FILES[@]}"; do
+    SESSION_ID=$(basename "$file" .jsonl)
+    PROJECT_SLUG=$(basename "$(dirname "$file")")
+    echo "  📄 Session: $SESSION_ID"
+    echo "     File: $file"
+
+    # Check for associated directory
+    session_dir="${file%.jsonl}"
+    if [ -d "$session_dir" ]; then
+        echo "     Dir:  $session_dir"
+    fi
+    echo ""
+done
+
+# Ask for confirmation
+echo -n "Move these ${#MATCHING_FILES[@]} session(s) to .removed_sessions? [y/N] "
+read -r response
+
+if [[ ! "$response" =~ ^[Yy]$ ]]; then
+    echo "Cleanup cancelled."
+    exit 0
+fi
+
+echo ""
+echo "Moving sessions to ${REMOVED_DIR}..."
+echo ""
+
+# Process each matching file
+for file in "${MATCHING_FILES[@]}"; do
+    # Calculate relative path from projects directory
+    rel_path="${file#$PROJECTS_DIR/}"
+    dest_file="${REMOVED_DIR}/${rel_path}"
+    dest_dir=$(dirname "$dest_file")
+
+    # Create destination directory structure
+    mkdir -p "$dest_dir"
+
+    # Move the session file
+    if [ -f "$file" ]; then
+        mv "$file" "$dest_file"
+        echo "✓ Moved: $(basename "$file")"
+    fi
+
+    # Move associated directory if it exists
+    session_dir="${file%.jsonl}"
+    if [ -d "$session_dir" ]; then
+        rel_dir_path="${session_dir#$PROJECTS_DIR/}"
+        dest_session_dir="${REMOVED_DIR}/${rel_dir_path}"
+
+        mv "$session_dir" "$dest_session_dir"
+        echo "✓ Moved: $(basename "$session_dir")/"
+    fi
+done
+
+echo ""
+echo "✓ Cleanup complete! ${#MATCHING_FILES[@]} session(s) moved to ${REMOVED_DIR}"

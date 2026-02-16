@@ -8,6 +8,10 @@ echo "<memory_file path=\".cursor/rules/010-implementation-rules.mdc\">"
 cat ${CLAUDE_PROJECT_DIR}/.cursor/rules/010-implementation-rules.mdc
 echo "</memory_file>"
 
+echo "<memory_file path=\".claude/skills/consult-spec/claude-code-rule.md\">"
+cat ${CLAUDE_PROJECT_DIR}/.claude/skills/consult-spec/claude-code-rule.md
+echo "</memory_file>"
+
 # Find all AGENTS.md files in current directory and subdirectories
 # This is a temporay solution for case that Claude Code not satisfies with AGENTS.md usage case. 
 find "$CLAUDE_PROJECT_DIR" -name "AGENTS.md" -type f | \

@@ -33,7 +33,11 @@ gh auth login
    - Plan file
    - Issue description file (or the fetched `/tmp/issue.md`)
 
-3) Validate codebase reality (start targeted, expand as needed):
+3) Apply strict versioning-comment policy:
+   - Do **not** request or suggest any version bump (package version, `server.json`, etc.) unless the **issue description explicitly requires** a version bump/release/publish/tag.
+   - Even if the plan changes externally-consumed surfaces (tool schemas, REST/OpenAPI, manifests), treat missing version bump steps as **intentional** unless the issue says otherwise.
+
+4) Validate codebase reality (start targeted, expand as needed):
    - Start by finding referenced modules/configs/env vars/tests with `rg` (fast and low-noise).
    - Prefer opening the minimal set of files *first* to confirm patterns and naming, but broaden freely if you suspect hidden coupling or cross-cutting behavior (e.g., shared helpers, config loading, response models, pagination, truncation).
    - If the plan touches MCP tools, REST API, docs, or tests, cross-check relevant `.cursor/rules/*.mdc` guidance.
@@ -48,7 +52,7 @@ rg -n "ServerConfig\\(|BaseSettings\\(|BLOCKSCOUT_" blockscout_mcp_server/config
 rg -n "pytest\\.mark\\.integration|tests/integration|tests/tools" tests -S
 ```
 
-4) Produce the review in the required format (next section).
+1) Produce the review in the required format (next section).
 
 ## Required output format
 
@@ -104,3 +108,4 @@ Provide comments as a list. Each comment must include:
 - Security: input validation, SSRF/DNS rebinding boundaries, secrets handling, logging redaction, auth assumptions.
 - Performance/scale: API call counts, caching, pagination strategy, long-running tasks/progress updates.
 - Ops/observability: error handling, logs, metrics/telemetry/analytics implications, rollout/rollback.
+- Versioning: only comment if explicitly required by the issue description; otherwise assume omission is intentional.
