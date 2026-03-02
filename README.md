@@ -25,16 +25,9 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 
 ## Enhanced Analysis with Agent Skills
 
-For more powerful and efficient blockchain analysis, install the **Blockscout Analysis** skill from the [agent-skills repository](https://github.com/blockscout/agent-skills). This skill provides AI agents with:
+For more powerful and efficient blockchain analysis, install the **Blockscout Analysis** skill from the [agent-skills repository](https://github.com/blockscout/agent-skills). This skill provides AI agents with structured guidance for execution strategies, response handling, security best practices, and workflow orchestration.
 
-- **Smart execution strategies**: Automatically select between direct tool calls, scripts, hybrid approaches, or LLM reasoning based on task complexity
-- **Efficient response handling**: Data transformation rules to minimize token consumption
-- **Security best practices**: Comprehensive guidance for handling untrusted blockchain data
-- **Workflow orchestration**: Multi-step analysis patterns and fallback strategies
-
-The skill works across all EVM chains and all major AI platforms (Claude Code, Claude Desktop, Gemini CLI, Codex).
-
-**Installation**: See the [agent-skills README](https://github.com/blockscout/agent-skills#setup) for platform-specific installation instructions.
+**Learn more**: See the [agent-skills README](https://github.com/blockscout/agent-skills) for full capabilities and installation instructions.
 
 ## Configuring MCP Clients
 
