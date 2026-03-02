@@ -183,6 +183,7 @@ mcp-server/
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
 │   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
+├── agent-skills/               # Git submodule: AI agent skills for blockchain analysis (https://github.com/blockscout/agent-skills)
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── API.md                      # Detailed documentation for the REST API
@@ -190,6 +191,7 @@ mcp-server/
 ├── SPEC.md                     # Technical specification and architecture documentation
 ├── TESTING.md                  # Testing instructions for HTTP mode with curl commands
 ├── pyproject.toml              # Project metadata and dependencies (PEP 517/518)
+├── .gitmodules                 # Git submodule configuration (tracks agent-skills)
 └── .env.example                # Example environment variables
 ```
 
@@ -286,7 +288,11 @@ mcp-server/
         * Excludes the `__unlock_blockchain_analysis__` endpoint since its data is embedded in GPT instructions.
         * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
 
-4. **`tests/` (Test Suite)**
+4. **`agent-skills/` (Git Submodule)**
+    * Git submodule: [agent-skills repository](https://github.com/blockscout/agent-skills)
+    * Contains AI agent skills that provide structured guidance for enhanced blockchain data analysis using the Blockscout MCP Server.
+
+5. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
     * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. Tool-specific tests live in dedicated modules under category folders (for example, `tests/tools/address/test_get_address_info.py`), and shared utilities are covered by modules like `test_common.py`.
         * Each test file corresponds to a single MCP tool and provides comprehensive test coverage:
@@ -303,7 +309,7 @@ mcp-server/
           module exercises exactly one MCP tool to keep test contexts focused for coding agents.
       All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
-5. **`blockscout_mcp_server/` (Main Python Package)**
+6. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
     * **`llms.txt`**: Machine-readable guidance file for AI crawlers.
     * **`__main__.py`**:

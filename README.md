@@ -23,6 +23,12 @@ This server wraps Blockscout APIs and exposes blockchain data—balances, tokens
 - Standardized ToolResponse model with structured JSON responses and follow-up instructions
 - Enhanced observability with MCP progress notifications and periodic updates for long-running operations
 
+## Enhanced Analysis with Agent Skills
+
+For more powerful and efficient blockchain analysis, install the **Blockscout Analysis** skill from the [agent-skills repository](https://github.com/blockscout/agent-skills). This skill provides AI agents with structured guidance for execution strategies, response handling, security best practices, and workflow orchestration.
+
+**Learn more**: See the [agent-skills README](https://github.com/blockscout/agent-skills) for full capabilities and installation instructions.
+
 ## Configuring MCP Clients
 
 ### Using Claude Connectors Directory - Recommended
