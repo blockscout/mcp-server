@@ -1,11 +1,11 @@
 import asyncio
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import httpx
 import pytest
 
-from blockscout_mcp_server.models import AddressLogItem, TransactionLogItem
+from blockscout_mcp_server.models import AddressLogItem, ToolResponse, TransactionLogItem
 
 RETRYABLE_HTTP_STATUSES = {500, 502, 503, 504}
 
@@ -54,3 +54,20 @@ def is_log_a_truncated_call_executed(log: TransactionLogItem | AddressLogItem) -
 
     value = data_param.get("value")
     return isinstance(value, dict) and value.get("value_truncated") is True
+
+
+def assert_tool_response_round_trip(
+    response: ToolResponse[Any],
+    response_model: type[ToolResponse[Any]],
+) -> ToolResponse[Any]:
+    """Validate that a ToolResponse survives model_dump/model_validate round-trip."""
+    dumped = response.model_dump(mode="json", by_alias=True)
+    validated = response_model.model_validate(dumped)
+
+    assert validated.data == response.data
+    assert validated.data_description == response.data_description
+    assert validated.notes == response.notes
+    assert validated.instructions == response.instructions
+    assert validated.pagination == response.pagination
+
+    return validated

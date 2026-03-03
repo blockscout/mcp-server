@@ -240,7 +240,9 @@ class TransactionSummaryData(BaseModel):
 class TokenTransfer(BaseModel):
     """Represents a single token transfer within a transaction."""
 
-    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
+    model_config = ConfigDict(
+        extra="allow", populate_by_name=True, validate_by_name=True
+    )  # External APIs may add new fields; allow them to avoid validation errors
 
     from_address: str | None = Field(alias="from", description="Sender address of the token transfer if available.")
     to_address: str | None = Field(alias="to", description="Recipient address of the token transfer if available.")
@@ -315,7 +317,9 @@ class UserOperationData(BaseModel):
 class TransactionInfoData(BaseModel):
     """Structured representation of get_transaction_info data."""
 
-    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
+    model_config = ConfigDict(
+        extra="allow", populate_by_name=True, validate_by_name=True
+    )  # External APIs may add new fields; allow them to avoid validation errors
 
     from_address: str | None = Field(
         default=None,
@@ -349,7 +353,9 @@ class TransactionInfoData(BaseModel):
 class AdvancedFilterItem(BaseModel):
     """Represents a single item from the advanced filter API response."""
 
-    model_config = ConfigDict(extra="allow")  # External APIs may add new fields; allow them to avoid validation errors
+    model_config = ConfigDict(
+        extra="allow", populate_by_name=True, validate_by_name=True
+    )  # External APIs may add new fields; allow them to avoid validation errors
 
     from_address: str | None = Field(
         default=None,
