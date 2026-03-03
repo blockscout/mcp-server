@@ -3,8 +3,14 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
-from blockscout_mcp_server.tools.address.get_address_info import get_address_info
+from blockscout_mcp_server.tools.address.get_address_info import _process_metadata_tags, get_address_info
+
+
+def _long_string() -> str:
+    return "x" * (INPUT_DATA_TRUNCATION_LIMIT + 20)
 
 
 @pytest.mark.asyncio
@@ -357,3 +363,145 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
 
         assert mock_ctx.report_progress.await_count == 2
         assert mock_ctx.info.await_count == 2
+
+
+def test_process_metadata_tags_truncates_oversized_meta_values():
+    metadata_data = {
+        "tags": [
+            {
+                "slug": "warpcast-account",
+                "meta": ('{"tagUrl":"https://example.com/user","tagIcon":"' + _long_string() + '"}'),
+            }
+        ]
+    }
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is True
+    assert processed is not None
+    meta = processed["tags"][0]["meta"]
+    assert meta["tagUrl"] == "https://example.com/user"
+    assert meta["tagIcon"]["value_truncated"] is True
+
+
+def test_process_metadata_tags_preserves_small_meta_values():
+    metadata_data = {"tags": [{"meta": '{"tagUrl":"https://example.com/user","tagName":"Alice"}'}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is False
+    assert processed == {"tags": [{"meta": {"tagUrl": "https://example.com/user", "tagName": "Alice"}}]}
+
+
+def test_process_metadata_tags_invalid_json_short_string_is_preserved():
+    metadata_data = {"tags": [{"meta": "not json"}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is False
+    assert processed == metadata_data
+
+
+def test_process_metadata_tags_invalid_json_oversized_string_is_truncated():
+    metadata_data = {"tags": [{"meta": _long_string()}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is True
+    assert processed is not None
+    assert processed["tags"][0]["meta"]["value_truncated"] is True
+
+
+def test_process_metadata_tags_truncates_when_meta_is_dict():
+    metadata_data = {"tags": [{"meta": {"icon": _long_string(), "label": "ok"}}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is True
+    assert processed is not None
+    assert processed["tags"][0]["meta"]["icon"]["value_truncated"] is True
+    assert processed["tags"][0]["meta"]["label"] == "ok"
+
+
+def test_process_metadata_tags_truncates_when_meta_parses_to_array():
+    metadata_data = {"tags": [{"meta": '[{"k":"' + _long_string() + '"}]'}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is True
+    assert processed is not None
+    assert processed["tags"][0]["meta"][0]["k"]["value_truncated"] is True
+
+
+def test_process_metadata_tags_parses_json_primitives():
+    metadata_data = {"tags": [{"meta": "null"}, {"meta": "true"}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is False
+    assert processed == {"tags": [{"meta": None}, {"meta": True}]}
+
+
+def test_process_metadata_tags_truncates_long_json_string_primitive():
+    metadata_data = {"tags": [{"meta": '"' + _long_string() + '"'}]}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert truncated is True
+    assert processed is not None
+    assert processed["tags"][0]["meta"]["value_truncated"] is True
+
+
+def test_process_metadata_tags_handles_missing_tags_key():
+    metadata_data = {"name": "metadata without tags"}
+
+    processed, truncated = _process_metadata_tags(metadata_data)
+
+    assert processed == metadata_data
+    assert truncated is False
+
+
+def test_process_metadata_tags_handles_none_metadata():
+    processed, truncated = _process_metadata_tags(None)
+
+    assert processed is None
+    assert truncated is False
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_adds_note_when_metadata_meta_is_truncated(mock_ctx):
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_blockscout_response = {"hash": address, "is_contract": True}
+    mock_first_tx_response = {"items": []}
+    mock_metadata_response = {
+        "addresses": {
+            address: {"tags": [{"meta": ('{"tagUrl":"https://example.com/user","tagIcon":"' + _long_string() + '"}')}]}
+        }
+    }
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request", new_callable=AsyncMock
+        ) as mock_meta_request,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
+        mock_meta_request.return_value = mock_metadata_response
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    assert result.notes is not None
+    assert any("Some metadata tag fields were truncated" in note for note in result.notes)
+    expected_metadata_prefix = f'`curl "{str(config.metadata_url).rstrip("/")}/api/v1/metadata?addresses={address}'
+    assert any(expected_metadata_prefix in note for note in result.notes)
+    assert any(f"chainId={chain_id}" in note for note in result.notes)
+    assert result.data.metadata is not None
+    assert result.data.metadata["tags"][0]["meta"]["tagIcon"]["value_truncated"] is True
