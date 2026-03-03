@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
 
 from blockscout_mcp_server.api.routes import register_api_routes
-from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
 
 
 @pytest.fixture
@@ -239,11 +239,15 @@ async def test_get_address_by_ens_name_missing_param(client: AsyncClient):
 )
 async def test_get_transactions_by_address_success(mock_tool, client: AsyncClient):
     """Test the /get_transactions_by_address endpoint."""
-    mock_tool.return_value = ToolResponse(data={"items": []})
+    mock_tool.return_value = ToolResponse(data=[AdvancedFilterItem(**{"from": "0xfrom", "to": "0xto"})])
     url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z&cursor=foo"
     response = await client.get(url)
     assert response.status_code == 200
-    assert response.json()["data"] == {"items": []}
+    transfer_item = response.json()["data"][0]
+    assert transfer_item["from"] == "0xfrom"
+    assert transfer_item["to"] == "0xto"
+    assert "from_address" not in transfer_item
+    assert "to_address" not in transfer_item
     mock_tool.assert_called_once_with(
         chain_id="1",
         address="0xabc",
@@ -260,11 +264,13 @@ async def test_get_transactions_by_address_success(mock_tool, client: AsyncClien
 )
 async def test_get_transactions_by_address_no_cursor(mock_tool, client: AsyncClient):
     """Endpoint works with required params only."""
-    mock_tool.return_value = ToolResponse(data={"items": []})
+    mock_tool.return_value = ToolResponse(data=[AdvancedFilterItem(**{"from": "0xfrom", "to": "0xto"})])
     url = "/v1/get_transactions_by_address?chain_id=1&address=0xabc&age_from=2025-01-01T00:00:00.00Z"
     response = await client.get(url)
     assert response.status_code == 200
-    assert response.json()["data"] == {"items": []}
+    transfer_item = response.json()["data"][0]
+    assert transfer_item["from"] == "0xfrom"
+    assert transfer_item["to"] == "0xto"
     mock_tool.assert_called_once_with(chain_id="1", address="0xabc", age_from="2025-01-01T00:00:00.00Z", ctx=ANY)
 
 
@@ -535,11 +541,25 @@ async def test_nft_tokens_by_address_missing_param(client: AsyncClient):
 @patch("blockscout_mcp_server.api.routes.get_transaction_info", new_callable=AsyncMock)
 async def test_get_transaction_info_success(mock_tool, client: AsyncClient):
     """Test /get_transaction_info endpoint."""
-    mock_tool.return_value = ToolResponse(data={"hash": "0x123"})
+    mock_tool.return_value = ToolResponse(
+        data=TransactionInfoData(
+            **{
+                "from": "0xfrom",
+                "to": "0xto",
+                "token_transfers": [TokenTransfer(**{"from": "0xa", "to": "0xb", "type": "transfer", "token": {}})],
+            },
+        )
+    )
     url = "/v1/get_transaction_info?chain_id=1&transaction_hash=0x123&include_raw_input=true"
     response = await client.get(url)
     assert response.status_code == 200
-    assert response.json()["data"] == {"hash": "0x123"}
+    transfer = response.json()["data"]["token_transfers"][0]
+    assert transfer["from"] == "0xa"
+    assert transfer["to"] == "0xb"
+    assert transfer["type"] == "transfer"
+    assert "from_address" not in transfer
+    assert "to_address" not in transfer
+    assert "transfer_type" not in transfer
     mock_tool.assert_called_once_with(
         chain_id="1",
         transaction_hash="0x123",
@@ -552,10 +572,21 @@ async def test_get_transaction_info_success(mock_tool, client: AsyncClient):
 @patch("blockscout_mcp_server.api.routes.get_transaction_info", new_callable=AsyncMock)
 async def test_get_transaction_info_no_optional(mock_tool, client: AsyncClient):
     """Works without include_raw_input parameter."""
-    mock_tool.return_value = ToolResponse(data={"hash": "0xabc"})
+    mock_tool.return_value = ToolResponse(
+        data=TransactionInfoData(
+            **{
+                "from": "0xfrom",
+                "to": "0xto",
+                "token_transfers": [TokenTransfer(**{"from": "0xa", "to": "0xb", "type": "mint", "token": None})],
+            },
+        )
+    )
     response = await client.get("/v1/get_transaction_info?chain_id=1&transaction_hash=0xabc")
     assert response.status_code == 200
-    assert response.json()["data"] == {"hash": "0xabc"}
+    transfer = response.json()["data"]["token_transfers"][0]
+    assert transfer["from"] == "0xa"
+    assert transfer["to"] == "0xb"
+    assert transfer["type"] == "mint"
     mock_tool.assert_called_once_with(chain_id="1", transaction_hash="0xabc", ctx=ANY)
 
 

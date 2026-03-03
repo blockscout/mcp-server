@@ -189,7 +189,7 @@ def _wrap_tool_for_structured_output(tool_function):
     @wraps(tool_function)
     async def _wrapped_tool(*args, **kwargs):
         tool_response = await tool_function(*args, **kwargs)
-        structured = tool_response.model_dump(mode="json")
+        structured = tool_response.model_dump(mode="json", by_alias=True)
         content_text = _generate_content(tool_response, structured, *args, **kwargs)
         return CallToolResult(
             content=[TextContent(type="text", text=content_text)],

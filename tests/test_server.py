@@ -366,6 +366,39 @@ async def test_wrap_tool_for_structured_output_with_content_text():
 
 
 @pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_uses_aliases_for_nested_models():
+    from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+
+    async def _tool() -> ToolResponse[TransactionInfoData]:
+        return ToolResponse(
+            data=TransactionInfoData(
+                **{
+                    "from": "0xfrom",
+                    "to": "0xto",
+                    "token_transfers": [
+                        TokenTransfer(**{"from": "0xa", "to": "0xb", "type": "transfer", "token": None})
+                    ],
+                }
+            )
+        )
+
+    wrapped = _wrap_tool_for_structured_output(_tool)
+    result = await wrapped()
+
+    transfer = result.structuredContent["data"]["token_transfers"][0]
+    assert transfer["from"] == "0xa"
+    assert transfer["to"] == "0xb"
+    assert transfer["type"] == "transfer"
+    assert "from_address" not in transfer
+    assert "to_address" not in transfer
+    assert "transfer_type" not in transfer
+
+    validated = ToolResponse[TransactionInfoData].model_validate(result.structuredContent)
+    assert validated.data.token_transfers[0].from_address == "0xa"
+
+
+@pytest.mark.asyncio
 async def test_wrap_tool_for_structured_output_fallback_and_metadata():
     from blockscout_mcp_server.models import ToolResponse
     from blockscout_mcp_server.server import _wrap_tool_for_structured_output

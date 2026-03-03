@@ -4,7 +4,7 @@ from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
-from tests.integration.helpers import retry_on_network_error
+from tests.integration.helpers import assert_tool_response_round_trip, retry_on_network_error
 
 
 def find_truncated_value(value):
@@ -46,6 +46,33 @@ async def test_get_transaction_info_integration(mock_ctx):
     for transfer in data.token_transfers:
         assert isinstance(transfer, TokenTransfer)
         assert isinstance(transfer.transfer_type, str)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_transaction_info_round_trip_with_token_transfers(mock_ctx):
+    """Ensure token transfer aliases survive the production round-trip path."""
+    tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
+    result = await retry_on_network_error(
+        lambda: get_transaction_info(chain_id="1", transaction_hash=tx_hash, ctx=mock_ctx),
+        action_description="get_transaction_info round-trip request",
+    )
+
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, TransactionInfoData)
+    if not result.data.token_transfers:
+        pytest.skip("Token transfers were empty for the selected transaction.")
+
+    validated = assert_tool_response_round_trip(result, ToolResponse[TransactionInfoData])
+
+    for original_transfer, validated_transfer in zip(
+        result.data.token_transfers,
+        validated.data.token_transfers,
+        strict=True,
+    ):
+        assert validated_transfer.from_address == original_transfer.from_address
+        assert validated_transfer.to_address == original_transfer.to_address
+        assert validated_transfer.transfer_type == original_transfer.transfer_type
 
 
 @pytest.mark.integration

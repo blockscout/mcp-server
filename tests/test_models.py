@@ -342,6 +342,72 @@ def test_token_transfer_accepts_populated_token_metadata_dict():
     assert model.token == token_payload
 
 
+def test_token_transfer_round_trip_by_alias():
+    transfer = TokenTransfer(from_address="0xa", to_address="0xb", transfer_type="transfer", token={"symbol": "TOK"})
+
+    validated = TokenTransfer.model_validate(transfer.model_dump(mode="json", by_alias=True))
+
+    assert validated.from_address == "0xa"
+    assert validated.to_address == "0xb"
+    assert validated.transfer_type == "transfer"
+
+
+def test_token_transfer_round_trip_by_name():
+    transfer = TokenTransfer(from_address="0xa", to_address="0xb", transfer_type="mint", token=None)
+
+    validated = TokenTransfer.model_validate(transfer.model_dump(mode="json"))
+
+    assert validated.from_address == "0xa"
+    assert validated.to_address == "0xb"
+    assert validated.transfer_type == "mint"
+
+
+def test_transaction_info_data_round_trip_with_nested_token_transfers():
+    payload = TransactionInfoData(
+        **{
+            "from": "0xfrom",
+            "to": "0xto",
+            "token_transfers": [TokenTransfer(**{"from": "0xa", "to": "0xb", "type": "transfer", "token": None})],
+        }
+    )
+
+    validated = TransactionInfoData.model_validate(payload.model_dump(mode="json", by_alias=True))
+
+    assert validated.from_address == "0xfrom"
+    assert validated.to_address == "0xto"
+    assert validated.token_transfers[0].from_address == "0xa"
+    assert validated.token_transfers[0].transfer_type == "transfer"
+
+
+def test_advanced_filter_item_round_trip_by_alias():
+    from blockscout_mcp_server.models import AdvancedFilterItem
+
+    item = AdvancedFilterItem(**{"from": "0xfrom", "to": "0xto"})
+
+    validated = AdvancedFilterItem.model_validate(item.model_dump(mode="json", by_alias=True))
+
+    assert validated.from_address == "0xfrom"
+    assert validated.to_address == "0xto"
+
+
+def test_tool_response_transaction_info_round_trip_with_aliases():
+    response = ToolResponse[TransactionInfoData](
+        data=TransactionInfoData(
+            **{
+                "from": "0xfrom",
+                "to": "0xto",
+                "token_transfers": [TokenTransfer(**{"from": "0xa", "to": "0xb", "type": "transfer", "token": {}})],
+            }
+        )
+    )
+
+    validated = ToolResponse[TransactionInfoData].model_validate(response.model_dump(mode="json", by_alias=True))
+
+    assert validated.data.from_address == "0xfrom"
+    assert validated.data.token_transfers[0].to_address == "0xb"
+    assert validated.data.token_transfers[0].transfer_type == "transfer"
+
+
 def test_block_info_data_model():
     """Verify BlockInfoData model structure and extra field handling."""
     block_data = {
