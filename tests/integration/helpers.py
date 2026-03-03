@@ -64,6 +64,7 @@ def assert_tool_response_round_trip(
     dumped = response.model_dump(mode="json", by_alias=True)
     validated = response_model.model_validate(dumped)
 
+    assert validated.data == response.data
     assert validated.data_description == response.data_description
     assert validated.notes == response.notes
     assert validated.instructions == response.instructions
