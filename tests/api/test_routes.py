@@ -553,7 +553,12 @@ async def test_get_transaction_info_success(mock_tool, client: AsyncClient):
     url = "/v1/get_transaction_info?chain_id=1&transaction_hash=0x123&include_raw_input=true"
     response = await client.get(url)
     assert response.status_code == 200
-    transfer = response.json()["data"]["token_transfers"][0]
+    data = response.json()["data"]
+    assert data["from"] == "0xfrom"
+    assert data["to"] == "0xto"
+    assert "from_address" not in data
+    assert "to_address" not in data
+    transfer = data["token_transfers"][0]
     assert transfer["from"] == "0xa"
     assert transfer["to"] == "0xb"
     assert transfer["type"] == "transfer"
@@ -583,7 +588,12 @@ async def test_get_transaction_info_no_optional(mock_tool, client: AsyncClient):
     )
     response = await client.get("/v1/get_transaction_info?chain_id=1&transaction_hash=0xabc")
     assert response.status_code == 200
-    transfer = response.json()["data"]["token_transfers"][0]
+    data = response.json()["data"]
+    assert data["from"] == "0xfrom"
+    assert data["to"] == "0xto"
+    assert "from_address" not in data
+    assert "to_address" not in data
+    transfer = data["token_transfers"][0]
     assert transfer["from"] == "0xa"
     assert transfer["to"] == "0xb"
     assert transfer["type"] == "mint"
