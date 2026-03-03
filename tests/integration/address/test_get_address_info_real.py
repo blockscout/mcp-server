@@ -1,8 +1,28 @@
 import pytest
 
+from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 from tests.integration.helpers import retry_on_network_error
+
+
+def _assert_no_oversized_strings(value: object) -> None:
+    if isinstance(value, str):
+        assert len(value) <= INPUT_DATA_TRUNCATION_LIMIT
+        return
+
+    if isinstance(value, list):
+        for item in value:
+            _assert_no_oversized_strings(item)
+        return
+
+    if isinstance(value, dict):
+        if value.get("value_truncated") is True:
+            assert "value_sample" in value
+            return
+
+        for nested_value in value.values():
+            _assert_no_oversized_strings(nested_value)
 
 
 @pytest.mark.integration
@@ -44,3 +64,35 @@ async def test_get_address_info_integration(mock_ctx):
     usdc_tag = next((tag for tag in metadata["tags"] if tag.get("slug") == "usdc"), None)
     assert usdc_tag is not None, "Could not find the 'usdc' tag in metadata"
     assert usdc_tag["name"].lower() in {"usd coin", "usdc"}
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mock_ctx):
+    address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"  # vitalik.eth
+
+    result = await retry_on_network_error(
+        lambda: get_address_info(chain_id="1", address=address, ctx=mock_ctx),
+        action_description="get_address_info vitalik.eth address request",
+    )
+
+    if result.notes and any("Could not retrieve address metadata" in note for note in result.notes):
+        pytest.skip("Metadata service unavailable; cannot verify metadata meta truncation.")
+
+    metadata = result.data.metadata
+    assert isinstance(metadata, dict)
+
+    tags = metadata.get("tags")
+    if not isinstance(tags, list):
+        pytest.skip("No metadata tags found; cannot verify truncation.")
+
+    tags_with_meta = [tag for tag in tags if isinstance(tag, dict) and "meta" in tag]
+    if not tags_with_meta:
+        pytest.skip("No metadata tags with meta field found; cannot verify truncation.")
+
+    for tag in tags_with_meta:
+        meta = tag["meta"]
+        if isinstance(meta, dict | list):
+            _assert_no_oversized_strings(meta)
+        elif isinstance(meta, str):
+            assert len(meta) <= INPUT_DATA_TRUNCATION_LIMIT

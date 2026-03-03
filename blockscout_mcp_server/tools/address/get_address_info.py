@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Annotated
 
 from mcp.server.fastmcp import Context
@@ -10,6 +11,7 @@ from blockscout_mcp_server.models import (
     ToolResponse,
 )
 from blockscout_mcp_server.tools.common import (
+    _recursively_truncate_and_flag_long_strings,
     build_tool_response,
     get_blockscout_base_url,
     make_blockscout_request,
@@ -17,6 +19,38 @@ from blockscout_mcp_server.tools.common import (
     report_and_log_progress,
 )
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
+
+
+def _process_metadata_tags(metadata_data: dict | None) -> tuple[dict | None, bool]:
+    """Parse and truncate metadata tag values to keep response payload context-friendly."""
+    if metadata_data is None or "tags" not in metadata_data or not isinstance(metadata_data["tags"], list):
+        return metadata_data, False
+
+    any_truncated = False
+    for tag in metadata_data["tags"]:
+        if not isinstance(tag, dict) or "meta" not in tag:
+            continue
+
+        meta = tag["meta"]
+        parsed_meta = None
+        if isinstance(meta, str):
+            try:
+                parsed_meta = json.loads(meta)
+            except json.JSONDecodeError:
+                processed_meta, was_truncated = _recursively_truncate_and_flag_long_strings(meta)
+                tag["meta"] = processed_meta
+                any_truncated = any_truncated or was_truncated
+                continue
+        elif isinstance(meta, dict | list):
+            parsed_meta = meta
+        else:
+            continue
+
+        processed_meta, was_truncated = _recursively_truncate_and_flag_long_strings(parsed_meta)
+        tag["meta"] = processed_meta
+        any_truncated = any_truncated or was_truncated
+
+    return metadata_data, any_truncated
 
 
 @log_tool_invocation
@@ -98,6 +132,12 @@ async def get_address_info(
         metadata_data = metadata_result["addresses"].get(address_key) if address_key else None
     else:
         metadata_data = None
+
+    metadata_data, meta_was_truncated = _process_metadata_tags(metadata_data)
+    if meta_was_truncated:
+        notes.append(
+            'Some metadata tag fields were truncated to conserve context (indicated by "value_truncated": true).'
+        )
 
     address_data = AddressInfoData(
         basic_info=address_info_result,
