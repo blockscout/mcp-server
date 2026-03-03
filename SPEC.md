@@ -503,7 +503,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Mechanism**: Before including metadata in the `get_address_info` response, the server parses each tag's `meta` JSON string into a structured JSON value (dict, list, or primitive). The parsed value is then processed by the same recursive truncation function used for transaction input data and log decoded values. Any individual string value exceeding `INPUT_DATA_TRUNCATION_LIMIT` (514 characters) is replaced with `{"value_sample": "...", "value_truncated": true}`. If `meta` is already a dict or list (rather than a JSON string), the truncation is applied directly.
     - **Graceful Degradation**: If a `meta` value is not valid JSON, the raw string itself is passed through the truncation function as a fallback, ensuring that even unparseable large strings do not bypass the context optimization.
     - **Schema Agnosticism**: Because different tag types (e.g., `warpcast-account`, `gitcoin-grantee`) have different `meta` schemas, the truncation is applied generically to all string values rather than targeting specific field names. This ensures the optimization remains effective as new tag types are introduced.
-    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response.
+    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response with a curl example for the metadata endpoint so agents can retrieve the complete untruncated payload when needed.
 
 
 7. **HTTP Request Robustness**

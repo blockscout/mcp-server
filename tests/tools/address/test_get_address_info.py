@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import _process_metadata_tags, get_address_info
@@ -499,5 +500,8 @@ async def test_get_address_info_adds_note_when_metadata_meta_is_truncated(mock_c
 
     assert result.notes is not None
     assert any("Some metadata tag fields were truncated" in note for note in result.notes)
+    expected_metadata_prefix = f'`curl "{str(config.metadata_url).rstrip("/")}/api/v1/metadata?addresses={address}'
+    assert any(expected_metadata_prefix in note for note in result.notes)
+    assert any(f"chainId={chain_id}" in note for note in result.notes)
     assert result.data.metadata is not None
     assert result.data.metadata["tags"][0]["meta"]["tagIcon"]["value_truncated"] is True
