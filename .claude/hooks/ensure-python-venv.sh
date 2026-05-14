@@ -7,24 +7,29 @@ INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [ -z "$COMMAND" ] && exit 0
 
-# Allow if already using venv path or uv run
-if printf '%s' "$COMMAND" | grep -qE '(\.venv/bin/|uv run )'; then
-    exit 0
+# Allow everything inside devcontainer (tools are installed system-wide)
+[ -f /.dockerenv ] && exit 0
+
+# Block uv pip install --system (installs outside venv)
+if printf '%s' "$COMMAND" | grep -qE 'uv pip install.*--system'; then
+    echo "uv pip install --system bypasses the project venv. Use: uv pip install --python .venv \"<package>\"" >&2
+    exit 2
 fi
 
-# Block bare tool invocations anywhere in the command (after |, ;, &&, or at start)
-if printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];&|])(python3?|pytest|ruff)([[:space:]]|$)'; then
+# Remove known-safe invocations before scanning for bare tools.
+# This prevents false negatives like: `.venv/bin/python -V; pytest`
+# or `uv run pytest tests/ && python -V` from slipping through.
+SANITIZED=$(printf '%s' "$COMMAND" \
+    | sed -E 's/\.venv\/bin\/(python3?|pytest|ruff)[[:space:]]?//g' \
+    | sed -E 's/uv run (python3?|pytest|ruff)[[:space:]]?//g')
+
+# Block bare tool invocations anywhere in the sanitized command
+if printf '%s' "$SANITIZED" | grep -qE '(^|[[:space:];&|])(python3?|pytest|ruff)([[:space:]]|$)'; then
     cat >&2 <<'EOF'
 Bare Python tool detected. Use the project venv instead:
   .venv/bin/<tool> ...    (direct path)
   uv run <tool> ...       (via uv, also works in worktrees)
 EOF
-    exit 2
-fi
-
-# Block uv pip install --system (installs outside venv)
-if printf '%s' "$COMMAND" | grep -qE 'uv pip install.*--system|uv pip install.*-p[[:space:]]*system'; then
-    echo "uv pip install --system bypasses the project venv. Use: uv pip install --python .venv \"<package>\"" >&2
     exit 2
 fi
 
