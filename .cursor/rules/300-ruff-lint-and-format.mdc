@@ -1,14 +1,14 @@
 ---
 description: Applicable to identifying and fixing linting and formatting issues
-globs: 
+globs:
 alwaysApply: false
 ---
 # Instructions to identify and fix linting and formatting issues with Ruff
 
 ### Prerequisites for Ruff usage
 
-- Python 3.11 or higher, with the project installed in development mode
-- Ruff installed: `pip install -e ".[dev]"`
+- Python 3.12, with the project installed in development mode including `[dev]` extras
+- See rule 4 in [010-implementation-rules.mdc](mdc:.cursor/rules/010-implementation-rules.mdc) to determine how to invoke `ruff` based on your environment (devcontainer vs. host)
 
 ### Apply linting & formatting before any PR
 
@@ -20,7 +20,7 @@ ruff format .
 ```
 
 - The `--fix` flag will auto-correct all supported issues.
-- `ruff format .` rewrites code to the Black-compatible style (line-length = 120).
+- `ruff format .` rewrites code to the Black-compatible style (line-length = 120).
 
 ### Handle long docstrings / string literals (E501)
 
@@ -41,4 +41,4 @@ ruff check .
 ruff format --check .
 ```
 
-Both commands must exit with code 0 before your PR can be merged.
+Both commands must exit with code 0 before your PR can be merged.

@@ -13,9 +13,9 @@ The project includes a comprehensive unit test suite covering all 16 MCP tool fu
 
 ### Prerequisites for Unit Testing
 
-- Python 3.10+ with the project installed in development mode
-- Test dependencies installed: `pip install -e ".[test]"`
-  - This includes `pytest`, `pytest-asyncio`, and `pytest-cov` for coverage reporting
+- Python 3.12 with the project installed in development mode including `[test]` extras (`pytest`, `pytest-asyncio`, `pytest-cov`)
+- **Inside devcontainer** (Cursor, Copilot): dependencies are pre-installed system-wide — no setup needed
+- **On host** (Claude Code): run `uv pip install --python .venv -e ".[test]"` once, then invoke tests via `uv run pytest`
 
 ### Mocking Strategy
 

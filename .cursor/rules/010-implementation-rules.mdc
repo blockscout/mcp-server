@@ -9,9 +9,13 @@ alwaysApply: true
 
 3. Local testing hints are in [TESTING.md](mdc:TESTING.md)
 
-4. You are working in VSCode devcontainer environment, so no any additional virtual environment management is required. 
+4. **Determining the execution environment:** Before running `pytest`, `ruff`, or `python`, check whether `/.dockerenv` exists:
+   - If `/.dockerenv` **exists** — you are inside the devcontainer. No virtual environment management is required; run tools directly (e.g. `pytest`, `ruff`).
+   - If `/.dockerenv` **does not exist** — you are on the host. Use `uv run <command>` (e.g. `uv run pytest`, `uv run ruff`).
 
-5. If any new package needs to be installed it needs to be done with 'sudo `which uv` pip install --system "<package>"' command. Don't forget to update [pyproject.toml](mdc:pyproject.toml) with the new package.
+5. If any new package needs to be installed, first update [pyproject.toml](mdc:pyproject.toml), then install it:
+   - Inside devcontainer: `sudo \`which uv\` pip install --system "<package>"`
+   - On host: `uv pip install --python .venv "<package>"`
 
 6. **File Size Guidelines**: Regular Python modules should generally not exceed 500 lines of code (LOC). If a module approaches this limit, consider splitting it into multiple focused modules (e.g., `address_tools.py` and `address_tools_advanced.py`) to maintain readability and logical organization.
 
