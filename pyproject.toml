@@ -13,6 +13,8 @@ dependencies = [
     "uvicorn>=0.23.1",  # For HTTP Streamable mode
     "web3==7.13.0",
     "mixpanel==4.10.1",
+    # Pin below 1.0 — starlette 1.0.0 removed `add_event_handler`, which mcp 1.26.0 still uses.
+    "starlette<1.0",
 ]
 
 [project.scripts]
