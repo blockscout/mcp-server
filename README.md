@@ -60,6 +60,27 @@ claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp
 
 After running this command, Blockscout will be available as an MCP server in Claude Code, allowing you to access and analyze blockchain data directly from your coding environment.
 
+### ChatGPT Apps Setup
+
+Install the Blockscout app from the [ChatGPT Apps marketplace](https://chatgpt.com/apps?q=Blockscout):
+
+1. Open the [Blockscout app page](https://chatgpt.com/apps/blockscout-blockchain-data/asdk_app_69a880b0d024819182db60f36cb48420) (or search for "Blockscout" in the [ChatGPT Apps directory](https://chatgpt.com/apps?q=Blockscout)).
+2. Click "Connect" to enable the app for your ChatGPT account.
+
+### Codex App Setup
+
+1. Open Codex and go to **Settings > MCP Servers > Add server**.
+2. Set **Name** to `Blockscout`, select the **Streamable HTTP** tab, and set **URL** to `https://mcp.blockscout.com/mcp`.
+3. Save and restart the Codex app.
+
+### Codex CLI Setup
+
+Run the following command in your terminal:
+
+```sh
+codex mcp add Blockscout --url https://mcp.blockscout.com/mcp
+```
+
 ### Cursor Setup
 
 Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9) to install the Blockscout MCP server in Cursor.
