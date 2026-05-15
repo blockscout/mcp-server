@@ -354,4 +354,6 @@ export BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY=true
 
 ## License
 
-This project is primarily distributed under the terms of the MIT license. See [LICENSE](LICENSE) for details.
+[![License: Blockscout Software Licence](https://img.shields.io/badge/License-Blockscout%20Software%20Licence-blue.svg)](LICENSE)
+
+This project is licensed under the Blockscout Software Licence. See the [LICENSE](LICENSE) file for full terms.

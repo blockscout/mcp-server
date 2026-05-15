@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from types import SimpleNamespace
 
 from blockscout_mcp_server.analytics import _determine_call_source

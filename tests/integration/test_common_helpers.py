@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 # tests/integration/test_common_helpers.py
 import pytest
 

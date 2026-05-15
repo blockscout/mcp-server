@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Centralized Mixpanel analytics for MCP tool invocations.
 
 Tracking is enabled only when:

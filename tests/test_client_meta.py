@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from types import SimpleNamespace
 
 from mcp.types import RequestParams

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Client metadata extraction and defaults shared across logging and analytics."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 import json
 from functools import wraps
 from pathlib import Path

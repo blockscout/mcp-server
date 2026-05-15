@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """
 PreToolUse hook to automatically approve Bash mkdir operations for the temp/ directory.
 

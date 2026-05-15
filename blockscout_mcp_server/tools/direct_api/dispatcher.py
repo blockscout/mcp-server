@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Dispatcher for direct_api_call tool to route to specialized handlers."""
 
 from __future__ import annotations

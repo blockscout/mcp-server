@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT

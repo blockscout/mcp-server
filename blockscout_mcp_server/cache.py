@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Simple in-memory cache for chain metadata."""
 
 import time

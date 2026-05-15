@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Specialized handler for processing user operation responses."""
 
 from __future__ import annotations

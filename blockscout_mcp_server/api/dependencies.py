@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Dependencies for the REST API, such as mock context providers."""
 
 from __future__ import annotations

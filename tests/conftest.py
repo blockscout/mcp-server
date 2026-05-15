@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 # tests/conftest.py
 from unittest.mock import AsyncMock, MagicMock
 

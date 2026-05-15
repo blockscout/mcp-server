@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
 from blockscout_mcp_server.models import AddressLogItem, ToolResponse
