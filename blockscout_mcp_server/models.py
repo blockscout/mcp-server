@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Pydantic models for standardized tool responses."""
 
 from typing import Any, Generic, TypeVar

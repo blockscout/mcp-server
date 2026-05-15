@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import httpx

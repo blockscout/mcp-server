@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from datetime import UTC, datetime
 from typing import Annotated
 

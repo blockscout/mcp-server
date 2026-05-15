@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
 from blockscout_mcp_server.tools.block.get_block_info import get_block_info

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 import asyncio
 import logging
 from types import SimpleNamespace

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Shared utilities for REST API route handlers."""
 
 from collections.abc import Awaitable, Callable

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from blockscout_mcp_server.tools.common import (
     INPUT_DATA_TRUNCATION_LIMIT,
     _truncate_constructor_args,

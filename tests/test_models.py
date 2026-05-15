@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for the Pydantic response models."""
 
 import json

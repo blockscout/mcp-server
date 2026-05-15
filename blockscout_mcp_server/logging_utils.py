@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Logging utilities for the Blockscout MCP Server."""
 
 import logging

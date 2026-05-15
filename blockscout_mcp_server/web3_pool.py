@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Async Web3 connection pool optimized for Blockscout RPC.
 
 The custom provider in this module normalizes JSON-RPC parameters and enforces

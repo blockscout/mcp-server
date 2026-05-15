@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from collections.abc import Callable
 from unittest.mock import patch
 

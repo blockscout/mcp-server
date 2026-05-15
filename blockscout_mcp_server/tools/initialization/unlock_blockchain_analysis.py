@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (

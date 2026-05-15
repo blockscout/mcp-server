@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """
 Unit tests for the allow-temp-dirs.py PreToolUse hook.
 

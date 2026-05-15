@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 

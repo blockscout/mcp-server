@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for the REST API routes."""
 
 from unittest.mock import ANY, AsyncMock, MagicMock, patch

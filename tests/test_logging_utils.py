@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Unit tests for blockscout_mcp_server.logging_utils module."""
 
 import logging

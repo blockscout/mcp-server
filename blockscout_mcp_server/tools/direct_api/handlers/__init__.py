@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Import all handlers in this package to trigger registration with the dispatcher."""
 
 from __future__ import annotations

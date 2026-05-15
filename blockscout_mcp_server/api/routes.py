@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Module for registering all REST API routes with the FastMCP server."""
 
 import json

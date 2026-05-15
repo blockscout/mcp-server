@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Constants used throughout the Blockscout MCP Server."""
 
 from blockscout_mcp_server import __version__

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LicenseRef-Blockscout
 from blockscout_mcp_server.server import run_server_cli
 
 if __name__ == "__main__":

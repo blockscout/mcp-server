@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-Blockscout
 """Helper script to find integration test files for MCP tools."""
 
 import sys
