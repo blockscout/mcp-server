@@ -48,12 +48,6 @@ incorporated under the laws of the Republic of Seychelles.
 the Software that was made available by or on behalf of the Licensor
 before the Effective Date, and that is not distributed under this Licence.
 
-“Software” means the Blockscout blockchain explorer, a tool for
-inspecting and analyzing blockchain networks, as made available by the
-Licensor under this Licence, including the source code, object code,
-executable files, configuration and deployment materials, documentation,
-APIs/SDKs (if any), and any part or portion thereof.
-
 “Software” means the Blockscout MCP Server, a tool that wraps Blockscout
 APIs and exposes blockchain data through the Model Context Protocol, as
 made available by the Licensor under this Licence, including the source
