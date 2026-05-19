@@ -127,10 +127,12 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
 │   ├── test_logging_utils.py  # Unit tests for logging utilities
-│   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_models.py            # Unit tests for Pydantic response models
+│   ├── test_server.py            # Unit tests for server CLI and startup logic
+│   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
 │   └── tools/                  # Unit test modules for each tool implementation
