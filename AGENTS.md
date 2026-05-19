@@ -345,7 +345,7 @@ mcp-server/
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits, the `RECOMMENDED_CHAINS` reference list, the server version, and the `SKILL_POINTER_TEXT` sentence shown to agents on session start.
-        * Operational and strategy rules belong in the `blockscout-analysis` skill (`agent-skills` submodule), not here. See `.cursor/rules/170-mcp-server-instructions-management.mdc` for the policy.
+        * Operational and strategy rules belong in the `blockscout-analysis` skill (`agent-skills` submodule), not here.
         * Ensures consistency between different parts of the application.
         * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth for server-side reference data and the shared skill-pointer text.
     * **`logging_utils.py`**:

@@ -21,7 +21,6 @@ AI agents should consult the appropriate rule files based on the context of thei
 - **Follow** `.cursor/rules/130-version-management.mdc` when updating the version of the MCP server
 - **Apply** `.cursor/rules/135-mcpb-manifest-version.mdc` when editing `mcpb/manifest.json` (changes to `server` or the `tools` list require bumping `version`)
 - **Apply** `.cursor/rules/140-tool-description.mdc` rules to the tool's description field whenever creating a new MCP tool or updating an existing one
-- **Follow** `.cursor/rules/170-mcp-server-instructions-management.mdc` when adding new MCP server instruction groups or modifying existing ones
 
 ### API Endpoints & Static Content
 
