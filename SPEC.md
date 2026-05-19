@@ -413,7 +413,6 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     To address the common issue of LLMs ignoring structured pagination data, the server implements a multi-layered approach to ensure LLMs actually use pagination when available:
 
-    - **Enhanced General Rules**: Pagination handling rules live in the `blockscout-analysis` skill; the server's instructions point agents at the skill, so they pick those rules up before invoking any other tool.
     - **Automatic Instruction Generation**: When a tool response includes pagination, the server automatically appends motivational instructions to the `instructions` field (e.g., "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.")
     - **Tool Description Enhancement**: All paginated tools include prominent **"SUPPORTS PAGINATION"** notices in their docstrings
 
@@ -444,9 +443,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     1. **Functional Uniqueness**: The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role rather than creating redundancy.
 
-    2. **Context-Aware Endpoint Discovery**:
-       - A primary, curated list of general and chain-specific endpoints lives in the `blockscout-analysis` skill (`agent-skills` submodule); the skill-pointer text surfaced by both the server's static instructions and the `__unlock_blockchain_analysis__` payload directs the AI to consult that catalog before invoking Blockscout MCP tools.
-       - Context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`), allowing the AI to "dig deeper" into related data only when contextually relevant.
+    2. **Context-Aware Endpoint Discovery**: Context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`), allowing the AI to "dig deeper" into related data only when contextually relevant.
 
     3. **Input Simplicity**: Curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI substitutes any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.
 
@@ -618,17 +615,27 @@ For these reasons, prompt ingestion through `__unlock_blockchain_analysis__` is 
 
 #### Delegation of Operational Rules to the `blockscout-analysis` Skill
 
-The MCP server owns *capabilities* — the tools and their reference data — and the `blockscout-analysis` skill (`agent-skills` submodule) owns *how to use them*. Operational and strategy rules (error-handling retry policy, time-bounded query strategy, binary-search pattern for historical state transitions, pagination handling, portfolio- and funds-movement-completeness checks, anchor-based resumption, direct-API-call guidance, and the curated `direct_api_call` endpoint reference) live in the skill, where they evolve on their own cadence and are reviewed alongside the rest of the skill content. Agents are expected to consult the skill before invoking any Blockscout MCP tool.
+The structural-guidance approach above ensured the agent calls `__unlock_blockchain_analysis__` first, but it left a separate question open: *what content should that payload (and the server's MCP `instructions=` string) actually carry?*
 
-Accordingly, the server-side instructions carry three things only:
+Earlier iterations packaged the full operational and strategy ruleset inline: error-handling retry policy, time-bounded query strategy, binary-search pattern for historical state transitions, pagination handling, portfolio- and funds-movement-completeness checks, anchor-based resumption, direct-API-call guidance, and a curated catalog of `direct_api_call` endpoints. Three problems accumulated against this arrangement:
+
+1. **Unconditional context cost.** Every rule consumed the agent's context budget on every session, even for short tasks that exercised one or two tools. The cost was paid up front, regardless of whether the rules were ever applied.
+
+2. **Sync burden with the skill.** The curated `direct_api_call` endpoint catalog also lived in the `blockscout-analysis` skill (`agent-skills` submodule), so the two surfaces had to be kept in lockstep on every change. Maintenance overhead compounded with every new endpoint or rule revision.
+
+3. **Access-path mismatch.** Operational rules describe *how to use Blockscout tools effectively* — they are agent-side methodology, not server-side capability. The MCP `instructions=` field and the unlock-tool payload are only seen by clients that initialize an MCP session, yet the same server is also reachable via REST, where consumers receive no initialization payload at all. Embedding methodology in MCP-specific surfaces left REST consumers without it and conflated capability documentation with agent guidance.
+
+The resolution is to move operational and strategy rules out of the server entirely and into the `blockscout-analysis` skill, which is the natural home for agent-side methodology: it is consumed equally by MCP- and REST-mode agents, evolves on its own cadence independent of server releases, and is reviewed alongside the rest of the skill content.
+
+What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` payload is intentionally minimal:
 
 1. The server version.
-2. The `RECOMMENDED_CHAINS` reference list, kept as a quick lookup of popular chain IDs to spare the agent an extra `get_chains_list` call for default routing.
-3. A one-line pointer at the `blockscout-analysis` skill, sourced from a single `SKILL_POINTER_TEXT` constant used identically by both `composed_instructions` and the `__unlock_blockchain_analysis__` payload.
+2. The `RECOMMENDED_CHAINS` reference list — kept inline as a quick lookup of popular chain IDs to spare the agent an extra `get_chains_list` call for default routing.
+3. A one-line pointer at the `blockscout-analysis` skill, sourced from a single `SKILL_POINTER_TEXT` constant used identically by both surfaces.
 
-The `__unlock_blockchain_analysis__` tool is the mandatory initialization step. Its role of getting the agent to call it first is enforced through the structural-guidance technique described above ("From Persuasion to Structural Guidance"), not through runtime locking; functional gating of other tools is a possible future evolution.
+`__unlock_blockchain_analysis__` remains the mandatory first call: its role as the structural-guidance anchor for clients that do not reliably consume the MCP `instructions=` field is unchanged. Functional gating of other tools — refusing to serve them until the unlock tool has been called — is a possible future evolution but is not enforced today; the structural-guidance narrative is the current mechanism.
 
-Two artifacts package the operational rules inline for their own delivery models rather than through the skill pointer: `gpt/instructions.md` (packaged into the Blockscout X-Ray custom GPT) and `tests/evals/GEMINI-evals.md` (consumed by the Gemini evaluation harness as a standalone evaluation fixture). Their maintenance-sync target is the `blockscout-analysis` skill content.
+Two artifacts intentionally package the operational rules inline for their own delivery models rather than through the skill pointer: `gpt/instructions.md` (packaged into the Blockscout X-Ray custom GPT) and `tests/evals/GEMINI-evals.md` (consumed by the Gemini evaluation harness as a standalone evaluation fixture). Their maintenance-sync target is the `blockscout-analysis` skill content.
 
 ### Performance Optimizations and User Experience
 
