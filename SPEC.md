@@ -67,7 +67,7 @@ sequenceDiagram
     participant Metadata as Metadata Service
 
     AI->>MCP: __unlock_blockchain_analysis__
-    MCP-->>AI: Custom instructions
+    MCP-->>AI: Reference data + skill pointer
 
     AI->>MCP: get_address_by_ens_name
     MCP->>BENS: Forward ENS name resolution request
@@ -139,7 +139,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 ### Workflow Description
 
 1. **Instructions Retrieval**:
-   - MCP Host requests custom instructions via `__unlock_blockchain_analysis__`
+   - MCP Host calls `__unlock_blockchain_analysis__` to receive server reference data (version, recommended chains) and a pointer to the `blockscout-analysis` skill, which holds the operating rules and analysis framework.
    - MCP Server provides context-specific guidance
 
 2. **ENS Resolution**:
@@ -413,7 +413,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     To address the common issue of LLMs ignoring structured pagination data, the server implements a multi-layered approach to ensure LLMs actually use pagination when available:
 
-    - **Enhanced General Rules**: Server instructions include explicit pagination handling rules that LLMs receive upfront
+    - **Enhanced General Rules**: Pagination handling, error retries, time-bounded queries, binary search for historical state transitions, and other operating rules live in the `blockscout-analysis` skill; the server instructions point agents at the skill so they pick those rules up before invoking any other tool.
     - **Automatic Instruction Generation**: When a tool response includes pagination, the server automatically appends motivational instructions to the `instructions` field (e.g., "⚠️ MORE DATA AVAILABLE: Use pagination.next_call to get the next page.")
     - **Tool Description Enhancement**: All paginated tools include prominent **"SUPPORTS PAGINATION"** notices in their docstrings
 
@@ -615,6 +615,22 @@ Although collecting the user's initial prompt may look useful for analytics, thi
 - **Security and privacy risk**: User prompts can be very long and may contain personal or sensitive information. Capturing raw prompts in analytics increases exposure risk and complicates data minimization.
 
 For these reasons, prompt ingestion through `__unlock_blockchain_analysis__` is an explicit non-goal.
+
+#### Delegation of Operational Rules to the `blockscout-analysis` Skill
+
+As of MCP server version 0.16.0.dev0, the server no longer embeds operational and strategy rules (error-handling retry policy, time-bounded query strategy, binary-search pattern for historical state transitions, pagination handling, portfolio- and funds-movement-completeness checks, anchor-based resumption, and direct-API-call guidance) in either the FastMCP `instructions=` string or the `__unlock_blockchain_analysis__` payload. Those rules now live in the `blockscout-analysis` skill (`agent-skills` submodule), which the agent is expected to consult before invoking any other Blockscout MCP tool.
+
+The server-side instructions retain three things only:
+
+1. The server version.
+2. The `RECOMMENDED_CHAINS` reference list, kept as a quick lookup of popular chain IDs to spare the agent an extra `get_chains_list` call for default routing.
+3. A one-line pointer at the `blockscout-analysis` skill, sourced from a single `SKILL_POINTER_TEXT` constant used identically by both `composed_instructions` and the `__unlock_blockchain_analysis__` payload.
+
+The `__unlock_blockchain_analysis__` tool remains the mandatory initialization step. Its role of getting the agent to call it first is enforced today through the structural-guidance technique described above ("From Persuasion to Structural Guidance"), not through runtime locking; functional gating of other tools is a possible future evolution and is not part of this change.
+
+This split establishes a clean responsibility boundary: the server owns *capabilities* (the tools and their reference data), and the skill owns *how to use them*. Updates to operational rules ship through the skill repository on its own cadence, decoupled from MCP server releases.
+
+Two artifacts intentionally diverge from this new server output and keep operational rules embedded inline for the current packaging models: `gpt/instructions.md` (packaged into the Blockscout X-Ray custom GPT) and `tests/evals/GEMINI-evals.md` (consumed by the Gemini evaluation harness as a standalone evaluation fixture). Their divergence from the `__unlock_blockchain_analysis__` payload is by design, and their maintenance-sync target is the `blockscout-analysis` skill content, not the unlock output.
 
 ### Performance Optimizations and User Experience
 

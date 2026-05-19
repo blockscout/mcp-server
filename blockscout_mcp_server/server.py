@@ -16,20 +16,11 @@ from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_summary_content_client
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
-    BINARY_SEARCH_RULES,
-    CHAIN_ID_RULES,
-    DATA_ORDERING_AND_RESUMPTION_RULES,
     DEFAULT_HTTP_PORT,
-    DIRECT_API_CALL_ENDPOINT_LIST,
-    DIRECT_API_CALL_RULES,
-    ERROR_HANDLING_RULES,
-    FUNDS_MOVEMENT_RULES,
-    PAGINATION_RULES,
-    PORTFOLIO_ANALYSIS_RULES,
     RECOMMENDED_CHAINS,
     SERVER_NAME,
     SERVER_VERSION,
-    TIME_BASED_QUERY_RULES,
+    SKILL_POINTER_TEXT,
     TOOL_INVOCATION_STATUSES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
@@ -98,74 +89,15 @@ def _resolve_transport_security(http_host: str) -> TransportSecuritySettings:
     )
 
 
-def format_endpoint_groups(groups):
-    formatted = []
-    for group in groups:
-        if "group" in group:
-            formatted.append(f'<group name="{group["group"]}">')
-            formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
-            formatted.append("</group>")
-        elif "chain_family" in group:
-            formatted.append(f'<chain_family name="{group["chain_family"]}">')
-            formatted.extend(f'"{endpoint["path"]}" - "{endpoint["description"]}"' for endpoint in group["endpoints"])
-            formatted.append("</chain_family>")
-    return "\n".join(formatted)
-
-
-common_endpoints = format_endpoint_groups(DIRECT_API_CALL_ENDPOINT_LIST["common"])
-specific_endpoints = format_endpoint_groups(DIRECT_API_CALL_ENDPOINT_LIST["specific"])
 composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
-<error_handling_rules>
-{ERROR_HANDLING_RULES.strip()}
-</error_handling_rules>
-
-<chain_id_guidance>
-<rules>
-{CHAIN_ID_RULES.strip()}
-</rules>
 <recommended_chains>
 Here is the list of IDs of most popular chains:
 {chains_list_str}
 </recommended_chains>
-</chain_id_guidance>
 
-<pagination_rules>
-{PAGINATION_RULES.strip()}
-</pagination_rules>
-
-<time_based_query_rules>
-{TIME_BASED_QUERY_RULES.strip()}
-</time_based_query_rules>
-
-<binary_search_rules>
-{BINARY_SEARCH_RULES.strip()}
-</binary_search_rules>
-
-<portfolio_analysis_rules>
-{PORTFOLIO_ANALYSIS_RULES.strip()}
-</portfolio_analysis_rules>
-
-<funds_movement_rules>
-{FUNDS_MOVEMENT_RULES.strip()}
-</funds_movement_rules>
-
-<data_ordering_and_resumption_rules>
-{DATA_ORDERING_AND_RESUMPTION_RULES.strip()}
-</data_ordering_and_resumption_rules>
-
-<direct_call_endpoint_list>
-{DIRECT_API_CALL_RULES.strip()}
-
-<common>
-{common_endpoints}
-</common>
-
-<specific>
-{specific_endpoints}
-</specific>
-</direct_call_endpoint_list>
+{SKILL_POINTER_TEXT}
 """
 
 

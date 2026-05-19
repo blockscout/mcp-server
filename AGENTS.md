@@ -179,7 +179,7 @@ mcp-server/
 │   └── blockscout.png          # Bundle icon file
 ├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
 │   ├── README.md               # GPT-specific documentation and configuration instructions
-│   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
+│   ├── instructions.md         # Core GPT instructions; embeds operational rules inline (synced from `blockscout-analysis` skill, not from `__unlock_blockchain_analysis__` output)
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
 │   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
@@ -276,8 +276,8 @@ mcp-server/
         * Specifies recommended GPT configuration (GPT-5 model, web search, code interpreter).
     * **`instructions.md`**:
         * Contains the core instructions for the GPT built following OpenAI GPT-5 prompting guide recommendations.
-        * Incorporates content from the `__unlock_blockchain_analysis__` tool for enhanced reasoning.
-        * Must be updated if the `__unlock_blockchain_analysis__` tool output changes.
+        * Embeds the operational and strategy rules inline for the current GPT packaging model; this is an intentional divergence from the `__unlock_blockchain_analysis__` payload (which now carries only reference data and a skill pointer).
+        * Must be kept in sync with the rules in the `blockscout-analysis` skill (`agent-skills` submodule) — not with `__unlock_blockchain_analysis__` output.
     * **`action_tool_descriptions.md`**:
         * Contains detailed descriptions of all MCP tools available to the GPT.
         * Required due to GPT's 8,000 character limit for instructions.
@@ -285,7 +285,7 @@ mcp-server/
     * **`openapi.yaml`**:
         * OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions.
         * Contains modified tool descriptions to comply with OpenAPI standards (under 300 characters).
-        * Excludes the `__unlock_blockchain_analysis__` endpoint since its data is embedded in GPT instructions.
+        * Excludes the `__unlock_blockchain_analysis__` endpoint since the GPT embeds operational rules inline (synced from the `blockscout-analysis` skill) and does not need to call the server's slim reference-data + skill-pointer payload at runtime.
         * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
 
 4. **`agent-skills/` (Git Submodule)**
@@ -318,7 +318,7 @@ mcp-server/
     * **`models.py`**:
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
-        * Includes specific data models for complex payloads, like the response from `__unlock_blockchain_analysis__`.
+        * Includes specific data models for complex payloads, including the slim `InstructionsData` returned by `__unlock_blockchain_analysis__` (version, recommended chains, and a `skill_reference` pointer at the `blockscout-analysis` skill).
     * **`server.py`**:
         * The heart of the MCP server.
         * Initializes a `FastMCP` instance using constants from `constants.py`.
@@ -344,10 +344,10 @@ mcp-server/
         * `mcp_allowed_hosts: str`: Comma-separated list of allowed `Host` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
     * **`constants.py`**:
-        * Defines centralized constants used throughout the application, including data truncation limits.
-        * Contains server instructions and other configuration strings.
+        * Defines centralized constants used throughout the application, including data truncation limits, the `RECOMMENDED_CHAINS` reference list, the server version, and the `SKILL_POINTER_TEXT` sentence shown to agents on session start.
+        * Operational and strategy rules are no longer stored here — they live in the `blockscout-analysis` skill (`agent-skills` submodule). See `.cursor/rules/170-mcp-server-instructions-management.mdc` for the policy.
         * Ensures consistency between different parts of the application.
-        * Used by both server.py and tools like `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth.
+        * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth for server-side reference data and the shared skill-pointer text.
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
@@ -390,7 +390,7 @@ mcp-server/
             * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
             * The function docstring provides the description surfaced to FastMCP clients.
             * Example modules:
-                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning special server instructions and recommended chains.
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning the server version, recommended chains, and a pointer to the `blockscout-analysis` skill where the operating rules live.
                 * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
                 * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.

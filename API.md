@@ -126,7 +126,7 @@ Retrieves a list of all available tools and their MCP schemas.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Provides custom instructions and operational guidance for using the server. This is a mandatory first step.
+Returns server reference data and a pointer to the `blockscout-analysis` skill. This is the mandatory initialization step every session must perform before invoking any other tool.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
@@ -134,6 +134,18 @@ Provides custom instructions and operational guidance for using the server. This
 - **Parameters**
 
   *None*
+
+- **Response payload**
+
+  The structured payload (`InstructionsData`) carries:
+
+  | Field                | Type                | Description                                                                                                                            |
+  | -------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+  | `version`            | `string`            | The Blockscout MCP server version handling the request.                                                                                |
+  | `recommended_chains` | `list[ChainInfo]`   | Cached list of popular chain IDs (Ethereum, Polygon, Base, Arbitrum, etc.) to spare agents an extra `get_chains_list` call.            |
+  | `skill_reference`    | `string`            | Pointer sentence at the `blockscout-analysis` skill where the operating rules and analysis framework live. The agent must read the skill before invoking other tools. |
+
+  Operational rules (error-handling retry policy, time-bounded query strategy, binary-search pattern for historical state transitions, pagination handling, portfolio- and funds-movement-completeness checks, anchor-based resumption, direct-API-call guidance) are no longer embedded in this response — they live in the `blockscout-analysis` skill.
 
 - **Example Request**
 
