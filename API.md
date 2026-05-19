@@ -126,7 +126,7 @@ Retrieves a list of all available tools and their MCP schemas.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Returns server reference data and a pointer to the `blockscout-analysis` skill. This is the mandatory initialization step every session must perform before invoking any other tool.
+Provides custom instructions and operational guidance for using the server. This is a mandatory first step.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
@@ -134,16 +134,6 @@ Returns server reference data and a pointer to the `blockscout-analysis` skill. 
 - **Parameters**
 
   *None*
-
-- **Response payload**
-
-  The structured payload (`InstructionsData`) carries:
-
-  | Field                | Type                | Description                                                                                                                            |
-  | -------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-  | `version`            | `string`            | The Blockscout MCP server version handling the request.                                                                                |
-  | `recommended_chains` | `list[ChainInfo]`   | Cached list of popular chain IDs (Ethereum, Polygon, Base, Arbitrum, etc.) to spare agents an extra `get_chains_list` call.            |
-  | `skill_reference`    | `string`            | Pointer sentence at the `blockscout-analysis` skill where the operating rules and analysis framework live. The agent must read the skill before invoking other tools. |
 
 - **Example Request**
 
