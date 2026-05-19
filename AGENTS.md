@@ -127,10 +127,12 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
 │   ├── test_logging_utils.py  # Unit tests for logging utilities
-│   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_models.py            # Unit tests for Pydantic response models
+│   ├── test_server.py            # Unit tests for server CLI and startup logic
+│   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
 │   └── tools/                  # Unit test modules for each tool implementation
@@ -179,7 +181,7 @@ mcp-server/
 │   └── blockscout.png          # Bundle icon file
 ├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
 │   ├── README.md               # GPT-specific documentation and configuration instructions
-│   ├── instructions.md         # Core GPT instructions incorporating `__unlock_blockchain_analysis__` content
+│   ├── instructions.md         # Core GPT instructions; embeds operational rules inline (synced from `blockscout-analysis` skill)
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
 │   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
@@ -276,8 +278,8 @@ mcp-server/
         * Specifies recommended GPT configuration (GPT-5 model, web search, code interpreter).
     * **`instructions.md`**:
         * Contains the core instructions for the GPT built following OpenAI GPT-5 prompting guide recommendations.
-        * Incorporates content from the `__unlock_blockchain_analysis__` tool for enhanced reasoning.
-        * Must be updated if the `__unlock_blockchain_analysis__` tool output changes.
+        * Embeds the operational and strategy rules inline for the GPT packaging model.
+        * Must be kept in sync with the rules in the `blockscout-analysis` skill (`agent-skills` submodule).
     * **`action_tool_descriptions.md`**:
         * Contains detailed descriptions of all MCP tools available to the GPT.
         * Required due to GPT's 8,000 character limit for instructions.
@@ -285,7 +287,7 @@ mcp-server/
     * **`openapi.yaml`**:
         * OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions.
         * Contains modified tool descriptions to comply with OpenAPI standards (under 300 characters).
-        * Excludes the `__unlock_blockchain_analysis__` endpoint since its data is embedded in GPT instructions.
+        * Excludes the `__unlock_blockchain_analysis__` endpoint since the GPT embeds the operational rules inline (synced from the `blockscout-analysis` skill) and does not need to call it at runtime.
         * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
 
 4. **`agent-skills/` (Git Submodule)**
@@ -345,9 +347,8 @@ mcp-server/
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits.
-        * Contains server instructions and other configuration strings.
         * Ensures consistency between different parts of the application.
-        * Used by both server.py and tools like `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth.
+        * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth.
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
@@ -390,7 +391,7 @@ mcp-server/
             * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
             * The function docstring provides the description surfaced to FastMCP clients.
             * Example modules:
-                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning special server instructions and recommended chains.
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning server reference data and a pointer to the `blockscout-analysis` skill.
                 * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
                 * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.
