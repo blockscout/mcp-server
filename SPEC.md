@@ -445,7 +445,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     1. **Functional Uniqueness**: The endpoints exposed via `direct_api_call` are strictly curated to *not* duplicate functionality already provided by existing, specific MCP tools. This eliminates "tool selection confusion" for the AI, ensuring that `direct_api_call` serves a complementary role rather than creating redundancy.
 
     2. **Context-Aware Endpoint Discovery**:
-       - A primary, curated list of general and chain-specific endpoints is provided to the AI through the `__unlock_blockchain_analysis__` tool's response, ensuring immediate awareness of capabilities.
+       - A primary, curated list of general and chain-specific endpoints lives in the `blockscout-analysis` skill (`agent-skills` submodule); the skill-pointer text surfaced by both the server's static instructions and the `__unlock_blockchain_analysis__` payload directs the AI to consult that catalog before invoking Blockscout MCP tools.
        - Context-relevant endpoints are suggested in the `instructions` field of responses from other specific tools (e.g., `get_address_info`), allowing the AI to "dig deeper" into related data only when contextually relevant.
 
     3. **Input Simplicity**: Curated endpoints are chosen to have relatively simple input parameters, making it easier for the AI to construct valid calls. The AI substitutes any path parameters (e.g., `{account_address}`) directly into the `endpoint_path` string.

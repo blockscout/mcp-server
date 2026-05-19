@@ -33,4 +33,5 @@ def test_composed_instructions_contains_required_structural_pieces():
 
 def test_skill_pointer_text_is_identical_between_server_surfaces():
     """The skill-pointer sentence emitted by the server matches SKILL_POINTER_TEXT verbatim."""
-    assert SKILL_POINTER_TEXT.strip() in composed_instructions
+    assert composed_instructions.rstrip().endswith(SKILL_POINTER_TEXT)
+    assert composed_instructions.count(SKILL_POINTER_TEXT) == 1
