@@ -179,7 +179,7 @@ mcp-server/
 │   └── blockscout.png          # Bundle icon file
 ├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
 │   ├── README.md               # GPT-specific documentation and configuration instructions
-│   ├── instructions.md         # Core GPT instructions; embeds operational rules inline (synced from `blockscout-analysis` skill, not from `__unlock_blockchain_analysis__` output)
+│   ├── instructions.md         # Core GPT instructions; embeds operational rules inline (synced from `blockscout-analysis` skill)
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
 │   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
@@ -276,8 +276,8 @@ mcp-server/
         * Specifies recommended GPT configuration (GPT-5 model, web search, code interpreter).
     * **`instructions.md`**:
         * Contains the core instructions for the GPT built following OpenAI GPT-5 prompting guide recommendations.
-        * Embeds the operational and strategy rules inline for the current GPT packaging model; this is an intentional divergence from the `__unlock_blockchain_analysis__` payload (which now carries only reference data and a skill pointer).
-        * Must be kept in sync with the rules in the `blockscout-analysis` skill (`agent-skills` submodule) — not with `__unlock_blockchain_analysis__` output.
+        * Embeds the operational and strategy rules inline for the GPT packaging model.
+        * Must be kept in sync with the rules in the `blockscout-analysis` skill (`agent-skills` submodule).
     * **`action_tool_descriptions.md`**:
         * Contains detailed descriptions of all MCP tools available to the GPT.
         * Required due to GPT's 8,000 character limit for instructions.
@@ -285,7 +285,7 @@ mcp-server/
     * **`openapi.yaml`**:
         * OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions.
         * Contains modified tool descriptions to comply with OpenAPI standards (under 300 characters).
-        * Excludes the `__unlock_blockchain_analysis__` endpoint since the GPT embeds operational rules inline (synced from the `blockscout-analysis` skill) and does not need to call the server's slim reference-data + skill-pointer payload at runtime.
+        * Excludes the `__unlock_blockchain_analysis__` endpoint since the GPT embeds the operational rules inline (synced from the `blockscout-analysis` skill) and does not need to call it at runtime.
         * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
 
 4. **`agent-skills/` (Git Submodule)**
@@ -345,7 +345,7 @@ mcp-server/
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits, the `RECOMMENDED_CHAINS` reference list, the server version, and the `SKILL_POINTER_TEXT` sentence shown to agents on session start.
-        * Operational and strategy rules are no longer stored here — they live in the `blockscout-analysis` skill (`agent-skills` submodule). See `.cursor/rules/170-mcp-server-instructions-management.mdc` for the policy.
+        * Operational and strategy rules belong in the `blockscout-analysis` skill (`agent-skills` submodule), not here. See `.cursor/rules/170-mcp-server-instructions-management.mdc` for the policy.
         * Ensures consistency between different parts of the application.
         * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth for server-side reference data and the shared skill-pointer text.
     * **`logging_utils.py`**:

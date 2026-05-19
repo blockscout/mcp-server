@@ -10,9 +10,9 @@ The official GPT is **"Blockscout X-Ray"**: <https://chatgpt.com/g/g-68a7f315edf
 
 ### @instructions.md
 
-Contains the core instructions for the GPT. Operational and strategy rules for analyzing Blockscout data are embedded **inline** for the current GPT packaging model. This is an intentional divergence from the slim payload that `__unlock_blockchain_analysis__` returns at runtime.
+Contains the core instructions for the GPT. Operational and strategy rules for analyzing Blockscout data are embedded **inline** for the GPT packaging model.
 
-**Important**: The maintenance-sync target for this file is the `blockscout-analysis` skill in the `agent-skills` submodule — **not** the `__unlock_blockchain_analysis__` tool output. When the skill's operational rules change, this file must be updated to match the skill, not the slim unlock payload.
+**Important**: The maintenance-sync target for this file is the `blockscout-analysis` skill in the `agent-skills` submodule. When the skill's operational rules change, this file must be updated to match.
 
 The instructions are built following the OpenAI GPT-5 prompting guide recommendations: <https://github.com/openai/openai-cookbook/blob/main/examples/gpt-5/gpt-5_prompting_guide.ipynb>
 
@@ -40,7 +40,7 @@ OpenAPI 3.1.0 specification generated for the REST API endpoints provided by the
 
 - Tool parameter descriptions are modified to comply with OpenAPI 3.1.0 standards
 - Tool descriptions are truncated to be less than 300 characters per OpenAPI requirements
-- The `__unlock_blockchain_analysis__` endpoint is excluded since the GPT embeds the operational rules inline (synced from the `blockscout-analysis` skill) and does not need the slim reference-data + skill-pointer payload at runtime
+- The `__unlock_blockchain_analysis__` endpoint is excluded since the GPT embeds the operational rules inline (synced from the `blockscout-analysis` skill)
 - Some tool parameters (specifically for `read_contract`) have modified descriptions for OpenAPI compliance
 - The specification of the `query_params` parameter for the `direct_api_call` tool is limited to define only `sender` to comply with OpenAPI linter used by OpenAI for API specification validation.
 

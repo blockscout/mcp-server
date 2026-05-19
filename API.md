@@ -145,8 +145,6 @@ Returns server reference data and a pointer to the `blockscout-analysis` skill. 
   | `recommended_chains` | `list[ChainInfo]`   | Cached list of popular chain IDs (Ethereum, Polygon, Base, Arbitrum, etc.) to spare agents an extra `get_chains_list` call.            |
   | `skill_reference`    | `string`            | Pointer sentence at the `blockscout-analysis` skill where the operating rules and analysis framework live. The agent must read the skill before invoking other tools. |
 
-  Operational rules (error-handling retry policy, time-bounded query strategy, binary-search pattern for historical state transitions, pagination handling, portfolio- and funds-movement-completeness checks, anchor-based resumption, direct-API-call guidance) are no longer embedded in this response — they live in the `blockscout-analysis` skill.
-
 - **Example Request**
 
   ```bash
