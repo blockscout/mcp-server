@@ -318,7 +318,7 @@ mcp-server/
     * **`models.py`**:
         * Defines a standardized, structured `ToolResponse` model using Pydantic.
         * Ensures all tools return data in a consistent, machine-readable format, separating the data payload from metadata like pagination and notes.
-        * Includes specific data models for complex payloads, including the slim `InstructionsData` returned by `__unlock_blockchain_analysis__` (version, recommended chains, and a `skill_reference` pointer at the `blockscout-analysis` skill).
+        * Includes specific data models for complex payloads, like the response from `__unlock_blockchain_analysis__`.
     * **`server.py`**:
         * The heart of the MCP server.
         * Initializes a `FastMCP` instance using constants from `constants.py`.
@@ -344,10 +344,9 @@ mcp-server/
         * `mcp_allowed_hosts: str`: Comma-separated list of allowed `Host` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
     * **`constants.py`**:
-        * Defines centralized constants used throughout the application, including data truncation limits, the `RECOMMENDED_CHAINS` reference list, the server version, and the `SKILL_POINTER_TEXT` sentence shown to agents on session start.
-        * Operational and strategy rules belong in the `blockscout-analysis` skill (`agent-skills` submodule), not here.
+        * Defines centralized constants used throughout the application, including data truncation limits.
         * Ensures consistency between different parts of the application.
-        * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth for server-side reference data and the shared skill-pointer text.
+        * Used by both `server.py` and `tools/initialization/unlock_blockchain_analysis.py` to maintain a single source of truth.
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
@@ -390,7 +389,7 @@ mcp-server/
             * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
             * The function docstring provides the description surfaced to FastMCP clients.
             * Example modules:
-                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning the server version, recommended chains, and a pointer to the `blockscout-analysis` skill where the operating rules live.
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning server reference data and a pointer to the `blockscout-analysis` skill.
                 * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
                 * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.
