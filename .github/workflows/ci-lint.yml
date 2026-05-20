@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          persist-credentials: false
 
       # Step 2: Set up the specified Python version from the matrix.
       - name: Set up Python ${{ matrix.python-version }}

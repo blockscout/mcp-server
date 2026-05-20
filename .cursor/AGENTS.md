@@ -25,6 +25,7 @@ AI agents should consult the appropriate rule files based on the context of thei
 ### API Endpoints & Static Content
 
 - **Apply** `.cursor/rules/150-rest-api-implementation.mdc` when implementing REST API endpoints that wrap MCP tools
+- **Note** `.cursor/rules/150-rest-api-implementation.mdc` excludes static root endpoints (`/`, `/llms.txt`, `/health`, `/skill/<path>`) from the `/v1/` tool-wrapper conventions; these endpoints do not use `extract_and_validate_params`, `@handle_rest_errors`, or `_add_v1_tool_route`, and `/v1/` remains reserved for endpoints returning `ToolResponse`
 - **Apply** `.cursor/rules/160-static-content-caching.mdc` when serving static files in API routes
 
 ### Testing & Development

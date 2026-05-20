@@ -36,10 +36,17 @@ def _load_sidecar(path: Path) -> dict[str, str | None] | None:
     except (OSError, json.JSONDecodeError):
         return None
 
-    return {
-        "commit": data.get("commit"),
-        "last_modified": data.get("last_modified"),
-    }
+    if not isinstance(data, dict):
+        return None
+
+    commit = data.get("commit")
+    last_modified = data.get("last_modified")
+    if not isinstance(commit, str) or not commit:
+        return None
+    if not isinstance(last_modified, str) or not last_modified:
+        return None
+
+    return {"commit": commit, "last_modified": last_modified}
 
 
 def _load_git_metadata(submodule_path: Path) -> dict[str, str] | None:

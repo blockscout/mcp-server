@@ -108,7 +108,8 @@ mcp-server/
 │   │       ├── test_get_transaction_info_real.py  # Integration tests for get_transaction_info
 │   │       └── test_get_transactions_by_address_real.py  # Integration tests for get_transactions_by_address
 │   ├── api/                      # Unit tests for the REST API
-│   │   └── test_routes.py        # Unit tests for API route definitions
+│   │   ├── test_routes.py        # Unit tests for API route definitions
+│   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
 │   ├── conftest.py
 │   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
 │   │   ├── .env.example
@@ -134,8 +135,13 @@ mcp-server/
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
+│   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
+│   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
+│   ├── resources/              # Unit tests for server-owned resource modules
+│   │   ├── __init__.py
+│   │   └── test_skill_resources.py  # Unit tests for bundled skill resource enumeration
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── address/            # Tests for address-related MCP tools
 │       │   ├── test_get_address_info.py        # Unit tests for get_address_info

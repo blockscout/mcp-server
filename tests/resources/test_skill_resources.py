@@ -103,3 +103,21 @@ def test_read_traversal_shaped_uris_return_none():
 
     for uri in traversal_uris:
         assert skill_resources.read_resource(uri) is None
+
+
+def test_missing_skill_entrypoint_raises_runtime_error(monkeypatch, tmp_path):
+    package_root = tmp_path / "package"
+    package_root.mkdir()
+    fake_module = tmp_path / "blockscout_mcp_server" / "resources" / "skill_resources.py"
+    fake_module.parent.mkdir(parents=True)
+    fake_module.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(skill_resources, "files", lambda _: package_root)
+    monkeypatch.setattr(skill_resources, "__file__", str(fake_module))
+
+    try:
+        skill_resources._iter_whitelisted_files()
+    except RuntimeError as exc:
+        assert "Bundled blockscout-analysis skill entrypoint is missing" in str(exc)
+    else:
+        raise AssertionError("Expected missing skill entrypoint to raise RuntimeError")

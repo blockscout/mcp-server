@@ -111,8 +111,12 @@ def _iter_whitelisted_files() -> list[tuple[str, str]]:
     entries: list[tuple[str, str]] = []
 
     skill_md = skill_root / "SKILL.md"
-    if skill_md.is_file():
-        entries.append(("SKILL.md", skill_md.read_text(encoding="utf-8")))
+    if not skill_md.is_file():
+        raise RuntimeError(
+            "Bundled blockscout-analysis skill entrypoint is missing. "
+            "Initialize the agent-skills submodule or install a package that includes _bundled_skill/SKILL.md."
+        )
+    entries.append(("SKILL.md", skill_md.read_text(encoding="utf-8")))
 
     references_root = skill_root / "references"
     if references_root.is_dir():
