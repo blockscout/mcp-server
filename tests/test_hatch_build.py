@@ -27,7 +27,7 @@ def _import_hatch_build(monkeypatch):
     return importlib.import_module("hatch_build")
 
 
-def test_stage_bundled_skill_excludes_packaging_only_files(monkeypatch, tmp_path):
+def test_stage_bundled_skill_matches_skill_package_exclusions(monkeypatch, tmp_path):
     hatch_build = _import_hatch_build(monkeypatch)
     skill_root = tmp_path / "blockscout-analysis"
     staged_path = tmp_path / "staged"

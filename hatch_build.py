@@ -8,6 +8,8 @@ from pathlib import Path
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
+# Keep these exclusions aligned with agent-skills/tools/package.sh. The .build
+# directory is excluded because blockscout-analysis/.gitignore treats it as generated output.
 _EXCLUDED_SKILL_ROOT_FILES = {".gitignore", "README.md", ".mcp.json"}
 _EXCLUDED_SKILL_DIRS = {".build", ".codex-plugin"}
 
