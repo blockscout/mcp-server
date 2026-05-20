@@ -5,6 +5,8 @@ import importlib
 import sys
 import types
 
+import pytest
+
 
 def _import_hatch_build(monkeypatch):
     interface = types.ModuleType("hatchling.builders.hooks.plugin.interface")
@@ -56,3 +58,23 @@ def test_stage_bundled_skill_matches_skill_package_exclusions(monkeypatch, tmp_p
         assert (staged_path / rel).read_text(encoding="utf-8") == rel
     for rel in excluded_files:
         assert not (staged_path / rel).exists()
+
+
+def test_stage_bundled_skill_rejects_symlinks(monkeypatch, tmp_path):
+    hatch_build = _import_hatch_build(monkeypatch)
+    skill_root = tmp_path / "blockscout-analysis"
+    staged_path = tmp_path / "staged"
+    external_file = tmp_path / "external.md"
+    symlink_path = skill_root / "references" / "external.md"
+
+    (skill_root / "SKILL.md").parent.mkdir(parents=True, exist_ok=True)
+    (skill_root / "SKILL.md").write_text("skill", encoding="utf-8")
+    symlink_path.parent.mkdir(parents=True, exist_ok=True)
+    external_file.write_text("outside skill root", encoding="utf-8")
+    symlink_path.symlink_to(external_file)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        hatch_build._stage_bundled_skill(skill_root, staged_path)
+
+    assert "Bundled skill staging refuses symlink" in str(exc_info.value)
+    assert str(symlink_path) in str(exc_info.value)

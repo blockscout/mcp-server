@@ -86,7 +86,11 @@ def _stage_bundled_skill(skill_root: Path, staged_path: Path) -> None:
     staged_path.mkdir(parents=True)
 
     for source in sorted(skill_root.rglob("*")):
-        if not source.is_file() or not _should_bundle_skill_file(skill_root, source):
+        if not _should_bundle_skill_file(skill_root, source):
+            continue
+        if source.is_symlink():
+            raise RuntimeError(f"Bundled skill staging refuses symlink: {source}")
+        if not source.is_file():
             continue
 
         relative_path = source.relative_to(skill_root)
