@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -30,6 +32,9 @@ jobs:
           key: ${{ runner.os }}-pip-3.12-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-3.12-
+
+      - name: Bake bundled skill metadata
+        run: python scripts/bake_skill_metadata.py
 
       - name: Install dependencies
         run: |
