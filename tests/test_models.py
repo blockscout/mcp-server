@@ -50,6 +50,7 @@ def test_tool_response_complex_data():
             )
         ],
         skill_reference="pointer",
+        skill_resolution_rule="rule",
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"

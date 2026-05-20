@@ -12,6 +12,7 @@ mcp-server/
 │   │   ├── dependencies.py     # Dependency providers for the REST API
 │   │   ├── helpers.py          # Shared utilities for REST API handlers
 │   │   └── routes.py           # REST API route definitions
+│   ├── resources/              # Skill-as-resource enumeration and content access (`skill_resources.py`)
 │   ├── __main__.py             # Entry point for `python -m blockscout_mcp_server`
 │   ├── server.py               # Core server logic: FastMCP instance, tool registration, CLI
 │   ├── templates/              # Static HTML templates for the web interface
@@ -107,7 +108,8 @@ mcp-server/
 │   │       ├── test_get_transaction_info_real.py  # Integration tests for get_transaction_info
 │   │       └── test_get_transactions_by_address_real.py  # Integration tests for get_transactions_by_address
 │   ├── api/                      # Unit tests for the REST API
-│   │   └── test_routes.py        # Unit tests for API route definitions
+│   │   ├── test_routes.py        # Unit tests for API route definitions
+│   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
 │   ├── conftest.py
 │   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
 │   │   ├── .env.example
@@ -127,14 +129,20 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
 │   ├── test_logging_utils.py  # Unit tests for logging utilities
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
+│   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
+│   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
+│   ├── resources/              # Unit tests for server-owned resource modules
+│   │   ├── __init__.py
+│   │   └── test_skill_resources.py  # Unit tests for bundled skill resource enumeration
 │   └── tools/                  # Unit test modules for each tool implementation
 │       ├── address/            # Tests for address-related MCP tools
 │       │   ├── test_get_address_info.py        # Unit tests for get_address_info
@@ -185,7 +193,10 @@ mcp-server/
 │   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
 │   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
 │   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
-├── agent-skills/               # Git submodule: AI agent skills for blockchain analysis (https://github.com/blockscout/agent-skills)
+├── agent-skills/               # Git submodule: AI agent skills for blockchain analysis (https://github.com/blockscout/agent-skills). Its `blockscout-analysis/` subtree is bundled into the wheel at `blockscout_mcp_server/_bundled_skill/` at build time and served through the MCP resources channel and the `/skill/` HTTP mirror.
+├── hatch_build.py              # Hatch custom build hook: emits `_bundled_skill_manifest.json` into the wheel.
+├── scripts/
+│   └── bake_skill_metadata.py  # Helper invoked before `docker build` to write `.bundle_skill_commit_info.json`.
 ├── Dockerfile                  # For building the Docker image
 ├── pytest.ini                  # Pytest configuration (excludes integration tests by default)
 ├── API.md                      # Detailed documentation for the REST API
@@ -293,6 +304,7 @@ mcp-server/
 4. **`agent-skills/` (Git Submodule)**
     * Git submodule: [agent-skills repository](https://github.com/blockscout/agent-skills)
     * Contains AI agent skills that provide structured guidance for enhanced blockchain data analysis using the Blockscout MCP Server.
+    * Build-time bundling: a Hatch build hook (`hatch_build.py`) writes `blockscout_mcp_server/_bundled_skill_manifest.json` containing the submodule's commit hash and ISO 8601 commit timestamp. The MCP server reads this manifest at startup and uses the timestamp as the `lastModified` annotation on every bundled skill resource. The commit metadata is baked outside Docker by `scripts/bake_skill_metadata.py`, which CI invokes before `docker build`.
 
 5. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
@@ -375,6 +387,8 @@ mcp-server/
         * **`helpers.py`**: Shared utilities for REST API handlers, including parameter extraction and error handling.
         * **`routes.py`**: Defines all REST API endpoints that wrap MCP tools.
         * **`dependencies.py`**: Dependency providers for the REST API, such as a mock context for stateless calls.
+    * **`resources/`**:
+        * **`skill_resources.py`**: Enumerates bundled `blockscout-analysis` skill Markdown as MCP resources and serves cached content to the `/skill/` HTTP mirror.
     * **`tools/` (Sub-package for Tool Implementations)**
         * **`__init__.py`**: Marks `tools` as a sub-package. May re-export tool functions for easier import into `server.py`.
         * **`common.py`**:
@@ -391,7 +405,7 @@ mcp-server/
             * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
             * The function docstring provides the description surfaced to FastMCP clients.
             * Example modules:
-                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, returning server reference data and a pointer to the `blockscout-analysis` skill.
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`. Returns server reference data (version, recommended chains) and the same two-paragraph skill pointer-plus-resolution-rule block that the server emits through its MCP `instructions` field.
                 * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
                 * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.

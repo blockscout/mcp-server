@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import pytest
 
+from blockscout_mcp_server.constants import SKILL_POINTER_TEXT, SKILL_RESOLUTION_RULE_TEXT
 from blockscout_mcp_server.models import InstructionsData, ToolResponse
+from blockscout_mcp_server.server import composed_instructions
 from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import __unlock_blockchain_analysis__
 
 
@@ -13,6 +15,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     # ARRANGE
     mock_version = "1.2.3"
     mock_pointer = "Test skill pointer sentence."
+    mock_resolution_rule = "Test skill resolution rule."
     mock_chains = [
         {
             "name": "TestChain",
@@ -31,6 +34,10 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SKILL_POINTER_TEXT",
             mock_pointer,
         ),
+        patch(
+            "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SKILL_RESOLUTION_RULE_TEXT",
+            mock_resolution_rule,
+        ),
     ):
         # ACT
         result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
@@ -41,6 +48,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
 
         assert result.data.version == mock_version
         assert result.data.skill_reference == mock_pointer
+        assert result.data.skill_resolution_rule == mock_resolution_rule
 
         assert isinstance(result.data.recommended_chains, list)
         assert len(result.data.recommended_chains) == 1
@@ -62,3 +70,12 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         end_call = mock_ctx.report_progress.call_args_list[1]
         assert end_call.kwargs["progress"] == 1.0
         assert "Server instructions ready" in end_call.kwargs["message"]
+
+
+@pytest.mark.asyncio
+async def test_unlock_payload_skill_text_matches_server_instructions(mock_ctx):
+    result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
+
+    assert result.data.skill_reference == SKILL_POINTER_TEXT
+    assert result.data.skill_resolution_rule == SKILL_RESOLUTION_RULE_TEXT
+    assert f"{result.data.skill_reference}\n\n{result.data.skill_resolution_rule}" in composed_instructions

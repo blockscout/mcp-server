@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
 
       - uses: actions-ecosystem/action-regex-match@v2
         id: regex
@@ -46,6 +49,9 @@ jobs:
           docker-remote-multi-platform: true
           docker-arm-host: ${{ secrets.ARM_RUNNER_HOSTNAME }}
           docker-arm-host-key: ${{ secrets.ARM_RUNNER_KEY }}
+
+      - name: Bake bundled skill metadata
+        run: python scripts/bake_skill_metadata.py
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

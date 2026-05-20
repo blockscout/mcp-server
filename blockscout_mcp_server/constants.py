@@ -7,8 +7,15 @@ SERVER_VERSION = __version__
 
 SKILL_POINTER_TEXT = (
     "Operating rules, execution strategies, and the curated `direct_api_call` endpoint reference "
-    "for analyzing Blockscout data live in the `blockscout-analysis` skill. Consult the skill "
-    "(and its bundled references) before invoking any other Blockscout MCP tool."
+    "for analyzing Blockscout data live in the `blockscout-analysis` skill. If the skill is already "
+    "loaded in your context, use that copy. If no copy is loaded, fetch the entry point from "
+    "`blockscout-mcp://skill/SKILL.md` over MCP resources or `GET /skill/SKILL.md` over HTTP."
+)
+
+SKILL_RESOLUTION_RULE_TEXT = (
+    "When `SKILL.md` mentions a reference path such as `references/foo.md`, resolve it as "
+    "`blockscout-mcp://skill/` plus that path over MCP resources, or `GET /skill/` plus that path "
+    "over HTTP."
 )
 
 COMMUNITY_TELEMETRY_URL = "https://mcp.blockscout.com"
