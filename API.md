@@ -13,6 +13,35 @@ These endpoints provide general information and are not part of the versioned AP
 | `GET`  | `/`          | Serves a static HTML landing page.                          |
 | `GET`  | `/health`    | A simple health check endpoint. Returns `{"status": "ok"}`. |
 | `GET`  | `/llms.txt`  | A machine-readable guidance file for AI crawlers.           |
+| `GET`  | `/skill/<path>` | Serves bundled `blockscout-analysis` skill Markdown.      |
+
+### Skill Resources
+
+The bundled `blockscout-analysis` skill is mirrored over HTTP for non-MCP consumers. The address space is identical to the MCP resource URIs after the `/skill/` prefix. This endpoint serves raw Markdown and is therefore a static endpoint, not a `/v1/` tool wrapper.
+
+`GET /skill/<path>`
+
+The path tail matches the file's location relative to the skill root, such as `SKILL.md` or `references/blockscout-api-index.md`.
+
+**Behavior**
+
+| Path                                            | Result                                                                                       |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `SKILL.md`                                      | Returns the entry-point body with the YAML frontmatter stripped. The removed `name`, `license`, and `metadata` fields are not mirrored elsewhere over HTTP; only MCP resource consumers see the promoted `description` annotation. |
+| `references/<file>.md`                          | Returns the file body byte-for-byte from the bundle.                                         |
+| `README.md`                                     | Returns `404` because README is not enumerated.                                               |
+| Any path containing `..` or escaping the bundle | Returns `404`. Lookup is map-based, so traversal-shaped paths are never keys in the precomputed map. |
+
+**Example Requests**
+
+```bash
+curl "http://127.0.0.1:8000/skill/SKILL.md"
+curl "http://127.0.0.1:8000/skill/references/blockscout-api-index.md"
+```
+
+**MCP equivalent**
+
+The same artifacts are also reachable via the MCP resources channel under URIs of the form `blockscout-mcp://skill/<path>`. The two surfaces are equivalent in content and intended to be interchangeable.
 
 ## Authentication
 

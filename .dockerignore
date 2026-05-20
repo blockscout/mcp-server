@@ -46,6 +46,8 @@ wheels/
 # Documentation and markdown files
 *.md
 docs/
+!agent-skills/blockscout-analysis/**
+!.bundle_skill_commit_info.json
 
 # Testing
 tests/

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Regression tests for the slim `composed_instructions` string in server.py."""
 
-from blockscout_mcp_server.constants import SERVER_VERSION, SKILL_POINTER_TEXT
+from blockscout_mcp_server.constants import SERVER_VERSION, SKILL_POINTER_TEXT, SKILL_RESOLUTION_RULE_TEXT
 from blockscout_mcp_server.server import composed_instructions
 
 REMOVED_TAGS = (
@@ -33,5 +33,14 @@ def test_composed_instructions_contains_required_structural_pieces():
 
 def test_skill_pointer_text_is_identical_between_server_surfaces():
     """The skill-pointer sentence emitted by the server matches SKILL_POINTER_TEXT verbatim."""
-    assert composed_instructions.rstrip().endswith(SKILL_POINTER_TEXT)
+    combined_skill_text = f"{SKILL_POINTER_TEXT}\n\n{SKILL_RESOLUTION_RULE_TEXT}"
+
+    assert composed_instructions.rstrip().endswith(combined_skill_text)
     assert composed_instructions.count(SKILL_POINTER_TEXT) == 1
+    assert composed_instructions.count(SKILL_RESOLUTION_RULE_TEXT) == 1
+
+
+def test_skill_pointer_precedes_resolution_rule_and_names_fetch_surfaces():
+    assert composed_instructions.index(SKILL_POINTER_TEXT) < composed_instructions.index(SKILL_RESOLUTION_RULE_TEXT)
+    assert "blockscout-mcp://skill/SKILL.md" in composed_instructions
+    assert "GET /skill/SKILL.md" in composed_instructions

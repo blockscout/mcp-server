@@ -2,6 +2,7 @@
 """Module for registering all REST API routes with the FastMCP server."""
 
 import json
+import mimetypes
 import pathlib
 from collections.abc import Callable
 from typing import Any
@@ -19,6 +20,7 @@ from blockscout_mcp_server.api.helpers import (
     handle_rest_errors,
 )
 from blockscout_mcp_server.models import ToolUsageReport
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
@@ -72,6 +74,21 @@ async def serve_llms_txt(_: Request) -> Response:
         message = "llms.txt content is not available."
         return PlainTextResponse(message, status_code=500)
     return PlainTextResponse(LLMS_TXT_CONTENT)
+
+
+async def serve_skill_resource(request: Request) -> Response:
+    """Serve a bundled skill resource by relative path."""
+    path = request.path_params["path"]
+    uri = skill_resources.relative_path_to_uri(path)
+    # SKILL.md frontmatter stripping is handled by skill_resources.
+    body = skill_resources.read_resource(uri)
+    if body is None:
+        return PlainTextResponse("Not Found", status_code=404)
+
+    media_type = mimetypes.guess_type(path)[0] or "text/markdown"
+    if path.endswith(".md"):
+        media_type = "text/markdown"
+    return PlainTextResponse(body, media_type=media_type)
 
 
 async def main_page(request: Request) -> Response:
@@ -346,6 +363,7 @@ def register_api_routes(mcp: FastMCP) -> None:
     # These routes are not part of the OpenAPI schema for tools.
     mcp.custom_route("/health", methods=["GET"], include_in_schema=False)(health_check)
     mcp.custom_route("/llms.txt", methods=["GET"], include_in_schema=False)(serve_llms_txt)
+    mcp.custom_route("/skill/{path:path}", methods=["GET"], include_in_schema=False)(serve_skill_resource)
     mcp.custom_route("/", methods=["GET"], include_in_schema=False)(main_page)
     mcp.custom_route("/v1/report_tool_usage", methods=["POST"])(report_tool_usage)
 

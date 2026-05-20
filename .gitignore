@@ -22,6 +22,7 @@ htmlcov/
 # local documents
 temp/
 .ai/
+.bundle_skill_commit_info.json
 
 # MCP bundle build
 mcpb/_build/

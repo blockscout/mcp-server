@@ -21,9 +21,11 @@ from blockscout_mcp_server.constants import (
     SERVER_NAME,
     SERVER_VERSION,
     SKILL_POINTER_TEXT,
+    SKILL_RESOLUTION_RULE_TEXT,
     TOOL_INVOCATION_STATUSES,
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
@@ -98,6 +100,8 @@ Here is the list of IDs of most popular chains:
 </recommended_chains>
 
 {SKILL_POINTER_TEXT}
+
+{SKILL_RESOLUTION_RULE_TEXT}
 """
 
 
@@ -263,6 +267,10 @@ mcp.tool(
     annotations=create_tool_annotations(),
     meta=_openai_tool_meta(direct_api_call),
 )(_wrap_tool_for_structured_output(direct_api_call))
+
+
+for resource in skill_resources.list_resources():
+    mcp.add_resource(resource)
 
 
 # Initialize logging and override the rich formatter defined in the FastMCP

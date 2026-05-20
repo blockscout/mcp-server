@@ -300,9 +300,11 @@ python -m blockscout_mcp_server --http --rest --http-host 0.0.0.0 --http-port 80
 
 ### Building Docker Image Locally
 
-Build the Docker image with the official tag:
+Initialize the bundled skill submodule, bake its commit metadata into the Docker build context, then build the image:
 
 ```bash
+git submodule update --init --recursive agent-skills
+python scripts/bake_skill_metadata.py
 docker build -t ghcr.io/blockscout/mcp-server:latest .
 ```
 

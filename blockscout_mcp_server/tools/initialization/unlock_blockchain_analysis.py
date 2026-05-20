@@ -5,6 +5,7 @@ from blockscout_mcp_server.constants import (
     RECOMMENDED_CHAINS,
     SERVER_VERSION,
     SKILL_POINTER_TEXT,
+    SKILL_RESOLUTION_RULE_TEXT,
 )
 from blockscout_mcp_server.models import (
     ChainInfo,
@@ -24,13 +25,12 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[InstructionsData]:
     """Mandatory initialization step for any session against the Blockscout MCP server.
 
-    Returns server reference data (server version, recommended chain IDs) plus a pointer to
-    the `blockscout-analysis` skill, which the agent is expected to consult before invoking
-    any other Blockscout MCP tool.
+    Returns server reference data plus the `blockscout-analysis` skill pointer and URI
+    resolution rule.
 
     MANDATORY FOR AI AGENTS: Call this tool first in every session. The returned payload
-    identifies where the operating rules and analysis framework live; the agent is
-    responsible for reading the referenced skill before executing further tool calls.
+    identifies where the operating rules and analysis framework live and how to read
+    referenced skill files before executing further tool calls.
     """
     # Report start of operation
     await report_and_log_progress(
@@ -44,6 +44,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         version=SERVER_VERSION,
         recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
         skill_reference=SKILL_POINTER_TEXT,
+        skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
     )
 
     # Report completion

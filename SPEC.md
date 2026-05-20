@@ -630,12 +630,47 @@ The resolution is to move operational and strategy rules out of the server entir
 What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` payload is intentionally minimal:
 
 1. The server version.
-2. The `RECOMMENDED_CHAINS` reference list — kept inline as a quick lookup of popular chain IDs to spare the agent an extra `get_chains_list` call for default routing.
-3. A one-line pointer at the `blockscout-analysis` skill, sourced from a single `SKILL_POINTER_TEXT` constant used identically by both surfaces.
+2. A list of recommended chain IDs for quick lookup.
+3. A two-paragraph block: a pointer at the `blockscout-analysis` skill (with the verifiable "use the copy already loaded; otherwise fetch from `blockscout-mcp://skill/SKILL.md` over MCP or `GET /skill/SKILL.md` over HTTP" condition) followed by the URI-resolution rule for navigating from the entry point into reference files. The exact same text is emitted from both surfaces so clients that consume only one of them are not at a disadvantage. See the `### Bundled blockscout-analysis Skill - Resources and HTTP Mirror` section for the addressable space the pointer refers to.
 
 `__unlock_blockchain_analysis__` remains the mandatory first call: its role as the structural-guidance anchor for clients that do not reliably consume the MCP `instructions=` field is unchanged. Functional gating of other tools — refusing to serve them until the unlock tool has been called — is a possible future evolution but is not enforced today; the structural-guidance narrative is the current mechanism.
 
 Two artifacts intentionally package the operational rules inline for their own delivery models rather than through the skill pointer: `gpt/instructions.md` (packaged into the Blockscout X-Ray custom GPT) and `tests/evals/GEMINI-evals.md` (consumed by the Gemini evaluation harness as a standalone evaluation fixture). Their maintenance-sync target is the `blockscout-analysis` skill content.
+
+### Bundled `blockscout-analysis` Skill - Resources and HTTP Mirror
+
+The server distributes the `blockscout-analysis` skill content directly so connected agents receive the authoritative rules from the same release that serves their tool calls. The skill's submodule contents (its `SKILL.md` entry point and the `references/` subtree) are bundled into the package at build time under `blockscout_mcp_server/_bundled_skill/` and exposed through two parallel surfaces with identical content.
+
+#### Delivery Surfaces
+
+- **MCP resources channel.** Each bundled file is enumerated in `resources/list` under the custom URI scheme `blockscout-mcp://skill/<path>`, where `<path>` is the file's location relative to the skill root. `resources/read` returns the file body. `SKILL.md` is served with its YAML frontmatter stripped; every other file is served byte-for-byte.
+- **Static HTTP mirror.** The same address space is mirrored at `GET /skill/<path>`. The path tail is identical to the MCP URI tail, so a script and an MCP agent can describe the same artifact with the same suffix. The endpoint sits under the root, not under `/v1/`, because it serves static content rather than a tool-wrapper `ToolResponse`.
+
+#### Annotation Contract
+
+Resource annotations are used purposefully:
+
+- `audience` is `["user", "assistant"]` on `SKILL.md` and `["assistant"]` on every file under `references/`.
+- `priority` is `0.9` on `SKILL.md` and `0.2` on reference files.
+- `lastModified` is a single ISO 8601 timestamp shared by every entry, taken at build time from the pinned commit of the `agent-skills` submodule. The annotation is omitted entirely when build-time metadata is unavailable.
+- `description` is populated only on `SKILL.md` from its frontmatter.
+
+#### Resolution Rule
+
+`SKILL.md` mentions reference files in prose, such as `references/blockscout-api-index.md`. The corresponding resource URI is `blockscout-mcp://skill/` plus that path, and the HTTP equivalent is `GET /skill/` plus that path. Both the MCP `instructions` field and the `__unlock_blockchain_analysis__` payload carry this rule verbatim.
+
+#### Key Design Decisions
+
+- **Resource channel rather than a new tool.** The skill is static, declarative, server-owned content describing how to use the server itself.
+- **Custom `blockscout-mcp://` scheme.** The vendor-namespaced custom scheme keeps the contract fully under server control and avoids implying direct client-side HTTPS fetches or local file access.
+- **Singular `/skill/` category segment.** The bundle ships one runtime-relevant skill, so the URI does not encode a skill name.
+- **HTTP mirror under root, not `/v1/`.** `/v1/` is the documented home of tool wrappers that return the `ToolResponse` envelope.
+- **Per-file enumeration over prose rewriting.** Every sibling file is listed individually so the agent can suffix-match prose mentions against `resources/list`.
+- **Byte-for-byte serve, except `SKILL.md` frontmatter.** Reference files are returned verbatim; `SKILL.md` frontmatter is stripped because its `description:` value is promoted to the resource annotation.
+- **Accepted `SKILL.md` metadata loss over HTTP.** The stripped frontmatter also contains `name`, `license`, and `metadata`. REST clients fetching `GET /skill/SKILL.md` do not receive those fields in the response body, and only MCP resource consumers see the promoted `description` annotation. Consumers that need the skill entry point over HTTP should treat `/skill/SKILL.md` as Markdown instructions, not as a complete skill metadata document.
+- **`README.md` deliberately not enumerated.** It is human-onboarding content for the standalone skill distribution and has no value as an agent-facing resource.
+- **Map-based lookup is the security mechanism.** Both surfaces look up requests in precomputed dicts keyed by URI or relative path. Filesystem paths are never constructed from request input.
+- **One `lastModified` per skill, baked at build time.** The timestamp source is the commit of the `agent-skills` submodule when the wheel or image is built.
 
 ### Performance Optimizations and User Experience
 

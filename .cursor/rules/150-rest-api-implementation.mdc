@@ -31,3 +31,14 @@ All REST API endpoints **MUST** be registered under the `/v1/` path prefix in `r
 ## 5. Documentation
 
 After creating or modifying a REST endpoint, you **MUST** update its documentation in `API.md` following the [API documentation guidelines](mdc:.cursor/rules/800-api-documentation-guidelines.mdc).
+
+## 6. Static (Non-Tool) Endpoint Exception
+
+This rule governs **tool-wrapper endpoints under `/v1/`**. Static endpoints that serve declarative content (`/llms.txt`, `/`, `/health`, and the `/skill/<path>` skill mirror introduced in issue #352) are explicitly **outside the scope** of this rule:
+
+- They do not use `extract_and_validate_params` — typical inputs are path parameters or none at all.
+- They do not use the `@handle_rest_errors` decorator — the error surface is path resolution, not tool exceptions.
+- They do not use `_add_v1_tool_route` — they are registered directly with `mcp.custom_route("/<path>", methods=["GET"], include_in_schema=False)` inside `register_api_routes`.
+- They live under the root, not under `/v1/`. `/v1/` remains reserved for endpoints that return the `ToolResponse` envelope.
+
+Stylistic precedents: `serve_llms_txt` and the `/skill/<path>` mirror. Reuse the module-level caching approach from `160-static-content-caching.mdc`.
