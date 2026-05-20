@@ -129,6 +129,7 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
 │   ├── test_logging_utils.py  # Unit tests for logging utilities
