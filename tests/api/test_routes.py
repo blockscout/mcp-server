@@ -7,6 +7,8 @@ import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
+from mcp.types import Annotations, Resource
+from pydantic import AnyUrl
 
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
@@ -85,18 +87,16 @@ async def test_list_resources_success(client: AsyncClient, test_mcp_instance: Fa
 @pytest.mark.asyncio
 async def test_list_resources_with_items(client: AsyncClient, test_mcp_instance: FastMCP):
     """Verify resources are serialized with protocol aliases and JSON-safe URLs."""
-    resource = {
-        "uri": "blockscout-mcp://skill/SKILL.md",
-        "name": "Blockscout Analysis Skill",
-        "description": "Bundled skill root file",
-        "mimeType": "text/markdown",
-        "annotations": {"audience": ["assistant"], "priority": 0.9},
-        "_meta": {"source": "test"},
-    }
-    mocked_resource = MagicMock()
-    mocked_resource.model_dump.return_value = resource
+    resource = Resource(
+        uri=AnyUrl("blockscout-mcp://skill/SKILL.md"),
+        name="Blockscout Analysis Skill",
+        description="Bundled skill root file",
+        mimeType="text/markdown",
+        annotations=Annotations(audience=["assistant"], priority=0.9),
+        _meta={"source": "test"},
+    )
 
-    test_mcp_instance.list_resources = AsyncMock(return_value=[mocked_resource])
+    test_mcp_instance.list_resources = AsyncMock(return_value=[resource])
 
     response = await client.get("/v1/resources")
 
@@ -112,7 +112,6 @@ async def test_list_resources_with_items(client: AsyncClient, test_mcp_instance:
     assert "meta" not in payload[0]
 
     test_mcp_instance.list_resources.assert_called_once()
-    mocked_resource.model_dump.assert_called_once_with(mode="json", by_alias=True)
 
 
 @pytest.mark.asyncio
