@@ -350,6 +350,9 @@ def _add_v1_tool_route(mcp: FastMCP, path: str, handler: Callable[..., Any]) -> 
 def register_api_routes(mcp: FastMCP) -> None:
     """Registers all REST API routes."""
 
+    # NOTE: Do not use @handle_rest_errors for discovery handlers.
+    # They do not parse user query params and only expose internal MCP
+    # registration state.
     async def list_tools_rest(_: Request) -> Response:
         """Return a list of all available tools and their schemas."""
         # The FastMCP instance is needed to query registered tools. Defining this
@@ -360,7 +363,10 @@ def register_api_routes(mcp: FastMCP) -> None:
         tools_list = await mcp.list_tools()
         return JSONResponse([tool.model_dump() for tool in tools_list])
 
-    @handle_rest_errors
+    # NOTE: Do not use @handle_rest_errors here. Discovery handlers are
+    # parameterless pass-throughs over in-process MCP registry state
+    # (mcp.list_tools / mcp.list_resources), so the shared request-parameter
+    # validation/error contract is not applicable.
     async def list_resources_rest(_: Request) -> Response:
         """Return a list of all available resources and their metadata."""
         resources_list = await mcp.list_resources()
