@@ -30,6 +30,7 @@ The Blockscout MCP Server supports two primary operational modes:
      - A health check endpoint at `/health`.
      - A machine-readable policy file at `/llms.txt` for AI crawlers.
      - A versioned REST API under `/v1/` that exposes the same functionality as the MCP tools.
+     - Additionally, `GET /v1/resources` provides resource discovery for REST clients, returning the same metadata available through the MCP `resources/list` method.
    - This unified server approach allows both MCP clients and traditional REST clients to interact with the same application instance, ensuring consistency and avoiding code duplication.
 
 The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.

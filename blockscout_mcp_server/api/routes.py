@@ -360,6 +360,11 @@ def register_api_routes(mcp: FastMCP) -> None:
         tools_list = await mcp.list_tools()
         return JSONResponse([tool.model_dump() for tool in tools_list])
 
+    async def list_resources_rest(_: Request) -> Response:
+        """Return a list of all available resources and their metadata."""
+        resources_list = await mcp.list_resources()
+        return JSONResponse([resource.model_dump(mode="json", by_alias=True) for resource in resources_list])
+
     # These routes are not part of the OpenAPI schema for tools.
     mcp.custom_route("/health", methods=["GET"], include_in_schema=False)(health_check)
     mcp.custom_route("/llms.txt", methods=["GET"], include_in_schema=False)(serve_llms_txt)
@@ -369,6 +374,7 @@ def register_api_routes(mcp: FastMCP) -> None:
 
     # Version 1 of the REST API
     _add_v1_tool_route(mcp, "/tools", list_tools_rest)
+    _add_v1_tool_route(mcp, "/resources", list_resources_rest)
     _add_v1_tool_route(mcp, "/get_instructions", get_instructions_rest)
     _add_v1_tool_route(mcp, "/unlock_blockchain_analysis", unlock_blockchain_analysis_rest)
     _add_v1_tool_route(mcp, "/get_block_info", get_block_info_rest)
