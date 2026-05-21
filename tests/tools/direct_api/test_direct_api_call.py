@@ -372,6 +372,7 @@ async def test_direct_api_call_post_basic(mock_ctx):
         assert isinstance(result.data, DirectApiData)
         mock_get.assert_not_called()
         mock_post.assert_awaited_once()
+        assert mock_ctx.report_progress.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -384,6 +385,7 @@ async def test_direct_api_call_invalid_method_raises(mock_ctx):
                 chain_id="1", endpoint_path="/api/v2/stats", method="PUT", ctx=mock_ctx
             )  # type: ignore[arg-type]
         mock_get_url.assert_not_called()
+        assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -396,6 +398,7 @@ async def test_direct_api_call_get_with_json_body_raises_before_network(mock_ctx
                 chain_id="1", endpoint_path="/api/v2/stats", method="GET", json_body={"id": 1}, ctx=mock_ctx
             )
         mock_get_url.assert_not_called()
+        assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -408,6 +411,7 @@ async def test_direct_api_call_post_without_body_raises_before_network(mock_ctx)
                 chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body=None, ctx=mock_ctx
             )
         mock_get_url.assert_not_called()
+        assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -424,6 +428,7 @@ async def test_direct_api_call_post_non_dict_body_raises_before_network(mock_ctx
                 ctx=mock_ctx,
             )
         mock_get_url.assert_not_called()
+        assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -433,9 +438,15 @@ async def test_direct_api_call_post_with_cursor_raises_before_network(mock_ctx):
     ) as mock_get_url:
         with pytest.raises(ValueError, match="Pagination \\(cursor\\) is not supported for POST requests"):
             await direct_api_call_module.direct_api_call(
-                chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, cursor="abc", ctx=mock_ctx
+                chain_id="1",
+                endpoint_path="/api/eth-rpc",
+                method="POST",
+                json_body={"id": 1},
+                cursor="abc",
+                ctx=mock_ctx,
             )
         mock_get_url.assert_not_called()
+        assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -455,3 +466,4 @@ async def test_direct_api_call_post_ignores_next_page_params_for_pagination(mock
             chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
         )
         assert result.pagination is None
+        assert mock_ctx.report_progress.await_count == 3

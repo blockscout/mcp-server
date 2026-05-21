@@ -610,7 +610,9 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
 - **Example Request**
 
   ```bash
-  curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc"     -H "Content-Type: application/json"     -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+  curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
   ```
 
 ### Reporting Tools

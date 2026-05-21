@@ -252,10 +252,9 @@ async def _make_blockscout_http_request(
 ) -> dict:
     effective_timeout = timeout if timeout is not None else config.bs_timeout
     async with _create_httpx_client(timeout=effective_timeout) as client:
-        if params is None:
-            params = {}
+        local_params = dict(params) if params is not None else {}
         if config.bs_api_key:
-            params["apikey"] = config.bs_api_key
+            local_params["apikey"] = config.bs_api_key
 
         url = f"{base_url.rstrip('/')}/{api_path.lstrip('/')}"
 
@@ -263,9 +262,9 @@ async def _make_blockscout_http_request(
         for attempt in range(config.bs_request_max_retries):
             try:
                 if method == "GET":
-                    response = await client.get(url, params=params)
+                    response = await client.get(url, params=local_params)
                 else:
-                    response = await client.post(url, json=json_body, params=params)
+                    response = await client.post(url, json=json_body, params=local_params)
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as e:
