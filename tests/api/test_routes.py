@@ -50,11 +50,16 @@ async def test_routes_not_found_on_clean_app():
 @pytest.mark.asyncio
 async def test_list_tools_success(client: AsyncClient, test_mcp_instance: FastMCP):
     """Verify that the /v1/tools endpoint returns a list of tools."""
-    test_mcp_instance.list_tools = AsyncMock(return_value=[])
+    mocked_tool = MagicMock()
+    mocked_tool.model_dump.return_value = {"name": "tool", "_meta": {"source": "test"}}
+    test_mcp_instance.list_tools = AsyncMock(return_value=[mocked_tool])
+
     response = await client.get("/v1/tools")
+
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json() == [{"name": "tool", "_meta": {"source": "test"}}]
     test_mcp_instance.list_tools.assert_called_once()
+    mocked_tool.model_dump.assert_called_once_with(mode="json", by_alias=True)
 
 
 @pytest.mark.asyncio
