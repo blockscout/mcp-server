@@ -65,12 +65,6 @@ async def direct_api_call(
         because specialized handlers can return lists or other types that don't inherit
         from BaseModel. The dispatcher system supports flexible data structures.
     """
-    await report_and_log_progress(
-        ctx,
-        progress=0.0,
-        total=2.0,
-        message=f"Resolving Blockscout URL for chain {chain_id}...",
-    )
     if method not in ("GET", "POST"):
         raise ValueError("method must be 'GET' or 'POST'.")
     if method == "GET" and json_body is not None:
@@ -81,6 +75,12 @@ async def direct_api_call(
         raise ValueError("json_body must be a JSON object (dict).")
     if method == "POST" and cursor is not None:
         raise ValueError("Pagination (cursor) is not supported for POST requests.")
+    await report_and_log_progress(
+        ctx,
+        progress=0.0,
+        total=2.0,
+        message=f"Resolving Blockscout URL for chain {chain_id}...",
+    )
 
     base_url = await get_blockscout_base_url(chain_id)
     if endpoint_path != "/" and endpoint_path.endswith("/"):

@@ -602,7 +602,7 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
   | `chain_id` | Query string | `string` | Yes | The ID of the blockchain. |
   | `endpoint_path` | Query string | `string` | Yes | The Blockscout API path to call (e.g., `/api/eth-rpc`). |
   | `query_params` | Query string | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax, e.g., `query_params[key]=value`. |
-  | `Content-Type` | Header |  | Yes | Must be `application/json`. |
+  | `Content-Type` | Header | `string` | Yes | Must be `application/json`. |
   | (request body) | Body | `object` | Yes | The JSON object to send to the Blockscout endpoint. |
 
   Note: Pagination (`cursor`) is not supported for POST requests.

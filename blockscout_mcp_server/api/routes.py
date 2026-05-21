@@ -331,12 +331,12 @@ async def direct_api_call_rest(request: Request) -> Response:
     if request.method == "POST":
         try:
             params["json_body"] = await request.json()
-        except Exception as exc:
+        except (json.JSONDecodeError, ValueError) as exc:
             raise ValueError("POST requests require a valid JSON body.") from exc
         params["method"] = "POST"
     extra: dict[str, str] = {}
     for key, value in request.query_params.items():
-        if key in {"chain_id", "endpoint_path", "cursor"}:
+        if key in {"chain_id", "endpoint_path", "cursor", "method", "json_body"}:
             continue
         if key.startswith("query_params[") and key.endswith("]"):
             extra[key[13:-1]] = value
