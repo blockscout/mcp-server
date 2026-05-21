@@ -4,7 +4,7 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Literal
 
 import anyio
 import httpx
@@ -171,7 +171,7 @@ def _extract_http_error_details(response: httpx.Response) -> str:
 
 
 async def make_blockscout_request(
-    base_url: str, api_path: str, params: dict | None = None, *, timeout: float | None = None
+    base_url: str, api_path: str, params: dict[str, Any] | None = None, *, timeout: float | None = None
 ) -> dict:
     """
     Make a GET request to the Blockscout API.
@@ -241,7 +241,7 @@ async def make_blockscout_post_request(
 
 
 async def _make_blockscout_http_request(
-    method: str,
+    method: Literal["GET", "POST"],
     base_url: str,
     api_path: str,
     retry_exceptions: tuple[type[Exception], ...],
