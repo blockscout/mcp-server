@@ -45,6 +45,10 @@ async def get_contract_abi(
         message="Resolved Blockscout instance URL. Fetching contract ABI...",
     )
 
+    # 20s light timeout validated empirically: payloads range from ~10 KB
+    # (simple proxies) to ~350 KB (large multi-file projects like Uniswap V3
+    # Universal Router); worst-case server response is ~10-15s on loaded
+    # instances, leaving comfortable headroom under bs_light_timeout.
     response_data = await make_blockscout_request(
         base_url=base_url,
         api_path=api_path,

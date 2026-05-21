@@ -40,6 +40,10 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         message="Resolved Blockscout instance URL.",
     )
     api_path = f"/api/v2/smart-contracts/{normalized_address}"
+    # 20s light timeout validated empirically: payloads range from ~10 KB
+    # (simple proxies) to ~350 KB (large multi-file projects like Uniswap V3
+    # Universal Router); worst-case server response is ~10-15s on loaded
+    # instances, leaving comfortable headroom under bs_light_timeout.
     raw_data = await make_blockscout_request(
         base_url=base_url,
         api_path=api_path,
