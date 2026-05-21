@@ -92,6 +92,8 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
   - **Downstream Timeouts (`504 Gateway Timeout`)**: Occur when a request to an external service (like a Blockscout API) times out.
   - **Other Downstream Errors**: The server may also pass through other `4xx` or `5xx` status codes from downstream services.
 
+  The server already retries transient transport-level failures internally (up to `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` attempts, default `3`) before surfacing `500` or `504`. Client-side retries on these codes can therefore stay conservative — a single additional attempt is usually sufficient. Retrying `500`/`504` more aggressively multiplies the total attempt count for the same underlying transport failure.
+
 ### Pagination
 
 For endpoints that return large datasets, the response will include a `pagination` object. To fetch the next page, you **must** use the `tool_name` and `params` from the `next_call` object to construct your next request. The `cursor` is an opaque string that contains all necessary information for the server.

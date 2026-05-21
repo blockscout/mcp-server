@@ -529,6 +529,12 @@ This architecture provides the flexibility of a multi-protocol server without th
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
+   Exhausted internal retries surface differently per access mode:
+   - **REST clients** see `500 Internal Server Error` for generic transport failures, or `504 Gateway Timeout` for `httpx.TimeoutException`. Because the server has already retried internally, downstream retry policies that also retry on `5xx` should stay conservative on `500`/`504` from this server to avoid multiplicative attempt cascades.
+   - **Native MCP clients** see a `tools/call` result with `isError: true` and a text content of the form `"Error executing tool <name>: <exception message>"`. There is no HTTP-status indicator in MCP mode — an exhausted-retry transport failure is structurally indistinguishable from an honest upstream `5xx` (the latter carries a `"<code> <reason> - Details: …"` prefix in the text; the former carries the bare `httpx` exception message).
+
+   When changing the retry policy, account for both surfaces.
+
 8. **HTTP Error Handling and Context Propagation**
 
    To enable AI agents to self-correct when API requests fail (e.g., due to invalid parameters like unsupported sort fields), the server implements a robust error propagation strategy.
