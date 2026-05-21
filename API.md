@@ -174,18 +174,24 @@ Provides custom instructions and operational guidance for using the server. This
 
 #### Get Chains List (`get_chains_list`)
 
-Returns a list of all known blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable.
+Returns a list of known blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable. Supports optional filtering by a search query.
 
 `GET /v1/get_chains_list`
 
 - **Parameters**
 
-  *None*
+  | Name    | Type     | Required | Description |
+  | ------- | -------- | -------- | ----------- |
+  | `query` | `string` | No       | Case-insensitive substring filter applied to chain name, chain ID, native currency, and ecosystem fields. |
 
-- **Example Request**
+- **Example Requests**
 
   ```bash
+  # Get all chains
   curl "http://127.0.0.1:8000/v1/get_chains_list"
+
+  # Search for Polygon-related chains
+  curl "http://127.0.0.1:8000/v1/get_chains_list?query=polygon"
   ```
 
 ### Block Tools
