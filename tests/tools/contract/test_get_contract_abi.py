@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 
@@ -61,7 +62,11 @@ async def test_get_contract_abi_success(mock_ctx):
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
@@ -102,7 +107,11 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert_contract_abi_response(result, None)
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
@@ -143,7 +152,11 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert_contract_abi_response(result, [])
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
@@ -184,7 +197,11 @@ async def test_get_contract_abi_api_error(mock_ctx):
             await get_contract_abi(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert mock_ctx.report_progress.await_count == 2  # 0.0 and 1.0 only
         infos = [c.args[0] for c in mock_ctx.info.await_args_list]
         assert any("Starting to fetch contract ABI" in message for message in infos)
@@ -247,7 +264,11 @@ async def test_get_contract_abi_invalid_address_format(mock_ctx):
             await get_contract_abi(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert mock_ctx.report_progress.await_count == 2
 
 
@@ -309,7 +330,11 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
 
         # ASSERT
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=f"/api/v2/smart-contracts/{address}")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path=f"/api/v2/smart-contracts/{address}",
+            timeout=config.bs_light_timeout,
+        )
         assert_contract_abi_response(result, mock_abi_list)
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3

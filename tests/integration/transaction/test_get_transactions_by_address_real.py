@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
@@ -13,15 +15,16 @@ from tests.integration.helpers import retry_on_network_error
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_integration(mock_ctx):
     """Tests that get_transactions_by_address returns a transformed list of transactions."""
-    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-    age_from = "2016-01-01T00:00:00Z"
+    address = "0x0B98057eA310F4d31F2a452B414647007d1645d9"
+    age_from = (datetime.now(UTC) - timedelta(weeks=2)).strftime("%Y-%m-%dT%H:%M:%S.00Z")
+    age_to = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.00Z")
 
     result = await retry_on_network_error(
         lambda: get_transactions_by_address(
-            chain_id="1",
+            chain_id="100",
             address=address,
             age_from=age_from,
-            age_to="2017-01-01T00:00:00.00Z",
+            age_to=age_to,
             ctx=mock_ctx,
         ),
         action_description="get_transactions_by_address request",
@@ -55,15 +58,17 @@ async def test_get_transactions_by_address_integration(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_pagination_integration(mock_ctx):
     """Tests that get_transactions_by_address can successfully use a cursor to fetch a second page."""
-    address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-    chain_id = "1"
-    age_from = "2016-01-01T00:00:00Z"
+    address = "0x0B98057eA310F4d31F2a452B414647007d1645d9"
+    chain_id = "100"
+    age_from = (datetime.now(UTC) - timedelta(weeks=2)).strftime("%Y-%m-%dT%H:%M:%S.00Z")
+    age_to = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.00Z")
 
     first_page = await retry_on_network_error(
         lambda: get_transactions_by_address(
             chain_id=chain_id,
             address=address,
             age_from=age_from,
+            age_to=age_to,
             ctx=mock_ctx,
         ),
         action_description="get_transactions_by_address first page request",
@@ -79,6 +84,7 @@ async def test_get_transactions_by_address_pagination_integration(mock_ctx):
             chain_id=chain_id,
             address=address,
             age_from=age_from,
+            age_to=age_to,
             ctx=mock_ctx,
             cursor=cursor,
         ),

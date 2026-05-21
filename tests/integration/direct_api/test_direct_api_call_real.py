@@ -58,10 +58,10 @@ async def test_direct_api_call_blocks_validated_pagination(mock_ctx):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
-    sender = "0x91f51371D33e4E50e838057E8045265372f8d448"
+    sender = "0x9bE1B9b87D189dF444f4f8a66f1A50398bcEba37"
     first = await retry_on_network_error(
         lambda: direct_api_call(
-            chain_id="1",
+            chain_id="100",
             endpoint_path="/api/v2/proxy/account-abstraction/operations",
             query_params={"sender": sender},
             ctx=mock_ctx,
@@ -71,7 +71,7 @@ async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
 
     assert first.pagination is not None
     next_params = first.pagination.next_call.params
-    assert next_params["chain_id"] == "1"
+    assert next_params["chain_id"] == "100"
     assert next_params["endpoint_path"] == "/api/v2/proxy/account-abstraction/operations"
     assert next_params["query_params"]["sender"] == sender
 
@@ -89,21 +89,8 @@ async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
     with pytest.raises(ResponseTooLargeError):
         await retry_on_network_error(
             lambda: direct_api_call(
-                chain_id="1",
-                endpoint_path="/api",
-                query_params={
-                    "module": "logs",
-                    "action": "getLogs",
-                    "address": "0x000000000004444c5dc75cB358380D2e3dE08A90",
-                    "topic0": "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f",
-                    "topic1": "0x80235dd0d2b0fbac1fc5b9e04d4af3e030efd2b1026823affec8f5a6c9306c38",
-                    "fromBlock": "0",
-                    "toBlock": "latest",
-                    "page": "1",
-                    "offset": "10",
-                    "sort": "desc",
-                    "topic0_1_opr": "and",
-                },
+                chain_id="100",
+                endpoint_path="/api/v2/stats",
                 ctx=mock_ctx,
             ),
             action_description="direct_api_call large response request",

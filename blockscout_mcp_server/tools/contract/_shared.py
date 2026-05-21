@@ -4,6 +4,7 @@ from typing import Any
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.cache import CachedContract, contract_cache
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
     get_blockscout_base_url,
     make_blockscout_request,
@@ -39,7 +40,11 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         message="Resolved Blockscout instance URL.",
     )
     api_path = f"/api/v2/smart-contracts/{normalized_address}"
-    raw_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    raw_data = await make_blockscout_request(
+        base_url=base_url,
+        api_path=api_path,
+        timeout=config.bs_light_timeout,
+    )
     await report_and_log_progress(
         ctx,
         progress=2.0,

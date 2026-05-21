@@ -5,6 +5,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
@@ -53,7 +54,7 @@ async def get_transaction_info(
     operations_path = "/api/v2/proxy/account-abstraction/operations"
 
     transaction_result, ops_result = await asyncio.gather(
-        make_blockscout_request(base_url=base_url, api_path=api_path),
+        make_blockscout_request(base_url=base_url, api_path=api_path, timeout=config.bs_light_timeout),
         make_blockscout_request(
             base_url=base_url,
             api_path=operations_path,

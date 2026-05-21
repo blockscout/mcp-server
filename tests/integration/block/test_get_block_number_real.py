@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from blockscout_mcp_server.tools.block.get_block_number import get_block_number
@@ -22,8 +24,9 @@ async def test_get_block_number_latest_real(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_block_number_by_time_real(mock_ctx):
     """Test that get_block_number resolves a block by datetime."""
+    target_datetime = (datetime.now(UTC) - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.00Z")
     result = await retry_on_network_error(
-        lambda: get_block_number(chain_id="1", ctx=mock_ctx, datetime="2023-01-01T00:00:00Z"),
+        lambda: get_block_number(chain_id="100", ctx=mock_ctx, datetime=target_datetime),
         action_description="get_block_number by datetime request",
     )
     assert isinstance(result.data.block_number, int)

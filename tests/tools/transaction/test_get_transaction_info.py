@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import ChainNotFoundError
@@ -73,7 +74,11 @@ async def test_get_transaction_info_success(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -125,7 +130,11 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -218,7 +227,11 @@ async def test_get_transaction_info_no_user_ops(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -268,7 +281,11 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -324,7 +341,11 @@ async def test_get_transaction_info_pagination_note(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -534,7 +555,11 @@ async def test_get_transaction_info_not_found(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",
@@ -608,7 +633,11 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/transactions/{tx_hash}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/transactions/{tx_hash}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path="/api/v2/proxy/account-abstraction/operations",

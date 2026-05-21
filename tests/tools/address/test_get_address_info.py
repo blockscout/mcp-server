@@ -50,7 +50,11 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/addresses/{address}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path=f"/api/v2/addresses/{address}/transactions",
@@ -173,7 +177,11 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/addresses/{address}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path=f"/api/v2/addresses/{address}/transactions",
@@ -232,7 +240,11 @@ async def test_get_address_info_metadata_failure(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/addresses/{address}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path=f"/api/v2/addresses/{address}/transactions",
@@ -291,7 +303,11 @@ async def test_get_address_info_first_transaction_failure(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/addresses/{address}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path=f"/api/v2/addresses/{address}/transactions",
@@ -349,7 +365,11 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
         mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
-                call(base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}"),
+                call(
+                    base_url=mock_base_url,
+                    api_path=f"/api/v2/addresses/{address}",
+                    timeout=config.bs_light_timeout,
+                ),
                 call(
                     base_url=mock_base_url,
                     api_path=f"/api/v2/addresses/{address}/transactions",

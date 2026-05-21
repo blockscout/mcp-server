@@ -170,7 +170,9 @@ def _extract_http_error_details(response: httpx.Response) -> str:
     return details
 
 
-async def make_blockscout_request(base_url: str, api_path: str, params: dict | None = None) -> dict:
+async def make_blockscout_request(
+    base_url: str, api_path: str, params: dict | None = None, *, timeout: float | None = None
+) -> dict:
     """
     Make a GET request to the Blockscout API.
 
@@ -178,6 +180,9 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         base_url: The base URL of the Blockscout API instance
         api_path: The API path to request, e.g. '/api/v2/blocks/19000000'
         params: Optional query parameters
+        timeout: Optional override for the HTTP request timeout in seconds.
+            When None, uses the heavy timeout (config.bs_timeout, default 120s).
+            Pass config.bs_light_timeout (20s) for simple point-lookup endpoints.
 
     Returns:
         The JSON response as a dictionary. If the API returns a JSON null body, returns an empty dictionary {}.
@@ -200,7 +205,8 @@ async def make_blockscout_request(base_url: str, api_path: str, params: dict | N
         network conditions. Centralizing minimal retries here improves robustness
         for all tools and REST endpoints without masking persistent API errors.
     """
-    async with _create_httpx_client(timeout=config.bs_timeout) as client:
+    effective_timeout = timeout if timeout is not None else config.bs_timeout
+    async with _create_httpx_client(timeout=effective_timeout) as client:
         if params is None:
             params = {}
         if config.bs_api_key:
