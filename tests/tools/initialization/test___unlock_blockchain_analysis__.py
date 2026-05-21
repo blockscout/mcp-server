@@ -16,20 +16,8 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     mock_version = "1.2.3"
     mock_pointer = "Test skill pointer sentence."
     mock_resolution_rule = "Test skill resolution rule."
-    mock_chains = [
-        {
-            "name": "TestChain",
-            "chain_id": "999",
-            "is_testnet": False,
-            "native_currency": "TST",
-            "ecosystem": "Test",
-            "settlement_layer_chain_id": "1",
-        }
-    ]
-
     with (
         patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SERVER_VERSION", mock_version),
-        patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.RECOMMENDED_CHAINS", mock_chains),
         patch(
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SKILL_POINTER_TEXT",
             mock_pointer,
@@ -49,16 +37,6 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert result.data.version == mock_version
         assert result.data.skill_reference == mock_pointer
         assert result.data.skill_resolution_rule == mock_resolution_rule
-
-        assert isinstance(result.data.recommended_chains, list)
-        assert len(result.data.recommended_chains) == 1
-        first_chain = result.data.recommended_chains[0]
-        assert first_chain.name == "TestChain"
-        assert first_chain.chain_id == "999"
-        assert first_chain.is_testnet is False
-        assert first_chain.native_currency == "TST"
-        assert first_chain.ecosystem == "Test"
-        assert first_chain.settlement_layer_chain_id == "1"
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2

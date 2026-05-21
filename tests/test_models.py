@@ -40,21 +40,12 @@ def test_tool_response_complex_data():
     """Test ToolResponse with a nested Pydantic model as data."""
     instructions_data = InstructionsData(
         version="1.0.0",
-        recommended_chains=[
-            ChainInfo(
-                name="TestChain",
-                chain_id="123",
-                is_testnet=False,
-                native_currency="TST",
-                ecosystem="Test",
-            )
-        ],
         skill_reference="pointer",
         skill_resolution_rule="rule",
     )
     response = ToolResponse[InstructionsData](data=instructions_data)
     assert response.data.version == "1.0.0"
-    assert response.data.recommended_chains[0].name == "TestChain"
+    assert response.data.skill_reference == "pointer"
 
 
 def test_tool_response_with_all_fields():

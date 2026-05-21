@@ -15,6 +15,7 @@ REMOVED_TAGS = (
     "<direct_call_endpoint_list>",
     "<chain_id_guidance>",
     "<rules>",
+    "<recommended_chains>",
 )
 
 
@@ -25,9 +26,8 @@ def test_composed_instructions_drops_all_removed_rule_blocks():
 
 
 def test_composed_instructions_contains_required_structural_pieces():
-    """Version line, recommended_chains block, and skill pointer prose all appear."""
+    """Version line and skill pointer prose appear."""
     assert f"Blockscout MCP server version: {SERVER_VERSION}" in composed_instructions
-    assert "<recommended_chains>" in composed_instructions
     assert "blockscout-analysis" in composed_instructions
 
 

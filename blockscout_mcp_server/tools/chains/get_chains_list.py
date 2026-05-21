@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+from typing import Annotated
+
 from mcp.server.fastmcp import Context
+from pydantic import Field
 
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
@@ -14,11 +17,23 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation
-async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
+async def get_chains_list(
+    ctx: Context,
+    query: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Optional case-insensitive substring filter applied to chain name, chain ID, "
+                "native currency, and ecosystem."
+            )
+        ),
+    ] = None,
+) -> ToolResponse[list[ChainInfo]]:
+    """Get the list of known blockchain chains with their IDs.
+
+    Use `query` for case-insensitive substring filtering by chain name, chain ID,
+    native currency, or ecosystem. Omit it to return the full list.
     """
-    Get the list of known blockchain chains with their IDs.
-    Useful for getting a chain ID when the chain name is known. This information can be used in other tools that require a chain ID to request information.
-    """  # noqa: E501
     api_path = "/api/chains"
 
     await report_and_log_progress(
@@ -76,5 +91,36 @@ async def get_chains_list(ctx: Context) -> ToolResponse[list[ChainInfo]]:
     )
 
     chains = chains or []
+    normalized_query = query.strip().lower() if query and query.strip() else None
+
+    if normalized_query:
+        filtered_chains = []
+        for chain in chains:
+            ecosystem = chain.ecosystem
+            ecosystem_matches = False
+            if isinstance(ecosystem, str):
+                ecosystem_matches = normalized_query in ecosystem.lower()
+            elif isinstance(ecosystem, list):
+                ecosystem_matches = any(normalized_query in item.lower() for item in ecosystem)
+
+            if (
+                normalized_query in chain.name.lower()
+                or normalized_query in chain.chain_id.lower()
+                or (chain.native_currency and normalized_query in chain.native_currency.lower())
+                or ecosystem_matches
+            ):
+                filtered_chains.append(chain)
+
+        content_text = f"Retrieved {len(filtered_chains)} chains matching '{query.strip()}' ({len(chains)} total)."
+        notes = None
+        if not filtered_chains:
+            notes = [
+                (
+                    f"No chains matched query '{query.strip()}'. Try a broader term or omit "
+                    "the query parameter to see all chains."
+                )
+            ]
+        return build_tool_response(data=filtered_chains, content_text=content_text, notes=notes)
+
     content_text = f"Retrieved {len(chains)} known blockchain chains."
     return build_tool_response(data=chains, content_text=content_text)

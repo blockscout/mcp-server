@@ -320,7 +320,8 @@ async def get_transaction_logs_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_chains_list_rest(request: Request) -> Response:
     """REST wrapper for the get_chains_list tool."""
-    tool_response = await get_chains_list(ctx=get_mock_context(request))
+    params = extract_and_validate_params(request, required=[], optional=["query"])
+    tool_response = await get_chains_list(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
 
