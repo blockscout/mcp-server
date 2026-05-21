@@ -22,6 +22,7 @@ async def handle_transaction_summary(
     chain_id: str,  # noqa: ARG001 - reserved for future use in handlers
     base_url: str,  # noqa: ARG001 - reserved for future use in handlers
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
+    **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
 ) -> ToolResponse[TransactionSummaryData]:
     """Process the raw JSON response for a transaction summary request."""
     _ = match.group("transaction_hash")

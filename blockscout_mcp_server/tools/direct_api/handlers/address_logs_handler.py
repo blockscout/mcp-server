@@ -28,6 +28,7 @@ async def handle_address_logs(
     base_url: str,
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
+    **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
 ) -> ToolResponse[list[AddressLogItem]]:
     """Process the raw JSON response for an address logs request."""
     address = match.group("address")
