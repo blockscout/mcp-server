@@ -384,3 +384,74 @@ async def test_direct_api_call_invalid_method_raises(mock_ctx):
                 chain_id="1", endpoint_path="/api/v2/stats", method="PUT", ctx=mock_ctx
             )  # type: ignore[arg-type]
         mock_get_url.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_get_with_json_body_raises_before_network(mock_ctx):
+    with patch(
+        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+    ) as mock_get_url:
+        with pytest.raises(ValueError, match="json_body is only allowed with method='POST'"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1", endpoint_path="/api/v2/stats", method="GET", json_body={"id": 1}, ctx=mock_ctx
+            )
+        mock_get_url.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_without_body_raises_before_network(mock_ctx):
+    with patch(
+        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+    ) as mock_get_url:
+        with pytest.raises(ValueError, match="json_body is required when method='POST'"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body=None, ctx=mock_ctx
+            )
+        mock_get_url.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_non_dict_body_raises_before_network(mock_ctx):
+    with patch(
+        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+    ) as mock_get_url:
+        with pytest.raises(ValueError, match="json_body must be a JSON object \\(dict\\)"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1",
+                endpoint_path="/api/eth-rpc",
+                method="POST",
+                json_body="not-a-dict",  # type: ignore[arg-type]
+                ctx=mock_ctx,
+            )
+        mock_get_url.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_with_cursor_raises_before_network(mock_ctx):
+    with patch(
+        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+    ) as mock_get_url:
+        with pytest.raises(ValueError, match="Pagination \\(cursor\\) is not supported for POST requests"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, cursor="abc", ctx=mock_ctx
+            )
+        mock_get_url.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_ignores_next_page_params_for_pagination(mock_ctx):
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_post_request",
+            new_callable=AsyncMock,
+        ) as mock_post,
+    ):
+        mock_get_url.return_value = "https://eth.blockscout.com"
+        mock_post.return_value = {"jsonrpc": "2.0", "result": "0x1", "next_page_params": {"cursor": "x"}}
+        result = await direct_api_call_module.direct_api_call(
+            chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
+        )
+        assert result.pagination is None
