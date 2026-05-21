@@ -82,6 +82,12 @@ async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
     assert isinstance(second.data, DirectApiData)
 
 
+# The size cap is monkeypatched to 10 bytes so that any non-empty JSON
+# response exceeds it. This intentionally tests "the size guard fires when
+# payload > cap" end-to-end through the HTTP layer, rather than depending on
+# a specific endpoint that happens to return a large payload — third-party
+# response sizes drift, which made the prior "real big query" approach flaky.
+# Do not remove the monkeypatch in pursuit of realism.
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
