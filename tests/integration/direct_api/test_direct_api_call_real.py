@@ -101,3 +101,23 @@ async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
             ),
             action_description="direct_api_call large response request",
         )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_direct_api_call_post_eth_rpc(mock_ctx):
+    result = await retry_on_network_error(
+        lambda: direct_api_call(
+            chain_id="1",
+            endpoint_path="/api/eth-rpc",
+            method="POST",
+            json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
+            ctx=mock_ctx,
+        ),
+        action_description="direct_api_call post eth-rpc request",
+    )
+    assert isinstance(result.data, DirectApiData)
+    payload = result.data.model_dump()
+    assert payload.get("jsonrpc") == "2.0"
+    assert "result" in payload
+    assert result.pagination is None

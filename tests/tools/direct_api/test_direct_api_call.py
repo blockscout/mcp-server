@@ -348,3 +348,39 @@ async def test_direct_api_call_allows_rest_over_limit_with_header():
 
         assert isinstance(result, ToolResponse)
         assert result.data.model_dump() == mock_response
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_basic(mock_ctx):
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_get,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_post_request",
+            new_callable=AsyncMock,
+        ) as mock_post,
+    ):
+        mock_get_url.return_value = "https://eth.blockscout.com"
+        mock_post.return_value = {"jsonrpc": "2.0", "result": "0x1"}
+        result = await direct_api_call_module.direct_api_call(
+            chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
+        )
+        assert isinstance(result.data, DirectApiData)
+        mock_get.assert_not_called()
+        mock_post.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_invalid_method_raises(mock_ctx):
+    with patch(
+        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
+    ) as mock_get_url:
+        with pytest.raises(ValueError, match="method must be 'GET' or 'POST'"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1", endpoint_path="/api/v2/stats", method="PUT", ctx=mock_ctx
+            )  # type: ignore[arg-type]
+        mock_get_url.assert_not_called()

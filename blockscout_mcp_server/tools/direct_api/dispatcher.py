@@ -42,7 +42,7 @@ async def dispatch(
 
     Args:
         endpoint_path: The API path that was requested.
-        **kwargs: Additional context forwarded to the handler.
+        **kwargs: Additional context forwarded to the handler (including method and json_body for POST-aware handling).
 
     Note: precedence follows registration order. Keep regex patterns disjoint or
     register the most specific handler first when overlap is unavoidable.

@@ -120,5 +120,6 @@ Essential for transaction analysis, debugging smart contract interactions, track
 <direct_api_call>
 Call a raw Blockscout API endpoint for advanced or chain-specific data.
 Do not include query strings in `endpoint_path`; pass all query parameters via `query_params` to avoid double-encoding.
-**SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
+**SUPPORTS PAGINATION** (GET only): If response includes 'pagination' field, use the provided next_call to get additional pages.
+Supports POST requests with a JSON body (set `method` to "POST" and provide `json_body`) for endpoints like `/api/eth-rpc`.
 </direct_api_call>

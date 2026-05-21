@@ -158,3 +158,20 @@ async def test_make_metadata_request_for_address_tags():
     assert "tags" in response_data["addresses"][address_key]
     assert len(response_data["addresses"][address_key]["tags"]) > 0
     assert "name" in response_data["addresses"][address_key]["tags"][0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_make_blockscout_post_request_eth_rpc():
+    from blockscout_mcp_server.tools.common import make_blockscout_post_request
+
+    base_url = await get_blockscout_base_url(chain_id="1")
+    response_data = await make_blockscout_post_request(
+        base_url=base_url,
+        api_path="/api/eth-rpc",
+        json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
+    )
+    assert isinstance(response_data, dict)
+    assert response_data.get("jsonrpc") == "2.0"
+    assert isinstance(response_data.get("result"), str)
+    assert response_data["result"].startswith("0x")

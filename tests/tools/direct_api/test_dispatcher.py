@@ -58,3 +58,18 @@ async def test_dispatch_passes_query_params(monkeypatch):
     assert response == {"data": []}
     assert "match" in captured and captured["match"].group(0) == "/dummy"
     assert captured["query_params"] is query_params
+
+
+@pytest.mark.asyncio
+async def test_dispatch_forwards_method_and_json_body(monkeypatch):
+    captured = {}
+
+    async def dummy_handler(*, match: re.Match[str], **kwargs):
+        captured.update(kwargs)
+        return {"ok": True}
+
+    monkeypatch.setattr(dispatcher, "HANDLER_REGISTRY", [(re.compile(r"^/dummy$"), dummy_handler)], raising=False)
+    response = await dispatcher.dispatch(endpoint_path="/dummy", method="POST", json_body={"id": 1})
+    assert response == {"ok": True}
+    assert captured["method"] == "POST"
+    assert captured["json_body"] == {"id": 1}

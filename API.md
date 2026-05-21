@@ -570,7 +570,9 @@ Executes a read-only smart contract function and returns its result.
 
 #### Direct API Call (`direct_api_call`)
 
-Allows calling a curated raw Blockscout API endpoint for advanced or chain-specific data.
+Allows calling a raw Blockscout API endpoint for advanced or chain-specific data. Supports both GET and POST requests.
+
+**GET requests** (default):
 
 `GET /v1/direct_api_call`
 
@@ -587,6 +589,28 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 
   ```bash
   curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
+  ```
+
+**POST requests** (for endpoints that require a JSON body, e.g., JSON-RPC):
+
+`POST /v1/direct_api_call`
+
+- **Parameters**
+
+  | Name | Location | Type | Required | Description |
+  | ---- | -------- | ---- | -------- | ----------- |
+  | `chain_id` | Query string | `string` | Yes | The ID of the blockchain. |
+  | `endpoint_path` | Query string | `string` | Yes | The Blockscout API path to call (e.g., `/api/eth-rpc`). |
+  | `query_params` | Query string | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax, e.g., `query_params[key]=value`. |
+  | `Content-Type` | Header |  | Yes | Must be `application/json`. |
+  | (request body) | Body | `object` | Yes | The JSON object to send to the Blockscout endpoint. |
+
+  Note: Pagination (`cursor`) is not supported for POST requests.
+
+- **Example Request**
+
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc"     -H "Content-Type: application/json"     -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
   ```
 
 ### Reporting Tools

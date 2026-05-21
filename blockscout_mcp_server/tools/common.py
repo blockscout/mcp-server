@@ -242,6 +242,53 @@ async def make_blockscout_request(
         raise last_error
 
 
+async def make_blockscout_post_request(
+    base_url: str,
+    api_path: str,
+    json_body: dict[str, Any],
+    params: dict | None = None,
+    *,
+    timeout: float | None = None,
+) -> dict:
+    """Make a POST request to the Blockscout API.
+
+    Retry behavior is intentionally strict because POST requests are not idempotent:
+    retries occur only for connection-establishment failures (ConnectError,
+    ConnectTimeout), where the request body is known not to have reached upstream.
+    """
+    effective_timeout = timeout if timeout is not None else config.bs_timeout
+    async with _create_httpx_client(timeout=effective_timeout) as client:
+        if params is None:
+            params = {}
+        if config.bs_api_key:
+            params["apikey"] = config.bs_api_key
+
+        url = f"{base_url.rstrip('/')}/{api_path.lstrip('/')}"
+
+        last_error: Exception | None = None
+        for attempt in range(config.bs_request_max_retries):
+            try:
+                response = await client.post(url, json=json_body, params=params)
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as e:
+                    details = _extract_http_error_details(e.response)
+                    reason = e.response.reason_phrase or "Error"
+                    message = f"{e.response.status_code} {reason}"
+                    if details:
+                        message = f"{message} - Details: {details}"
+                    raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
+                data = response.json()
+                return data if data is not None else {}
+            except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+                last_error = e
+                if attempt == (config.bs_request_max_retries - 1):
+                    break
+                await anyio.sleep(0.5 * (2**attempt))
+        assert last_error is not None
+        raise last_error
+
+
 async def make_bens_request(api_path: str, params: dict | None = None) -> dict:
     """
     Make a GET request to the BENS API.
