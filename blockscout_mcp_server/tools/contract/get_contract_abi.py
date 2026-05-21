@@ -4,6 +4,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
@@ -44,7 +45,15 @@ async def get_contract_abi(
         message="Resolved Blockscout instance URL. Fetching contract ABI...",
     )
 
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    # 20s light timeout validated empirically: payloads range from ~10 KB
+    # (simple proxies) to ~350 KB (large multi-file projects like Uniswap V3
+    # Universal Router); worst-case server response is ~10-15s on loaded
+    # instances, leaving comfortable headroom under bs_light_timeout.
+    response_data = await make_blockscout_request(
+        base_url=base_url,
+        api_path=api_path,
+        timeout=config.bs_light_timeout,
+    )
 
     # Report completion
     await report_and_log_progress(

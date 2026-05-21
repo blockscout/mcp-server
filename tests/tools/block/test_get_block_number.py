@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockNumberData, ToolResponse
 from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 
@@ -28,7 +29,11 @@ async def test_get_block_number_latest_success(mock_ctx):
         result = await get_block_number(chain_id=chain_id, ctx=mock_ctx)
 
         mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path="/api/v2/main-page/blocks")
+        mock_request.assert_called_once_with(
+            base_url=mock_base_url,
+            api_path="/api/v2/main-page/blocks",
+            timeout=config.bs_light_timeout,
+        )
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, BlockNumberData)
         assert result.data.block_number == 12345
@@ -70,10 +75,12 @@ async def test_get_block_number_by_time_success(mock_ctx):
                 "timestamp": 1672531200,
                 "closest": "before",
             },
+            "timeout": config.bs_light_timeout,
         }
         assert mock_request.await_args_list[1].kwargs == {
             "base_url": mock_base_url,
             "api_path": "/api/v2/blocks/12345",
+            "timeout": config.bs_light_timeout,
         }
         assert mock_ctx.report_progress.await_count == 4
         assert mock_ctx.info.await_count == 4

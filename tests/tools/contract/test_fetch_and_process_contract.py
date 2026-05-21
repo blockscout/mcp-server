@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from blockscout_mcp_server.cache import CachedContract
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.contract._shared import _fetch_and_process_contract
 
 
@@ -43,6 +44,7 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
     mock_request.assert_awaited_once_with(
         base_url="https://base",
         api_path="/api/v2/smart-contracts/0xabc",
+        timeout=config.bs_light_timeout,
     )
     mock_set.assert_awaited_once()
     key_arg, value_arg = mock_set.await_args.args

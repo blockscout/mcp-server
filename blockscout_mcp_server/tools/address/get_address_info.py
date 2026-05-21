@@ -89,7 +89,11 @@ async def get_address_info(
     metadata_params = {"addresses": address, "chainId": chain_id}
 
     address_info_result, metadata_result, first_tx_result = await asyncio.gather(
-        make_blockscout_request(base_url=base_url, api_path=blockscout_api_path),
+        make_blockscout_request(
+            base_url=base_url,
+            api_path=blockscout_api_path,
+            timeout=config.bs_light_timeout,
+        ),
         make_metadata_request(api_path=metadata_api_path, params=metadata_params),
         make_blockscout_request(base_url=base_url, api_path=first_tx_api_path, params=first_tx_params),
         return_exceptions=True,

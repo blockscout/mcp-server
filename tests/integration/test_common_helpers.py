@@ -117,8 +117,8 @@ async def test_make_blockscout_request_for_block_info():
     to that Blockscout instance.
     """
     # ARRANGE
-    chain_id = "1"  # Ethereum Mainnet
-    block_number = "19000000"
+    chain_id = "100"  # Gnosis Chain
+    block_number = "46282564"
     api_path = f"/api/v2/blocks/{block_number}"
 
     # First, get the base URL for our target chain. This re-uses a function
@@ -131,7 +131,7 @@ async def test_make_blockscout_request_for_block_info():
     # ASSERT
     # Check the structure of the response for this specific block.
     assert isinstance(response_data, dict)
-    assert response_data["height"] == 19000000
+    assert response_data["height"] == 46282564
     assert "timestamp" in response_data
     assert isinstance(response_data["gas_used"], str)  # Blockscout API returns this as a string
     assert "parent_hash" in response_data

@@ -5,6 +5,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockInfoData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
@@ -47,7 +48,11 @@ async def get_block_info(
     )
 
     if not include_transactions:
-        response_data = await make_blockscout_request(base_url=base_url, api_path=f"/api/v2/blocks/{number_or_hash}")
+        response_data = await make_blockscout_request(
+            base_url=base_url,
+            api_path=f"/api/v2/blocks/{number_or_hash}",
+            timeout=config.bs_light_timeout,
+        )
         await report_and_log_progress(
             ctx,
             progress=2.0,
@@ -66,7 +71,7 @@ async def get_block_info(
     txs_api_path = f"/api/v2/blocks/{number_or_hash}/transactions"
 
     results = await asyncio.gather(
-        make_blockscout_request(base_url=base_url, api_path=block_api_path),
+        make_blockscout_request(base_url=base_url, api_path=block_api_path, timeout=config.bs_light_timeout),
         make_blockscout_request(base_url=base_url, api_path=txs_api_path),
         return_exceptions=True,
     )

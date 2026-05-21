@@ -4,6 +4,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
@@ -47,7 +48,12 @@ async def lookup_token_by_symbol(
         message="Resolved Blockscout instance URL. Searching for tokens...",
     )
 
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    response_data = await make_blockscout_request(
+        base_url=base_url,
+        api_path=api_path,
+        params=params,
+        timeout=config.bs_light_timeout,
+    )
 
     await report_and_log_progress(
         ctx,

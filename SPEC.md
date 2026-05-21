@@ -34,6 +34,18 @@ The Blockscout MCP Server supports two primary operational modes:
 
 The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.
 
+#### HTTP Request Timeout Tiers
+
+The server uses a two-tier timeout system for Blockscout API requests via `make_blockscout_request`:
+
+- **Light timeout** (`BLOCKSCOUT_BS_LIGHT_TIMEOUT`, default: 20s): Used for simple, non-paginated point-lookup endpoints that return a single resource. Examples: `/api/v2/blocks/{id}`, `/api/v2/smart-contracts/{addr}`, `/api/v2/search`, `/api/v2/transactions/{hash}`.
+
+- **Heavy timeout** (`BLOCKSCOUT_BS_TIMEOUT`, default: 120s): Used for paginated endpoints, endpoints returning large or variable-size responses, and endpoints whose response time depends on data volume. Examples: `/api/v2/advanced-filters`, `/api/v2/addresses/{addr}/transactions`, `/api/v2/proxy/account-abstraction/operations`.
+
+Tools that make multiple parallel HTTP calls (e.g., `get_address_info`, `get_transaction_info`) assign the appropriate timeout to each individual call based on the endpoint's nature.
+
+The `timeout` parameter on `make_blockscout_request` defaults to `None`, which resolves to the heavy timeout (`config.bs_timeout`) for backward compatibility.
+
 #### DNS Rebinding Protection for Tunneling (Development Mode)
 
 The Python MCP SDK enforces DNS rebinding protection by validating `Host` headers in HTTP requests. This blocks ngrok
@@ -516,6 +528,12 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The maximum number of retry attempts is configurable via the environment variable `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` (default: `3`).
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
+
+   Exhausted internal retries surface differently per access mode:
+   - **REST clients** see `500 Internal Server Error` for generic transport failures, or `504 Gateway Timeout` for `httpx.TimeoutException`. Because the server has already retried internally, downstream retry policies that also retry on `5xx` should stay conservative on `500`/`504` from this server to avoid multiplicative attempt cascades.
+   - **Native MCP clients** see a `tools/call` result with `isError: true` and a text content of the form `"Error executing tool <name>: <exception message>"`. There is no HTTP-status indicator in MCP mode — an exhausted-retry transport failure is structurally indistinguishable from an honest upstream `5xx` (the latter carries a `"<code> <reason> - Details: …"` prefix in the text; the former carries the bare `httpx` exception message).
+
+   When changing the retry policy, account for both surfaces.
 
 8. **HTTP Error Handling and Context Propagation**
 

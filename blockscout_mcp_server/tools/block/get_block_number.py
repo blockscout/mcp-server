@@ -5,6 +5,7 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockNumberData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
@@ -65,7 +66,11 @@ async def get_block_number(
             message="Resolved Blockscout instance URL. Fetching latest block data...",
         )
 
-        response_data = await make_blockscout_request(base_url=base_url, api_path="/api/v2/main-page/blocks")
+        response_data = await make_blockscout_request(
+            base_url=base_url,
+            api_path="/api/v2/main-page/blocks",
+            timeout=config.bs_light_timeout,
+        )
 
         await report_and_log_progress(
             ctx,
@@ -115,6 +120,7 @@ async def get_block_number(
             "timestamp": timestamp_value,
             "closest": "before",
         },
+        timeout=config.bs_light_timeout,
     )
 
     if block_lookup.get("status") != "1":
@@ -142,6 +148,7 @@ async def get_block_number(
     block_details = await make_blockscout_request(
         base_url=base_url,
         api_path=f"/api/v2/blocks/{block_number_int}",
+        timeout=config.bs_light_timeout,
     )
 
     block_timestamp = block_details.get("timestamp")
