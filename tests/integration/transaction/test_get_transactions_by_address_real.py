@@ -1,4 +1,18 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+"""Integration tests for get_transactions_by_address.
+
+These tests are an exception to the convention used elsewhere in
+tests/integration/ (stable deep-historical data on chain_id=1). The tool
+under test filters by age_from/age_to and paginates the result, so the
+assertions require a window with recent activity and enough rows to yield a
+second page. The current choice is "last 2 weeks of
+0x0B98057eA310F4d31F2a452B414647007d1645d9 on chain_id=100 (Gnosis Chain)".
+
+If these tests start failing with empty results, widen the window or swap
+the address for a more reliably active one on Gnosis Chain — do not silently
+drop the assertions that depend on items being present.
+"""
+
 from datetime import UTC, datetime, timedelta
 
 import pytest

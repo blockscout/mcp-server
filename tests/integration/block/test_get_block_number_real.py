@@ -1,4 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+"""Integration tests for get_block_number.
+
+test_get_block_number_by_time_real is an exception to the convention used
+elsewhere in tests/integration/ (stable deep-historical data on chain_id=1):
+it queries "5 minutes ago" against Gnosis Chain (chain_id=100) to verify
+datetime → block resolution on a fast-block-time chain. The other test in
+this module follows the usual pattern.
+
+If the by-time test fails intermittently, the indexer may briefly lag tip;
+widen the offset (e.g. 5 → 30 minutes) before suspecting a real regression.
+"""
+
 from datetime import UTC, datetime, timedelta
 
 import pytest
