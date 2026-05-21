@@ -18,7 +18,10 @@ class MockAsyncClient:
     async def __aexit__(self, exc_type, exc, tb) -> None:
         return None
 
-    async def get(self, url: str, params: dict | None = None) -> httpx.Response:
+    async def get(self, url: str, params: dict | None = None, **kwargs) -> httpx.Response:
+        # Accept and ignore any additional per-request kwargs (e.g. headers)
+        # so future call-site changes in make_blockscout_request don't break
+        # this stub.
         return self._response
 
 
