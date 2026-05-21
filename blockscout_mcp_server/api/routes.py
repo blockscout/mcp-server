@@ -360,6 +360,7 @@ def register_api_routes(mcp: FastMCP) -> None:
         tools_list = await mcp.list_tools()
         return JSONResponse([tool.model_dump() for tool in tools_list])
 
+    @handle_rest_errors
     async def list_resources_rest(_: Request) -> Response:
         """Return a list of all available resources and their metadata."""
         resources_list = await mcp.list_resources()
