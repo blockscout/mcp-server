@@ -371,7 +371,12 @@ async def test_direct_api_call_post_basic(mock_ctx):
         )
         assert isinstance(result.data, DirectApiData)
         mock_get.assert_not_called()
-        mock_post.assert_awaited_once()
+        mock_post.assert_awaited_once_with(
+            base_url="https://eth.blockscout.com",
+            api_path="/api/eth-rpc",
+            json_body={"id": 1},
+            params={},
+        )
         assert mock_ctx.report_progress.await_count == 3
 
 
@@ -466,4 +471,10 @@ async def test_direct_api_call_post_ignores_next_page_params_for_pagination(mock
             chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
         )
         assert result.pagination is None
+        mock_post.assert_awaited_once_with(
+            base_url="https://eth.blockscout.com",
+            api_path="/api/eth-rpc",
+            json_body={"id": 1},
+            params={},
+        )
         assert mock_ctx.report_progress.await_count == 3
