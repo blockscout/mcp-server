@@ -51,7 +51,7 @@ The REST API is currently in an alpha stage and does not require authentication.
 
 ### Standard Response Structure
 
-All endpoints under `/v1/` return a consistent JSON object that wraps the tool's output. This structure, known as a `ToolResponse`, separates the primary data from important metadata.
+Tool endpoints under `/v1/` return a consistent JSON object that wraps the tool's output. This structure, known as a `ToolResponse`, separates the primary data from important metadata. Discovery endpoints (`/v1/tools` and `/v1/resources`) return plain JSON arrays instead.
 
 ```json
 {
@@ -135,7 +135,7 @@ X-Blockscout-Allow-Large-Response: true
 
 ## API Endpoints
 
-### Tool Discovery
+### Discovery
 
 #### List All Tools (`list_tools`)
 
@@ -152,6 +152,24 @@ Retrieves a list of all available tools and their MCP schemas.
   ```bash
   curl "http://127.0.0.1:8000/v1/tools"
   ```
+
+#### List All Resources (`list_resources`)
+
+Retrieves a list of all registered MCP resources and their metadata.
+
+`GET /v1/resources`
+
+- **Parameters**
+
+  *None*
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/resources"
+  ```
+
+  The response is a JSON array of MCP resource objects. Each object includes the resource URI, name, description, MIME type, and annotations. The individual resource content can be fetched via `GET /skill/<path>`, where `<path>` is the URI suffix after `blockscout-mcp://skill/`.
 
 ### General Tools
 
@@ -576,7 +594,9 @@ Executes a read-only smart contract function and returns its result.
 
 #### Direct API Call (`direct_api_call`)
 
-Allows calling a curated raw Blockscout API endpoint for advanced or chain-specific data.
+Allows calling a raw Blockscout API endpoint for advanced or chain-specific data. Supports both GET and POST requests.
+
+**GET requests** (default):
 
 `GET /v1/direct_api_call`
 
@@ -593,6 +613,30 @@ Allows calling a curated raw Blockscout API endpoint for advanced or chain-speci
 
   ```bash
   curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
+  ```
+
+**POST requests** (for endpoints that require a JSON body, e.g., JSON-RPC):
+
+`POST /v1/direct_api_call`
+
+- **Parameters**
+
+  | Name | Location | Type | Required | Description |
+  | ---- | -------- | ---- | -------- | ----------- |
+  | `chain_id` | Query string | `string` | Yes | The ID of the blockchain. |
+  | `endpoint_path` | Query string | `string` | Yes | The Blockscout API path to call (e.g., `/api/eth-rpc`). |
+  | `query_params` | Query string | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax, e.g., `query_params[key]=value`. |
+  | `Content-Type` | Header | `string` | Yes | Must be `application/json`. |
+  | (request body) | Body | `object` | Yes | The JSON object to send to the Blockscout endpoint. |
+
+  Note: Pagination (`cursor`) is not supported for POST requests.
+
+- **Example Request**
+
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc" \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
   ```
 
 ### Reporting Tools

@@ -8,22 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
 
-from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
-
-
-@pytest.fixture
-def test_mcp_instance():
-    """Provides a FastMCP instance for testing."""
-    return FastMCP(name="test-server-for-routes")
-
-
-@pytest.fixture
-def client(test_mcp_instance):
-    """Provides an httpx client configured to talk to the test MCP instance."""
-    register_api_routes(test_mcp_instance)
-    asgi_app = test_mcp_instance.streamable_http_app()
-    return AsyncClient(transport=ASGITransport(app=asgi_app), base_url="http://test")
 
 
 @pytest.mark.asyncio
@@ -65,11 +50,16 @@ async def test_routes_not_found_on_clean_app():
 @pytest.mark.asyncio
 async def test_list_tools_success(client: AsyncClient, test_mcp_instance: FastMCP):
     """Verify that the /v1/tools endpoint returns a list of tools."""
-    test_mcp_instance.list_tools = AsyncMock(return_value=[])
+    mocked_tool = MagicMock()
+    mocked_tool.model_dump.return_value = {"name": "tool", "_meta": {"source": "test"}}
+    test_mcp_instance.list_tools = AsyncMock(return_value=[mocked_tool])
+
     response = await client.get("/v1/tools")
+
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json() == [{"name": "tool", "_meta": {"source": "test"}}]
     test_mcp_instance.list_tools.assert_called_once()
+    mocked_tool.model_dump.assert_called_once_with(mode="json", by_alias=True)
 
 
 @pytest.mark.asyncio
@@ -772,3 +762,39 @@ async def test_report_tool_usage_missing_header(client: AsyncClient):
     }
     response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_post_success(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc", json={"id": 1})
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(
+        chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=ANY
+    )
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_missing_body(client: AsyncClient):
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc")
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_invalid_json_body(client: AsyncClient):
+    response = await client.post(
+        "/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc",
+        content="not-json-at-all",
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_reserved_query_keys_not_forwarded(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.get("/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&method=POST&json_body=foo")
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(chain_id="1", endpoint_path="/api/v2/stats", ctx=ANY)
