@@ -58,7 +58,7 @@ async def direct_api_call(
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
     use the provided next_call to get additional pages (GET only).
 
-    Supports POST requests with a JSON body for endpoints like ``/api/eth-rpc``.
+    Supports POST requests with a JSON body for endpoints like JSON RPC.
 
     Returns:
         ToolResponse[Any]: Must return ToolResponse[Any] (not ToolResponse[BaseModel])
