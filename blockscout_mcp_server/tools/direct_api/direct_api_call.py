@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from mcp.server.fastmcp import Context
 from pydantic import Field
@@ -14,6 +14,7 @@ from blockscout_mcp_server.tools.common import (
     build_tool_response,
     encode_cursor,
     get_blockscout_base_url,
+    make_blockscout_post_request,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -40,6 +41,14 @@ async def direct_api_call(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
+    method: Annotated[
+        Literal["GET", "POST"],
+        Field(description="HTTP method used for the upstream call. Use POST with json_body."),
+    ] = "GET",
+    json_body: Annotated[
+        dict[str, Any] | None,
+        Field(description="JSON request body for POST requests."),
+    ] = None,
 ) -> ToolResponse[Any]:
     """Call a raw Blockscout API endpoint for advanced or chain-specific data.
 
@@ -47,19 +56,32 @@ async def direct_api_call(
     ``query_params`` to avoid double-encoding.
 
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
-    use the provided next_call to get additional pages.
+    use the provided next_call to get additional pages (GET only).
+
+    Supports POST requests with a JSON body for endpoints like JSON RPC.
 
     Returns:
         ToolResponse[Any]: Must return ToolResponse[Any] (not ToolResponse[BaseModel])
         because specialized handlers can return lists or other types that don't inherit
         from BaseModel. The dispatcher system supports flexible data structures.
     """
+    if method not in ("GET", "POST"):
+        raise ValueError("method must be 'GET' or 'POST'.")
+    if method == "GET" and json_body is not None:
+        raise ValueError("json_body is only allowed with method='POST'.")
+    if method == "POST" and json_body is None:
+        raise ValueError("json_body is required when method='POST'.")
+    if method == "POST" and json_body is not None and not isinstance(json_body, dict):
+        raise ValueError("json_body must be a JSON object (dict).")
+    if method == "POST" and cursor is not None:
+        raise ValueError("Pagination (cursor) is not supported for POST requests.")
     await report_and_log_progress(
         ctx,
         progress=0.0,
         total=2.0,
         message=f"Resolving Blockscout URL for chain {chain_id}...",
     )
+
     base_url = await get_blockscout_base_url(chain_id)
     if endpoint_path != "/" and endpoint_path.endswith("/"):
         endpoint_path = endpoint_path.rstrip("/")
@@ -67,7 +89,8 @@ async def direct_api_call(
         raise ValueError("Do not include query parameters in endpoint_path. Use query_params instead.")
 
     params = dict(query_params) if query_params else {}
-    apply_cursor_to_params(cursor, params)
+    if method == "GET":
+        apply_cursor_to_params(cursor, params)
 
     await report_and_log_progress(
         ctx,
@@ -75,7 +98,15 @@ async def direct_api_call(
         total=2.0,
         message="Fetching data from Blockscout API...",
     )
-    response_json = await make_blockscout_request(base_url=base_url, api_path=endpoint_path, params=params)
+    if method == "GET":
+        response_json = await make_blockscout_request(base_url=base_url, api_path=endpoint_path, params=params)
+    else:
+        response_json = await make_blockscout_post_request(
+            base_url=base_url,
+            api_path=endpoint_path,
+            json_body=json_body,
+            params=params,
+        )
 
     handler_response = await dispatcher.dispatch(
         endpoint_path=endpoint_path,
@@ -84,6 +115,8 @@ async def direct_api_call(
         chain_id=chain_id,
         base_url=base_url,
         ctx=ctx,
+        method=method,
+        json_body=json_body,
     )
     if handler_response is not None:
         await report_and_log_progress(
@@ -95,7 +128,7 @@ async def direct_api_call(
         return handler_response
 
     pagination = None
-    if isinstance(response_json, dict):
+    if method == "GET" and isinstance(response_json, dict):
         next_page_params = response_json.get("next_page_params")
         if next_page_params:
             next_cursor = encode_cursor(next_page_params)

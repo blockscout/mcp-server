@@ -328,9 +328,15 @@ async def get_chains_list_rest(request: Request) -> Response:
 async def direct_api_call_rest(request: Request) -> Response:
     """REST wrapper for the direct_api_call tool."""
     params = extract_and_validate_params(request, required=["chain_id", "endpoint_path"], optional=["cursor"])
+    if request.method == "POST":
+        try:
+            params["json_body"] = await request.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError("POST requests require a valid JSON body.") from exc
+        params["method"] = "POST"
     extra: dict[str, str] = {}
     for key, value in request.query_params.items():
-        if key in {"chain_id", "endpoint_path", "cursor"}:
+        if key in {"chain_id", "endpoint_path", "cursor", "method", "json_body"}:
             continue
         if key.startswith("query_params[") and key.endswith("]"):
             extra[key[13:-1]] = value
@@ -342,9 +348,9 @@ async def direct_api_call_rest(request: Request) -> Response:
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
 
-def _add_v1_tool_route(mcp: FastMCP, path: str, handler: Callable[..., Any]) -> None:
+def _add_v1_tool_route(mcp: FastMCP, path: str, handler: Callable[..., Any], methods: list[str] | None = None) -> None:
     """Register a tool route under the /v1/ prefix."""
-    mcp.custom_route(f"/v1{path}", methods=["GET"])(handler)
+    mcp.custom_route(f"/v1{path}", methods=methods or ["GET"])(handler)
 
 
 def register_api_routes(mcp: FastMCP) -> None:
@@ -402,4 +408,4 @@ def register_api_routes(mcp: FastMCP) -> None:
     _add_v1_tool_route(mcp, "/get_address_logs", get_address_logs_rest)
     _add_v1_tool_route(mcp, "/get_transaction_logs", get_transaction_logs_rest)
     _add_v1_tool_route(mcp, "/get_chains_list", get_chains_list_rest)
-    _add_v1_tool_route(mcp, "/direct_api_call", direct_api_call_rest)
+    _add_v1_tool_route(mcp, "/direct_api_call", direct_api_call_rest, methods=["GET", "POST"])

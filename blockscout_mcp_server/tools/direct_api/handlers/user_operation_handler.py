@@ -53,6 +53,7 @@ async def handle_user_operation(
     base_url: str,
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
+    **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
 ) -> ToolResponse[UserOperationData]:
     """Process the raw JSON response for a user operation request."""
     user_operation_hash = match.group("user_operation_hash")

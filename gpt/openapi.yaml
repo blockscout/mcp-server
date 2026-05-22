@@ -93,6 +93,58 @@ paths:
           $ref: '#/components/responses/ServerError'
         '504':
           $ref: '#/components/responses/GatewayTimeout'
+    post:
+      summary: Direct API call (POST)
+      description: |
+        Perform a raw POST request to a curated Blockscout API endpoint.
+      operationId: directApiCallPost
+      tags:
+        - General
+      parameters:
+        - name: chain_id
+          in: query
+          required: true
+          description: The ID of the blockchain
+          schema:
+            type: string
+          example: "1"
+        - name: endpoint_path
+          in: query
+          required: true
+          description: The Blockscout API path to call (e.g., '/api/eth-rpc')
+          schema:
+            type: string
+          example: "/api/eth-rpc"
+        - name: query_params
+          in: query
+          required: false
+          description: Optional query parameters forwarded to the Blockscout API
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Raw Blockscout API response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
 
   # Block tools
   /get_block_number:

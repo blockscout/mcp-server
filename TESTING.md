@@ -234,6 +234,14 @@ curl "http://127.0.0.1:8000/v1/read_contract?chain_id=1&address=0xdAC17F958D2ee5
 curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/proxy/account-abstraction/operations&query_params[sender]=0x91f51371D33e4E50e838057E8045265372f8d448"
 ```
 
+#### 6b. Direct API Call (POST with JSON body)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
 #### 7. Direct API Call with Large Response Bypass
 
 If a `direct_api_call` returns a response larger than the configured limit, you must provide the bypass header:

@@ -751,3 +751,39 @@ async def test_report_tool_usage_missing_header(client: AsyncClient):
     }
     response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_post_success(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc", json={"id": 1})
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(
+        chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=ANY
+    )
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_missing_body(client: AsyncClient):
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc")
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_post_invalid_json_body(client: AsyncClient):
+    response = await client.post(
+        "/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc",
+        content="not-json-at-all",
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_reserved_query_keys_not_forwarded(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.get("/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&method=POST&json_body=foo")
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(chain_id="1", endpoint_path="/api/v2/stats", ctx=ANY)

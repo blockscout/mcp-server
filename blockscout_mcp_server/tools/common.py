@@ -4,7 +4,7 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Literal
 
 import anyio
 import httpx
@@ -171,7 +171,7 @@ def _extract_http_error_details(response: httpx.Response) -> str:
 
 
 async def make_blockscout_request(
-    base_url: str, api_path: str, params: dict | None = None, *, timeout: float | None = None
+    base_url: str, api_path: str, params: dict[str, Any] | None = None, *, timeout: float | None = None
 ) -> dict:
     """
     Make a GET request to the Blockscout API.
@@ -205,38 +205,81 @@ async def make_blockscout_request(
         network conditions. Centralizing minimal retries here improves robustness
         for all tools and REST endpoints without masking persistent API errors.
     """
+    return await _make_blockscout_http_request(
+        method="GET",
+        base_url=base_url,
+        api_path=api_path,
+        retry_exceptions=(httpx.RequestError,),
+        params=params,
+        timeout=timeout,
+    )
+
+
+async def make_blockscout_post_request(
+    base_url: str,
+    api_path: str,
+    json_body: dict[str, Any],
+    params: dict[str, Any] | None = None,
+    *,
+    timeout: float | None = None,
+) -> dict:
+    """Make a POST request to the Blockscout API.
+
+    Retry behavior is intentionally strict because POST requests are not idempotent:
+    retries occur only for connection-establishment failures (ConnectError,
+    ConnectTimeout), where the request body is known not to have reached upstream.
+    """
+    return await _make_blockscout_http_request(
+        method="POST",
+        base_url=base_url,
+        api_path=api_path,
+        retry_exceptions=(httpx.ConnectError, httpx.ConnectTimeout),
+        json_body=json_body,
+        params=params,
+        timeout=timeout,
+    )
+
+
+async def _make_blockscout_http_request(
+    method: Literal["GET", "POST"],
+    base_url: str,
+    api_path: str,
+    retry_exceptions: tuple[type[Exception], ...],
+    json_body: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+    *,
+    timeout: float | None = None,
+) -> dict:
     effective_timeout = timeout if timeout is not None else config.bs_timeout
     async with _create_httpx_client(timeout=effective_timeout) as client:
-        if params is None:
-            params = {}
+        local_params = dict(params) if params is not None else {}
         if config.bs_api_key:
-            params["apikey"] = config.bs_api_key
+            local_params["apikey"] = config.bs_api_key
 
         url = f"{base_url.rstrip('/')}/{api_path.lstrip('/')}"
 
-        # Retry transient transport errors (e.g., incomplete chunked reads).
-        # Do not retry server/client status errors to avoid hiding real failures.
         last_error: Exception | None = None
         for attempt in range(config.bs_request_max_retries):
             try:
-                response = await client.get(url, params=params)
+                if method == "GET":
+                    response = await client.get(url, params=local_params)
+                else:
+                    response = await client.post(url, json=json_body, params=local_params)
                 try:
-                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    response.raise_for_status()
                 except httpx.HTTPStatusError as e:
                     details = _extract_http_error_details(e.response)
                     reason = e.response.reason_phrase or "Error"
+                    message = f"{e.response.status_code} {reason}"
                     if details:
-                        message = f"{e.response.status_code} {reason} - Details: {details}"
-                    else:
-                        message = f"{e.response.status_code} {reason}"
+                        message = f"{message} - Details: {details}"
                     raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
                 data = response.json()
                 return data if data is not None else {}
-            except httpx.RequestError as e:
+            except retry_exceptions as e:
                 last_error = e
                 if attempt == (config.bs_request_max_retries - 1):
                     break
-                # Exponential backoff on transient transport issues
                 await anyio.sleep(0.5 * (2**attempt))
         assert last_error is not None
         raise last_error
