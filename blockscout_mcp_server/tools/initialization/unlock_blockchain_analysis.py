@@ -2,13 +2,11 @@
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
-    RECOMMENDED_CHAINS,
     SERVER_VERSION,
     SKILL_POINTER_TEXT,
     SKILL_RESOLUTION_RULE_TEXT,
 )
 from blockscout_mcp_server.models import (
-    ChainInfo,
     InstructionsData,
     ToolResponse,
 )
@@ -42,7 +40,6 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
 
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
-        recommended_chains=[ChainInfo(**chain) for chain in RECOMMENDED_CHAINS],
         skill_reference=SKILL_POINTER_TEXT,
         skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
     )

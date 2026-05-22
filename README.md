@@ -141,7 +141,7 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 ## Tool Descriptions
 
 1. `__unlock_blockchain_analysis__()` - Provides custom instructions for the MCP host to use the server. This is a mandatory first step before using other tools.
-2. `get_chains_list()` - Returns a list of all known chains.
+2. `get_chains_list(query=None)` - Returns a list of known chains, with optional filtering by name, chain ID, native currency, or ecosystem.
 3. `get_address_by_ens_name(name)` - Converts an ENS domain name to its corresponding Ethereum address.
 4. `lookup_token_by_symbol(chain_id, symbol)` - Searches for token addresses by symbol or name, returning multiple potential matches.
 5. `get_contract_abi(chain_id, address)` - Retrieves the ABI (Application Binary Interface) for a smart contract.

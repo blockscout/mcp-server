@@ -67,14 +67,11 @@ class DirectApiData(BaseModel):
 class InstructionsData(BaseModel):
     """A structured representation of the server's session-initialization payload.
 
-    Carries server-side reference data (version, recommended chains), a pointer at the
+    Carries server-side reference data (version), a pointer at the
     `blockscout-analysis` skill, and the rule for resolving its reference paths.
     """
 
     version: str = Field(description="The version of the Blockscout MCP server.")
-    recommended_chains: list[ChainInfo] = Field(
-        description="A list of popular chains with their names and IDs, useful for quick lookups."
-    )
     skill_reference: str = Field(
         description=(
             "Canonical pointer text for the `blockscout-analysis` skill. Intentionally identical "

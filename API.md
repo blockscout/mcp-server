@@ -192,18 +192,25 @@ Provides custom instructions and operational guidance for using the server. This
 
 #### Get Chains List (`get_chains_list`)
 
-Returns a list of all known blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable.
+Returns supported Blockscout-hosted blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable. Use this endpoint when you need to choose a supported `chain_id` for subsequent tool calls. Prefer a narrow search query to avoid returning the full registry unnecessarily.
 
 `GET /v1/get_chains_list`
 
 - **Parameters**
 
-  *None*
+  - `query` (`string`, optional): Case-insensitive substring filter applied to chain name, chain ID, native currency, and ecosystem fields. Prefer narrow text terms such as chain name, ecosystem, or currency. Avoid partial numeric chain ID queries like `1`, because substring matching can return many chains.
 
-- **Example Request**
+- **Example Requests**
 
   ```bash
+  # Get all chains
   curl "http://127.0.0.1:8000/v1/get_chains_list"
+
+  # Search for Polygon-related chains
+  curl "http://127.0.0.1:8000/v1/get_chains_list?query=polygon"
+
+  # Prefer descriptive terms over partial numeric IDs
+  curl "http://127.0.0.1:8000/v1/get_chains_list?query=superchain"
   ```
 
 ### Block Tools

@@ -104,3 +104,42 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
     )
     second_expiry = chain_cache.get("1")[1]
     assert second_expiry > first_expiry
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_chains_list_query_ethereum(mock_ctx):
+    full = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx), action_description="get_chains_list request"
+    )
+    filtered = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx, query="ethereum"), action_description="get_chains_list query request"
+    )
+    assert any(c.chain_id == "1" for c in filtered.data)
+    assert len(filtered.data) < len(full.data)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_chains_list_query_optimism(mock_ctx):
+    full = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx), action_description="get_chains_list request"
+    )
+    filtered = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx, query="optimism"), action_description="get_chains_list query request"
+    )
+    assert any(c.chain_id == "10" for c in filtered.data)
+    assert len(filtered.data) < len(full.data)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_chains_list_query_xdai(mock_ctx):
+    full = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx), action_description="get_chains_list request"
+    )
+    filtered = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx, query="xdai"), action_description="get_chains_list query request"
+    )
+    assert any(c.chain_id == "100" for c in filtered.data)
+    assert len(filtered.data) < len(full.data)

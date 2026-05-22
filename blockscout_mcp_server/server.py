@@ -17,7 +17,6 @@ from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_s
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     DEFAULT_HTTP_PORT,
-    RECOMMENDED_CHAINS,
     SERVER_NAME,
     SERVER_VERSION,
     SKILL_POINTER_TEXT,
@@ -51,7 +50,6 @@ from blockscout_mcp_server.tools.transaction.get_transactions_by_address import 
 from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 # Compose the instructions string for the MCP server constructor
-chains_list_str = "\n".join([f"  * {chain['name']}: {chain['chain_id']}" for chain in RECOMMENDED_CHAINS])
 
 
 # The MCP SDK enforces DNS rebinding protection by validating request Host headers, which blocks
@@ -94,10 +92,6 @@ def _resolve_transport_security(http_host: str) -> TransportSecuritySettings:
 composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
-<recommended_chains>
-Here is the list of IDs of most popular chains:
-{chains_list_str}
-</recommended_chains>
 
 {SKILL_POINTER_TEXT}
 

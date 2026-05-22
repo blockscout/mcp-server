@@ -645,6 +645,17 @@ async def test_get_chains_list_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.get_chains_list", new_callable=AsyncMock)
+async def test_get_chains_list_with_query(mock_tool, client: AsyncClient):
+    """Test /get_chains_list endpoint with query."""
+    mock_tool.return_value = ToolResponse(data=[])
+    response = await client.get("/v1/get_chains_list?query=ethereum")
+    assert response.status_code == 200
+    assert response.json()["data"] == []
+    mock_tool.assert_called_once_with(query="ethereum", ctx=ANY)
+
+
+@pytest.mark.asyncio
 @patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
 async def test_direct_api_call_required_only(mock_tool, client: AsyncClient):
     mock_tool.return_value = ToolResponse(data={"ok": True})
