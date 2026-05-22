@@ -105,6 +105,23 @@ async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_direct_api_call_main_page_blocks_list_response(mock_ctx):
+    result = await retry_on_network_error(
+        lambda: direct_api_call(chain_id="1", endpoint_path="/api/v2/main-page/blocks", ctx=mock_ctx),
+        action_description="direct_api_call main page blocks list response request",
+    )
+    assert isinstance(result.data, DirectApiData)
+    assert result.pagination is None
+    items = result.data.model_dump()["items"]
+    assert isinstance(items, list)
+    assert items
+    assert isinstance(items[0], dict)
+    assert "height" in items[0]
+    assert "timestamp" in items[0]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_direct_api_call_post_eth_rpc(mock_ctx):
     result = await retry_on_network_error(
         lambda: direct_api_call(

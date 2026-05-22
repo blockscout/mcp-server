@@ -159,6 +159,10 @@ def _build_resources() -> tuple[dict[str, FunctionResource], dict[str, FunctionR
             mime_type="text/markdown",
             annotations=_resource_annotations(rel, last_modified),
             fn=lambda body=body: body,
+            # NOTE: FastMCP drops FunctionResource._meta during the protocol
+            # Resource conversion in mcp.list_resources(). If protocol-level
+            # _meta is ever needed here, construct mcp.types.Resource directly
+            # or override list_resources().
         )
         by_uri[uri] = resource
         by_relative_path[rel] = resource

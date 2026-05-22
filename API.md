@@ -51,7 +51,7 @@ The REST API is currently in an alpha stage and does not require authentication.
 
 ### Standard Response Structure
 
-All endpoints under `/v1/` return a consistent JSON object that wraps the tool's output. This structure, known as a `ToolResponse`, separates the primary data from important metadata.
+Tool endpoints under `/v1/` return a consistent JSON object that wraps the tool's output. This structure, known as a `ToolResponse`, separates the primary data from important metadata. Discovery endpoints (`/v1/tools` and `/v1/resources`) return plain JSON arrays instead.
 
 ```json
 {
@@ -135,7 +135,7 @@ X-Blockscout-Allow-Large-Response: true
 
 ## API Endpoints
 
-### Tool Discovery
+### Discovery
 
 #### List All Tools (`list_tools`)
 
@@ -152,6 +152,24 @@ Retrieves a list of all available tools and their MCP schemas.
   ```bash
   curl "http://127.0.0.1:8000/v1/tools"
   ```
+
+#### List All Resources (`list_resources`)
+
+Retrieves a list of all registered MCP resources and their metadata.
+
+`GET /v1/resources`
+
+- **Parameters**
+
+  *None*
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/resources"
+  ```
+
+  The response is a JSON array of MCP resource objects. Each object includes the resource URI, name, description, MIME type, and annotations. The individual resource content can be fetched via `GET /skill/<path>`, where `<path>` is the URI suffix after `blockscout-mcp://skill/`.
 
 ### General Tools
 

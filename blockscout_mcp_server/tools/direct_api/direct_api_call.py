@@ -128,7 +128,7 @@ async def direct_api_call(
         return handler_response
 
     pagination = None
-    if method == "GET":
+    if method == "GET" and isinstance(response_json, dict):
         next_page_params = response_json.get("next_page_params")
         if next_page_params:
             next_cursor = encode_cursor(next_page_params)
@@ -173,7 +173,8 @@ async def direct_api_call(
             )
             raise ResponseTooLargeError(message)
 
-    data = DirectApiData.model_validate(response_json)
+    data_payload = {"items": response_json} if isinstance(response_json, list) else response_json
+    data = DirectApiData.model_validate(data_payload)
 
     if pagination is not None and isinstance(response_json, dict) and isinstance(response_json.get("items"), list):
         content_text = (

@@ -8,22 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
 
-from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
-
-
-@pytest.fixture
-def test_mcp_instance():
-    """Provides a FastMCP instance for testing."""
-    return FastMCP(name="test-server-for-routes")
-
-
-@pytest.fixture
-def client(test_mcp_instance):
-    """Provides an httpx client configured to talk to the test MCP instance."""
-    register_api_routes(test_mcp_instance)
-    asgi_app = test_mcp_instance.streamable_http_app()
-    return AsyncClient(transport=ASGITransport(app=asgi_app), base_url="http://test")
 
 
 @pytest.mark.asyncio
@@ -65,11 +50,16 @@ async def test_routes_not_found_on_clean_app():
 @pytest.mark.asyncio
 async def test_list_tools_success(client: AsyncClient, test_mcp_instance: FastMCP):
     """Verify that the /v1/tools endpoint returns a list of tools."""
-    test_mcp_instance.list_tools = AsyncMock(return_value=[])
+    mocked_tool = MagicMock()
+    mocked_tool.model_dump.return_value = {"name": "tool", "_meta": {"source": "test"}}
+    test_mcp_instance.list_tools = AsyncMock(return_value=[mocked_tool])
+
     response = await client.get("/v1/tools")
+
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json() == [{"name": "tool", "_meta": {"source": "test"}}]
     test_mcp_instance.list_tools.assert_called_once()
+    mocked_tool.model_dump.assert_called_once_with(mode="json", by_alias=True)
 
 
 @pytest.mark.asyncio

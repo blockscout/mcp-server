@@ -351,6 +351,108 @@ async def test_direct_api_call_allows_rest_over_limit_with_header():
 
 
 @pytest.mark.asyncio
+async def test_direct_api_call_list_response_wraps_payload_and_has_no_pagination(mock_ctx):
+    chain_id = "1"
+    endpoint_path = "/api/v2/main-page/blocks"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_response = [{"height": 1}, {"height": 2}]
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
+        ) as mock_dispatch,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_response
+        mock_dispatch.return_value = None
+
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx
+        )
+
+        assert isinstance(result.data, DirectApiData)
+        assert result.data.model_dump() == {"items": mock_response}
+        assert result.pagination is None
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_list_response_content_text_item_count(mock_ctx):
+    chain_id = "1"
+    endpoint_path = "/api/v2/main-page/blocks"
+    mock_base_url = "https://eth.blockscout.com"
+    mock_response = [{"height": 1}, {"height": 2}]
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
+        ) as mock_dispatch,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_request.return_value = mock_response
+        mock_dispatch.return_value = None
+
+        result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx
+        )
+
+        assert result.content_text == f"Called {endpoint_path} on chain {chain_id}. Response type: list of 2 items."
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_list_response_size_limit_behavior(mock_ctx):
+    chain_id = "1"
+    endpoint_path = "/api/v2/main-page/blocks"
+    mock_base_url = "https://eth.blockscout.com"
+    under_limit_response = [{"height": 1}]
+    over_limit_response = [{"height": i, "hash": "x" * 20} for i in range(5)]
+
+    with (
+        patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 50),
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_request,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
+        ) as mock_dispatch,
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_dispatch.return_value = None
+        mock_request.return_value = under_limit_response
+
+        under_limit_result = await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=mock_ctx,
+        )
+        assert under_limit_result.data.model_dump() == {"items": under_limit_response}
+
+        mock_request.return_value = over_limit_response
+        with pytest.raises(ResponseTooLargeError):
+            await direct_api_call_module.direct_api_call(chain_id=chain_id, endpoint_path=endpoint_path, ctx=mock_ctx)
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_post_basic(mock_ctx):
     with (
         patch(

@@ -30,6 +30,7 @@ The Blockscout MCP Server supports two primary operational modes:
      - A health check endpoint at `/health`.
      - A machine-readable policy file at `/llms.txt` for AI crawlers.
      - A versioned REST API under `/v1/` that exposes the same functionality as the MCP tools.
+     - Additionally, `GET /v1/resources` provides resource discovery for REST clients, returning the same metadata available through the MCP `resources/list` method.
    - This unified server approach allows both MCP clients and traditional REST clients to interact with the same application instance, ensuring consistency and avoiding code duplication.
 
 The core tool functionality is identical across all modes; only the transport mechanism and available endpoints differ.
@@ -470,7 +471,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Dispatcher (`dispatcher.py`)**: This module contains logic to match an incoming `endpoint_path` to a specific handler function. It uses a self-registering pattern where handlers use a decorator to associate themselves with a URL path regex.
     - **Handlers (`handlers/`)**: Specialized response processors are located in the `blockscout_mcp_server/tools/direct_api/handlers/` directory. Each handler is responsible for transforming a raw JSON API response into a structured `ToolResponse` with a specific data model, applying logic like data truncation, field curation, and custom pagination.
 
-    If a matching handler is found, `direct_api_call` returns the rich, structured response from the handler. If no handler matches, it falls back to its default behavior of returning the raw, unprocessed JSON response wrapped in a generic `DirectApiData` model. This architecture allows for targeted enhancements while keeping the tool surface minimal and the system easily extensible.
+    If a matching handler is found, `direct_api_call` returns the rich, structured response from the handler. If no handler matches, it falls back to its default behavior of returning the raw, unprocessed JSON response wrapped in a generic `DirectApiData` model. When the API returns a JSON array instead of an object (as some endpoints like `/api/v2/main-page/blocks` do), the fallback path wraps the array into a `{"items": <array>}` dict before validation and sets pagination to `None`, since array-returning endpoints do not use Blockscout's `next_page_params` convention. This architecture allows for targeted enhancements while keeping the tool surface minimal and the system easily extensible.
 
     **g) Transaction Input Data Truncation**
 
