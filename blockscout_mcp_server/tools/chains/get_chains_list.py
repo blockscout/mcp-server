@@ -24,15 +24,18 @@ async def get_chains_list(
         Field(
             description=(
                 "Optional case-insensitive substring filter applied to chain name, chain ID, "
-                "native currency, and ecosystem."
+                "native currency, and ecosystem. Prefer narrow text terms over partial numeric "
+                "chain IDs because matching is substring-based."
             )
         ),
     ] = None,
 ) -> ToolResponse[list[ChainInfo]]:
-    """Get the list of known blockchain chains with their IDs.
+    """Get supported Blockscout-hosted blockchain chains with their chain IDs.
 
-    Use `query` for case-insensitive substring filtering by chain name, chain ID,
-    native currency, or ecosystem. Omit it to return the full list.
+    Use this when another tool needs a supported `chain_id` and only the chain name,
+    ecosystem, or native currency is known. Prefer a narrow `query` to avoid returning
+    the full registry to the agent. Do not rely on partial numeric chain ID queries such
+    as `1`, because matching is substring-based and may return many chains.
     """
     api_path = "/api/chains"
 
