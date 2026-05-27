@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 # tests/integration/test_common_helpers.py
+import re
+
 import httpx
 import pytest
 
@@ -104,7 +106,7 @@ async def test_get_blockscout_base_url_for_nonexistent_chain():
     # ACT & ASSERT
     # Use pytest.raises to confirm that the expected exception is thrown.
     expected_message = f"Chain ID '{nonexistent_chain_id}' is not supported by the Blockscout API."
-    with pytest.raises(ChainNotFoundError, match=expected_message):
+    with pytest.raises(ChainNotFoundError, match=re.escape(expected_message)):
         await get_blockscout_base_url(chain_id=nonexistent_chain_id)
 
 
