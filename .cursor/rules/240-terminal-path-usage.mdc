@@ -10,6 +10,7 @@ alwaysApply: true
 - Paths: Use repo-root relative paths. Do not prefix with `bs-mcp-server/`.
 - Examples:
   - Ruff: `ruff check tests/` (not `ruff check bs-mcp-server/tests/`)
-  - Pytest: `pytest -m integration -v tests/integration/test_contract_tools_integration.py` (not `pytest bs-mcp-server/tests/...`)
+  - Pytest (unit): `pytest tests/tools/contract/test_read_contract.py` (not `pytest bs-mcp-server/tests/...`)
+  - Integration tests (via the timeout-protected runner, not `pytest -m integration`): `python scripts/run_integration_tests.py tests/integration/contract` (not `... bs-mcp-server/tests/...`)
 - Absolute paths are acceptable when needed, e.g., `ruff check /workspaces/bs-mcp-server/tests/...`.
 - If unsure, run `pwd` once; avoid repetitive `cd`.

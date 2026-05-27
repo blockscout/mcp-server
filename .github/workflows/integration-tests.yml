@@ -14,6 +14,9 @@ jobs:
   integration-test:
     name: Run Integration Tests
     runs-on: ubuntu-latest
+    # Backstop on top of the runner's per-test timeout: the runner bounds each
+    # test, this bounds the job as a whole against anything outside that logic.
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -42,7 +45,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[test]"
 
-      # This command uses the -m flag to run ONLY the tests marked with "integration".
+      # Run via the timeout-protected runner instead of bare `pytest -m
+      # integration`: the HTTP client has no hard request timeout, so a single
+      # unresponsive endpoint could otherwise hang the whole run. The runner
+      # isolates each test in its own subprocess, kills any that overruns
+      # --timeout, and reports TIMEOUT/SLOW. `--runner pytest` is required here
+      # because uv is not installed in CI; deps are already importable by a bare
+      # pytest after `pip install -e .[test]`.
       - name: Run integration tests
-        run: |
-          pytest -m integration -v
+        run: python scripts/run_integration_tests.py --runner pytest --timeout 120

@@ -1,0 +1,15 @@
+[[hooks.SessionStart]]
+matcher = "startup|clear"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = '/bin/bash "$(git rev-parse --show-toplevel)/.codex/hooks/append_context.sh"'
+statusMessage = "Loading repository rules"
+
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = '/bin/bash "$(git rev-parse --show-toplevel)/scripts/enforce-integration-runner.sh"'
+statusMessage = "Checking integration-test command"

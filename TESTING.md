@@ -81,17 +81,26 @@ The project also includes a suite of integration tests that verify live connecti
 
 ### Running Integration Tests
 
-To run **only** the integration tests, use the `-m` flag to select the `integration` marker:
+**Do not run `pytest -m integration` directly.** Integration tests make real network calls and the HTTP client has no hard request timeout, so a single unresponsive endpoint can make one test hang indefinitely and block the whole run. (This is how the suite once started taking 20+ minutes — a handful of tests hung for ~3 minutes each.)
+
+Instead, use the timeout-protected runner. It executes each test in its own subprocess with a per-test wall-clock timeout, kills any test that overruns, and prints a bounded report flagging which tests timed out or are slow:
 
 ```bash
-pytest -m integration -v
+# whole suite
+uv run python scripts/run_integration_tests.py
+
+# a single module / directory
+uv run python scripts/run_integration_tests.py tests/integration/block
+
+# a single test
+uv run python scripts/run_integration_tests.py "tests/integration/block/test_get_block_info_real.py::test_get_block_info_integration"
 ```
 
-**Important:** Always use the `-v` (verbose) flag when running integration tests to see the reason for any skipped tests.
+Useful options: `--timeout N` (per-test limit, default 120s), `--slow-threshold S` (flag completed tests slower than `S` seconds), and `--list` (preview which tests would run). The report distinguishes PASS / FAIL / SKIP / TIMEOUT, and its **SKIPPED (reason)** section prints why each skipped test was skipped (e.g. network connectivity or external service unavailability) — read it before treating a run as clean.
 
-This verbose output will show you why specific tests were skipped (e.g., network connectivity issues, missing API keys, or external service unavailability), which is crucial for understanding the test results.
+This is the way to periodically check the health of our external dependencies or to validate before deploying a new version.
 
-This command is useful for periodically checking the health of our external dependencies or before deploying a new version.
+> Note for contributors: running `pytest -m integration` directly is also blocked by a pre-tool hook (`scripts/enforce-integration-runner.sh`) that redirects you to the runner.
 
 ## Manual End-to-End Testing
 

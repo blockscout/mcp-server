@@ -213,22 +213,39 @@ async def test_some_integration_scenario():
     pass
 ```
 
-This allows running integration tests separately:
-```bash
-# Run only integration tests
-pytest -m integration
+The marker lets the runner select integration tests apart from the unit suite.
+Running everything *except* integration tests is the normal unit workflow and is
+unaffected:
 
-# Run everything except integration tests
+```bash
 pytest -m "not integration"
 ```
 
-**Important:** Always use the `-v` (verbose) flag when running integration tests to see the reason for any skipped tests:
+**To run the integration tests, do not invoke `pytest -m integration` directly.**
+Those tests make real network calls with no hard HTTP timeout, so a single
+unresponsive endpoint can hang the run indefinitely. Use the timeout-protected
+runner from the `run-integration-tests` skill, which isolates each test in its
+own subprocess, kills hangs, and reports which tests timed out or are slow:
 
 ```bash
-pytest -m integration -v
+# whole suite
+uv run python scripts/run_integration_tests.py
+# a module / directory
+uv run python scripts/run_integration_tests.py tests/integration/block
+# a single test (e.g. to inspect one skip/timeout in isolation)
+uv run python scripts/run_integration_tests.py "tests/integration/block/test_get_block_info_real.py::test_get_block_info_integration"
 ```
 
-This verbose output will show you why specific tests were skipped (e.g., network connectivity issues, missing API keys, or external service unavailability), which is crucial for understanding the test results and debugging integration issues.
+Consult the `run-integration-tests` skill for the full set of options
+(`--timeout`, `--slow-threshold`, `--list`, etc.).
+
+The runner's summary includes a **SKIPPED (reason)** section that prints why each
+test was skipped (e.g. network connectivity issues, missing API keys, or external
+service unavailability). This is crucial for understanding the results: a skip is
+usually an environment signal, not a passing test, so always read those reasons
+before concluding a run was clean. (This replaces the old `pytest -m integration
+-v` advice — the runner surfaces the same skip reasons without the unbounded-hang
+risk of a direct pytest run.)
 
 ### Error Handling and Retry Logic
 
