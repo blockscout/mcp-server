@@ -79,14 +79,19 @@ async def ensure_pro_api_config() -> dict[str, str]:
         cached = pro_api_config_cache.get_if_fresh()
         if cached is not None:
             return cached
+        stale = pro_api_config_cache.chain_urls_snapshot
+        if stale is not None and not pro_api_config_cache.can_retry_refresh():
+            return stale
         try:
             chain_urls = await _fetch_pro_api_config()
             pro_api_config_cache.store_snapshot(chain_urls)
-            await chain_cache.bulk_set(chain_urls)
+            await chain_cache.replace_success_entries(chain_urls)
+            chains_list_cache.invalidate()
             return chain_urls
         except Exception:
             stale = pro_api_config_cache.chain_urls_snapshot
             if stale is not None:
+                pro_api_config_cache.mark_refresh_failure()
                 logger.warning("PRO API config fetch failed; serving stale snapshot")
                 return stale
             raise

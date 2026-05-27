@@ -67,6 +67,29 @@ class ChainCache:
             for chain_id, url in chain_urls.items():
                 tg.start_soon(_set_with_expiry, chain_id, url)
 
+    async def replace_success_entries(self, chain_urls: dict[str, str]) -> None:
+        """Authoritatively replace positive entries from latest PRO API snapshot."""
+        expiry = time.monotonic() + config.chain_cache_ttl_seconds
+        stale_success_ids = [cid for cid, (url, _) in self._cache.items() if url is not None and cid not in chain_urls]
+
+        async def _remove(chain_id: str) -> None:
+            chain_lock = await self._get_or_create_lock(chain_id)
+            async with chain_lock:
+                entry = self._cache.get(chain_id)
+                if entry and entry[0] is not None:
+                    self._cache.pop(chain_id, None)
+
+        async def _upsert(chain_id: str, url: str) -> None:
+            chain_lock = await self._get_or_create_lock(chain_id)
+            async with chain_lock:
+                self._cache[chain_id] = (url, expiry)
+
+        async with anyio.create_task_group() as tg:
+            for chain_id in stale_success_ids:
+                tg.start_soon(_remove, chain_id)
+            for chain_id, url in chain_urls.items():
+                tg.start_soon(_upsert, chain_id, url)
+
     async def invalidate(self, chain_id: str) -> None:
         """Remove an entry from the cache if present."""
         if chain_id not in self._cache:
@@ -83,6 +106,11 @@ class ChainsListCache:
         self.chains_snapshot: list[ChainInfo] | None = None
         self.expiry_timestamp: float = 0.0
         self.lock = anyio.Lock()
+        self.refresh_retry_after: float = 0.0
+
+    def invalidate(self) -> None:
+        self.chains_snapshot = None
+        self.expiry_timestamp = 0.0
 
     def get_if_fresh(self) -> list[ChainInfo] | None:
         """Return cached chains if the snapshot is still fresh."""
@@ -107,15 +135,27 @@ class ProApiConfigCache:
         self.chain_urls_snapshot: dict[str, str] | None = None
         self.expiry_timestamp: float = 0.0
         self.lock = anyio.Lock()
+        self.refresh_retry_after: float = 0.0
+
+    def invalidate(self) -> None:
+        self.chains_snapshot = None
+        self.expiry_timestamp = 0.0
 
     def get_if_fresh(self) -> dict[str, str] | None:
         if self.chain_urls_snapshot is None or time.monotonic() >= self.expiry_timestamp:
             return None
         return self.chain_urls_snapshot
 
+    def can_retry_refresh(self) -> bool:
+        return time.monotonic() >= self.refresh_retry_after
+
+    def mark_refresh_failure(self) -> None:
+        self.refresh_retry_after = time.monotonic() + config.pro_api_config_refresh_retry_seconds
+
     def store_snapshot(self, chain_urls: dict[str, str]) -> None:
         self.chain_urls_snapshot = chain_urls
         self.expiry_timestamp = time.monotonic() + config.pro_api_config_ttl_seconds
+        self.refresh_retry_after = 0.0
 
 
 class CachedContract(BaseModel):

@@ -20,6 +20,7 @@ class ServerConfig(BaseSettings):
     pro_api_config_url: str = "https://api.blockscout.com/api/json/config"
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
+    pro_api_config_refresh_retry_seconds: int = 30
 
     # Metadata service configuration
     metadata_url: str = "https://metadata.services.blockscout.com"

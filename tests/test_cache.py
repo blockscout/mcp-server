@@ -186,3 +186,35 @@ async def test_chain_cache_failure_ttl_shorter_than_success():
         await cache.set("1", "https://a")
         await cache.set_failure("2")
     assert cache.get("1")[1] > cache.get("2")[1]
+
+
+def test_chains_list_cache_invalidate_clears_snapshot():
+    from blockscout_mcp_server.cache import ChainsListCache
+
+    c = ChainsListCache()
+    c.chains_snapshot = []
+    c.expiry_timestamp = 123
+    c.invalidate()
+    assert c.chains_snapshot is None and c.expiry_timestamp == 0.0
+
+
+def test_pro_api_config_cache_cooldown_methods():
+    cache = ProApiConfigCache()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(100)):
+        cache.mark_refresh_failure()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(101)):
+        assert cache.can_retry_refresh() is False
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(200)):
+        assert cache.can_retry_refresh() is True
+
+
+async def test_chain_cache_replace_success_entries_removes_missing_and_updates():
+    cache = ChainCache()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(1000)):
+        await cache.set("1", "https://old")
+        await cache.set("2", "https://keep")
+        await cache.set_failure("neg")
+        await cache.replace_success_entries({"2": "https://new"})
+    assert cache.get("1") is None
+    assert cache.get("2")[0] == "https://new"
+    assert cache.get("neg")[0] is None

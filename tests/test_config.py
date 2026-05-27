@@ -52,3 +52,15 @@ def test_pro_api_config_ttl_env_override(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS", "123")
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_config_ttl_seconds == 123
+
+
+def test_pro_api_config_refresh_retry_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_CONFIG_REFRESH_RETRY_SECONDS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_refresh_retry_seconds == 30
+
+
+def test_pro_api_config_refresh_retry_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_REFRESH_RETRY_SECONDS", "7")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_refresh_retry_seconds == 7

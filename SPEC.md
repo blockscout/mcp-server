@@ -139,8 +139,7 @@ sequenceDiagram
     Note over REST, MCP: REST API Endpoint (calls same tool function as MCP)
     REST->>MCP: GET /v1/get_block_number?chain_id=1
     Note over MCP: REST wrapper calls get_block_number() tool function
-    MCP->>CS: GET /api/chains/1
-    CS-->>MCP: Chain metadata (includes Blockscout URL)
+    MCP->>MCP: Resolve chain_id via cached PRO API config mapping
     MCP->>BS: GET /api/v2/blocks/latest
     BS-->>MCP: Block data response
     MCP-->>REST: JSON Response (ToolResponse format)
@@ -173,6 +172,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - MCP Server fetches chain metadata (name, ecosystem, testnet flag, native currency) from Chainscout.
    - The two sources are joined: only chains present in the PRO API config and having metadata in Chainscout are returned.
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
+   - This chains-list cache is derived from PRO API config + Chainscout metadata and is invalidated after successful PRO API config refreshes.
    - The PRO API config mapping is cached separately with its own TTL (configurable via `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS`).
    - The per-chain `ChainCache` is warmed via `bulk_set` on each refresh.
    - Concurrent refreshes are deduplicated with an async lock.
@@ -353,7 +353,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    from Chainscout. Chains present in the PRO API config but absent from Chainscout are
    resolvable by URL for direct tool use but excluded from `get_chains_list` due to
    insufficient metadata.
-   When the PRO API is temporarily unreachable, the server serves the most recent stale snapshot if one is available, and logs a warning.
+   When the PRO API is temporarily unreachable, the server serves the most recent stale snapshot if one is available, logs a warning, and retries refresh after a short cooldown instead of on every request.
    Negative lookups (chain not found) are cached with the shorter `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS` TTL to allow newly added chains to be discovered promptly.
 
 6. **Response Processing and Context Optimization**:

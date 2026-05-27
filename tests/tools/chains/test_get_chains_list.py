@@ -160,3 +160,24 @@ async def test_get_chains_list_chainscout_returns_non_dict(mock_ctx):
         res = await get_chains_list(ctx=mock_ctx)
     assert res.data == []
     assert common_tools.chains_list_cache.get_if_fresh() is None
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_rebuilds_after_pro_api_refresh_invalidates_cache(mock_ctx):
+    common_tools.chains_list_cache.store_snapshot([])
+    common_tools.chains_list_cache.invalidate()
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"2": "https://new"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            return_value={"2": {"name": "Two"}},
+        ) as cs,
+    ):
+        res = await get_chains_list(ctx=mock_ctx)
+    assert [c.chain_id for c in res.data] == ["2"]
+    assert cs.await_count == 1
