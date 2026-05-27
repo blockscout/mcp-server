@@ -5,6 +5,7 @@ import re
 import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
     ChainNotFoundError,
     get_blockscout_base_url,
@@ -84,7 +85,9 @@ async def test_get_blockscout_base_url_for_known_chains(chain_id):
 
     async def run_check():
         async with httpx.AsyncClient(timeout=15.0) as client:
-            cfg = (await client.get("https://api.blockscout.com/api/json/config")).json()
+            response = await client.get(config.pro_api_config_url)
+            response.raise_for_status()
+            cfg = response.json()
         expected_url = cfg["chains"][chain_id]
         resolved_url = await get_blockscout_base_url(chain_id=chain_id)
         assert resolved_url.rstrip("/") == expected_url.rstrip("/")
@@ -183,7 +186,9 @@ async def test_make_blockscout_post_request_eth_rpc():
 async def test_get_blockscout_base_url_for_pro_api_only_chain():
     async def run_check():
         async with httpx.AsyncClient(timeout=15.0) as client:
-            cfg = (await client.get("https://api.blockscout.com/api/json/config")).json()
+            response = await client.get(config.pro_api_config_url)
+            response.raise_for_status()
+            cfg = response.json()
         resolved = await get_blockscout_base_url("480")
         assert resolved.rstrip("/") == cfg["chains"]["480"].rstrip("/")
 
