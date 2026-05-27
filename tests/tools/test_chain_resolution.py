@@ -144,3 +144,19 @@ async def test_get_blockscout_base_url_paths():
     ):
         with pytest.raises(ChainNotFoundError):
             await common.get_blockscout_base_url("17000")
+
+
+async def test_fetch_pro_api_config_rejects_non_dict_chains():
+    request = httpx.Request("GET", "https://api.blockscout.com/api/json/config")
+    response = httpx.Response(200, json={"chains": "not-a-dict"}, request=request)
+    with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=MockAsyncClient(response)):
+        with pytest.raises(ValueError):
+            await common._fetch_pro_api_config()
+
+
+async def test_fetch_pro_api_config_accepts_empty_chains_dict():
+    request = httpx.Request("GET", "https://api.blockscout.com/api/json/config")
+    response = httpx.Response(200, json={"chains": {}}, request=request)
+    with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=MockAsyncClient(response)):
+        result = await common._fetch_pro_api_config()
+    assert result == {}

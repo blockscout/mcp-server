@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import asyncio
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 
 import blockscout_mcp_server.tools.common as common_tools
@@ -79,3 +81,62 @@ async def test_get_chains_list_cache_hit_and_refresh(mock_ctx, monkeypatch):
         assert [c.chain_id for c in third.data] == ["137"]
         assert pro.await_count == 2
         assert cs.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_chainscout_failure_does_not_populate_cache(mock_ctx):
+    err = httpx.HTTPStatusError(
+        "boom",
+        request=httpx.Request("GET", "https://x"),
+        response=httpx.Response(503, request=httpx.Request("GET", "https://x")),
+    )
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            side_effect=err,
+        ),
+    ):
+        with pytest.raises(httpx.HTTPStatusError):
+            await get_chains_list(ctx=mock_ctx)
+    assert common_tools.chains_list_cache.get_if_fresh() is None
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_true_concurrent_calls_single_refresh(mock_ctx):
+    call_count = 0
+    first_call_started = asyncio.Event()
+    first_call_can_complete = asyncio.Event()
+
+    async def controlled_chainscout(*, api_path: str):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            first_call_started.set()
+            await first_call_can_complete.wait()
+        return {"1": {"name": "Ethereum"}}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            side_effect=controlled_chainscout,
+        ),
+    ):
+        t1 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
+        t2 = asyncio.create_task(get_chains_list(ctx=mock_ctx))
+        await first_call_started.wait()
+        first_call_can_complete.set()
+        r1, r2 = await asyncio.gather(t1, t2)
+    assert call_count == 1
+    assert r1.data == r2.data

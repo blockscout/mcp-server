@@ -103,8 +103,7 @@ sequenceDiagram
     Note over AI: Host selects chain_id as per the user's initial prompt
 
     AI->>MCP: Tool request with chain_id
-    MCP->>CS: GET /api/chains/:id
-    CS-->>MCP: Chain metadata (includes Blockscout URL)
+    MCP->>MCP: Resolve URL from cached PRO API config
     par Concurrent API Calls (when applicable)
         MCP->>BS: Request to Blockscout API (Basic Info)
         BS-->>MCP: Primary data response
