@@ -82,8 +82,15 @@ def detect_runner() -> list[str]:
     return ["uv", "run", "pytest"]
 
 
-def collect_tests(runner: list[str], targets: list[str], marker: str) -> list[str]:
-    """Return the list of test node ids matching the marker under the targets."""
+def collect_tests(runner: list[str], targets: list[str], marker: str) -> tuple[list[str], int]:
+    """Collect test node ids matching the marker under the targets.
+
+    Returns ``(ids, returncode)``. The pytest ``--collect-only`` exit code is
+    propagated so the caller can tell a legitimately empty selection (5, nothing
+    matched the marker) apart from a real collection failure (import error in a
+    test module, bad target, usage error) — the latter must not be reported as
+    success.
+    """
     cmd = [*runner, "--collect-only", "-q", "-m", marker, "-p", "no:cacheprovider", *targets]
     proc = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True)
     ids: list[str] = []
@@ -91,11 +98,11 @@ def collect_tests(runner: list[str], targets: list[str], marker: str) -> list[st
         line = line.strip()
         if "::" in line and not line.startswith("<"):
             ids.append(line)
-    if not ids and proc.returncode not in (0, 5):
+    if proc.returncode not in (0, 5):
         # Surface real collection errors (import failures, bad target, etc.).
         sys.stderr.write(proc.stdout)
         sys.stderr.write(proc.stderr)
-    return ids
+    return ids, proc.returncode
 
 
 def extract_skip_reason(out: str) -> str:
@@ -211,7 +218,17 @@ def main() -> int:
     print(f"Target(s): {', '.join(targets)}", flush=True)
     print(f"Per-test timeout: {args.timeout}s\n", flush=True)
 
-    test_ids = collect_tests(runner, targets, args.marker)
+    test_ids, collect_rc = collect_tests(runner, targets, args.marker)
+    if collect_rc not in (0, 5):
+        # Collection itself failed (import error in a test module, bad target,
+        # usage error). Fail loudly: otherwise an empty result here would look
+        # like a clean run and let CI go green on a suite that never ran.
+        print(
+            f"\nERROR: pytest collection failed (exit code {collect_rc}); see the "
+            "output above. Refusing to report success on an unrunnable suite.",
+            flush=True,
+        )
+        return 1
     if not test_ids:
         print("No matching tests collected.", flush=True)
         return 0

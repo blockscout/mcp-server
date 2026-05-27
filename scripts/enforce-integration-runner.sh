@@ -28,18 +28,30 @@ if printf '%s' "$COMMAND" | grep -qE 'run_integration_tests\.py|run-integration-
     exit 0
 fi
 
-# Block only when the command both invokes pytest AND selects the integration
-# marker. The `-m[[:space:]]+['\"]?integration` pattern matches `-m integration`,
-# `-m "integration"`, and `-m 'integration and ...'`, but NOT the default unit
-# run `-m "not integration"` (there "not" follows the quote) nor the runner's
-# own `--marker integration` (no whitespace after the `-m` in `--marker`).
+# Block a pytest invocation that targets the integration tests in either of the
+# two ways one can reach them:
+#   1. the integration marker — `-m[[:space:]]+['\"]?integration` matches
+#      `-m integration`, `-m "integration"`, `-m 'integration and ...'`, but NOT
+#      the default unit run `-m "not integration"` (there "not" follows the
+#      quote) nor the runner's own `--marker integration` (no whitespace after
+#      the `-m` in `--marker`);
+#   2. a `tests/integration` path target — e.g. `pytest tests/integration/...`
+#      or `uv run pytest tests/integration/transaction`, which select the same
+#      tests without the marker. (`tests/integration` holds only integration
+#      tests, so any pytest aimed there must go through the runner.) The normal
+#      unit runs `pytest` / `pytest tests/` / `pytest -m "not integration"` do
+#      not contain that literal path, so they are unaffected.
+# This is a string heuristic, not a parser: exotic bypasses (cd into the dir,
+# wrapper scripts, indirect conftest collection) are a known limitation —
+# closing them fully would need runtime/AST interception, which is not worth it.
 if printf '%s' "$COMMAND" | grep -qE 'pytest' \
-   && printf '%s' "$COMMAND" | grep -qE "\-m[[:space:]]+['\"]?integration"; then
+   && printf '%s' "$COMMAND" | grep -qE "(\-m[[:space:]]+['\"]?integration|tests/integration)"; then
     cat >&2 <<'EOF'
 Direct integration-test run blocked.
 
-`pytest -m integration` has no hard HTTP timeout, so one unresponsive endpoint
-can hang the run (and you) indefinitely.
+Running the integration tests straight through pytest (whether via `-m
+integration` or a `tests/integration/...` path target) has no hard HTTP timeout,
+so one unresponsive endpoint can hang the run (and you) indefinitely.
 
 Use the `run-integration-tests` skill instead — it documents the timeout-
 protected runner and how to scope it to the whole suite, a module, or a single
