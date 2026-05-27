@@ -97,7 +97,7 @@ async def test_ensure_pro_api_config_cache_and_failures(monkeypatch):
         bulk.assert_not_awaited()
 
 
-async def test_ensure_pro_api_config_refresh_and_concurrent_dedup(monkeypatch):
+async def test_ensure_pro_api_config_refresh_after_ttl(monkeypatch):
     t = 0.0
     monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
     monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
@@ -107,6 +107,8 @@ async def test_ensure_pro_api_config_refresh_and_concurrent_dedup(monkeypatch):
         t = 2.0
         assert (await common.ensure_pro_api_config())["1"] == "https://eth2"
 
+
+async def test_ensure_pro_api_config_concurrent_dedup():
     common.pro_api_config_cache = ProApiConfigCache()
     calls = 0
 
