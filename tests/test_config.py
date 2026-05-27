@@ -18,3 +18,9 @@ def test_server_config_light_timeout_env_override(monkeypatch):
     config = ServerConfig(_env_file=None)
 
     assert config.bs_light_timeout == 42.0
+
+
+def test_server_config_does_not_expose_bs_api_key():
+    config = ServerConfig(_env_file=None)
+
+    assert not hasattr(config, "bs_api_key")

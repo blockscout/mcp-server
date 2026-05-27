@@ -253,7 +253,6 @@ mcp-server/
     * **`.env.example`**:
         * Provides a template for users to create their own `.env` file for local development.
         * Lists all required environment variables, such as:
-            * `BLOCKSCOUT_BS_API_KEY`: API key for Blockscout API access (if required).
             * `BLOCKSCOUT_BS_TIMEOUT`: Timeout for Blockscout API requests.
             * `BLOCKSCOUT_BENS_URL`: Base URL for the BENS (Blockscout ENS) API.
             * `BLOCKSCOUT_BENS_TIMEOUT`: Timeout for BENS API requests.

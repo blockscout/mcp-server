@@ -24,7 +24,7 @@ class MockResponse:
 
 
 @pytest.mark.asyncio
-async def test_make_blockscout_post_request_success_with_params_and_apikey():
+async def test_make_blockscout_post_request_success_with_params_preserved():
     calls = []
 
     class Client:
@@ -38,13 +38,10 @@ async def test_make_blockscout_post_request_success_with_params_and_apikey():
             calls.append((url, json, params.copy()))
             return MockResponse({"ok": True})
 
-    with (
-        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=Client()),
-        patch("blockscout_mcp_server.tools.common.config.bs_api_key", "k"),
-    ):
+    with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=Client()):
         data = await make_blockscout_post_request("https://a", "/b", {"x": 1}, {"q": "1"})
     assert data == {"ok": True}
-    assert calls[0][2]["apikey"] == "k"
+    assert calls[0][2] == {"q": "1"}
 
 
 @pytest.mark.asyncio

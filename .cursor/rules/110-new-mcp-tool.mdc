@@ -14,7 +14,6 @@ If your new tool needs to access an API endpoint that is different from the exis
    ```python
    class ServerConfig(BaseSettings):
        # Existing endpoints (examples)
-       bs_api_key: str = ""
        bs_timeout: float = 120.0
        bens_url: str = "https://bens.services.blockscout.com"
        bens_timeout: float = 30.0

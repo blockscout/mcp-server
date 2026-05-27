@@ -25,7 +25,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Expose environment variables that can be set at runtime
 # Set defaults here to document expected environment variables
-# ENV BLOCKSCOUT_BS_API_KEY="" # It is commented out because docker build warns about sensitive data in ENV instructions
 ENV BLOCKSCOUT_BS_TIMEOUT="120.0"
 ENV BLOCKSCOUT_BS_REQUEST_MAX_RETRIES="3"
 ENV BLOCKSCOUT_BENS_URL="https://bens.services.blockscout.com"
