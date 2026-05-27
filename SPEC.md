@@ -76,6 +76,7 @@ sequenceDiagram
     participant MCP as MCP Server
     participant BENS as ENS Service
     participant CS as Chainscout
+    participant ProAPI as PRO API Config
     participant BS as Blockscout Instance
     participant Metadata as Metadata Service
 
@@ -88,9 +89,15 @@ sequenceDiagram
     MCP-->>AI: Formatted address
 
     AI->>MCP: get_chains_list
-    MCP->>CS: Request available chains
-    CS-->>MCP: List of chains
-    MCP->>MCP: Cache chain metadata
+    par Fetch chain sources
+        MCP->>ProAPI: GET /api/json/config (supported chains + URLs)
+        ProAPI-->>MCP: Chain ID → URL mapping
+    and
+        MCP->>CS: GET /api/chains (chain metadata)
+        CS-->>MCP: Chain registry
+    end
+    MCP->>MCP: Join: PRO API chains + Chainscout metadata
+    MCP->>MCP: Cache chain data
     MCP-->>AI: Formatted chains list
 
     Note over AI: Host selects chain_id as per the user's initial prompt
@@ -120,6 +127,7 @@ sequenceDiagram
     participant REST as REST Client
     participant MCP as MCP Server
     participant CS as Chainscout
+    participant ProAPI as PRO API Config
     participant BS as Blockscout Instance
 
     Note over REST, MCP: Static Endpoints
@@ -162,7 +170,9 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 3. **Chain Selection**:
    - MCP Host requests available chains via `get_chains_list`
-   - MCP Server retrieves chain data from Chainscout.
+   - MCP Server fetches the PRO API configuration to determine which chains are supported and their explorer URLs.
+   - MCP Server fetches chain metadata (name, ecosystem, testnet flag, native currency) from Chainscout.
+   - The two sources are joined: only chains present in the PRO API config and having metadata in Chainscout are returned.
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
    - The per-chain `ChainCache` is warmed via `bulk_set` on each refresh.
    - Concurrent refreshes are deduplicated with an async lock.
@@ -182,7 +192,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 5. **Blockchain Data Retrieval**:
    - MCP Host requests blockchain data (e.g., `get_block_number`) with specific chain_id, optionally requesting progress updates
    - MCP Server, if progress is requested, reports starting the operation
-   - MCP Server queries Chainscout for chain metadata including Blockscout instance URL
+   - MCP Server resolves the Blockscout instance URL from the cached PRO API configuration
    - MCP Server reports progress after resolving the Blockscout URL
    - MCP Server forwards the request to the appropriate Blockscout instance
    - For potentially long-running API calls (e.g., advanced transaction filters), MCP Server provides periodic progress updates every 15 seconds (configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`) showing elapsed time and estimated duration
@@ -335,12 +345,14 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
    - A shared `aiohttp` session enforces global and per-host connection limits to prevent overload.
 
-5. **Blockscout-Hosted Chain Filtering**:
+5. **PRO API Chain Alignment**:
 
-   The `get_chains_list` tool intentionally returns only chains that are hosted
-   by the Blockscout team. This ensures a consistent feature set, stable service
-   levels, and the ability to authenticate requests from the MCP server. Chains
-   without an official Blockscout instance are omitted.
+   The `get_chains_list` tool returns chains that are listed in the Blockscout PRO API
+   configuration — the authoritative source for which chains the Blockscout API infrastructure
+   supports. Chain metadata (name, ecosystem, testnet status, native currency) is enriched
+   from Chainscout. Chains present in the PRO API config but absent from Chainscout are
+   resolvable by URL for direct tool use but excluded from `get_chains_list` due to
+   insufficient metadata.
 
 6. **Response Processing and Context Optimization**:
 
