@@ -253,8 +253,6 @@ async def _make_blockscout_http_request(
     effective_timeout = timeout if timeout is not None else config.bs_timeout
     async with _create_httpx_client(timeout=effective_timeout) as client:
         local_params = dict(params) if params is not None else {}
-        if config.bs_api_key:
-            local_params["apikey"] = config.bs_api_key
 
         url = f"{base_url.rstrip('/')}/{api_path.lstrip('/')}"
 
