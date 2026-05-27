@@ -94,7 +94,7 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         lambda: get_chains_list(ctx=mock_ctx),
         action_description="get_chains_list request",
     )
-    first_expiry = chain_cache.get("1")[1]
+    first_expiry = chains_list_cache.expiry_timestamp
 
     await asyncio.sleep(1.1)
 
@@ -102,7 +102,7 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         lambda: get_chains_list(ctx=mock_ctx),
         action_description="get_chains_list request",
     )
-    second_expiry = chain_cache.get("1")[1]
+    second_expiry = chains_list_cache.expiry_timestamp
     assert second_expiry > first_expiry
 
 

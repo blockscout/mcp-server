@@ -105,7 +105,8 @@ async def test_get_blockscout_base_url_for_nonexistent_chain():
 
     # ACT & ASSERT
     # Use pytest.raises to confirm that the expected exception is thrown.
-    with pytest.raises(ChainNotFoundError, match=f"Chain with ID '{nonexistent_chain_id}' not found on Chainscout."):
+    expected_message = f"Chain ID '{nonexistent_chain_id}' is not supported by the Blockscout API."
+    with pytest.raises(ChainNotFoundError, match=expected_message):
         await get_blockscout_base_url(chain_id=nonexistent_chain_id)
 
 
