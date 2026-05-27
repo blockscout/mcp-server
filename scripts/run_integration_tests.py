@@ -41,6 +41,7 @@ import sys
 import time
 from pathlib import Path
 
+
 def find_project_root(start: Path) -> Path:
     """Locate the project root by walking up from the script's own location.
 
@@ -52,10 +53,7 @@ def find_project_root(start: Path) -> Path:
     for directory in (start, *start.parents):
         if (directory / "tests" / "integration").is_dir():
             return directory
-    raise SystemExit(
-        "Could not locate the project root: no 'tests/integration' directory "
-        f"found in or above {start}."
-    )
+    raise SystemExit(f"Could not locate the project root: no 'tests/integration' directory found in or above {start}.")
 
 
 PROJECT_ROOT = find_project_root(Path(__file__).resolve().parent)
