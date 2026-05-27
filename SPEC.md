@@ -174,7 +174,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
    - This chains-list cache is derived from PRO API config + Chainscout metadata and is invalidated after successful PRO API config refreshes.
    - The PRO API config mapping is cached separately with its own TTL (configurable via `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS`).
-   - The per-chain `ChainCache` is warmed via `bulk_set` on each refresh.
+   - The per-chain `ChainCache` is authoritatively synchronized/replaced from the latest PRO API snapshot on each successful refresh.
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs
 

@@ -106,7 +106,6 @@ class ChainsListCache:
         self.chains_snapshot: list[ChainInfo] | None = None
         self.expiry_timestamp: float = 0.0
         self.lock = anyio.Lock()
-        self.refresh_retry_after: float = 0.0
 
     def invalidate(self) -> None:
         self.chains_snapshot = None
@@ -138,8 +137,9 @@ class ProApiConfigCache:
         self.refresh_retry_after: float = 0.0
 
     def invalidate(self) -> None:
-        self.chains_snapshot = None
+        self.chain_urls_snapshot = None
         self.expiry_timestamp = 0.0
+        self.refresh_retry_after = 0.0
 
     def get_if_fresh(self) -> dict[str, str] | None:
         if self.chain_urls_snapshot is None or time.monotonic() >= self.expiry_timestamp:

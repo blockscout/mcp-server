@@ -218,3 +218,14 @@ async def test_chain_cache_replace_success_entries_removes_missing_and_updates()
     assert cache.get("1") is None
     assert cache.get("2")[0] == "https://new"
     assert cache.get("neg")[0] is None
+
+
+def test_pro_api_config_cache_invalidate_clears_snapshot_and_cooldown():
+    cache = ProApiConfigCache()
+    cache.chain_urls_snapshot = {"1": "https://eth"}
+    cache.expiry_timestamp = 123.0
+    cache.refresh_retry_after = 456.0
+    cache.invalidate()
+    assert cache.chain_urls_snapshot is None
+    assert cache.expiry_timestamp == 0.0
+    assert cache.refresh_retry_after == 0.0
