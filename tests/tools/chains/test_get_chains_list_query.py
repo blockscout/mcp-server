@@ -66,9 +66,16 @@ async def test_get_chains_list_query_cold_cache_does_not_corrupt_cache(mock_ctx)
             "explorers": [{"hostedBy": "blockscout", "url": "https://polygon"}],
         },
     }
-    with patch(
-        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
-    ) as mock_req:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth", "137": "https://polygon"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
+        ) as mock_req,
+    ):
         mock_req.return_value = mock_response
         filtered = await get_chains_list(ctx=mock_ctx, query="polygon")
         full = await get_chains_list(ctx=mock_ctx)
