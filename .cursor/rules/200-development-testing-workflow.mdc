@@ -70,9 +70,19 @@ pytest --cov=blockscout_mcp_server --cov-report=term-missing
 
 **Optional** for minor documentation or configuration changes.
 
+Do **not** run `pytest -m integration` directly. Integration tests make real
+network calls with no hard HTTP timeout, so one unresponsive endpoint can hang
+the run indefinitely. Use the timeout-protected runner from the
+`run-integration-tests` skill instead — it isolates each test in its own
+subprocess, kills any hang, and reports which tests timed out or are slow:
+
 ```bash
-pytest -m integration
+# whole suite (or pass a directory / file / "file::test" node id to scope it)
+uv run python scripts/run_integration_tests.py
 ```
+
+See the `run-integration-tests` skill for all options (`--timeout`,
+`--slow-threshold`, etc.) and [220-integration-testing-guidelines.mdc](mdc:.cursor/rules/220-integration-testing-guidelines.mdc) for details.
 
 ## 5. End-to-End Validation
 

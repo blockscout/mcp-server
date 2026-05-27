@@ -259,7 +259,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] Run `ruff check .` (verify no issues)
 - [ ] Run `ruff format --check .` (verify formatting)
 - [ ] Run `pytest` (all unit tests)
-- [ ] Run `pytest -m integration -v` (integration tests)
+- [ ] Run integration tests via the timeout-protected runner — `python scripts/run_integration_tests.py` (do not run `pytest -m integration` directly; see [220-integration-testing-guidelines.mdc](mdc:.cursor/rules/220-integration-testing-guidelines.mdc))
 
 ### 15. Verify Handler Registration
 
