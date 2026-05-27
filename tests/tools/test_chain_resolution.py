@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import json
 from unittest.mock import AsyncMock, patch
 
 import anyio
@@ -46,15 +47,19 @@ async def test_fetch_pro_api_config_normalizes_urls_and_accepts_empty():
     assert result == {"1": "https://eth", "137": "https://polygon"}
 
 
-async def test_fetch_pro_api_config_invalid_payload_and_json_error():
+async def test_fetch_pro_api_config_missing_chains_key():
     request = httpx.Request("GET", "https://api.blockscout.com/api/json/config")
     invalid = httpx.Response(200, json={"endpoint_pricing": {}}, request=request)
-    bad_json = httpx.Response(200, text="not-json", request=request)
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=MockAsyncClient(invalid)):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="missing or invalid 'chains' key"):
             await common._fetch_pro_api_config()
+
+
+async def test_fetch_pro_api_config_malformed_json():
+    request = httpx.Request("GET", "https://api.blockscout.com/api/json/config")
+    bad_json = httpx.Response(200, text="not-json", request=request)
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=MockAsyncClient(bad_json)):
-        with pytest.raises(ValueError):
+        with pytest.raises(json.JSONDecodeError):
             await common._fetch_pro_api_config()
 
 
@@ -67,7 +72,7 @@ async def test_fetch_pro_api_config_http_error():
 
 
 async def test_ensure_pro_api_config_cache_and_failures(monkeypatch):
-    monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
+    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
     with (
         patch(
             "blockscout_mcp_server.tools.common._fetch_pro_api_config",
@@ -100,7 +105,7 @@ async def test_ensure_pro_api_config_cache_and_failures(monkeypatch):
 async def test_ensure_pro_api_config_refresh_after_ttl(monkeypatch):
     t = 0.0
     monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
-    monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
+    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
     seq = [{"1": "https://eth"}, {"1": "https://eth2"}]
     with patch("blockscout_mcp_server.tools.common._fetch_pro_api_config", new_callable=AsyncMock, side_effect=seq):
         assert (await common.ensure_pro_api_config())["1"] == "https://eth"
@@ -160,3 +165,80 @@ async def test_fetch_pro_api_config_accepts_empty_chains_dict():
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=MockAsyncClient(response)):
         result = await common._fetch_pro_api_config()
     assert result == {}
+
+
+async def test_ensure_pro_api_config_stale_on_error(monkeypatch):
+    t = 0.0
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
+    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        return_value={"1": "https://eth"},
+    ):
+        assert (await common.ensure_pro_api_config())["1"] == "https://eth"
+    t = 2.0
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        side_effect=httpx.HTTPStatusError(
+            "x",
+            request=httpx.Request("GET", "https://x"),
+            response=httpx.Response(503, request=httpx.Request("GET", "https://x")),
+        ),
+    ):
+        assert (await common.ensure_pro_api_config())["1"] == "https://eth"
+
+
+async def test_ensure_pro_api_config_no_stale_raises():
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        side_effect=httpx.HTTPStatusError(
+            "x",
+            request=httpx.Request("GET", "https://x"),
+            response=httpx.Response(503, request=httpx.Request("GET", "https://x")),
+        ),
+    ):
+        with pytest.raises(httpx.HTTPStatusError):
+            await common.ensure_pro_api_config()
+
+
+async def test_ensure_pro_api_config_stale_logs_warning(monkeypatch):
+    t = 0.0
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
+    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        return_value={"1": "https://eth"},
+    ):
+        await common.ensure_pro_api_config()
+    t = 2.0
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+            new_callable=AsyncMock,
+            side_effect=ValueError("bad"),
+        ),
+        patch("blockscout_mcp_server.tools.common.logger.warning") as warn,
+    ):
+        await common.ensure_pro_api_config()
+    warn.assert_called_once()
+
+
+async def test_get_blockscout_base_url_failure_expires_with_short_ttl(monkeypatch):
+    t = 0.0
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
+    monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
+    with patch("blockscout_mcp_server.tools.common.ensure_pro_api_config", new_callable=AsyncMock, return_value={}):
+        with pytest.raises(ChainNotFoundError):
+            await common.get_blockscout_base_url("999")
+    t = 2.0
+    with patch(
+        "blockscout_mcp_server.tools.common.ensure_pro_api_config",
+        new_callable=AsyncMock,
+        return_value={"999": "https://new"},
+    ) as ensure:
+        assert await common.get_blockscout_base_url("999") == "https://new"
+        ensure.assert_awaited_once()

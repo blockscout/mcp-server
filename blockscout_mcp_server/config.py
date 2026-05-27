@@ -19,6 +19,7 @@ class ServerConfig(BaseSettings):
     chainscout_timeout: float = 15.0  # Default timeout for Chainscout requests
     pro_api_config_url: str = "https://api.blockscout.com/api/json/config"
     pro_api_config_timeout: float = 15.0
+    pro_api_config_ttl_seconds: int = 300
 
     # Metadata service configuration
     metadata_url: str = "https://metadata.services.blockscout.com"

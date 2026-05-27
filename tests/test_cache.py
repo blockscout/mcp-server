@@ -34,7 +34,7 @@ async def test_chain_cache_set_failure():
     cache = ChainCache()
     with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(2000)):
         await cache.set_failure("2")
-    assert cache.get("2") == (None, 2000 + config.chain_cache_ttl_seconds)
+    assert cache.get("2") == (None, 2000 + config.chains_list_ttl_seconds)
 
 
 async def test_chain_cache_bulk_set():
@@ -175,6 +175,14 @@ def test_pro_api_config_cache_expiry():
         cache.store_snapshot({"1": "https://eth"})
     with patch(
         "blockscout_mcp_server.cache.time.monotonic",
-        fake_monotonic_factory(100 + config.chains_list_ttl_seconds + 1),
+        fake_monotonic_factory(100 + config.pro_api_config_ttl_seconds + 1),
     ):
         assert cache.get_if_fresh() is None
+
+
+async def test_chain_cache_failure_ttl_shorter_than_success():
+    cache = ChainCache()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(1000)):
+        await cache.set("1", "https://a")
+        await cache.set_failure("2")
+    assert cache.get("1")[1] > cache.get("2")[1]

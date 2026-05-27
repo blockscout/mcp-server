@@ -40,3 +40,15 @@ def test_pro_api_config_env_overrides(monkeypatch):
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_config_url == "https://example.com/config"
     assert cfg.pro_api_config_timeout == 9.5
+
+
+def test_pro_api_config_ttl_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_ttl_seconds == 300
+
+
+def test_pro_api_config_ttl_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS", "123")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_ttl_seconds == 123

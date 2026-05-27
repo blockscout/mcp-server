@@ -173,6 +173,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - MCP Server fetches chain metadata (name, ecosystem, testnet flag, native currency) from Chainscout.
    - The two sources are joined: only chains present in the PRO API config and having metadata in Chainscout are returned.
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
+   - The PRO API config mapping is cached separately with its own TTL (configurable via `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS`).
    - The per-chain `ChainCache` is warmed via `bulk_set` on each refresh.
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs
@@ -352,6 +353,8 @@ This architecture provides the flexibility of a multi-protocol server without th
    from Chainscout. Chains present in the PRO API config but absent from Chainscout are
    resolvable by URL for direct tool use but excluded from `get_chains_list` due to
    insufficient metadata.
+   When the PRO API is temporarily unreachable, the server serves the most recent stale snapshot if one is available, and logs a warning.
+   Negative lookups (chain not found) are cached with the shorter `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS` TTL to allow newly added chains to be discovered promptly.
 
 6. **Response Processing and Context Optimization**:
 

@@ -73,7 +73,8 @@ async def get_chains_list(
                             )
                         )
 
-                chains_list_cache.store_snapshot(chains)
+                if chains:
+                    chains_list_cache.store_snapshot(chains)
 
     await report_and_log_progress(
         ctx,

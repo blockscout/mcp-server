@@ -52,6 +52,7 @@ async def test_get_chains_list_empty_pro_config(mock_ctx):
     ):
         res = await get_chains_list(ctx=mock_ctx)
     assert res.data == []
+    assert common_tools.chains_list_cache.get_if_fresh() is None
 
 
 @pytest.mark.asyncio
@@ -140,3 +141,22 @@ async def test_get_chains_list_true_concurrent_calls_single_refresh(mock_ctx):
         r1, r2 = await asyncio.gather(t1, t2)
     assert call_count == 1
     assert r1.data == r2.data
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_chainscout_returns_non_dict(mock_ctx):
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            return_value="oops",
+        ),
+    ):
+        res = await get_chains_list(ctx=mock_ctx)
+    assert res.data == []
+    assert common_tools.chains_list_cache.get_if_fresh() is None

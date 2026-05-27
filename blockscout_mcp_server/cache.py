@@ -48,8 +48,11 @@ class ChainCache:
             self._cache[chain_id] = (blockscout_url, expiry)
 
     async def set_failure(self, chain_id: str) -> None:
-        """Cache a failure to find a chain."""
-        await self.set(chain_id, None)
+        """Cache a negative lookup with a shorter TTL for faster rediscovery."""
+        expiry = time.monotonic() + config.chains_list_ttl_seconds
+        chain_lock = await self._get_or_create_lock(chain_id)
+        async with chain_lock:
+            self._cache[chain_id] = (None, expiry)
 
     async def bulk_set(self, chain_urls: dict[str, str | None]) -> None:
         """Cache URLs from a bulk /api/chains response concurrently."""
@@ -112,7 +115,7 @@ class ProApiConfigCache:
 
     def store_snapshot(self, chain_urls: dict[str, str]) -> None:
         self.chain_urls_snapshot = chain_urls
-        self.expiry_timestamp = time.monotonic() + config.chains_list_ttl_seconds
+        self.expiry_timestamp = time.monotonic() + config.pro_api_config_ttl_seconds
 
 
 class CachedContract(BaseModel):
