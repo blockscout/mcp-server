@@ -5,9 +5,8 @@ from unittest.mock import patch
 import anyio
 import pytest
 
-from blockscout_mcp_server.cache import CachedContract, ChainCache, ContractCache
+from blockscout_mcp_server.cache import CachedContract, ChainCache, ContractCache, ProApiConfigCache
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.tools.common import find_blockscout_url
 
 pytestmark = pytest.mark.anyio
 
@@ -15,21 +14,6 @@ pytestmark = pytest.mark.anyio
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
-
-
-def test_find_blockscout_url_success():
-    chain_data = {
-        "explorers": [
-            {"hostedBy": "blockscout", "url": "https://example.blockscout.com"},
-            {"hostedBy": "other", "url": "https://other.com"},
-        ]
-    }
-    assert find_blockscout_url(chain_data) == "https://example.blockscout.com"
-
-
-def test_find_blockscout_url_no_match():
-    chain_data = {"explorers": [{"hostedBy": "other", "url": "https://x"}]}
-    assert find_blockscout_url(chain_data) is None
 
 
 def fake_monotonic_factory(value: float) -> Callable[[], float]:
@@ -170,3 +154,27 @@ async def test_contract_cache_access_refreshes_lru():
     assert await cache.get("B") is None
     assert await cache.get("A") is not None
     assert await cache.get("C") is not None
+
+
+def test_pro_api_config_cache_empty():
+    cache = ProApiConfigCache()
+    assert cache.get_if_fresh() is None
+
+
+def test_pro_api_config_cache_store_and_get():
+    cache = ProApiConfigCache()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(100)):
+        cache.store_snapshot({"1": "https://eth"})
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(101)):
+        assert cache.get_if_fresh() == {"1": "https://eth"}
+
+
+def test_pro_api_config_cache_expiry():
+    cache = ProApiConfigCache()
+    with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(100)):
+        cache.store_snapshot({"1": "https://eth"})
+    with patch(
+        "blockscout_mcp_server.cache.time.monotonic",
+        fake_monotonic_factory(100 + config.chains_list_ttl_seconds + 1),
+    ):
+        assert cache.get_if_fresh() is None

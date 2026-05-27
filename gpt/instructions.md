@@ -35,7 +35,7 @@ You MUST plan extensively before each actions tool call, and reflect extensively
 <chain_id_guidance>
 All action tools require a `chain_id` parameter:
 
-- If the chain ID to be used in the tools is not clear, use the tool `get_chains_list` to get chain IDs of all known chains.
+- If the chain ID to be used in the tools is not clear, use the tool `get_chains_list` to get chain IDs of all supported chains.
 - If no chain is specified in the user's prompt, assume "Ethereum Mainnet" (chain_id: 1) as the default.
 </chain_id_guidance>
 

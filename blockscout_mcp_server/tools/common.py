@@ -10,7 +10,7 @@ import anyio
 import httpx
 from mcp.server.fastmcp import Context
 
-from blockscout_mcp_server.cache import ChainCache, ChainsListCache
+from blockscout_mcp_server.cache import ChainCache, ChainsListCache, ProApiConfigCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -39,16 +39,6 @@ def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
 
 
-def find_blockscout_url(chain_data: dict) -> str | None:
-    """Return the Blockscout-hosted explorer URL from chain data."""
-    for explorer in chain_data.get("explorers", []):
-        if isinstance(explorer, dict) and explorer.get("hostedBy") == "blockscout":
-            url = explorer.get("url")
-            if url:
-                return url.rstrip("/")
-    return None
-
-
 class ChainNotFoundError(ValueError):
     """Exception raised when a chain ID cannot be found or resolved to a Blockscout URL."""
 
@@ -64,66 +54,56 @@ class ResponseTooLargeError(Exception):
 # Shared cache instance for chain data
 chain_cache = ChainCache()
 chains_list_cache = ChainsListCache()
+pro_api_config_cache = ProApiConfigCache()
+
+
+async def _fetch_pro_api_config() -> dict[str, str]:
+    async with _create_httpx_client(timeout=config.pro_api_config_timeout) as client:
+        response = await client.get(config.pro_api_config_url)
+    response.raise_for_status()
+    payload = response.json()
+
+    chains = payload.get("chains") if isinstance(payload, dict) else None
+    if not isinstance(chains, dict):
+        raise ValueError("PRO API config response missing or invalid 'chains' key")
+
+    return {str(chain_id): str(url).rstrip("/") for chain_id, url in chains.items() if isinstance(url, str) and url}
+
+
+async def ensure_pro_api_config() -> dict[str, str]:
+    cached = pro_api_config_cache.get_if_fresh()
+    if cached is not None:
+        return cached
+
+    async with pro_api_config_cache.lock:
+        cached = pro_api_config_cache.get_if_fresh()
+        if cached is not None:
+            return cached
+        chain_urls = await _fetch_pro_api_config()
+        pro_api_config_cache.store_snapshot(chain_urls)
+        await chain_cache.bulk_set(chain_urls)
+        return chain_urls
 
 
 async def get_blockscout_base_url(chain_id: str) -> str:
-    """
-    Fetches the Blockscout base URL for a given chain_id from Chainscout,
-    caches it, and handles errors.
-
-    Args:
-        chain_id: The blockchain chain ID to look up
-
-    Returns:
-        The Blockscout instance URL for the chain
-
-    Raises:
-        ChainNotFoundError: If no Blockscout instance is found for the chain
-    """
     current_time = time.monotonic()
     cached_entry = chain_cache.get(chain_id)
 
     if cached_entry:
         cached_url, expiry_timestamp = cached_entry
         if current_time < expiry_timestamp:
-            if cached_url is None:  # Cached "not found"
-                raise ChainNotFoundError(
-                    f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown (cached)."
-                )
+            if cached_url is None:
+                raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
             return cached_url
-        else:
-            await chain_cache.invalidate(chain_id)  # Cache expired
+        await chain_cache.invalidate(chain_id)
 
-    chain_api_url = f"{config.chainscout_url}/api/chains/{chain_id}"
-
-    # Note: We're not using make_chainscout_request here because we need:
-    # 1. Custom error handling for different HTTP status codes (like 404)
-    # 2. Special caching behavior for error cases
-    # 3. Direct access to handle JSON parsing errors
-    # 4. Chain-specific context in error messages
-    try:
-        async with _create_httpx_client(timeout=config.chainscout_timeout) as client:
-            response = await client.get(chain_api_url)
-        response.raise_for_status()
-        chain_data = response.json()
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            await chain_cache.set_failure(chain_id)
-            raise ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.") from e
-        raise ChainNotFoundError(f"Error fetching data for chain ID '{chain_id}' from Chainscout: {e}") from e
-    except (httpx.RequestError, json.JSONDecodeError) as e:
-        raise ChainNotFoundError(f"Could not retrieve or parse data for chain ID '{chain_id}' from Chainscout.") from e
-
-    if not chain_data or "explorers" not in chain_data:
-        await chain_cache.set_failure(chain_id)
-        raise ChainNotFoundError(f"No explorer data found for chain ID '{chain_id}' on Chainscout.")
-
-    blockscout_url = find_blockscout_url(chain_data)
-    await chain_cache.set(chain_id, blockscout_url)
-
+    chain_urls = await ensure_pro_api_config()
+    blockscout_url = chain_urls.get(chain_id)
     if blockscout_url:
         return blockscout_url
-    raise ChainNotFoundError(f"Blockscout instance hosted by Blockscout team for chain ID '{chain_id}' is unknown.")
+
+    await chain_cache.set_failure(chain_id)
+    raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
 
 
 def _extract_http_error_details(response: httpx.Response) -> str:

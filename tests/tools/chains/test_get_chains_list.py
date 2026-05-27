@@ -78,7 +78,7 @@ async def test_get_chains_list_success(mock_ctx):
         assert [chain.model_dump() for chain in result.data] == [chain.model_dump() for chain in expected_data]
         assert mock_ctx.report_progress.await_count == 2
         assert mock_ctx.info.await_count == 2
-        assert result.content_text == "Retrieved 2 known blockchain chains."
+        assert result.content_text == "Retrieved 2 supported blockchain chains."
 
 
 @pytest.mark.asyncio

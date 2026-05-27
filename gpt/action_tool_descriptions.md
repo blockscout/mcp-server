@@ -1,5 +1,5 @@
 <get_chains_list>
-Get the list of known blockchain chains with their IDs.
+Get the list of supported blockchain chains with their IDs.
 Useful for getting a chain ID when the chain name is known.
 This information can be used in other tools that require a chain ID to request information.
 </get_chains_list>

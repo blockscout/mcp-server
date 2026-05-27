@@ -7,9 +7,8 @@ from pydantic import Field
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    chain_cache,
     chains_list_cache,
-    find_blockscout_url,
+    ensure_pro_api_config,
     make_chainscout_request,
     report_and_log_progress,
 )
@@ -30,7 +29,7 @@ async def get_chains_list(
         ),
     ] = None,
 ) -> ToolResponse[list[ChainInfo]]:
-    """Get supported Blockscout-hosted blockchain chains with their chain IDs.
+    """Get supported blockchain chains with their chain IDs.
 
     Use this when another tool needs a supported `chain_id` and only the chain name,
     ecosystem, or native currency is known. Prefer a narrow `query` to avoid returning
@@ -43,7 +42,7 @@ async def get_chains_list(
         ctx,
         progress=0.0,
         total=1.0,
-        message="Fetching chains list from Chainscout...",
+        message="Fetching chains list...",
     )
 
     chains = chains_list_cache.get_if_fresh()
@@ -54,37 +53,27 @@ async def get_chains_list(
         async with chains_list_cache.lock:
             chains = chains_list_cache.get_if_fresh()
             if chains is None:
+                pro_api_chains = await ensure_pro_api_config()
                 response_data = await make_chainscout_request(api_path=api_path)
 
                 chains = []
                 if isinstance(response_data, dict):
-                    filtered: dict[str, dict] = {}
-                    url_map: dict[str, str] = {}
-                    for chain_id, chain in response_data.items():
-                        if not isinstance(chain, dict):
+                    for chain_id in pro_api_chains:
+                        chain = response_data.get(chain_id)
+                        if not isinstance(chain, dict) or not chain.get("name"):
                             continue
-                        url = find_blockscout_url(chain)
-                        if url:
-                            filtered[chain_id] = chain
-                            url_map[chain_id] = url
-
-                    await chain_cache.bulk_set(url_map)
-
-                    for chain_id, chain in filtered.items():
-                        if chain.get("name"):
-                            chains.append(
-                                ChainInfo(
-                                    name=chain["name"],
-                                    chain_id=chain_id,
-                                    # Fields follow the Chainscout API schema (isTestnet, native_currency)
-                                    is_testnet=chain.get("isTestnet", False),
-                                    native_currency=chain.get("native_currency"),
-                                    ecosystem=chain.get("ecosystem"),
-                                    settlement_layer_chain_id=chain.get("settlementLayerChainId"),
-                                )
+                        chains.append(
+                            ChainInfo(
+                                name=chain["name"],
+                                chain_id=chain_id,
+                                is_testnet=chain.get("isTestnet", False),
+                                native_currency=chain.get("native_currency"),
+                                ecosystem=chain.get("ecosystem"),
+                                settlement_layer_chain_id=chain.get("settlementLayerChainId"),
                             )
+                        )
 
-                    chains_list_cache.store_snapshot(chains)
+                chains_list_cache.store_snapshot(chains)
 
     await report_and_log_progress(
         ctx,
@@ -125,5 +114,5 @@ async def get_chains_list(
             ]
         return build_tool_response(data=filtered_chains, content_text=content_text, notes=notes)
 
-    content_text = f"Retrieved {len(chains)} known blockchain chains."
+    content_text = f"Retrieved {len(chains)} supported blockchain chains."
     return build_tool_response(data=chains, content_text=content_text)

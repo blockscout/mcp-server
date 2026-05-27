@@ -97,6 +97,24 @@ class ChainsListCache:
         self.expiry_timestamp = time.monotonic() + config.chains_list_ttl_seconds
 
 
+class ProApiConfigCache:
+    """In-process TTL cache for PRO API chain URL mappings."""
+
+    def __init__(self) -> None:
+        self.chain_urls_snapshot: dict[str, str] | None = None
+        self.expiry_timestamp: float = 0.0
+        self.lock = anyio.Lock()
+
+    def get_if_fresh(self) -> dict[str, str] | None:
+        if self.chain_urls_snapshot is None or time.monotonic() >= self.expiry_timestamp:
+            return None
+        return self.chain_urls_snapshot
+
+    def store_snapshot(self, chain_urls: dict[str, str]) -> None:
+        self.chain_urls_snapshot = chain_urls
+        self.expiry_timestamp = time.monotonic() + config.chains_list_ttl_seconds
+
+
 class CachedContract(BaseModel):
     """Represents the pre-processed and cached data for a smart contract."""
 
