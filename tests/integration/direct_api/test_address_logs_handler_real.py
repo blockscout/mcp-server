@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AddressLogItem, ToolResponse
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
@@ -87,7 +88,7 @@ async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
             assert result.notes is not None
             base_url = await get_blockscout_base_url(chain_id)
             assert any(
-                "https://api.blockscout.com/1/api/v2/transactions/{THE_TRANSACTION_HASH}/logs" in note
+                f"{config.pro_api_base_url}/1/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs" in note
                 for note in result.notes
             )
             assert all("curl" not in note for note in result.notes)

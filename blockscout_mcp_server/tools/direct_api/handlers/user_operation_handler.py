@@ -8,6 +8,7 @@ from typing import Any
 
 from mcp.server.fastmcp import Context
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import ToolResponse, UserOperationData
 from blockscout_mcp_server.tools.common import _recursively_truncate_and_flag_long_strings, build_tool_response
@@ -98,7 +99,7 @@ async def handle_user_operation(
                 "Look for `*_truncated` flags in the top-level fields or within `raw`."
             ),
             "To retrieve the full, untruncated data, fetch it from the Blockscout PRO API endpoint:",
-            f"`https://api.blockscout.com/{chain_id}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}`",
+            f"`{config.pro_api_base_url}/{chain_id}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}`",
         ]
 
     return build_tool_response(

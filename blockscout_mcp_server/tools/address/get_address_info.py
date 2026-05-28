@@ -148,7 +148,7 @@ async def get_address_info(
                 (
                     "To retrieve the full, untruncated metadata tags, fetch them from the "
                     "Blockscout PRO API metadata endpoint:\n"
-                    "`https://api.blockscout.com/services/metadata/api/v1/metadata?"
+                    f"`{config.pro_api_base_url}/services/metadata/api/v1/metadata?"
                     f"addresses={quote_plus(address)}&chainId={chain_id}`"
                 ),
             ]

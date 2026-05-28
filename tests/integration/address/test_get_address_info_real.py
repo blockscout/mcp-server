@@ -100,7 +100,7 @@ async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mo
             assert len(meta) <= INPUT_DATA_TRUNCATION_LIMIT
 
     if result.notes and any("Some metadata tag fields were truncated" in note for note in result.notes):
-        assert any("https://api.blockscout.com/services/metadata/api/v1/metadata" in note for note in result.notes)
+        assert any(f"{config.pro_api_base_url}/services/metadata/api/v1/metadata" in note for note in result.notes)
         assert any("chainId=1" in note for note in result.notes)
         assert all("curl" not in note for note in result.notes)
         assert all(str(config.metadata_url).rstrip("/") not in note for note in result.notes)

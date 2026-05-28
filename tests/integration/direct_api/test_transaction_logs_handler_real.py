@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
@@ -83,7 +84,7 @@ async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
     assert result.notes is not None
     assert "One or more log items" in result.notes[0]
     base_url = await get_blockscout_base_url("1")
-    assert any(f"https://api.blockscout.com/1/api/v2/transactions/{tx_hash}/logs" in note for note in result.notes)
+    assert any(f"{config.pro_api_base_url}/1/api/v2/transactions/{tx_hash}/logs" in note for note in result.notes)
     assert all("curl" not in note for note in result.notes)
     assert all(base_url.rstrip("/") not in note for note in result.notes)
 

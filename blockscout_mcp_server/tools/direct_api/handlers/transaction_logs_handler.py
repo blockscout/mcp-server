@@ -80,7 +80,7 @@ async def handle_transaction_logs(
                 "If the full log data is crucial for your analysis, fetch the complete, "
                 "untruncated logs for this transaction from the Blockscout PRO API endpoint:"
             ),
-            f"`https://api.blockscout.com/{chain_id}/api/v2/transactions/{transaction_hash}/logs`",
+            f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{transaction_hash}/logs`",
             "You would then need to parse the JSON response and find the specific log by its index.",
         ]
 

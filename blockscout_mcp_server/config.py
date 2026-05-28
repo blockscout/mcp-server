@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+from urllib.parse import urlsplit
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -66,6 +68,19 @@ class ServerConfig(BaseSettings):
     # Composite client name configuration
     intermediary_header: str = "Blockscout-MCP-Intermediary"
     intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
+
+    @property
+    def pro_api_base_url(self) -> str:
+        """Base URL for Blockscout PRO API endpoints, derived from the config endpoint."""
+        config_url = str(self.pro_api_config_url).rstrip("/")
+        config_path = "/api/json/config"
+        if config_url.endswith(config_path):
+            return config_url[: -len(config_path)].rstrip("/")
+
+        parsed = urlsplit(config_url)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+        return config_url
 
 
 config = ServerConfig()

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, UserOperationData
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
@@ -18,7 +19,7 @@ async def _assert_user_operation_pro_endpoint_notes(notes: list[str] | None, ope
     assert notes is not None
     base_url = await get_blockscout_base_url("1")
     assert any(
-        f"https://api.blockscout.com/1/api/v2/proxy/account-abstraction/operations/{operation_hash}" in note
+        f"{config.pro_api_base_url}/1/api/v2/proxy/account-abstraction/operations/{operation_hash}" in note
         for note in notes
     )
     assert all("curl" not in note for note in notes)

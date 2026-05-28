@@ -71,7 +71,7 @@ async def handle_address_logs(
                 "from the specific log item. Then fetch all logs for that single transaction from the "
                 "Blockscout PRO API endpoint:"
             ),
-            f"`https://api.blockscout.com/{chain_id}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs`",
+            f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs`",
         ]
 
     sliced_items, pagination = create_items_pagination(
