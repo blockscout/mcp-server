@@ -2,6 +2,7 @@
 import pytest
 
 from blockscout_mcp_server.models import ToolResponse, UserOperationData
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import retry_on_network_error
 
@@ -11,6 +12,17 @@ FAILED_WITH_INIT_CODE_HASH = "0x8baac2e15bd423d407641b53ae305b9d38819229636cc793
 HUGE_CALL_DATA_HASH = "0x96283c06e89a8209baba3e2342c9ed54ced8dbab2c904272a4db03ab7943f049"
 HUGE_EXECUTE_PARAMS_HASH = "0xafff4862a8e1245728fc51fbba72a44e0bf3f47c5c09f80ba712d1632fcd68b5"
 HUGE_SIGNATURE_HASH = "0xa2235963faaacbcce49ee36f84379bc92ec73c82e7812b1ea222d39bb609ac14"
+
+
+async def _assert_user_operation_pro_endpoint_notes(notes: list[str] | None, operation_hash: str) -> None:
+    assert notes is not None
+    base_url = await get_blockscout_base_url("1")
+    assert any(
+        f"https://api.blockscout.com/1/api/v2/proxy/account-abstraction/operations/{operation_hash}" in note
+        for note in notes
+    )
+    assert all("curl" not in note for note in notes)
+    assert all(base_url.rstrip("/") not in note for note in notes)
 
 
 @pytest.mark.integration
@@ -116,6 +128,7 @@ async def test_user_operation_handler_huge_call_data_real(mock_ctx):
     assert isinstance(raw, dict)
     assert raw.get("call_data_truncated") is True
     assert data.get("call_data_truncated") is True
+    await _assert_user_operation_pro_endpoint_notes(result.notes, HUGE_CALL_DATA_HASH)
 
 
 @pytest.mark.integration
@@ -135,7 +148,7 @@ async def test_user_operation_handler_huge_execute_params_real(mock_ctx):
     assert isinstance(decoded, dict)
     parameters = decoded.get("parameters")
     assert isinstance(parameters, list)
-    assert result.notes is not None
+    await _assert_user_operation_pro_endpoint_notes(result.notes, HUGE_EXECUTE_PARAMS_HASH)
 
 
 @pytest.mark.integration
@@ -153,4 +166,4 @@ async def test_user_operation_handler_huge_signature_real(mock_ctx):
     assert isinstance(result.data, UserOperationData)
     data = result.data.model_dump()
     assert data.get("signature_truncated") is True
-    assert result.notes is not None
+    await _assert_user_operation_pro_endpoint_notes(result.notes, HUGE_SIGNATURE_HASH)

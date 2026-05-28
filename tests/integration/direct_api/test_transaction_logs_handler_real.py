@@ -3,6 +3,7 @@ import pytest
 
 from blockscout_mcp_server.constants import LOG_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import ToolResponse, TransactionLogItem
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import is_log_a_truncated_call_executed, retry_on_network_error
 
@@ -81,6 +82,10 @@ async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
 
     assert result.notes is not None
     assert "One or more log items" in result.notes[0]
+    base_url = await get_blockscout_base_url("1")
+    assert any(f"https://api.blockscout.com/1/api/v2/transactions/{tx_hash}/logs" in note for note in result.notes)
+    assert all("curl" not in note for note in result.notes)
+    assert all(base_url.rstrip("/") not in note for note in result.notes)
 
     assert isinstance(result.data, list) and result.data
     truncated_item = next(

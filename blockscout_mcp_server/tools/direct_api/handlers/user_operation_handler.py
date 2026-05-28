@@ -50,7 +50,7 @@ async def handle_user_operation(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,
+    base_url: str,  # noqa: ARG001 - required by dispatcher but not used in PRO endpoint hints
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
@@ -97,8 +97,8 @@ async def handle_user_operation(
                 "One or more fields in this user operation response were too large and have been truncated. "
                 "Look for `*_truncated` flags in the top-level fields or within `raw`."
             ),
-            "To retrieve the full, untruncated data, request the user operation directly. For example:",
-            f'`curl "{base_url}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}"`',
+            "To retrieve the full, untruncated data, fetch it from the Blockscout PRO API endpoint:",
+            f"`https://api.blockscout.com/{chain_id}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}`",
         ]
 
     return build_tool_response(

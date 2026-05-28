@@ -160,7 +160,12 @@ async def test_user_operation_handler_truncation(mock_ctx):
     assert result.data.signature_truncated is True
     assert result.data.aggregator_signature_truncated is True
     assert result.notes is not None
-    assert any("account-abstraction/operations" in note for note in result.notes)
+    assert any(
+        f"https://api.blockscout.com/1/api/v2/proxy/account-abstraction/operations/{user_operation_hash}" in note
+        for note in result.notes
+    )
+    assert all("curl" not in note for note in result.notes)
+    assert all("https://example.blockscout" not in note for note in result.notes)
 
 
 @pytest.mark.asyncio

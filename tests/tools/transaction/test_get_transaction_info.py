@@ -434,6 +434,11 @@ async def test_get_transaction_info_truncates_raw_input(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, TransactionInfoData)
         assert result.notes is not None
+        assert any(
+            f"https://api.blockscout.com/{chain_id}/api/v2/transactions/{tx_hash}" in note for note in result.notes
+        )
+        assert all("curl" not in note for note in result.notes)
+        assert all(mock_base_url not in note for note in result.notes)
         assert result.data.raw_input_truncated is True
         assert len(result.data.raw_input) <= INPUT_DATA_TRUNCATION_LIMIT
 

@@ -91,8 +91,8 @@ async def get_transaction_info(
                 '(indicated by "value_truncated": true or "raw_input_truncated": true).'
             ),
             (
-                f"To get the full, untruncated data, you can retrieve it programmatically. "
-                f'For example, using curl:\n`curl "{str(base_url).rstrip("/")}/api/v2/transactions/{transaction_hash}"`'
+                "To get the full, untruncated data, fetch it from the Blockscout PRO API endpoint:\n"
+                f"`https://api.blockscout.com/{chain_id}/api/v2/transactions/{transaction_hash}`"
             ),
         ]
 

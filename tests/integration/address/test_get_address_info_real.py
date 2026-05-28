@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
@@ -97,3 +98,9 @@ async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mo
             _assert_no_oversized_strings(meta)
         elif isinstance(meta, str):
             assert len(meta) <= INPUT_DATA_TRUNCATION_LIMIT
+
+    if result.notes and any("Some metadata tag fields were truncated" in note for note in result.notes):
+        assert any("https://api.blockscout.com/services/metadata/api/v1/metadata" in note for note in result.notes)
+        assert any("chainId=1" in note for note in result.notes)
+        assert all("curl" not in note for note in result.notes)
+        assert all(str(config.metadata_url).rstrip("/") not in note for note in result.notes)

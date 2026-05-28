@@ -25,7 +25,7 @@ async def handle_address_logs(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,
+    base_url: str,  # noqa: ARG001 - required by dispatcher but not used in PRO endpoint hints
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
@@ -67,11 +67,11 @@ async def handle_address_logs(
                 'too large and has been truncated (indicated by `"data_truncated": true`).'
             ),
             (
-                "If the full log data is crucial for your analysis, you must first get "
-                "the `transaction_hash` from the specific log item. Then, you can retrieve "
-                "all logs for that single transaction programmatically. For example, using curl:"
+                "If the full log data is crucial for your analysis, you must first get the `transaction_hash` "
+                "from the specific log item. Then fetch all logs for that single transaction from the "
+                "Blockscout PRO API endpoint:"
             ),
-            f'`curl "{base_url}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs"`',
+            f"`https://api.blockscout.com/{chain_id}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs`",
         ]
 
     sliced_items, pagination = create_items_pagination(
