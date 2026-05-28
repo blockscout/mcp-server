@@ -106,7 +106,14 @@ async def get_blockscout_base_url(chain_id: str) -> str:
         if current_time < expiry_timestamp:
             if cached_url is None:
                 raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
-            return cached_url
+            if pro_api_config_cache.get_if_fresh() is not None:
+                return cached_url
+            chain_urls = await ensure_pro_api_config()
+            if chain_id in chain_urls:
+                await chain_cache.set(chain_id, chain_urls[chain_id])
+                return chain_urls[chain_id]
+            await chain_cache.set_failure(chain_id)
+            raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
         await chain_cache.invalidate(chain_id)
 
     chain_urls = await ensure_pro_api_config()

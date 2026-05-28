@@ -174,7 +174,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
    - This chains-list cache is derived from PRO API config + Chainscout metadata and is invalidated after successful PRO API config refreshes.
    - The PRO API config mapping is cached separately with its own TTL (configurable via `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS`).
-   - The per-chain `ChainCache` is authoritatively synchronized/replaced from the latest PRO API snapshot on each successful refresh.
+   - The per-chain `ChainCache` is an optimization layer authoritatively synchronized/replaced from the latest PRO API snapshot on each successful refresh. Positive entries are trusted only while the corresponding PRO API snapshot is fresh.
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs
 
@@ -354,7 +354,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    resolvable by URL for direct tool use but excluded from `get_chains_list` due to
    insufficient metadata.
    When the PRO API is temporarily unreachable or returns an invalid response, the server serves the most recent stale snapshot if one is available, logs a warning, and retries refresh after a short cooldown instead of on every request.
-   Negative lookups (chain not found) are cached with the shorter `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS` TTL to allow newly added chains to be discovered promptly.
+   Negative lookups (chain not found) are cached with `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS` because their correctness depends on freshness of the authoritative PRO API config. `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS` controls derived discovery-list caching only.
 
 6. **Response Processing and Context Optimization**:
 

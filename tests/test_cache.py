@@ -34,7 +34,7 @@ async def test_chain_cache_set_failure():
     cache = ChainCache()
     with patch("blockscout_mcp_server.cache.time.monotonic", fake_monotonic_factory(2000)):
         await cache.set_failure("2")
-    assert cache.get("2") == (None, 2000 + config.chains_list_ttl_seconds)
+    assert cache.get("2") == (None, 2000 + config.pro_api_config_ttl_seconds)
 
 
 async def test_chain_cache_bulk_set():

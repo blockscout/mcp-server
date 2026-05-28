@@ -49,7 +49,7 @@ class ChainCache:
 
     async def set_failure(self, chain_id: str) -> None:
         """Cache a negative lookup with a shorter TTL for faster rediscovery."""
-        expiry = time.monotonic() + config.chains_list_ttl_seconds
+        expiry = time.monotonic() + config.pro_api_config_ttl_seconds
         chain_lock = await self._get_or_create_lock(chain_id)
         async with chain_lock:
             self._cache[chain_id] = (None, expiry)
