@@ -3,16 +3,6 @@ name: plan-export
 description: Export a detailed phased implementation plan for a GitHub issue to a file, reading all applicable rules from .cursor/rules before planning
 argument-hint: [issue-number (optional)]
 disable-model-invocation: true
-hooks:
-  PreToolUse:
-    - matcher: "Write"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-dirs.py"
 ---
 
 # Plan Export Skill
@@ -58,7 +48,7 @@ For each rule file:
 
 ### 3. Compose the Implementation Plan
 
-Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the following structure:
+Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the following structure:
 
 ```markdown
 # Implementation Plan for Issue #$1
@@ -266,7 +256,7 @@ Review all documentation files for accuracy and completeness.
 Save the plan to:
 
 ```text
-temp/impl_plans/issue-$1.md
+.ai/impl_plans/issue-$1.md
 ```
 
 ### 6. Output and Control Transfer
@@ -280,7 +270,7 @@ After writing the plan file:
 Output format:
 
 ```text
-Created implementation plan at [temp/impl_plans/issue-$1.md](temp/impl_plans/issue-$1.md)
+Created implementation plan at [.ai/impl_plans/issue-$1.md](.ai/impl_plans/issue-$1.md)
 
 The plan includes {N} phases:
 1. [Phase 1 name]
