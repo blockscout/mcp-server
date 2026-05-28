@@ -21,7 +21,7 @@ paths:
     get:
       summary: Get chains list
       description: |
-        Get supported Blockscout-hosted chains and their chain IDs. Use a narrow query when you need
+        Get supported chains and their chain IDs. Use a narrow query when you need
         to choose a chain_id for later tool calls; avoid broad requests and partial numeric ID queries
         because filtering uses case-insensitive substring matching.
       operationId: getChainsList

@@ -1,7 +1,11 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 # tests/integration/test_common_helpers.py
+import re
+
+import httpx
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
     ChainNotFoundError,
     get_blockscout_base_url,
@@ -10,6 +14,7 @@ from blockscout_mcp_server.tools.common import (
     make_chainscout_request,
     make_metadata_request,
 )
+from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
@@ -71,25 +76,23 @@ async def test_make_bens_request_for_ens_lookup():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "chain_id, expected_url",
-    [
-        ("1", "https://eth.blockscout.com"),
-        ("137", "https://polygon.blockscout.com"),
-        ("10", "https://explorer.optimism.io"),
-        ("8453", "https://base.blockscout.com"),
-    ],
-)
-async def test_get_blockscout_base_url_for_known_chains(chain_id, expected_url):
+@pytest.mark.parametrize("chain_id", ["1", "137", "10", "8453"])
+async def test_get_blockscout_base_url_for_known_chains(chain_id):
     """
     Tests that we can resolve the Blockscout instance URL for several known chain IDs.
     This also implicitly tests that the caching logic doesn't break things.
     """
-    # ACT
-    resolved_url = await get_blockscout_base_url(chain_id=chain_id)
 
-    # ASSERT
-    assert resolved_url.rstrip("/") == expected_url.rstrip("/")
+    async def run_check():
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(config.pro_api_config_url)
+            response.raise_for_status()
+            cfg = response.json()
+        expected_url = cfg["chains"][chain_id]
+        resolved_url = await get_blockscout_base_url(chain_id=chain_id)
+        assert resolved_url.rstrip("/") == expected_url.rstrip("/")
+
+    await retry_on_network_error(run_check, action_description="known chain URL resolution")
 
 
 @pytest.mark.integration
@@ -105,7 +108,8 @@ async def test_get_blockscout_base_url_for_nonexistent_chain():
 
     # ACT & ASSERT
     # Use pytest.raises to confirm that the expected exception is thrown.
-    with pytest.raises(ChainNotFoundError, match=f"Chain with ID '{nonexistent_chain_id}' not found on Chainscout."):
+    expected_message = f"Chain ID '{nonexistent_chain_id}' is not supported by the Blockscout API."
+    with pytest.raises(ChainNotFoundError, match=re.escape(expected_message)):
         await get_blockscout_base_url(chain_id=nonexistent_chain_id)
 
 
@@ -175,3 +179,24 @@ async def test_make_blockscout_post_request_eth_rpc():
     assert response_data.get("jsonrpc") == "2.0"
     assert isinstance(response_data.get("result"), str)
     assert response_data["result"].startswith("0x")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_blockscout_base_url_for_pro_api_only_chain():
+    async def run_check():
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(config.pro_api_config_url)
+            response.raise_for_status()
+            cfg = response.json()
+        resolved = await get_blockscout_base_url("480")
+        assert resolved.rstrip("/") == cfg["chains"]["480"].rstrip("/")
+
+    await retry_on_network_error(run_check, action_description="pro-api-only chain resolution")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_blockscout_base_url_for_chainscout_only_chain():
+    with pytest.raises(ChainNotFoundError):
+        await get_blockscout_base_url("17000")

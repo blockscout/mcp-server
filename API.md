@@ -192,7 +192,7 @@ Provides custom instructions and operational guidance for using the server. This
 
 #### Get Chains List (`get_chains_list`)
 
-Returns supported Blockscout-hosted blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable. Use this endpoint when you need to choose a supported `chain_id` for subsequent tool calls. Prefer a narrow search query to avoid returning the full registry unnecessarily.
+Returns supported blockchain chains, including whether each is a testnet, its native currency, ecosystem, and the settlement layer chain ID when applicable. Use this endpoint when you need to choose a supported `chain_id` for subsequent tool calls. Prefer a narrow search query to avoid returning the full registry unnecessarily.
 
 `GET /v1/get_chains_list`
 

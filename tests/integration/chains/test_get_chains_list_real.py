@@ -49,6 +49,7 @@ async def test_get_chains_list_integration(mock_ctx):
     assert op_chain.native_currency == "ETH"
     assert op_chain.ecosystem == ["Optimism", "Superchain"]
     assert op_chain.settlement_layer_chain_id == "1"
+    assert any(c.chain_id == "480" for c in result.data)
 
 
 @pytest.mark.integration
@@ -77,12 +78,17 @@ async def test_get_chains_list_cache_hit_skips_network(mock_ctx, monkeypatch):
         lambda: get_chains_list(ctx=mock_ctx),
         action_description="get_chains_list request",
     )
-    with patch(
-        "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
-        new_callable=AsyncMock,
-    ) as mock_request:
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config", new_callable=AsyncMock
+        ) as mock_pro,
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
         await get_chains_list(ctx=mock_ctx)
         mock_request.assert_not_called()
+        mock_pro.assert_not_called()
 
 
 @pytest.mark.integration
@@ -94,7 +100,7 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         lambda: get_chains_list(ctx=mock_ctx),
         action_description="get_chains_list request",
     )
-    first_expiry = chain_cache.get("1")[1]
+    first_expiry = chains_list_cache.expiry_timestamp
 
     await asyncio.sleep(1.1)
 
@@ -102,7 +108,7 @@ async def test_get_chains_list_refreshes_after_ttl(mock_ctx, monkeypatch):
         lambda: get_chains_list(ctx=mock_ctx),
         action_description="get_chains_list request",
     )
-    second_expiry = chain_cache.get("1")[1]
+    second_expiry = chains_list_cache.expiry_timestamp
     assert second_expiry > first_expiry
 
 
