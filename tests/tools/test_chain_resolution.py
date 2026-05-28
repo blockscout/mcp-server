@@ -405,3 +405,14 @@ async def test_get_blockscout_base_url_failure_expires_with_pro_api_config_ttl(m
     ) as ensure:
         assert await common.get_blockscout_base_url("999") == "https://new"
         ensure.assert_awaited_once()
+
+
+async def test_get_blockscout_base_url_rejects_positive_cache_when_out_of_sync_fresh_snapshot():
+    common.pro_api_config_cache.store_snapshot({"1": "https://eth"})
+    await common.chain_cache.set("999", "https://old")
+
+    with pytest.raises(ChainNotFoundError):
+        await common.get_blockscout_base_url("999")
+
+    cached = common.chain_cache.get("999")
+    assert cached is not None and cached[0] is None
