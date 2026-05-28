@@ -24,7 +24,8 @@ blockscout-mcp-server = "blockscout_mcp_server.server:run_server_cli" # For CLI 
 test = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.0.0"
+    "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.3.0"
 ]
 dev = [
     "ruff>=0.12.0",
