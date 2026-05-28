@@ -68,7 +68,12 @@ class ChainCache:
                 tg.start_soon(_set_with_expiry, chain_id, url)
 
     async def replace_success_entries(self, chain_urls: dict[str, str]) -> None:
-        """Authoritatively replace positive entries from latest PRO API snapshot."""
+        """Authoritatively replace positive entries from latest PRO API snapshot.
+
+        The initial cache scan (list comprehension) is not guarded by a lock and
+        relies on the caller serialising access — currently ``pro_api_config_cache.lock``
+        in ``ensure_pro_api_config()``.
+        """
         expiry = time.monotonic() + config.chain_cache_ttl_seconds
         stale_success_ids = [cid for cid, (url, _) in self._cache.items() if url is not None and cid not in chain_urls]
 

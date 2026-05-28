@@ -88,7 +88,7 @@ async def ensure_pro_api_config() -> dict[str, str]:
             await chain_cache.replace_success_entries(chain_urls)
             chains_list_cache.invalidate()
             return chain_urls
-        except Exception:
+        except (httpx.HTTPStatusError, httpx.RequestError, ValueError, OSError):
             stale = pro_api_config_cache.chain_urls_snapshot
             if stale is not None:
                 pro_api_config_cache.mark_refresh_failure()
@@ -112,6 +112,7 @@ async def get_blockscout_base_url(chain_id: str) -> str:
     chain_urls = await ensure_pro_api_config()
     blockscout_url = chain_urls.get(chain_id)
     if blockscout_url:
+        await chain_cache.set(chain_id, blockscout_url)
         return blockscout_url
 
     await chain_cache.set_failure(chain_id)

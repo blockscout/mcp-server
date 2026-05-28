@@ -353,7 +353,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    from Chainscout. Chains present in the PRO API config but absent from Chainscout are
    resolvable by URL for direct tool use but excluded from `get_chains_list` due to
    insufficient metadata.
-   When the PRO API is temporarily unreachable, the server serves the most recent stale snapshot if one is available, logs a warning, and retries refresh after a short cooldown instead of on every request.
+   When the PRO API is temporarily unreachable or returns an invalid response, the server serves the most recent stale snapshot if one is available, logs a warning, and retries refresh after a short cooldown instead of on every request.
    Negative lookups (chain not found) are cached with the shorter `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS` TTL to allow newly added chains to be discovered promptly.
 
 6. **Response Processing and Context Optimization**:

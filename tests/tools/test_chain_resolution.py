@@ -323,3 +323,35 @@ async def test_ensure_pro_api_config_stale_fallback_does_not_invalidate_chains_l
     ):
         await common.ensure_pro_api_config()
     assert common.chains_list_cache.get_if_fresh() == []
+
+
+async def test_get_blockscout_base_url_populates_chain_cache_on_success():
+    with patch(
+        "blockscout_mcp_server.tools.common.ensure_pro_api_config",
+        AsyncMock(return_value={"1": "https://eth"}),
+    ) as ensure:
+        assert await common.get_blockscout_base_url("1") == "https://eth"
+        ensure.assert_awaited_once()
+        assert await common.get_blockscout_base_url("1") == "https://eth"
+        assert ensure.await_count == 1
+
+
+async def test_ensure_pro_api_config_does_not_swallow_programming_errors(monkeypatch):
+    t = 0.0
+    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
+    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        return_value={"1": "https://eth"},
+    ):
+        await common.ensure_pro_api_config()
+
+    t = 2.0
+    with patch(
+        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
+        new_callable=AsyncMock,
+        side_effect=AttributeError("bug in code"),
+    ):
+        with pytest.raises(AttributeError):
+            await common.ensure_pro_api_config()
