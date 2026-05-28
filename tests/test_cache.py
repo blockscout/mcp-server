@@ -5,7 +5,7 @@ from unittest.mock import patch
 import anyio
 import pytest
 
-from blockscout_mcp_server.cache import CachedContract, ChainCache, ContractCache, ProApiConfigCache
+from blockscout_mcp_server.cache import CachedContract, ChainCache, ChainsListCache, ContractCache, ProApiConfigCache
 from blockscout_mcp_server.config import config
 
 pytestmark = pytest.mark.anyio
@@ -189,8 +189,6 @@ async def test_chain_cache_failure_ttl_shorter_than_success():
 
 
 def test_chains_list_cache_invalidate_clears_snapshot():
-    from blockscout_mcp_server.cache import ChainsListCache
-
     c = ChainsListCache()
     c.chains_snapshot = []
     c.expiry_timestamp = 123
