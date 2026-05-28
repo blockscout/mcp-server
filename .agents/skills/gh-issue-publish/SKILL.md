@@ -1,20 +1,20 @@
 ---
 name: gh-issue-publish
-description: Publish a GitHub issue from a markdown file in temp/gh_issues/ created by gh-issue-bug or gh-issue-improvement skills
+description: Publish a GitHub issue from a markdown file in .ai/gh_issues/ created by gh-issue-bug or gh-issue-improvement skills
 argument-hint: [path-to-issue-file]
 disable-model-invocation: true
 ---
 
 # GitHub Issue Publisher Skill
 
-This skill publishes a GitHub issue from a markdown file in `temp/gh_issues/` created by the `gh-issue-bug` or `gh-issue-improvement` skills.
+This skill publishes a GitHub issue from a markdown file in `.ai/gh_issues/` created by the `gh-issue-bug` or `gh-issue-improvement` skills.
 
 ## Workflow
 
 ### 1. Determine File Path
 
 - If `$1` is provided and non-empty, use it as the file path.
-- Otherwise, extract the file path from the current conversation. Look for the most recent `temp/gh_issues/*.md` path mentioned — this is typically the output of a preceding `/gh-issue-bug` or `/gh-issue-improvement` invocation.
+- Otherwise, extract the file path from the current conversation. Look for the most recent `.ai/gh_issues/*.md` path mentioned — this is typically the output of a preceding `/gh-issue-bug` or `/gh-issue-improvement` invocation.
 - If no file path can be determined, ask the user to provide one.
 
 ### 2. Run the Publisher Script

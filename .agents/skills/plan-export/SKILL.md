@@ -3,16 +3,6 @@ name: plan-export
 description: Export a detailed phased implementation plan for a GitHub issue to a file, reading all applicable rules from .cursor/rules before planning
 argument-hint: [issue-number (optional)]
 disable-model-invocation: true
-hooks:
-  PreToolUse:
-    - matcher: "Write"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-dirs.py"
 ---
 
 # Plan Export Skill
@@ -58,7 +48,7 @@ For each rule file:
 
 ### 3. Compose the Implementation Plan
 
-Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the following structure:
+Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the following structure:
 
 ```markdown
 # Implementation Plan for Issue #$1
@@ -72,6 +62,12 @@ Create a detailed Markdown document at `temp/impl_plans/issue-$1.md` with the fo
 ## Applicable Guidelines
 
 [List the rule files that were read and applied to this plan, with brief notes on key requirements from each]
+
+---
+
+## Definition of Done — Test Integrity (non-negotiable)
+
+[Mandatory. In your own words — explain the *why*, don't just recite rules — state that the work is done only when its tests genuinely pass for the right reason, for unit and integration tests alike. The wording is yours, but the section must get these points across: each failure is diagnosed (regression vs. legitimately changed expectation) and its root cause fixed, never worked around (no skip/xfail, deletion, loosened assertions, or bypassed hooks); a test is updated only when intended behavior changed; a test that couldn't run, timed out, or hung is a defect to diagnose, not a pass (for integration tests, point at the timeout-protected runner from rule 200); and no phase is "done" while any test is failing, disabled to avoid a failure, or unverified.]
 
 ---
 
@@ -206,6 +202,7 @@ Review all documentation files for accuracy and completeness.
 ## Final Checklist
 
 - [ ] All phases completed and verified (including per-phase linting)
+- [ ] Every test passed *for the right reason* — none skipped, xfailed, deleted, loosened, or left unrun/timed-out to declare success; any failure was traced to its root cause and fixed
 - [ ] All unit tests pass: `pytest tests/tools/`
 - [ ] All integration tests pass: `pytest -m integration tests/integration/`
 - [ ] Final linting check on entire codebase: `ruff check .`
@@ -227,6 +224,7 @@ Review all documentation files for accuracy and completeness.
 - Complete documentation text (documentation requires precise wording)
 - Specific test scenarios with clear descriptions
 - Verification steps for each phase (including tests, linting, and formatting checks)
+- A mandatory "Definition of Done — Test Integrity" section, placed after "Applicable Guidelines" and before the first phase, covering both unit and integration tests
 
 **MUST NOT INCLUDE:**
 
@@ -266,7 +264,7 @@ Review all documentation files for accuracy and completeness.
 Save the plan to:
 
 ```text
-temp/impl_plans/issue-$1.md
+.ai/impl_plans/issue-$1.md
 ```
 
 ### 6. Output and Control Transfer
@@ -280,7 +278,7 @@ After writing the plan file:
 Output format:
 
 ```text
-Created implementation plan at [temp/impl_plans/issue-$1.md](temp/impl_plans/issue-$1.md)
+Created implementation plan at [.ai/impl_plans/issue-$1.md](.ai/impl_plans/issue-$1.md)
 
 The plan includes {N} phases:
 1. [Phase 1 name]
@@ -304,3 +302,4 @@ Awaiting your instructions to proceed.
 - If the conversation lacks sufficient context, ask clarifying questions before creating the plan
 - Each phase must have clear verification criteria so the developer knows when it's complete
 - Each phase's verification must include linting and formatting checks for code-quality assurance before proceeding
+- **Test integrity is non-negotiable.** Generated plans are executed by a developer or agent who must never declare success on failing, skipped, worked-around, or unrun tests. Ensure the "Definition of Done — Test Integrity" section makes this explicit for both unit and integration tests — diagnose root causes, and treat "couldn't run / timed out" as a defect, not a pass.

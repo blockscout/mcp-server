@@ -2,21 +2,11 @@
 name: gh-issue-bug
 description: Generate a structured bug report for GitHub issues based on conversation context about bugs, errors, or broken functionality
 disable-model-invocation: true
-hooks:
-  PreToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-dirs.py"
 ---
 
 # GitHub Bug Report Generator Skill
 
-This skill generates a well-structured bug report for GitHub issues based on the conversation context and saves it to `temp/gh_issues/YYMMDD-<short-issue-name>.md`. This skill is specifically designed for **bug reports** - not for feature requests, enhancements, or improvements.
+This skill generates a well-structured bug report for GitHub issues based on the conversation context and saves it to `.ai/gh_issues/YYMMDD-<short-issue-name>.md`. This skill is specifically designed for **bug reports** - not for feature requests, enhancements, or improvements.
 
 ## Purpose
 
@@ -52,7 +42,7 @@ Review the conversation to identify:
 Create a filename using the pattern:
 
 ```text
-temp/gh_issues/YYMMDD-<short-issue-name-with-dashes>.md
+.ai/gh_issues/YYMMDD-<short-issue-name-with-dashes>.md
 ```
 
 Where:
@@ -60,7 +50,7 @@ Where:
 - `YYMMDD`: Current date in 2-digit year, month, day format (e.g., `260127` for January 27, 2026)
 - `<short-issue-name-with-dashes>`: A brief, descriptive name using lowercase letters and dashes (e.g., `nft-pagination-bug`, `timeout-error-in-ens-lookup`)
 
-Example: `temp/gh_issues/260127-nft-pagination-bug.md`
+Example: `.ai/gh_issues/260127-nft-pagination-bug.md`
 
 ### 3. Create Issue Document
 
@@ -133,9 +123,9 @@ When the user says:
 You should:
 
 1. Review the conversation for bug details
-2. Generate filename like `temp/gh_issues/260127-transaction-logs-timeout.md`
+2. Generate filename like `.ai/gh_issues/260127-transaction-logs-timeout.md`
 3. Create the issue document with all required sections
-4. Confirm creation with: "Created GitHub issue description at [temp/gh_issues/260127-transaction-logs-timeout.md](temp/gh_issues/260127-transaction-logs-timeout.md)"
+4. Confirm creation with: "Created GitHub issue description at [.ai/gh_issues/260127-transaction-logs-timeout.md](.ai/gh_issues/260127-transaction-logs-timeout.md)"
 
 ## Notes
 

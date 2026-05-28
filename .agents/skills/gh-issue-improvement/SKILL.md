@@ -2,21 +2,11 @@
 name: gh-issue-improvement
 description: Generate a structured improvement/enhancement proposal for GitHub issues based on conversation context
 disable-model-invocation: true
-hooks:
-  PreToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-writes.py"
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "$CLAUDE_PROJECT_DIR/.claude/hooks/allow-temp-dirs.py"
 ---
 
 # GitHub Improvement Proposal Generator Skill
 
-This skill generates a well-structured improvement/enhancement proposal for GitHub issues based on the conversation context and saves it to `temp/gh_issues/YYMMDD-<short-issue-name>.md`. This skill is specifically designed for **improvements and enhancements** - not for bug reports or error fixes.
+This skill generates a well-structured improvement/enhancement proposal for GitHub issues based on the conversation context and saves it to `.ai/gh_issues/YYMMDD-<short-issue-name>.md`. This skill is specifically designed for **improvements and enhancements** - not for bug reports or error fixes.
 
 ## Purpose
 
@@ -56,7 +46,7 @@ Review the conversation to identify:
 Create a filename using the pattern:
 
 ```text
-temp/gh_issues/YYMMDD-<short-issue-name-with-dashes>.md
+.ai/gh_issues/YYMMDD-<short-issue-name-with-dashes>.md
 ```
 
 Where:
@@ -64,7 +54,7 @@ Where:
 - `YYMMDD`: Current date in 2-digit year, month, day format (e.g., `260128` for January 28, 2026)
 - `<short-issue-name-with-dashes>`: A brief, descriptive name using lowercase letters and dashes (e.g., `migrate-logs-to-direct-api`, `optimize-pagination-logic`, `consolidate-nft-tools`)
 
-Example: `temp/gh_issues/260128-migrate-logs-to-direct-api.md`
+Example: `.ai/gh_issues/260128-migrate-logs-to-direct-api.md`
 
 ### 3. Create Issue Document
 
@@ -167,9 +157,9 @@ When the user says:
 You should:
 
 1. Review the conversation for improvement details
-2. Generate filename like `temp/gh_issues/260128-consolidate-transaction-tools.md`
+2. Generate filename like `.ai/gh_issues/260128-consolidate-transaction-tools.md`
 3. Create the issue document with all required sections
-4. Confirm creation with: "Created GitHub improvement proposal at [temp/gh_issues/260128-consolidate-transaction-tools.md](temp/gh_issues/260128-consolidate-transaction-tools.md)"
+4. Confirm creation with: "Created GitHub improvement proposal at [.ai/gh_issues/260128-consolidate-transaction-tools.md](.ai/gh_issues/260128-consolidate-transaction-tools.md)"
 
 ## Example Improvements
 

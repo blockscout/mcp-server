@@ -26,16 +26,19 @@ gh auth login
 
 ## Workflow
 
-1) Ensure repo startup constraints are satisfied:
-   - In this repository, run `$codex-session-bootstrap` before doing any other work.
-
-2) Read the two inputs in full:
+1) Read the two inputs in full:
    - Plan file
    - Issue description file (or the fetched `/tmp/issue.md`)
 
-3) Apply strict versioning-comment policy:
+2) Apply strict versioning-comment policy:
    - Do **not** request or suggest any version bump (package version, `server.json`, etc.) unless the **issue description explicitly requires** a version bump/release/publish/tag.
    - Even if the plan changes externally-consumed surfaces (tool schemas, REST/OpenAPI, manifests), treat missing version bump steps as **intentional** unless the issue says otherwise.
+
+3) Apply review-noise policy:
+   - Do not raise findings only because an implementation plan omits developer execution mechanics such as checking `/.dockerenv`, choosing host vs devcontainer command prefixes, or spelling out both command variants.
+   - Do not teach command invocation mechanics in recommendations.
+   - Review verification semantically: required test/lint/integration categories, targets, and coverage, not how a developer invokes commands in their environment.
+   - Still flag objectively wrong verification scope, such as requiring only a narrow test subset when repo rules require the full default suite.
 
 4) Validate codebase reality (start targeted, expand as needed):
    - Start by finding referenced modules/configs/env vars/tests with `rg` (fast and low-noise).
@@ -52,7 +55,7 @@ rg -n "ServerConfig\\(|BaseSettings\\(|BLOCKSCOUT_" blockscout_mcp_server/config
 rg -n "pytest\\.mark\\.integration|tests/integration|tests/tools" tests -S
 ```
 
-1) Produce the review in the required format (next section).
+5) Produce the review in the required format (next section).
 
 ## Required output format
 
@@ -91,7 +94,8 @@ Provide comments as a list. Each comment must include:
 
 ### 5) Junior-dev readiness check
 
-- Missing prerequisites, commands, step ordering, “how to verify”
+- Missing task-specific prerequisites, step ordering, and verification coverage
+- Do not flag omitted environment-specific command invocation details
 - Where the plan needs more explicit detail
 
 ### 6) Test & rollout strategy
