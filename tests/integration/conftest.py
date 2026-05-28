@@ -11,6 +11,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 
+
 def pytest_collection_modifyitems(items):
     """Disable pytest-timeout for integration tests.
 
