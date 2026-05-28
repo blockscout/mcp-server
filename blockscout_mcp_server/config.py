@@ -1,6 +1,4 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-from urllib.parse import urlsplit
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,7 +17,7 @@ class ServerConfig(BaseSettings):
 
     chainscout_url: str = "https://chains.blockscout.com"  # Updated to https
     chainscout_timeout: float = 15.0  # Default timeout for Chainscout requests
-    pro_api_config_url: str = "https://api.blockscout.com/api/json/config"
+    pro_api_base_url: str = "https://api.blockscout.com"
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
@@ -70,17 +68,9 @@ class ServerConfig(BaseSettings):
     intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
 
     @property
-    def pro_api_base_url(self) -> str:
-        """Base URL for Blockscout PRO API endpoints, derived from the config endpoint."""
-        config_url = str(self.pro_api_config_url).rstrip("/")
-        config_path = "/api/json/config"
-        if config_url.endswith(config_path):
-            return config_url[: -len(config_path)].rstrip("/")
-
-        parsed = urlsplit(config_url)
-        if parsed.scheme and parsed.netloc:
-            return f"{parsed.scheme}://{parsed.netloc}"
-        return config_url
+    def pro_api_config_url(self) -> str:
+        """URL for the PRO API chain config endpoint, derived from the PRO API base URL."""
+        return f"{str(self.pro_api_base_url).rstrip('/')}/api/json/config"
 
 
 config = ServerConfig()

@@ -27,27 +27,28 @@ def test_server_config_does_not_expose_bs_api_key():
 
 
 def test_pro_api_config_defaults(monkeypatch):
-    monkeypatch.delenv("BLOCKSCOUT_PRO_API_CONFIG_URL", raising=False)
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_BASE_URL", raising=False)
     monkeypatch.delenv("BLOCKSCOUT_PRO_API_CONFIG_TIMEOUT", raising=False)
     cfg = ServerConfig(_env_file=None)
-    assert cfg.pro_api_config_url == "https://api.blockscout.com/api/json/config"
     assert cfg.pro_api_base_url == "https://api.blockscout.com"
+    assert cfg.pro_api_config_url == "https://api.blockscout.com/api/json/config"
     assert cfg.pro_api_config_timeout == 15.0
 
 
 def test_pro_api_config_env_overrides(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_URL", "https://example.com/config")
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://example.com")
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_TIMEOUT", "9.5")
     cfg = ServerConfig(_env_file=None)
-    assert cfg.pro_api_config_url == "https://example.com/config"
     assert cfg.pro_api_base_url == "https://example.com"
+    assert cfg.pro_api_config_url == "https://example.com/api/json/config"
     assert cfg.pro_api_config_timeout == 9.5
 
 
-def test_pro_api_base_url_preserves_config_path_prefix(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_URL", "https://example.com/proxy/api/json/config")
+def test_pro_api_config_url_strips_base_url_trailing_slash(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://example.com/proxy/")
     cfg = ServerConfig(_env_file=None)
-    assert cfg.pro_api_base_url == "https://example.com/proxy"
+    assert cfg.pro_api_base_url == "https://example.com/proxy/"
+    assert cfg.pro_api_config_url == "https://example.com/proxy/api/json/config"
 
 
 def test_pro_api_config_ttl_default(monkeypatch):
