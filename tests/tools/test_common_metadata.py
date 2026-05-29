@@ -123,6 +123,23 @@ async def test_make_metadata_request_propagates_http_status_error(monkeypatch):
             await make_metadata_request(api_path)
 
 
+@pytest.mark.asyncio
+async def test_make_metadata_request_skips_network_when_no_key(monkeypatch):
+    """With no PRO API key, make_metadata_request raises before any network call.
+
+    Efficiency guard: a keyless deployment must not issue a request the PRO API
+    is guaranteed to reject. The HTTP client must never even be created.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "")
+
+    def _fail_create_client(*args, **kwargs):
+        raise AssertionError("No HTTP client should be created when the PRO API key is absent")
+
+    with patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail_create_client):
+        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+            await make_metadata_request("/services/metadata/api/v1/metadata", {"addresses": "0xabc"})
+
+
 # ---------------------------------------------------------------------------
 # Security: PRO API key must NOT leak to make_blockscout_request
 # ---------------------------------------------------------------------------

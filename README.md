@@ -219,7 +219,7 @@ set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 
 ### Blockscout PRO API Key (optional — enables address metadata)
 
-`get_address_info` enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint, which requires an API key. The key is **optional**: without it the server still runs, but the `metadata` field is returned as `null` together with a note explaining it was unavailable. Set the key to enable public-tag enrichment.
+`get_address_info` enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint, which requires an API key. The key is **optional**: without it the server still runs, the metadata request is skipped entirely (no call is made to the PRO API), and the `metadata` field is returned as `null` together with a note explaining it was unavailable. Set the key to enable public-tag enrichment.
 
 To obtain one, create an account at https://dev.blockscout.com (the free tier does not require a credit card) and generate an API key in the portal; keys are prefixed `proapi_`. Provide it to the server via the `BLOCKSCOUT_PRO_API_KEY` environment variable — exported in your shell or placed in a gitignored `.env` file in the project root. Never commit the key or embed it in a client-shipped binary; when running via Docker, pass it at runtime (e.g. `-e BLOCKSCOUT_PRO_API_KEY=...`) rather than baking it into the image.
 

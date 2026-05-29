@@ -296,10 +296,10 @@ def _pro_api_headers() -> dict[str, str]:
 
     Always includes ``User-Agent`` and ``Accept: application/json``.
     When ``config.pro_api_key`` is non-empty, also includes
-    ``Authorization: Bearer <key>``.  When the key is absent, the
-    ``Authorization`` header is omitted entirely so that unauthenticated
-    requests fail upstream cleanly rather than sending a bare ``Bearer``
-    token.
+    ``Authorization: Bearer <key>``.  Callers are expected to skip the
+    request entirely when no key is configured (see ``make_metadata_request``),
+    so the keyless branch here is purely defensive: it omits the
+    ``Authorization`` header rather than sending a bare ``Bearer`` token.
     """
     headers: dict[str, str] = {
         "User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION}",
@@ -363,6 +363,11 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
     ``Accept`` headers are also attached here, not on the shared httpx client,
     so the key never leaks to other upstreams.
 
+    When no key is configured the request is skipped entirely: a ``ValueError``
+    is raised before any network call so the server never issues a request the
+    PRO API is guaranteed to reject. Callers treat this like any other
+    metadata failure (the ``metadata`` field is null with an explanatory note).
+
     Args:
         api_path: The API path to request
         params: Optional query parameters
@@ -371,9 +376,14 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         The JSON response as a dictionary
 
     Raises:
+        ValueError: If ``BLOCKSCOUT_PRO_API_KEY`` is not configured
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
+    if not config.pro_api_key:
+        raise ValueError(
+            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); address metadata is disabled."
+        )
     async with _create_httpx_client(timeout=config.metadata_timeout) as client:
         url = f"{config.pro_api_base_url}{api_path}"
         response = await client.get(url, params=params, headers=_pro_api_headers())

@@ -141,6 +141,53 @@ async def test_get_address_info_metadata_http_status_error_degrades_gracefully(s
 
 
 # ---------------------------------------------------------------------------
+# Metadata skipped — no PRO API key configured
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_skips_metadata_request_when_no_key(mock_ctx, monkeypatch):
+    """With no PRO API key, get_address_info never calls the PRO API yet still degrades gracefully.
+
+    The real make_metadata_request runs (it is NOT mocked here) and must short-circuit
+    before any network client is created, leaving primary data intact plus a note.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "")
+    chain_id = "1"
+    address = "0x123abc"
+    mock_base_url = "https://eth.blockscout.com"
+
+    mock_blockscout_response = {"hash": address, "is_contract": False}
+    mock_first_tx_response = {"items": []}
+
+    def _fail_create_client(*args, **kwargs):
+        raise AssertionError("No PRO API HTTP request should be made when the key is absent")
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
+            new_callable=AsyncMock,
+        ) as mock_get_url,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_bs_request,
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail_create_client),
+    ):
+        mock_get_url.return_value = mock_base_url
+        mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, AddressInfoData)
+    assert result.data.basic_info == mock_blockscout_response
+    assert result.data.metadata is None
+    assert result.notes is not None
+    assert any("Could not retrieve address metadata" in note for note in result.notes)
+
+
+# ---------------------------------------------------------------------------
 # _process_metadata_tags unit tests
 # ---------------------------------------------------------------------------
 
