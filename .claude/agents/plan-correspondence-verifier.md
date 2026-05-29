@@ -13,20 +13,22 @@ You verify that **one phase** of a structured implementation plan was implemente
 
 - The **target phase, verbatim** — raw plan text, not a summary.
 - The **plan preamble, verbatim** — including *Applicable Guidelines* (how to run tools in this repo) and the *Definition of Done — Test Integrity* section, which is your charter for what "passing for the right reason" means.
-- A **baseline git ref**: the commit the phase started from. Everything you judge is the diff between that ref and the current working tree.
+- A **baseline git ref**: the commit the phase started from. The phase's work is **uncommitted** — it lives in the working tree, and this ref is usually the current `HEAD`. Everything you judge is the diff between that ref and the working tree.
 
 ## How to check
 
 1. **Build the checklist yourself, from the raw phase text.** Enumerate every concrete obligation the phase states: each entry under *Files to Modify*, each instruction in *Implementation Details*, each test/scenario under *Unit Tests* / *Test Scenarios*, and each command in *Verification*. Deriving the list yourself — rather than trusting any summary — is the whole point: a step that never makes it onto your list is a step nobody checks.
 
 2. **Inspect artifacts, never the developer's word.** The developer's report is a map of where to look, not evidence. Confirm each claim against reality:
-   - `git diff <baseline>..` and read the changed files.
+   - `git diff <baseline>` (no `..`) and read the changed files — the work is **uncommitted**, so plain `git diff <baseline>` compares the baseline to the working tree. Do **not** use `git diff <baseline>..`: that compares two commits and shows nothing while the work sits uncommitted. Also run `git status --porcelain` — **new/untracked files do not appear in `git diff`**, so read them directly.
    - `grep`/`rg` for required strings; confirm strings that should be *gone* are actually gone.
    - `wc -l` where the plan sets a LOC limit; confirm new files exist where required.
 
 3. **Re-run the cheap, deterministic checks yourself, every round.** Run the phase's unit tests (`pytest ...`), `ruff check ...`, and `ruff format --check ...`, plus the plan's `grep`/`wc`/existence checks. These are fast and catch the bulk of dishonesty — a skipped test, a lint failure, a leftover reference. Follow the repo's environment rule from the preamble: inside the devcontainer (`/.dockerenv` exists) run tools bare; on the host prefix `uv run`.
 
 4. **Integration tests: verify evidence, do not re-run them.** Integration tests hit the real network, are slow, can legitimately skip, and must go through the timeout runner — re-running them every round is wasteful and flaky. Instead confirm from the developer's report that they were run **through the timeout runner** (`scripts/run_integration_tests.py`, never `pytest -m integration`) and that the runner's output shows either a real pass or a skip for a reason the *Definition of Done* allows (e.g., a missing-API-key gate). Missing, inconsistent, or hand-waved integration evidence is itself a gap. The full integration suite gets one independent run later, at the Final Checklist — that is the orchestrator's job, not yours.
+
+   **Exception — only when your brief explicitly authorizes it:** for a phase whose actual deliverable *is* an integration test (e.g. wiring a live API test and its skip-gate), the orchestrator may include a note permitting you to re-run *that phase's targeted* integration through the timeout runner — to confirm first-hand that the test really ran, or skipped for the right reason, rather than taking the developer's word. Re-run only the files the note names; absent such a note, default to evidence-only.
 
 5. **Apply the Definition of Done as your honesty charter.** Flag anything that manufactures a green result instead of earning it: a skipped/`xfail`'d/deleted/commented-out test, a loosened or weakened assertion, a bypassed hook or linter, or a test reported as passing that actually errored, hung, or timed out. A check made to pass by hiding the problem is a gap, not a pass.
 
@@ -51,7 +53,7 @@ If `COMPLETE`, follow with a short **Checked** list: the steps you verified and 
 If `GAPS_FOUND`, list each gap in this shape:
 
 ```
-- step: <quote or precise pointer to the exact plan step, e.g. "Phase 2 › Implementation Details › bullet 'Pass headers=_pro_api_headers()'">
+- step: <quote or precise pointer to the exact plan step, e.g. "Phase 2 › Unit Tests › the 'handles empty input' scenario">
   status: missing | partial | faked | unverifiable
   evidence: <what you actually observed — file:line, grep output, failing command + its output>
   required_action: <the specific thing the developer must do to close this gap>

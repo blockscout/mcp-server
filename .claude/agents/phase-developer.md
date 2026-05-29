@@ -22,7 +22,8 @@ Implement only what this phase prescribes. Do not touch files owned by other pha
 
 - Make the changes under *Files to Modify* and *Implementation Details* exactly as written. When the plan quotes a literal string, path, or docstring, use it verbatim.
 - Write the tests the phase specifies, with the names and assertions it describes.
-- Run the phase's *Verification* block before you report done. Follow the repo's environment rule: if `/.dockerenv` exists you are in the devcontainer — run `pytest`/`ruff`/`python` bare; otherwise prefix `uv run`.
+- **Detect the environment first, explicitly — never guess from the path.** Before you run any tool, check once: `[ -f /.dockerenv ] && echo devcontainer || echo host`. If `/.dockerenv` exists you are in the devcontainer — run `pytest`/`ruff`/`python` **bare**; otherwise **prefix every command with `uv run`**. Getting this wrong (e.g. defaulting to `uv run` inside the devcontainer) breaks every command, so check the file rather than assuming.
+- Run the phase's *Verification* block before you report done.
 - For integration tests, always go through the timeout-protected runner (`python scripts/run_integration_tests.py ...`) — never `pytest -m integration` directly, which can hang unbounded. Read the runner's SKIPPED/TIMEOUT/SLOW report and keep it for your own report.
 
 ## Honesty is part of the work, not a formality

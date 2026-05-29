@@ -47,7 +47,7 @@ Phases are sequential; never start phase N+1 before phase N is committed (the pl
 
 1. **Record the baseline**: `git rev-parse HEAD` — the ref the verifier diffs against for this phase. Capture it *before* dispatching the developer.
 2. **Dispatch a fresh `phase-developer`** with the first-round brief from the templates file (preamble + this phase verbatim + other-phase titles + baseline note). Wait for its report.
-3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief (preamble + this phase verbatim + the baseline ref). Read its verdict.
+3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief (preamble + this phase verbatim + the baseline ref). Read its verdict. If this phase's deliverable *is* an integration test (a live test plus its skip-gate), also append the optional **integration-re-run** block from the templates so the verifier can confirm first-hand that the test ran rather than silently skipped.
 4. **Branch on the verdict:**
    - `COMPLETE` → go to step 5.
    - `GAPS_FOUND` → dispatch a **fresh** `phase-developer` with the gap-round brief: the same context plus the verifier's gap list verbatim and "your prior work is already in the working tree; close exactly these gaps." Then go back to step 3 to re-verify.
