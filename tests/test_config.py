@@ -34,6 +34,18 @@ def test_pro_api_config_defaults(monkeypatch):
     assert cfg.pro_api_config_timeout == 15.0
 
 
+def test_pro_api_config_url_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_BASE_URL", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_url == "https://api.blockscout.com/api/json/config"
+
+
+def test_pro_api_config_url_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://custom.api.com/")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_config_url == "https://custom.api.com/api/json/config"
+
+
 def test_pro_api_config_env_overrides(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://example.com/")
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_TIMEOUT", "9.5")
