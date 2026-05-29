@@ -272,8 +272,9 @@ This architecture provides the flexibility of a multi-protocol server without th
       ],
       "notes": [
         "Large data fields have been truncated to conserve context (indicated by `*_truncated: true`).",
-        "For complete untruncated data, retrieve it directly:",
-        "`curl \"https://eth.blockscout.com/api/v2/transactions/0x1a2b3c4d5e6f.../raw-trace\"`"
+        "For complete untruncated data, fetch it from the Blockscout PRO API endpoint:",
+        "`https://api.blockscout.com/1/api/v2/transactions/0x1a2b3c4d5e6f.../raw-trace`",
+        "See the `web3-dev` skill for how to call it."
       ],
       "instructions": [
         "Use `get_address_info` to get detailed information about any address in the results",
@@ -452,7 +453,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Mechanism**: If a log's `data` field (a hex string) exceeds a predefined limit of 514 characters (representing 256 bytes of data plus the '0x' prefix), it is truncated.
     - **Flagging**: A new boolean field, `data_truncated: true`, is added to the log item to explicitly signal that the data has been shortened.
     - **Decoded Truncation**: Oversized string values inside the `decoded` dictionary are recursively replaced with `{"value_sample": "...", "value_truncated": true}`.
-    - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and provides a `curl` command template, guiding the agent on how to programmatically fetch the complete, untruncated data if required for deeper analysis.
+    - **Guidance**: When truncation occurs, a note is added to the tool's output. This note explains the flag and references the corresponding Blockscout PRO API endpoint (presented as an endpoint reference, not a ready-to-run command) where the agent can fetch the complete, untruncated data if required for deeper analysis, and points to the `web3-dev` skill for how to call it.
 
     This approach maintains a small context footprint by default while providing a reliable "escape hatch" for high-fidelity data retrieval when necessary.
 
@@ -493,7 +494,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     - **`raw_input` Truncation**: If the raw hexadecimal input string exceeds `INPUT_DATA_TRUNCATION_LIMIT`, it is shortened. A new flag, `raw_input_truncated: true`, is added to the response to signal this.
     - **`decoded_input` Truncation**: The server recursively traverses the nested `parameters` of the decoded input. Any string value (e.g., a `bytes` or `string` parameter) exceeding the limit is replaced by a structured object: `{"value_sample": "...", "value_truncated": true}`. This preserves the overall structure of the decoded call while saving significant context.
-    - **Instructional Note**: If any field is truncated, a note is appended to the tool's output, providing a `curl` command to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed.
+    - **Instructional Note**: If any field is truncated, a note is appended to the tool's output that references the corresponding Blockscout PRO API endpoint (presented as an endpoint reference, not a ready-to-run command) to retrieve the complete, untruncated data, ensuring the agent has a path to the full information if needed, and points to the `web3-dev` skill for how to call it.
 
     **h) Contract Source Code and ABI Separation:**
 
@@ -527,7 +528,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Mechanism**: Before including metadata in the `get_address_info` response, the server parses each tag's `meta` JSON string into a structured JSON value (dict, list, or primitive). The parsed value is then processed by the same recursive truncation function used for transaction input data and log decoded values. Any individual string value exceeding `INPUT_DATA_TRUNCATION_LIMIT` (514 characters) is replaced with `{"value_sample": "...", "value_truncated": true}`. If `meta` is already a dict or list (rather than a JSON string), the truncation is applied directly.
     - **Graceful Degradation**: If a `meta` value is not valid JSON, the raw string itself is passed through the truncation function as a fallback, ensuring that even unparseable large strings do not bypass the context optimization.
     - **Schema Agnosticism**: Because different tag types (e.g., `warpcast-account`, `gitcoin-grantee`) have different `meta` schemas, the truncation is applied generically to all string values rather than targeting specific field names. This ensures the optimization remains effective as new tag types are introduced.
-    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response with a curl example for the metadata endpoint so agents can retrieve the complete untruncated payload when needed.
+    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response that references the Blockscout PRO API metadata endpoint (presented as an endpoint reference, not a ready-to-run command) so agents can retrieve the complete untruncated payload when needed, and points to the `web3-dev` skill for how to call it.
 
 
 7. **HTTP Request Robustness**

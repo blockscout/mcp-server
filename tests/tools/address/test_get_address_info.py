@@ -521,8 +521,11 @@ async def test_get_address_info_adds_note_when_metadata_meta_is_truncated(mock_c
 
     assert result.notes is not None
     assert any("Some metadata tag fields were truncated" in note for note in result.notes)
-    expected_metadata_prefix = f'`curl "{str(config.metadata_url).rstrip("/")}/api/v1/metadata?addresses={address}'
+    expected_metadata_prefix = f"`{config.pro_api_base_url}/services/metadata/api/v1/metadata?addresses={address}"
     assert any(expected_metadata_prefix in note for note in result.notes)
     assert any(f"chainId={chain_id}" in note for note in result.notes)
+    assert all("curl" not in note for note in result.notes)
+    assert all(str(config.metadata_url).rstrip("/") not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
     assert result.data.metadata is not None
     assert result.data.metadata["tags"][0]["meta"]["tagIcon"]["value_truncated"] is True

@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AddressLogItem, ToolResponse
+from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import is_log_a_truncated_call_executed, retry_on_network_error
 
@@ -83,6 +85,15 @@ async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
 
         if any(is_log_a_truncated_call_executed(item) for item in result.data):
             found_truncated_log = True
+            assert result.notes is not None
+            base_url = await get_blockscout_base_url(chain_id)
+            assert any(
+                f"{config.pro_api_base_url}/1/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs" in note
+                for note in result.notes
+            )
+            assert all("curl" not in note for note in result.notes)
+            assert all(base_url.rstrip("/") not in note for note in result.notes)
+            assert any("`web3-dev` skill" in note for note in result.notes)
             break
 
         if result.pagination:

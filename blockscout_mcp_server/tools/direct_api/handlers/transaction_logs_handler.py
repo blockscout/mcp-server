@@ -25,7 +25,7 @@ async def handle_transaction_logs(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,
+    base_url: str,  # noqa: ARG001 - required by dispatcher but not used in PRO endpoint hints
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
@@ -77,11 +77,12 @@ async def handle_transaction_logs(
                 'too large and has been truncated (indicated by `"data_truncated": true`).'
             ),
             (
-                "If the full log data is crucial for your analysis, you can retrieve the complete, "
-                "untruncated logs for this transaction programmatically. For example, using curl:"
+                "If the full log data is crucial for your analysis, fetch the complete, "
+                "untruncated logs for this transaction from the Blockscout PRO API endpoint:"
             ),
-            f'`curl "{base_url}/api/v2/transactions/{transaction_hash}/logs"`',
+            f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{transaction_hash}/logs`",
             "You would then need to parse the JSON response and find the specific log by its index.",
+            "See the `web3-dev` skill for how to call it.",
         ]
 
     sliced_items, pagination = create_items_pagination(

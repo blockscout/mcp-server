@@ -127,7 +127,13 @@ async def test_handle_address_logs_truncation_notes(mock_ctx):
 
     assert result.notes is not None
     assert any("`data` field" in note for note in result.notes)
-    assert "transactions/{THE_TRANSACTION_HASH}/logs" in result.notes[-1]
+    assert any(
+        f"{config.pro_api_base_url}/1/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs" in note
+        for note in result.notes
+    )
+    assert all("curl" not in note for note in result.notes)
+    assert all("https://example.blockscout" not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
     first_item_dump = result.data[0].model_dump()
     assert first_item_dump.get("data_truncated") is True
 

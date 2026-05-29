@@ -142,15 +142,16 @@ async def get_address_info(
 
     metadata_data, meta_was_truncated = _process_metadata_tags(metadata_data)
     if meta_was_truncated:
-        metadata_url = str(config.metadata_url).rstrip("/")
         notes.extend(
             [
                 'Some metadata tag fields were truncated to conserve context (indicated by "value_truncated": true).',
                 (
-                    "To retrieve the full, untruncated metadata tags, query the metadata endpoint directly. "
-                    "For example, using curl:\n"
-                    f'`curl "{metadata_url}/api/v1/metadata?addresses={quote_plus(address)}&chainId={chain_id}"`'
+                    "To retrieve the full, untruncated metadata tags, fetch them from the "
+                    "Blockscout PRO API metadata endpoint:\n"
+                    f"`{config.pro_api_base_url}/services/metadata/api/v1/metadata?"
+                    f"addresses={quote_plus(address)}&chainId={chain_id}`"
                 ),
+                "See the `web3-dev` skill for how to call it.",
             ]
         )
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,10 +17,15 @@ class ServerConfig(BaseSettings):
 
     chainscout_url: str = "https://chains.blockscout.com"  # Updated to https
     chainscout_timeout: float = 15.0  # Default timeout for Chainscout requests
-    pro_api_config_url: str = "https://api.blockscout.com/api/json/config"
+    pro_api_base_url: str = "https://api.blockscout.com"
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
+
+    @field_validator("pro_api_base_url")
+    @classmethod
+    def normalize_pro_api_base_url(cls, value: str) -> str:
+        return str(value).rstrip("/")
 
     # Metadata service configuration
     metadata_url: str = "https://metadata.services.blockscout.com"
@@ -66,6 +71,11 @@ class ServerConfig(BaseSettings):
     # Composite client name configuration
     intermediary_header: str = "Blockscout-MCP-Intermediary"
     intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
+
+    @property
+    def pro_api_config_url(self) -> str:
+        """URL for the PRO API chain config endpoint, derived from the PRO API base URL."""
+        return f"{self.pro_api_base_url}/api/json/config"
 
 
 config = ServerConfig()

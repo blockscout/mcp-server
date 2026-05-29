@@ -5,6 +5,7 @@ import re
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import ToolResponse, UserOperationData
 from blockscout_mcp_server.tools.direct_api.handlers.user_operation_handler import PATTERN, handle_user_operation
@@ -160,7 +161,13 @@ async def test_user_operation_handler_truncation(mock_ctx):
     assert result.data.signature_truncated is True
     assert result.data.aggregator_signature_truncated is True
     assert result.notes is not None
-    assert any("account-abstraction/operations" in note for note in result.notes)
+    assert any(
+        f"{config.pro_api_base_url}/1/api/v2/proxy/account-abstraction/operations/{user_operation_hash}" in note
+        for note in result.notes
+    )
+    assert all("curl" not in note for note in result.notes)
+    assert all("https://example.blockscout" not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
 
 
 @pytest.mark.asyncio

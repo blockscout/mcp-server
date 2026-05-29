@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import get_blockscout_base_url
@@ -92,7 +93,10 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
     assert result.notes is not None
-    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result.notes[1]
+    assert f"{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{tx_hash}" in result.notes[1]
+    assert all("curl" not in note for note in result.notes)
+    assert all(base_url.rstrip("/") not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
 
     data = result.data
     assert data.decoded_input is None
@@ -124,7 +128,10 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, TransactionInfoData)
     assert result.notes is not None
-    assert f'`curl "{base_url.rstrip("/")}/api/v2/transactions/{tx_hash}"`' in result.notes[1]
+    assert f"{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{tx_hash}" in result.notes[1]
+    assert all("curl" not in note for note in result.notes)
+    assert all(base_url.rstrip("/") not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
 
     data = result.data
     assert data.decoded_input is not None
