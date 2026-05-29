@@ -104,3 +104,4 @@ async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mo
         assert any("chainId=1" in note for note in result.notes)
         assert all("curl" not in note for note in result.notes)
         assert all(str(config.metadata_url).rstrip("/") not in note for note in result.notes)
+        assert any("`web3-dev` skill" in note for note in result.notes)

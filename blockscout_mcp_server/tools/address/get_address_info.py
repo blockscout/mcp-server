@@ -151,6 +151,7 @@ async def get_address_info(
                     f"`{config.pro_api_base_url}/services/metadata/api/v1/metadata?"
                     f"addresses={quote_plus(address)}&chainId={chain_id}`"
                 ),
+                "See the `web3-dev` skill for how to call it.",
             ]
         )
 

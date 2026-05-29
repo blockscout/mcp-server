@@ -24,6 +24,7 @@ async def _assert_user_operation_pro_endpoint_notes(notes: list[str] | None, ope
     )
     assert all("curl" not in note for note in notes)
     assert all(base_url.rstrip("/") not in note for note in notes)
+    assert any("`web3-dev` skill" in note for note in notes)
 
 
 @pytest.mark.integration

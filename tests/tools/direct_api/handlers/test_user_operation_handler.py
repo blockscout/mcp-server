@@ -167,6 +167,7 @@ async def test_user_operation_handler_truncation(mock_ctx):
     )
     assert all("curl" not in note for note in result.notes)
     assert all("https://example.blockscout" not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
 
 
 @pytest.mark.asyncio

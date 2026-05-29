@@ -82,6 +82,7 @@ async def handle_transaction_logs(
             ),
             f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{transaction_hash}/logs`",
             "You would then need to parse the JSON response and find the specific log by its index.",
+            "See the `web3-dev` skill for how to call it.",
         ]
 
     sliced_items, pagination = create_items_pagination(

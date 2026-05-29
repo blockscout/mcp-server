@@ -87,6 +87,7 @@ async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
     assert any(f"{config.pro_api_base_url}/1/api/v2/transactions/{tx_hash}/logs" in note for note in result.notes)
     assert all("curl" not in note for note in result.notes)
     assert all(base_url.rstrip("/") not in note for note in result.notes)
+    assert any("`web3-dev` skill" in note for note in result.notes)
 
     assert isinstance(result.data, list) and result.data
     truncated_item = next(

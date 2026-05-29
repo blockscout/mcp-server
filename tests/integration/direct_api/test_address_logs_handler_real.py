@@ -93,6 +93,7 @@ async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
             )
             assert all("curl" not in note for note in result.notes)
             assert all(base_url.rstrip("/") not in note for note in result.notes)
+            assert any("`web3-dev` skill" in note for note in result.notes)
             break
 
         if result.pagination:

@@ -72,6 +72,7 @@ async def handle_address_logs(
                 "Blockscout PRO API endpoint:"
             ),
             f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{{THE_TRANSACTION_HASH}}/logs`",
+            "See the `web3-dev` skill for how to call it.",
         ]
 
     sliced_items, pagination = create_items_pagination(

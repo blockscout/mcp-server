@@ -439,6 +439,7 @@ async def test_get_transaction_info_truncates_raw_input(mock_ctx):
         )
         assert all("curl" not in note for note in result.notes)
         assert all(mock_base_url not in note for note in result.notes)
+        assert any("`web3-dev` skill" in note for note in result.notes)
         assert result.data.raw_input_truncated is True
         assert len(result.data.raw_input) <= INPUT_DATA_TRUNCATION_LIMIT
 

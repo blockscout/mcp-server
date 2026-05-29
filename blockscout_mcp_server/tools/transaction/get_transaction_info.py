@@ -94,6 +94,7 @@ async def get_transaction_info(
                 "To get the full, untruncated data, fetch it from the Blockscout PRO API endpoint:\n"
                 f"`{config.pro_api_base_url}/{chain_id}/api/v2/transactions/{transaction_hash}`"
             ),
+            "See the `web3-dev` skill for how to call it.",
         ]
 
     if ops_error_note:

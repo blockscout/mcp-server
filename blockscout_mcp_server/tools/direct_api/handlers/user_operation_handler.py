@@ -100,6 +100,7 @@ async def handle_user_operation(
             ),
             "To retrieve the full, untruncated data, fetch it from the Blockscout PRO API endpoint:",
             f"`{config.pro_api_base_url}/{chain_id}/api/v2/proxy/account-abstraction/operations/{user_operation_hash}`",
+            "See the `web3-dev` skill for how to call it.",
         ]
 
     return build_tool_response(
