@@ -21,6 +21,7 @@ class ServerConfig(BaseSettings):
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
+    pro_api_key: str = ""
 
     @field_validator("pro_api_base_url")
     @classmethod

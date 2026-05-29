@@ -76,3 +76,15 @@ def test_pro_api_config_refresh_retry_env_override(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_REFRESH_RETRY_SECONDS", "7")
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_config_refresh_retry_seconds == 7
+
+
+def test_pro_api_key_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_KEY", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key == ""
+
+
+def test_pro_api_key_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY", "proapi_test")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key == "proapi_test"
