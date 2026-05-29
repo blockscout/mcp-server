@@ -75,7 +75,7 @@ class ServerConfig(BaseSettings):
     @property
     def pro_api_config_url(self) -> str:
         """URL for the PRO API chain config endpoint, derived from the PRO API base URL."""
-        return f"{str(self.pro_api_base_url).rstrip('/')}/api/json/config"
+        return f"{self.pro_api_base_url}/api/json/config"
 
 
 config = ServerConfig()
