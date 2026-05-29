@@ -43,23 +43,21 @@ Your previous work is already in the working tree — do not start over. Address
 
 The orchestrator commits the phase once the verifier confirms it is complete. Leave your changes in the working tree.
 
-## Report back in this shape
+## Report back — short on purpose
+
+You still **run every check** the phase specifies (unit, lint/format, grep/wc/existence, and integration). But do **not** restate the cheap ones: the verifier independently re-runs unit, lint, and the grep/wc/existence checks and reads the actual diff, so repeating them adds nothing to anyone's decision. Report only the three things a consumer actually needs — your full work stays in this transcript regardless.
 
 ```
-## Phase <N> implementation report
+## Phase <N> report
 
-### Changes (per step)
-- <plan step> → <files touched, with file:line> — <what you did>
-...
+### Status
+<one line: all steps implemented and the phase's own checks pass — or: blocked, see below>
 
-### Verification results
-- unit tests: <command run> → <real outcome>
-- lint/format: <commands> → <outcome>
-- integration (if any): <timeout-runner command> → <pass/skip + the runner's SKIPPED/TIMEOUT reasons>
-- plan's grep/wc/existence checks: <command> → <outcome>
+### Integration-test evidence
+<If this phase specifies integration tests: the exact timeout-runner command → the runner's PASS / SKIPPED / TIMEOUT / SLOW summary, verbatim. The verifier does NOT re-run them (so this is the only record it gets), unless the phase's own deliverable is an integration test. If the phase has no integration tests: write "none".>
 
 ### Could not complete (if anything)
-- <step> — <why, and what you'd need>
+- <plan step> — <why, and what you'd need>
 ```
 
-Keep it factual and mapped to the plan's steps; the orchestrator and the verifier both read it against the real diff. An honest "could not complete" is far more useful than a rosy report that doesn't match the code.
+An honest "could not complete" is far more useful than a rosy status that doesn't match the code — the verifier re-runs the cheap checks and reads the diff, so a faked pass just bounces back as a gap and costs you another round.

@@ -41,6 +41,9 @@ Read these files first — they are the verbatim plan text:
 
 BASELINE REF: judge only the changes between <baseline commit SHA — captured with `git rev-parse HEAD` before the first developer of this phase> and the current working tree. The phase's work is **uncommitted**: inspect it with `git diff <baseline>` (no `..`) plus `git status --porcelain` for new/untracked files. Do not use `git diff <baseline>..` — that compares two commits and shows nothing while the work is uncommitted.
 
+DEVELOPER'S INTEGRATION-TEST EVIDENCE (verify it; do NOT re-run it, unless the integration-re-run block below authorizes it):
+<the `### Integration-test evidence` section of the developer's report, lifted verbatim — or "none" if the phase has no integration tests>
+
 Build your own checklist from the phase text, inspect the actual diff and files (not the developer's claims), re-run the cheap deterministic checks yourself, verify integration-test evidence without re-running it (unless this brief includes the integration-re-run block below), and return your VERDICT in the structure your instructions define.
 ```
 
@@ -59,6 +62,7 @@ NOTE ON INTEGRATION EVIDENCE: this phase's deliverable is a live integration tes
 - The phase titles for cross-references come from the slicer's manifest (its `title=` per slug).
 - The **baseline ref** for the verifier is the SHA captured with `git rev-parse HEAD` *right before* dispatching the first developer for that phase — not after.
 - Both subagents read the **same** `preamble.md`; it carries the environment rule and the Definition of Done.
+- The verifier's integration-evidence block is the developer report's `### Integration-test evidence` section, lifted **verbatim** (or "none") — it is runtime output, so it goes inline, not as a slice path. It is the *only* part of the developer's report that travels onward; everything else the verifier reconstructs from the diff. Lift it, don't summarize it, so "pass slices by reference, never paraphrase" still holds.
 - For a **Final Checklist fix**, brief the developer with the failing checklist item plus the path to the most relevant slice (often the phase that item came from), and the instruction to fix only that item.
 - Add the **INTEGRATION RE-RUN** block to the verifier's brief *only* for a phase whose deliverable is itself an integration test (a live test + its skip-gate). For all other phases omit it — the verifier defaults to evidence-only, and the full suite gets its one authoritative run at the Final Checklist.
 - If the plan had no markers and you fell back to slicing by headings yourself (skill Step 1, exit code 2), write the same filenames into the same `.ai/tmp/impl/<plan-stem>/` directory so these briefs work unchanged.

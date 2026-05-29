@@ -22,6 +22,8 @@ The plan is cut into per-section files by `scripts/slice_impl_plan.py` (Step 1).
 - **`phase-developer`** (model: sonnet, full tooling) — reads its phase slice by path and implements that one phase. Defined in `.claude/agents/phase-developer.md`.
 - **`plan-correspondence-verifier`** (model: opus, read-only) — reads the same phase slice and checks that every step was actually done, honestly. It inspects the real diff and re-runs cheap checks; it is *not* a code reviewer. Defined in `.claude/agents/plan-correspondence-verifier.md`.
 
+Both subagents return **lean** reports by design: the developer restates only its integration-test evidence and any blocker — you and the verifier reconstruct everything else from the real diff — and the verifier returns a single-line `Checked` summary on success. Full evidence stays in each subagent's own transcript; keeping it out of *your* context is what keeps the run small and traceable. When you relay the developer's integration evidence to the verifier, pass it **verbatim** — same rule as the slices: never summarize a subagent's output before handing it on.
+
 The exact text to pass each one is in [references/dispatch-templates.md](references/dispatch-templates.md). Read it before dispatching.
 
 ## Step 0 — Preconditions
@@ -51,14 +53,14 @@ Capture the slug → title list and the slice directory; Step 2 dispatches from 
 Phases are sequential; never start phase N+1 before phase N is committed (the plan's ordering often depends on it). For each phase:
 
 1. **Record the baseline**: `git rev-parse HEAD` — the ref the verifier diffs against for this phase. Capture it *before* dispatching the developer.
-2. **Dispatch a fresh `phase-developer`** with the first-round brief from the templates file: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, the other-phase titles (from the manifest), and the baseline note. Wait for its report.
-3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, plus the baseline ref. Read its verdict. If this phase's deliverable *is* an integration test (a live test plus its skip-gate), also append the optional **integration-re-run** block from the templates so the verifier can confirm first-hand that the test ran rather than silently skipped.
+2. **Dispatch a fresh `phase-developer`** with the first-round brief from the templates file: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, the other-phase titles (from the manifest), and the baseline note. Its report is deliberately short — a status line, its integration-test evidence (or "none"), and anything it could not complete. Note the integration-evidence block to relay next; a "could not complete" means escalate (step 5).
+3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, the baseline ref, and the developer's integration-evidence block lifted **verbatim** (or "none"). Read its verdict — on `COMPLETE` it is just two lines; the per-step detail stays in the verifier's own transcript, not your context. If this phase's deliverable *is* an integration test (a live test plus its skip-gate), also append the optional **integration-re-run** block from the templates so the verifier can confirm first-hand that the test ran rather than silently skipped.
 4. **Branch on the verdict:**
    - `COMPLETE` → go to step 5.
    - `GAPS_FOUND` → dispatch a **fresh** `phase-developer` with the gap-round brief: the same context plus the verifier's gap list verbatim and "your prior work is already in the working tree; close exactly these gaps." Then go back to step 3 to re-verify.
 5. **Bound the loop.** Allow at most **3** developer↔verifier rounds for a phase. If the verifier still reports gaps after the 3rd round — or if a developer reports it *cannot* complete a step — **stop and escalate to the user**: show the latest developer report and the verifier's outstanding gaps, and ask how to proceed. Never commit an unverified phase.
 6. **Commit the phase** on the current branch once the verdict is `COMPLETE`. Use a message like `Phase <N>: <phase title>`. Do **not** push and do **not** open a PR — leave the branch for the user to review. End the commit message with the harness `Co-Authored-By` trailer.
-7. Keep the developer's final report; you'll summarize all of them at the end.
+7. For the final summary you need only the phase's title, its commit, and any "could not complete"/escalation — not verbose prose. The trimmed developer and verifier reports already give you exactly that; detailed evidence stays in each subagent's transcript.
 
 Each phase = one commit. A fresh developer every round is intentional: all state lives in the git working tree, so a new subagent loses nothing and stays focused on exactly the open gaps.
 
@@ -70,7 +72,7 @@ After all phases are committed, read the Final Checklist slice (`<slice-dir>/fin
 - **Inspectable claim** (e.g. "documentation updated", "version bumped in three files"): verify by reading/grepping the relevant files.
 - **Not actionable by an agent** (e.g. "repository secret configured in GitHub"): **skip it** and record it for the final report so it doesn't block the rest — flag it clearly as needing a human.
 
-For any runnable/inspectable item that is **not satisfied**, dispatch a `phase-developer` to fix exactly that item (brief: the failing item + the smallest relevant slice of plan context), re-verify the item yourself, and commit the fix (`Final checklist: <item>`). Reuse the developer↔verifier loop and the same 3-round bound if a fix is non-trivial.
+For any runnable/inspectable item that is **not satisfied**, dispatch a `phase-developer` to fix exactly that item (brief: the failing item + the path to the most relevant slice). Because **you re-run the defining check yourself**, the fix developer need only report "done" or "blocked, because …" — don't rely on a verification narrative. Re-verify the item yourself, then commit the fix (`Final checklist: <item>`). Reuse the developer↔verifier loop and the same 3-round bound if a fix is non-trivial.
 
 ## Step 4 — Final report to the user
 
