@@ -53,4 +53,6 @@ jobs:
       # because uv is not installed in CI; deps are already importable by a bare
       # pytest after `pip install -e .[test]`.
       - name: Run integration tests
+        env:
+          BLOCKSCOUT_PRO_API_KEY: ${{ secrets.BLOCKSCOUT_PRO_API_KEY }}
         run: python scripts/run_integration_tests.py --runner pytest --timeout 120

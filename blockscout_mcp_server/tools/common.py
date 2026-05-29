@@ -15,6 +15,7 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
+    SERVER_VERSION,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 
@@ -290,6 +291,25 @@ async def _make_blockscout_http_request(
         raise last_error
 
 
+def _pro_api_headers() -> dict[str, str]:
+    """Return HTTP headers for Blockscout PRO API requests.
+
+    Always includes ``User-Agent`` and ``Accept: application/json``.
+    When ``config.pro_api_key`` is non-empty, also includes
+    ``Authorization: Bearer <key>``.  Callers are expected to skip the
+    request entirely when no key is configured (see ``make_metadata_request``),
+    so the keyless branch here is purely defensive: it omits the
+    ``Authorization`` header rather than sending a bare ``Bearer`` token.
+    """
+    headers: dict[str, str] = {
+        "User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION}",
+        "Accept": "application/json",
+    }
+    if config.pro_api_key:
+        headers["Authorization"] = f"Bearer {config.pro_api_key}"
+    return headers
+
+
 async def make_bens_request(api_path: str, params: dict | None = None) -> dict:
     """
     Make a GET request to the BENS API.
@@ -336,7 +356,17 @@ async def make_chainscout_request(api_path: str, params: dict | None = None) -> 
 
 async def make_metadata_request(api_path: str, params: dict | None = None) -> dict:
     """
-    Make a GET request to the Metadata API.
+    Make an authenticated GET request to the Blockscout PRO API metadata endpoint.
+
+    Authenticates via the ``BLOCKSCOUT_PRO_API_KEY`` environment variable, sent
+    as a ``Bearer`` token scoped only to this request.  The ``User-Agent`` and
+    ``Accept`` headers are also attached here, not on the shared httpx client,
+    so the key never leaks to other upstreams.
+
+    When no key is configured the request is skipped entirely: a ``ValueError``
+    is raised before any network call so the server never issues a request the
+    PRO API is guaranteed to reject. Callers treat this like any other
+    metadata failure (the ``metadata`` field is null with an explanatory note).
 
     Args:
         api_path: The API path to request
@@ -346,12 +376,17 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         The JSON response as a dictionary
 
     Raises:
+        ValueError: If ``BLOCKSCOUT_PRO_API_KEY`` is not configured
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
     """
+    if not config.pro_api_key:
+        raise ValueError(
+            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); address metadata is disabled."
+        )
     async with _create_httpx_client(timeout=config.metadata_timeout) as client:
-        url = f"{config.metadata_url}{api_path}"
-        response = await client.get(url, params=params)
+        url = f"{config.pro_api_base_url}{api_path}"
+        response = await client.get(url, params=params, headers=_pro_api_headers())
         response.raise_for_status()
         return response.json()
 

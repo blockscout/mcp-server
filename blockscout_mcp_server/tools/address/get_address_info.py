@@ -85,7 +85,7 @@ async def get_address_info(
     blockscout_api_path = f"/api/v2/addresses/{address}"
     first_tx_api_path = f"/api/v2/addresses/{address}/transactions"
     first_tx_params = {"sort": "block_number", "order": "asc"}
-    metadata_api_path = "/api/v1/metadata"
+    metadata_api_path = "/services/metadata/api/v1/metadata"
     metadata_params = {"addresses": address, "chainId": chain_id}
 
     address_info_result, metadata_result, first_tx_result = await asyncio.gather(
@@ -148,7 +148,7 @@ async def get_address_info(
                 (
                     "To retrieve the full, untruncated metadata tags, fetch them from the "
                     "Blockscout PRO API metadata endpoint:\n"
-                    f"`{config.pro_api_base_url}/services/metadata/api/v1/metadata?"
+                    f"`{config.pro_api_base_url}{metadata_api_path}?"
                     f"addresses={quote_plus(address)}&chainId={chain_id}`"
                 ),
                 "See the `web3-dev` skill for how to call it.",

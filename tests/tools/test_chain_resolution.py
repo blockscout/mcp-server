@@ -416,3 +416,53 @@ async def test_get_blockscout_base_url_rejects_positive_cache_when_out_of_sync_f
 
     cached = common.chain_cache.get("999")
     assert cached is not None and cached[0] is None
+
+
+async def test_fetch_pro_api_config_does_not_send_pro_api_key(monkeypatch):
+    """PRO API key must never appear in _fetch_pro_api_config outgoing requests.
+
+    Security regression for issue #375: the keyless config endpoint must stay
+    keyless even when a PRO API key is configured.  This test patches
+    httpx.AsyncClient at the class level (NOT _create_httpx_client) so that
+    any default-header or auth leak introduced inside _create_httpx_client is
+    also caught.
+    """
+    from blockscout_mcp_server.config import config as cfg
+
+    monkeypatch.setattr(cfg, "pro_api_key", "proapi_test")
+
+    # Build a stub response for the config endpoint
+    request = httpx.Request("GET", cfg.pro_api_config_url)
+    stub_response = httpx.Response(200, json={"chains": {"1": "https://eth"}}, request=request)
+
+    captured_constructor_kwargs: dict = {}
+    captured_get_kwargs: dict = {}
+
+    class CapturingClientClass:
+        """Mimics httpx.AsyncClient at the class level."""
+
+        def __init__(self, **kwargs):
+            captured_constructor_kwargs.update(kwargs)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url: str, **kwargs) -> httpx.Response:
+            captured_get_kwargs.update(kwargs)
+            return stub_response
+
+    with patch("blockscout_mcp_server.tools.common.httpx.AsyncClient", CapturingClientClass):
+        result = await common._fetch_pro_api_config()
+
+    assert result == {"1": "https://eth"}
+
+    # Constructor must not carry auth material
+    assert "Authorization" not in (captured_constructor_kwargs.get("headers") or {})
+    assert "auth" not in captured_constructor_kwargs
+
+    # Per-request .get() kwargs must also be clean
+    assert "Authorization" not in (captured_get_kwargs.get("headers") or {})
+    assert "auth" not in captured_get_kwargs

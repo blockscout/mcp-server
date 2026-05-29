@@ -111,7 +111,7 @@ sequenceDiagram
         MCP->>BS: Request to Blockscout API (First Transaction)
         BS-->>MCP: First transaction response
     and
-        MCP->>Metadata: Request to Metadata API (for enriched data)
+        MCP->>Metadata: Request to PRO API metadata endpoint (for enriched data)
         Metadata-->>MCP: Metadata response
     end
     MCP-->>AI: Formatted & combined information
@@ -183,7 +183,7 @@ This architecture provides the flexibility of a multi-protocol server without th
      - `get_address_info`: Executes three concurrent requests to gather a comprehensive profile in a single turn:
        1. **Basic Info**: Basic on-chain data from Blockscout (balance, contract status).
        2. **First Transaction**: Retrieves the account's earliest transaction to identify inception block and timestamp.
-       3. **Metadata**: Public tags and name resolution from the Metadata API.
+       3. **Metadata**: Public tags and name resolution from the Blockscout PRO API metadata endpoint, authenticated with `BLOCKSCOUT_PRO_API_KEY`. When the key is absent the metadata request is skipped entirely (no call is made to the PRO API); when the key is present but the request is rejected (including credit/rate-limit rejections), metadata is treated as unavailable. In both cases the field is returned null with an explanatory note — exactly like any other secondary-request failure.
        *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request, ensuring the primary address information is always returned.
      - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
      - `get_transaction_info`: Concurrent requests to fetch transaction details and check for associated ERC-4337 User Operations
@@ -523,12 +523,12 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     **j) Address Metadata Tag Sanitization**
 
-    The Metadata API returns address tags with a `meta` field that is typically a JSON-encoded string. These strings may contain arbitrarily large embedded content such as URL-encoded SVG icons or Base64 image data that provides no value to LLM reasoning but consumes significant context.
+    The Blockscout PRO API metadata endpoint returns address tags with a `meta` field that is typically a JSON-encoded string. These strings may contain arbitrarily large embedded content such as URL-encoded SVG icons or Base64 image data that provides no value to LLM reasoning but consumes significant context.
 
     - **Mechanism**: Before including metadata in the `get_address_info` response, the server parses each tag's `meta` JSON string into a structured JSON value (dict, list, or primitive). The parsed value is then processed by the same recursive truncation function used for transaction input data and log decoded values. Any individual string value exceeding `INPUT_DATA_TRUNCATION_LIMIT` (514 characters) is replaced with `{"value_sample": "...", "value_truncated": true}`. If `meta` is already a dict or list (rather than a JSON string), the truncation is applied directly.
     - **Graceful Degradation**: If a `meta` value is not valid JSON, the raw string itself is passed through the truncation function as a fallback, ensuring that even unparseable large strings do not bypass the context optimization.
     - **Schema Agnosticism**: Because different tag types (e.g., `warpcast-account`, `gitcoin-grantee`) have different `meta` schemas, the truncation is applied generically to all string values rather than targeting specific field names. This ensures the optimization remains effective as new tag types are introduced.
-    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response that references the Blockscout PRO API metadata endpoint (presented as an endpoint reference, not a ready-to-run command) so agents can retrieve the complete untruncated payload when needed, and points to the `web3-dev` skill for how to call it.
+    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response that references the Blockscout PRO API metadata endpoint (presented as an endpoint reference, not a ready-to-run command) so agents can retrieve the complete untruncated payload when needed, and points to the `web3-dev` skill for how to call it. Address metadata is fetched from the Blockscout PRO API metadata endpoint (`/services/metadata/api/v1/metadata`) using the `BLOCKSCOUT_PRO_API_KEY` credential; the truncation note's reference URL therefore points at the same endpoint the server itself calls.
 
 
 7. **HTTP Request Robustness**

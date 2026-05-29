@@ -174,7 +174,7 @@ class AddressInfoData(BaseModel):
     )
     metadata: dict[str, Any] | None = Field(
         None,
-        description="Optional metadata, such as public tags, from the Metadata service.",
+        description="Optional metadata, such as public tags, from the Blockscout PRO API metadata endpoint.",
     )
 
 

@@ -21,14 +21,19 @@ class ServerConfig(BaseSettings):
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
+    pro_api_key: str = ""
 
     @field_validator("pro_api_base_url")
     @classmethod
     def normalize_pro_api_base_url(cls, value: str) -> str:
         return str(value).rstrip("/")
 
-    # Metadata service configuration
-    metadata_url: str = "https://metadata.services.blockscout.com"
+    @field_validator("pro_api_key")
+    @classmethod
+    def normalize_pro_api_key(cls, value: str) -> str:
+        return value.strip()
+
+    # Metadata configuration (PRO API metadata endpoint)
     metadata_timeout: float = 30.0
 
     chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
