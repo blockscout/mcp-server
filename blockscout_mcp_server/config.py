@@ -28,6 +28,11 @@ class ServerConfig(BaseSettings):
     def normalize_pro_api_base_url(cls, value: str) -> str:
         return str(value).rstrip("/")
 
+    @field_validator("pro_api_key")
+    @classmethod
+    def normalize_pro_api_key(cls, value: str) -> str:
+        return value.strip()
+
     # Metadata configuration (PRO API metadata endpoint)
     metadata_timeout: float = 30.0
 
