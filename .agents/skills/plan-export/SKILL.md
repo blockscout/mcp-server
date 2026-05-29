@@ -48,9 +48,19 @@ For each rule file:
 
 ### 3. Compose the Implementation Plan
 
-Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the following structure:
+Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the following structure.
+
+**Slice markers — required.** Wrap every section in paired, namespaced HTML-comment markers so the plan can be sliced deterministically by `scripts/slice_impl_plan.py` (headings alone are unreliable — plans embed code blocks and exact documentation that legitimately contain `#`/`##` as content). Rules:
+
+- Wrap the **preamble** — the title, issue link, Overview, Applicable Guidelines, and Definition of Done — in one region `slug="preamble"`.
+- Wrap **each phase** in its own region `slug="phase-<n>"`, where `<n>` is the phase's sequential number (1, 2, 3 … contiguous, matching the `## Phase <n>` heading). Number only the phases you actually emit. Put `title="<short phase name>"` on the begin marker.
+- Wrap the **Final Checklist** in `slug="final-checklist"`.
+- Markers start at column 0. Every `begin` has a matching `end` with the same slug; never nest them. No real content may live outside a region (blank lines and `---` rules between regions are fine). A `title` must not contain a double-quote.
+
+The structure, with markers in place:
 
 ```markdown
+<!-- impl-plan:begin slug="preamble" -->
 # Implementation Plan for Issue #$1
 
 **GitHub Issue:** https://github.com/blockscout/mcp-server/issues/$1
@@ -68,9 +78,11 @@ Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the fol
 ## Definition of Done — Test Integrity (non-negotiable)
 
 [Mandatory. In your own words — explain the *why*, don't just recite rules — state that the work is done only when its tests genuinely pass for the right reason, for unit and integration tests alike. The wording is yours, but the section must get these points across: each failure is diagnosed (regression vs. legitimately changed expectation) and its root cause fixed, never worked around (no skip/xfail, deletion, loosened assertions, or bypassed hooks); a test is updated only when intended behavior changed; a test that couldn't run, timed out, or hung is a defect to diagnose, not a pass (for integration tests, point at the timeout-protected runner from rule 200); and no phase is "done" while any test is failing, disabled to avoid a failure, or unverified.]
+<!-- impl-plan:end slug="preamble" -->
 
 ---
 
+<!-- impl-plan:begin slug="phase-1" title="[Phase Name - Functional Changes]" -->
 ## Phase 1: [Phase Name - Functional Changes]
 
 ### Objective
@@ -117,15 +129,19 @@ Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the fol
    ```
 
 3. Fix any linting or formatting issues before proceeding to the next phase.
+<!-- impl-plan:end slug="phase-1" -->
 
 ---
 
+<!-- impl-plan:begin slug="phase-2" title="[Phase Name - Additional Functional Changes]" -->
 ## Phase 2: [Phase Name - Additional Functional Changes]
 
 [Same structure as Phase 1, including its own unit tests]
+<!-- impl-plan:end slug="phase-2" -->
 
 ---
 
+<!-- impl-plan:begin slug="phase-N-1" title="Integration Tests" -->
 ## Phase N-1: Integration Tests
 
 ### Objective
@@ -158,9 +174,11 @@ Verify the implementation works correctly with real network calls.
    ```
 
 3. Fix any linting or formatting issues before proceeding to the next phase.
+<!-- impl-plan:end slug="phase-N-1" -->
 
 ---
 
+<!-- impl-plan:begin slug="phase-N" title="Documentation Updates" -->
 ## Phase N: Documentation Updates (if needed)
 
 **Only include this phase if documentation changes are required.** If no documentation updates are needed, omit this phase entirely.
@@ -196,9 +214,11 @@ For each documentation file that requires changes, provide **exact text content*
 ### Verification
 
 Review all documentation files for accuracy and completeness.
+<!-- impl-plan:end slug="phase-N" -->
 
 ---
 
+<!-- impl-plan:begin slug="final-checklist" -->
 ## Final Checklist
 
 - [ ] All phases completed and verified (including per-phase linting)
@@ -209,6 +229,7 @@ Review all documentation files for accuracy and completeness.
 - [ ] Final formatting check on entire codebase: `ruff format --check .`
 - [ ] Documentation updated (if applicable)
 - [ ] Version bumped (if applicable)
+<!-- impl-plan:end slug="final-checklist" -->
 
 ```
 
@@ -267,7 +288,19 @@ Save the plan to:
 .ai/impl_plans/issue-$1.md
 ```
 
-### 6. Output and Control Transfer
+### 6. Validate Slice Markers (self-check)
+
+Before handing back, prove the plan you just wrote can actually be sliced. Run the validator in inspect mode (it writes nothing):
+
+- Devcontainer (`/.dockerenv` exists): `python scripts/slice_impl_plan.py .ai/impl_plans/issue-$1.md --inspect`
+- Host: `uv run python scripts/slice_impl_plan.py .ai/impl_plans/issue-$1.md --inspect`
+
+Read the exit code:
+
+- **0** — the plan is sliceable. Proceed.
+- **non-zero** — the validator prints exactly which marker is unbalanced, duplicated, out of order, or which content escaped a region. **Fix the markers in the plan file and re-run `--inspect` until it exits 0.** Never hand back a plan that fails this check: a plan that cannot be sliced cannot be implemented by `implement-plan`.
+
+### 7. Output and Control Transfer
 
 After writing the plan file:
 
@@ -294,6 +327,7 @@ Awaiting your instructions to proceed.
 ## Important Notes
 
 - **Do NOT implement the plan** - only create the plan document
+- **Slice markers are mandatory.** Wrap preamble / each phase / final checklist in paired `<!-- impl-plan:begin slug="…" -->` … `<!-- impl-plan:end slug="…" -->` markers (see step 3) and confirm the plan passes the step-6 `--inspect` self-check before handing back
 - The plan must be self-contained and not assume access to conversation history
 - **Only include phases with actual work** - do not create placeholder phases that say "no changes needed"
 - **No code snippets** for functional changes or tests - explain WHAT and WHY instead

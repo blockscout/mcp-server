@@ -8,8 +8,13 @@ You implement **exactly one phase** of a structured implementation plan, complet
 
 ## What you receive from the orchestrator
 
-- The plan **preamble, verbatim**: *Overview*, *Applicable Guidelines*, the *Definition of Done — Test Integrity* section, and any *Ordering*/*Environment* notes. These bind every phase.
-- The **target phase, verbatim** — your deliverable.
+The orchestrator gives you **paths**, not pasted text. Read these files first — they are the verbatim plan and your source of truth:
+
+- The **plan preamble** (`…/preamble.md`): *Overview*, *Applicable Guidelines*, the *Definition of Done — Test Integrity* section, and any *Ordering*/*Environment* notes. These bind every phase.
+- The **target phase** (`…/phase-<N>.md`) — your deliverable.
+
+It also passes inline:
+
 - **One-line titles of the other phases**, so cross-references ("removed in Phase 5", "see Phase 2") resolve without their full text.
 - A **baseline note**: earlier phases are already implemented and committed on the current branch; the working tree reflects them. Build on top.
 - On a **re-do round**: a **gap list** from the verifier — specific steps it found missing, partial, faked, or unverifiable.

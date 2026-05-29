@@ -13,41 +13,46 @@ Orchestrate the implementation of a structured implementation plan — the kind 
 
 You are the **orchestrator**. You do **not** implement or verify anything yourself. You parse the plan, dispatch a `phase-developer` subagent to each phase, dispatch a `plan-correspondence-verifier` subagent to check it, loop until the phase is clean, commit it, and at the end walk the Final Checklist. Keeping implementation and verification in separate subagents — and out of your own context — is what keeps each run small, focused, and traceable.
 
-## One rule above all: slice, never paraphrase
+## One rule above all: pass slices by reference, never paraphrase
 
-Cut the plan into pieces by its headings and pass those pieces **verbatim**. Never summarize, compress, or reword the plan's content before handing it down. The moment you paraphrase, you can silently drop a step — and then *both* the developer (who won't build it) and the verifier (who won't check it) inherit the loss. Your only transformation is mechanical slicing.
+The plan is cut into per-section files by `scripts/slice_impl_plan.py` (Step 1). You hand each subagent the **path** to the slice it needs — you never paste the content into a prompt, and you never summarize or reword it. Pasting copies the same bytes into your context once per phase and once per round, driving you toward compaction; paraphrasing can silently drop a step, and then *both* the developer (who won't build it) and the verifier (who won't check it) inherit the loss. The slice files on disk are the single verbatim source of truth. Your job is to route paths, capture baselines, and commit.
 
 ## The two subagents
 
-- **`phase-developer`** (model: sonnet, full tooling) — implements one phase from its verbatim text. Defined in `.claude/agents/phase-developer.md`.
-- **`plan-correspondence-verifier`** (model: opus, read-only) — checks that every step of a phase was actually done, honestly. It inspects the real diff and re-runs cheap checks; it is *not* a code reviewer. Defined in `.claude/agents/plan-correspondence-verifier.md`.
+- **`phase-developer`** (model: sonnet, full tooling) — reads its phase slice by path and implements that one phase. Defined in `.claude/agents/phase-developer.md`.
+- **`plan-correspondence-verifier`** (model: opus, read-only) — reads the same phase slice and checks that every step was actually done, honestly. It inspects the real diff and re-runs cheap checks; it is *not* a code reviewer. Defined in `.claude/agents/plan-correspondence-verifier.md`.
 
 The exact text to pass each one is in [references/dispatch-templates.md](references/dispatch-templates.md). Read it before dispatching.
 
 ## Step 0 — Preconditions
 
-1. Read the plan file. If the path wasn't provided, ask for it.
+1. Confirm the plan file exists at the path in `$ARGUMENTS`. If the path wasn't provided, ask which plan to implement. Do **not** read the whole plan into your context — Step 1 slices it into files and you dispatch by path; keeping the full plan out of your own context is the point of this design.
 2. Check the current branch (`git branch --show-current`). If it is `main` (the default branch), **stop** and ask the user to create and check out a working branch first — this skill commits as it goes and must not commit onto `main`.
-3. Check the working tree (`git status`). If there are unrelated uncommitted changes, surface them and confirm with the user before proceeding, so per-phase commits stay clean.
+3. Check the working tree (`git status`). If there are unrelated uncommitted changes, surface them and confirm with the user before proceeding, so per-phase commits stay clean. (The plan slices are written under `.ai/tmp/impl/`, which is gitignored, so they never enter your commits.)
 
-## Step 1 — Parse the plan mechanically
+## Step 1 — Slice the plan into per-section files
 
-Split by headings:
+Run the slicer; it validates the plan's markers and writes one file per section. Follow the repo's environment rule (devcontainer — `/.dockerenv` exists: run `python …`; host: `uv run python …`):
 
-- **Preamble** = everything before `## Phase 1` (Overview, Applicable Guidelines, Definition of Done — Test Integrity, Ordering/Environment notes). This binds every phase and goes to every subagent.
-- **Phases** = each `## Phase N: ...` block, in order, with all subsections intact.
-- **Final Checklist** = the `## Final Checklist` block.
-- Also capture the **one-line title of each phase** (the `## Phase N: <title>` line) to pass as cross-reference context.
+```bash
+python scripts/slice_impl_plan.py <plan-file>
+```
 
-If the plan doesn't match this shape, don't guess — report what you found and ask the user how to proceed.
+It writes `.ai/tmp/impl/<plan-stem>/` with `preamble.md`, `phase-1.md` … `phase-N.md`, and `final-checklist.md`, and prints a manifest (each slug, its file path, and its phase `title`). **Branch on the exit code:**
+
+- **0** — slices written. Read the manifest from stdout for the slug → title map and the file paths. Dispatch subagents by **path** (each region's file is `<out-dir>/<slug>.md`); never paste the content.
+- **2** — the plan has no slice markers (a legacy plan, produced before `plan-export` emitted them). Fall back: slice it yourself, mechanically, by headings — preamble = everything before `## Phase 1`; each `## Phase N:` block; the `## Final Checklist` — and write those slices into `.ai/tmp/impl/<plan-stem>/` under the **same filenames**, so the rest of the run is identical. If embedded docs or code make heading-slicing ambiguous, stop and ask the user.
+- **1** — markers are present but malformed; the slicer printed exactly what is wrong (unbalanced, duplicated, out of order, or content outside a region). **Stop and report it — do not guess.** The plan must be fixed first (re-run `plan-export`, or fix the markers and re-validate with `--inspect`).
+
+Capture the slug → title list and the slice directory; Step 2 dispatches from these files.
 
 ## Step 2 — Implement each phase, in order
 
 Phases are sequential; never start phase N+1 before phase N is committed (the plan's ordering often depends on it). For each phase:
 
 1. **Record the baseline**: `git rev-parse HEAD` — the ref the verifier diffs against for this phase. Capture it *before* dispatching the developer.
-2. **Dispatch a fresh `phase-developer`** with the first-round brief from the templates file (preamble + this phase verbatim + other-phase titles + baseline note). Wait for its report.
-3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief (preamble + this phase verbatim + the baseline ref). Read its verdict. If this phase's deliverable *is* an integration test (a live test plus its skip-gate), also append the optional **integration-re-run** block from the templates so the verifier can confirm first-hand that the test ran rather than silently skipped.
+2. **Dispatch a fresh `phase-developer`** with the first-round brief from the templates file: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, the other-phase titles (from the manifest), and the baseline note. Wait for its report.
+3. **Dispatch a fresh `plan-correspondence-verifier`** with its brief: the **paths** to `preamble.md` and this phase's `phase-<N>.md`, plus the baseline ref. Read its verdict. If this phase's deliverable *is* an integration test (a live test plus its skip-gate), also append the optional **integration-re-run** block from the templates so the verifier can confirm first-hand that the test ran rather than silently skipped.
 4. **Branch on the verdict:**
    - `COMPLETE` → go to step 5.
    - `GAPS_FOUND` → dispatch a **fresh** `phase-developer` with the gap-round brief: the same context plus the verifier's gap list verbatim and "your prior work is already in the working tree; close exactly these gaps." Then go back to step 3 to re-verify.
@@ -59,7 +64,7 @@ Each phase = one commit. A fresh developer every round is intentional: all state
 
 ## Step 3 — Final Checklist
 
-After all phases are committed, walk the `## Final Checklist`. Classify each item:
+After all phases are committed, read the Final Checklist slice (`<slice-dir>/final-checklist.md`) and walk each item. Classify each:
 
 - **Runnable check** (essentially a command — `grep`, `pytest`, `ruff check`, `ruff format --check`, or a full integration run via `python scripts/run_integration_tests.py tests/integration/`): run it yourself and read the result. This is where the **full integration suite gets its one authoritative independent run.**
 - **Inspectable claim** (e.g. "documentation updated", "version bumped in three files"): verify by reading/grepping the relevant files.

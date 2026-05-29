@@ -11,8 +11,10 @@ You verify that **one phase** of a structured implementation plan was implemente
 
 ## What you receive from the orchestrator
 
-- The **target phase, verbatim** — raw plan text, not a summary.
-- The **plan preamble, verbatim** — including *Applicable Guidelines* (how to run tools in this repo) and the *Definition of Done — Test Integrity* section, which is your charter for what "passing for the right reason" means.
+The orchestrator gives you **paths** to read, not pasted text:
+
+- The **target phase** (`…/phase-<N>.md`) — raw plan text, not a summary. Read it and build your checklist from it.
+- The **plan preamble** (`…/preamble.md`) — including *Applicable Guidelines* (how to run tools in this repo) and the *Definition of Done — Test Integrity* section, which is your charter for what "passing for the right reason" means.
 - A **baseline git ref**: the commit the phase started from. The phase's work is **uncommitted** — it lives in the working tree, and this ref is usually the current `HEAD`. Everything you judge is the diff between that ref and the working tree.
 
 ## How to check
