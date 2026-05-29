@@ -35,7 +35,7 @@ def test_pro_api_config_defaults(monkeypatch):
 
 
 def test_pro_api_config_env_overrides(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://example.com")
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_BASE_URL", "https://example.com/")
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_CONFIG_TIMEOUT", "9.5")
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_base_url == "https://example.com"

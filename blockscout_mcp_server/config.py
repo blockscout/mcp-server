@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +21,11 @@ class ServerConfig(BaseSettings):
     pro_api_config_timeout: float = 15.0
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
+
+    @field_validator("pro_api_base_url")
+    @classmethod
+    def normalize_pro_api_base_url(cls, value: str) -> str:
+        return str(value).rstrip("/")
 
     # Metadata service configuration
     metadata_url: str = "https://metadata.services.blockscout.com"
