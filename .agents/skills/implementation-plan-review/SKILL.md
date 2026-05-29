@@ -30,9 +30,11 @@ gh auth login
    - Plan file
    - Issue description file (or the fetched `/tmp/issue.md`)
 
-2) Apply strict versioning-comment policy:
-   - Do **not** request or suggest any version bump (package version, `server.json`, etc.) unless the **issue description explicitly requires** a version bump/release/publish/tag.
-   - Even if the plan changes externally-consumed surfaces (tool schemas, REST/OpenAPI, manifests), treat missing version bump steps as **intentional** unless the issue says otherwise.
+2) Apply versioning neutrality policy:
+   - Do **not** request a missing version bump (package version, `server.json`, manifests, etc.) unless a repo rule, user instruction, release plan, or issue text explicitly requires one.
+   - Do **not** suggest removing version bump steps merely because the issue does not mention versioning. Issues usually describe the problem, motivation, or code-level improvement; they are not expected to spell out release mechanics.
+   - If the plan already includes version bump steps, review them only for correctness and consistency with applicable repo rules: required files, matching version strings, valid version format, and no unrelated version/manifests changed.
+   - Raise a versioning finding only when the plan's versioning steps are internally inconsistent, contradict explicit requirements, or are objectively attached to the wrong files/surfaces.
 
 3) Apply review-noise policy:
    - Do not raise findings only because an implementation plan omits developer execution mechanics such as checking `/.dockerenv`, choosing host vs devcontainer command prefixes, or spelling out both command variants.
@@ -55,7 +57,30 @@ rg -n "ServerConfig\\(|BaseSettings\\(|BLOCKSCOUT_" blockscout_mcp_server/config
 rg -n "pytest\\.mark\\.integration|tests/integration|tests/tools" tests -S
 ```
 
-5) Produce the review in the required format (next section).
+5) Ground findings with scratchpads:
+   - Before finalizing §4 comments, create a scratchpad directory next to the implementation plan file:
+     - General rule: `<plan directory>/<plan filename without final extension>-scratchpads/`
+     - Example: `.ai/impl_plans/issue-375.md` → `.ai/impl_plans/issue-375-scratchpads/`
+   - For each actionable candidate finding, create one deterministic scratchpad file in final report order:
+     - `finding-01-short-slug.md`
+     - `finding-02-short-slug.md`
+     - Continue numbering in the same order used in §4.
+   - Each scratchpad must include these sections:
+     - `Grounded context`: exact code, docs, tests, configs, or rules inspected, with paths/functions/classes where relevant.
+     - `Variants`: at least 2 meaningful solution options; use 3-4 for non-trivial findings.
+     - `Rubric`: criteria for choosing between variants.
+     - `Evaluation`: a score table or concise comparison of variants against the rubric.
+     - `Best recommendation`: the concrete change to make to the implementation plan.
+     - `Plain-language rationale`: why the chosen recommendation is best.
+   - Use the scratchpad result to rewrite the final §4 recommendation. If scratchpad investigation disproves or weakens a finding, remove it or downgrade it before final output.
+   - Findings that cannot be grounded in a scratchpad should normally be omitted. Keep them only when they are genuinely product/intent questions and mark them as `Question`.
+
+Scratchpad discipline:
+- Scratchpads are working artifacts created by this review skill to make final recommendations grounded.
+- Do not create scratchpads for pure summary text, obvious nits, or questions that require user/product input rather than code investigation.
+- Do not use scratchpads to pad the report; use them only to make actionable recommendations more accurate.
+
+6) Produce the review in the required format (next section).
 
 ## Required output format
 
@@ -86,6 +111,7 @@ Provide comments as a list. Each comment must include:
 - Problem: what’s wrong / missing
 - Recommendation: concrete change to the plan
 - Rationale: why it matters (bug risk / security / perf / maintainability)
+- Scratchpad: path to the backing scratchpad file, when the comment is actionable and not a pure `Question`
 
 **Testing gaps rule:**
 
