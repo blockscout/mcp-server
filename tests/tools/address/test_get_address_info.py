@@ -12,7 +12,7 @@ from blockscout_mcp_server.tools.address.get_address_info import get_address_inf
 @pytest.mark.asyncio
 async def test_get_address_info_success_with_metadata(mock_ctx):
     """
-    Verify get_address_info correctly combines data from Blockscout and Metadata APIs.
+    Verify get_address_info correctly combines data from Blockscout and the Blockscout PRO API metadata endpoint.
     """
     chain_id = "1"
     address = "0x123abc"

@@ -28,8 +28,7 @@ class ServerConfig(BaseSettings):
     def normalize_pro_api_base_url(cls, value: str) -> str:
         return str(value).rstrip("/")
 
-    # Metadata service configuration
-    metadata_url: str = "https://metadata.services.blockscout.com"
+    # Metadata configuration (PRO API metadata endpoint)
     metadata_timeout: float = 30.0
 
     chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
