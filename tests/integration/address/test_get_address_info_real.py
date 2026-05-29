@@ -49,7 +49,7 @@ async def test_get_address_info_integration(mock_ctx):
             pytest.skip("First-transaction endpoint unavailable; skipping first-tx assertions.")
         assert "Could not retrieve address metadata" in result.notes[0]
         assert result.data.metadata is None
-        pytest.skip("Metadata service was unavailable, but the tool handled it gracefully as expected.")
+        pytest.skip("PRO API metadata endpoint was unavailable, but the tool handled it gracefully as expected.")
 
     # Verify first transaction details
     assert result.data.first_transaction_details is not None, "First transaction details should be populated"
@@ -79,7 +79,7 @@ async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mo
     )
 
     if result.notes and any("Could not retrieve address metadata" in note for note in result.notes):
-        pytest.skip("Metadata service unavailable; cannot verify metadata meta truncation.")
+        pytest.skip("PRO API metadata endpoint unavailable; cannot verify metadata meta truncation.")
 
     metadata = result.data.metadata
     assert isinstance(metadata, dict)
@@ -103,5 +103,5 @@ async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mo
         assert any(f"{config.pro_api_base_url}/services/metadata/api/v1/metadata" in note for note in result.notes)
         assert any("chainId=1" in note for note in result.notes)
         assert all("curl" not in note for note in result.notes)
-        assert all(str(config.metadata_url).rstrip("/") not in note for note in result.notes)
+        assert all("metadata.services.blockscout.com" not in note for note in result.notes)
         assert any("`web3-dev` skill" in note for note in result.notes)

@@ -143,17 +143,21 @@ async def test_make_blockscout_request_for_block_info():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_make_metadata_request_for_address_tags():
     """
-    Tests that we can successfully fetch address metadata from the live Metadata API.
+    Tests that we can successfully fetch address metadata from the live Blockscout PRO API metadata endpoint.
     """
     # Using a well-known address with stable tags (USDC contract)
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     chain_id = "1"  # Ethereum Mainnet
-    api_path = "/api/v1/metadata"
+    api_path = "/services/metadata/api/v1/metadata"
     params = {"addresses": address, "chainId": chain_id}
 
-    response_data = await make_metadata_request(api_path=api_path, params=params)
+    response_data = await retry_on_network_error(
+        lambda: make_metadata_request(api_path=api_path, params=params),
+        action_description="PRO API metadata request",
+    )
 
     assert isinstance(response_data, dict)
     assert "addresses" in response_data
