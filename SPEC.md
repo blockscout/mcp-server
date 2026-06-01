@@ -341,10 +341,12 @@ This architecture provides the flexibility of a multi-protocol server without th
    - **Conditional fields**: Optional details (like transaction value or method name) are only included when present and meaningful.
 
 4. **Async Web3 Connection Pool**:
-   - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to interact with Blockscout's JSON-RPC interface.
-   - Connection pooling reuses TCP connections, reducing latency and resource usage.
+   - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to perform `eth_call` requests through the Blockscout PRO API JSON-RPC gateway (`https://api.blockscout.com/{chain_id}/json-rpc`) rather than per-chain public RPC endpoints.
+   - Requests authenticate with the Blockscout PRO API key as a `Bearer` token. When no key is configured, contract reads fail fast with a clear error before any network call is made.
+   - Chain support is validated independently of instance URL resolution, against the authoritative PRO API chain configuration.
    - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
-   - A shared `aiohttp` session enforces global and per-host connection limits to prevent overload.
+   - Because all chains target a single gateway host, the pool maintains one shared `aiohttp` session whose connector enforces a global per-host connection limit across every chain.
+   - Credit-exhaustion and rate-limit responses are currently treated the same as general service unavailability.
 
 5. **PRO API Chain Alignment**:
 
@@ -869,6 +871,8 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 #### read_contract
 
 - **RPC used**: `eth_call`.
+- **RPC transport**: `eth_call` is issued through the Blockscout PRO API JSON-RPC gateway at `https://api.blockscout.com/{chain_id}/json-rpc`, authenticated with the PRO API key as a `Bearer` token. The same key that enables address metadata enables contract reads across all supported chains.
+- **API key requirement**: A configured `BLOCKSCOUT_PRO_API_KEY` is required. Without it the tool fails fast with a clear error and makes no network call. Credit-exhaustion and rate-limit responses currently surface as general request failures.
 - **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding. This leverages Web3's well-tested argument handling and return value decoding.
 - **ABI requirement**: Accepts the ABI of the specific function variant to call (a single ABI object for that function signature). This avoids ambiguity when contracts overload function names.
 - **Function name**: The `function_name` parameter must match the `name` field in the provided function ABI. Although redundant, it is kept intentionally to improve LLM tool-selection behavior and may be removed later.
@@ -898,3 +902,4 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - Write operations are not supported; `eth_call` does not change state.
 - No caller context (`from`) or gas simulation tuning is provided.
 - Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.
+- Requires a Blockscout PRO API key (`BLOCKSCOUT_PRO_API_KEY`); contract reads are unavailable when it is not configured.

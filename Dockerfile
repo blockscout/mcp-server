@@ -29,6 +29,7 @@ ENV BLOCKSCOUT_BS_TIMEOUT="120.0"
 ENV BLOCKSCOUT_BS_REQUEST_MAX_RETRIES="3"
 ENV BLOCKSCOUT_BENS_URL="https://bens.services.blockscout.com"
 ENV BLOCKSCOUT_BENS_TIMEOUT="30.0"
+ENV BLOCKSCOUT_PRO_API_BASE_URL="https://api.blockscout.com"
 # ENV BLOCKSCOUT_PRO_API_KEY="" # Intentionally not set: pass at runtime to avoid embedding the PRO API key in the image
 ENV BLOCKSCOUT_METADATA_TIMEOUT="30.0"
 ENV BLOCKSCOUT_CHAINSCOUT_URL="https://chains.blockscout.com"

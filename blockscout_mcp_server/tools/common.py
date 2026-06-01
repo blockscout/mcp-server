@@ -98,6 +98,25 @@ async def ensure_pro_api_config() -> dict[str, str]:
             raise
 
 
+async def ensure_chain_supported(chain_id: str) -> None:
+    """Validate that a chain ID is supported by the Blockscout API.
+
+    Obtains the chain map via :func:`ensure_pro_api_config` (inheriting its
+    caching, stale-snapshot fallback, and refresh-cooldown behaviour) and
+    raises :class:`ChainNotFoundError` when the chain is absent.
+
+    Args:
+        chain_id: The chain identifier to validate.
+
+    Raises:
+        ChainNotFoundError: If the chain ID is not present in the supported
+            chain map returned by :func:`ensure_pro_api_config`.
+    """
+    chain_urls = await ensure_pro_api_config()
+    if chain_id not in chain_urls:
+        raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
+
+
 async def get_blockscout_base_url(chain_id: str) -> str:
     current_time = time.monotonic()
     cached_entry = chain_cache.get(chain_id)

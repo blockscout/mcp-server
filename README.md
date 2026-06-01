@@ -217,9 +217,14 @@ To customize the leading part of the `User-Agent` header used for RPC requests,
 set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 "Blockscout MCP"). The server version is appended automatically.
 
-### Blockscout PRO API Key (optional — enables address metadata)
+### Blockscout PRO API Key
 
-`get_address_info` enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint, which requires an API key. The key is **optional**: without it the server still runs, the metadata request is skipped entirely (no call is made to the PRO API), and the `metadata` field is returned as `null` together with a note explaining it was unavailable. Set the key to enable public-tag enrichment.
+The Blockscout PRO API key powers two features:
+
+- **Address metadata** (`get_address_info`): enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint. This is **optional** — without a key the server still runs, the metadata request is skipped entirely (no call is made to the PRO API), and the `metadata` field is returned as `null` together with a note explaining it was unavailable.
+- **Contract reads** (`read_contract`): `eth_call` is routed through the Blockscout PRO API JSON-RPC gateway, which **requires** a key. Without one, `read_contract` fails fast with a clear error and makes no network call; all other tools continue to work.
+
+Set the key to enable public-tag enrichment and contract reads.
 
 To obtain one, create an account at https://dev.blockscout.com (the free tier does not require a credit card) and generate an API key in the portal; keys are prefixed `proapi_`. Provide it to the server via the `BLOCKSCOUT_PRO_API_KEY` environment variable — exported in your shell or placed in a gitignored `.env` file in the project root. Never commit the key or embed it in a client-shipped binary; when running via Docker, pass it at runtime (e.g. `-e BLOCKSCOUT_PRO_API_KEY=...`) rather than baking it into the image.
 
@@ -351,6 +356,15 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m bloc
 ```
 
 **Note:** When running in HTTP mode with Docker, use `--http-host 0.0.0.0` to bind to all interfaces so the server is accessible from outside the container.
+
+**With a Blockscout PRO API Key:**
+
+Pass the key at runtime with `-e` rather than baking it into the image (see [Blockscout PRO API Key](#blockscout-pro-api-key)):
+
+```bash
+docker run --rm -p 8000:8000 -e BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here \
+  ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
+```
 
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 
