@@ -78,6 +78,7 @@ The project also includes a suite of integration tests that verify live connecti
 - **Real Network Calls:** Unlike unit tests, these tests require an active internet connection.
 - **`@pytest.mark.integration`:** Each integration test is marked with a custom `pytest` marker, allowing them to be run separately from unit tests.
 - **Excluded by Default:** To keep the default test run fast and offline-friendly, integration tests are **excluded** by default (as configured in `pytest.ini`).
+- **PRO API key for some tests:** A subset of integration tests requires a Blockscout PRO API key. The `read_contract` integration tests issue `eth_call` through the PRO API JSON-RPC gateway, and the address-metadata test calls the PRO metadata endpoint; both are **skipped** (not failed) when `BLOCKSCOUT_PRO_API_KEY` is unset. A skip here means the key is missing in the environment, not that the test passed.
 
 ### Running Integration Tests
 

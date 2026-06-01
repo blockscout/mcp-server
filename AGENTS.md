@@ -179,6 +179,7 @@ mcp-server/
 │       │   └── test___unlock_blockchain_analysis__.py  # Unit tests for __unlock_blockchain_analysis__
 │       ├── search/             # Tests for search-related MCP tools
 │       │   └── test_lookup_token_by_symbol.py  # Unit tests for lookup_token_by_symbol
+│       ├── test_chain_support.py     # Unit tests for the ensure_chain_supported helper
 │       ├── test_common.py            # Unit tests for shared tool utilities
 │       ├── test_common_truncate.py   # Unit tests for truncation helpers
 │       ├── test_common_post_request.py   # Unit tests for POST request helper
