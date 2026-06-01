@@ -5,7 +5,7 @@ import pytest
 
 from blockscout_mcp_server.tools.common import ChainNotFoundError, ensure_chain_supported
 
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asyncio
 
 
 async def test_ensure_chain_supported_supported_chain():

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from web3.exceptions import ContractLogicError
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import ChainNotFoundError
 from blockscout_mcp_server.tools.contract.read_contract import read_contract
 
@@ -74,6 +75,31 @@ async def test_read_contract_chain_not_found(mock_ctx):
     mock_get.assert_called_once_with(chain_id)
     assert mock_ctx.report_progress.await_count == 1
     assert mock_ctx.info.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_read_contract_missing_pro_api_key_propagates_value_error(mock_ctx):
+    """Without a PRO API key, the real pool's ValueError must surface unchanged.
+
+    Unlike the other tests, this one does NOT mock ``WEB3_POOL.get`` — it drives
+    the real pool with an empty key so the tool's wiring (the ``WEB3_POOL.get``
+    call sits outside any try/except) is exercised end to end. This locks in the
+    user-facing contract: the clear "set BLOCKSCOUT_PRO_API_KEY" message is not
+    swallowed or rewrapped into a generic error.
+    """
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    with patch.object(config, "pro_api_key", ""):
+        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+            await read_contract(
+                chain_id="1",
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name="foo",
+                ctx=mock_ctx,
+            )
+    # The fail-fast raise happens after the initial progress report but before
+    # any network/session work.
+    assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
