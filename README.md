@@ -357,6 +357,15 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m bloc
 
 **Note:** When running in HTTP mode with Docker, use `--http-host 0.0.0.0` to bind to all interfaces so the server is accessible from outside the container.
 
+**With a Blockscout PRO API Key:**
+
+Pass the key at runtime with `-e` rather than baking it into the image (see [Blockscout PRO API Key](#blockscout-pro-api-key)):
+
+```bash
+docker run --rm -p 8000:8000 -e BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here \
+  ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
+```
+
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 
 ### Testing with Claude Desktop
