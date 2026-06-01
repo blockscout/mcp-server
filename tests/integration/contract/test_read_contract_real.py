@@ -8,6 +8,7 @@ import httpx
 import pytest
 from eth_utils import to_checksum_address
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractReadData, ToolResponse
 from blockscout_mcp_server.tools.contract.read_contract import read_contract
 from blockscout_mcp_server.web3_pool import WEB3_POOL
@@ -70,6 +71,7 @@ async def _invoke(mock_ctx, function_name: str, args: str) -> Any:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_integration(mock_ctx):
     address = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     abi = {
@@ -100,6 +102,7 @@ async def test_read_contract_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_decodes_tuple_result(mock_ctx):
     """Verify that tuple-based return values are decoded correctly."""
     address = "0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6"
@@ -146,6 +149,7 @@ async def test_read_contract_decodes_tuple_result(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testInt(mock_ctx):
     # @see Web3PyTestContract.sol -> testInt()
     res = await _invoke(mock_ctx, "testInt", json.dumps([-42]))
@@ -154,6 +158,7 @@ async def test_read_contract_sepolia_testInt(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testUint(mock_ctx):
     # @see Web3PyTestContract.sol -> testUint()
     res = await _invoke(mock_ctx, "testUint", json.dumps([12345]))
@@ -163,6 +168,7 @@ async def test_read_contract_sepolia_testUint(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testAddress(mock_ctx):
     # @see Web3PyTestContract.sol -> testAddress()
     addr = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
@@ -172,6 +178,7 @@ async def test_read_contract_sepolia_testAddress(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testBytes(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes()
     data = "0x64617461"
@@ -186,6 +193,7 @@ async def test_read_contract_sepolia_testBytes(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testBool(mock_ctx):
     # @see Web3PyTestContract.sol -> testBool()
     res = await _invoke(mock_ctx, "testBool", json.dumps([True]))
@@ -194,6 +202,7 @@ async def test_read_contract_sepolia_testBool(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testUintArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testUintArray()
     res = await _invoke(mock_ctx, "testUintArray", json.dumps([[1, 2, 3, 4, 5]]))
@@ -204,6 +213,7 @@ async def test_read_contract_sepolia_testUintArray(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testAddressArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testAddressArray()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
@@ -214,6 +224,7 @@ async def test_read_contract_sepolia_testAddressArray(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testBytesArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytesArray()
     data1 = "0x64617461"
@@ -224,6 +235,7 @@ async def test_read_contract_sepolia_testBytesArray(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testSimpleStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testSimpleStruct()
     res = await _invoke(
@@ -239,6 +251,7 @@ async def test_read_contract_sepolia_testSimpleStruct(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testNestedStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testNestedStruct()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
@@ -256,6 +269,7 @@ async def test_read_contract_sepolia_testNestedStruct(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testStructArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testStructArray()
     res = await _invoke(
@@ -269,6 +283,7 @@ async def test_read_contract_sepolia_testStructArray(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testArrayStruct(mock_ctx):
     # @see Web3PyTestContract.sol -> testArrayStruct()
     addr1 = "0x742d35cc6634c0532925a3b8d98d8e35ce02e52a"
@@ -288,6 +303,7 @@ async def test_read_contract_sepolia_testArrayStruct(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
     # @see Web3PyTestContract.sol -> testMultipleParams()
     addr = "0x8ba1f109551bd432803012645ff1c26ad3dbebf9"
@@ -301,6 +317,7 @@ async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testFixedArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testFixedArray()
     res = await _invoke(mock_ctx, "testFixedArray", json.dumps([[10, 20, 30]]))
@@ -311,6 +328,7 @@ async def test_read_contract_sepolia_testFixedArray(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testBytes32(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes32()
     value = "0x" + "1234567890abcdef" * 4
@@ -324,6 +342,7 @@ async def test_read_contract_sepolia_testBytes32(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testString(mock_ctx):
     # @see Web3PyTestContract.sol -> testString()
     res = await _invoke(mock_ctx, "testString", json.dumps(["World"]))
@@ -333,6 +352,7 @@ async def test_read_contract_sepolia_testString(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testEnum(mock_ctx):
     # @see Web3PyTestContract.sol -> testEnum()
     res = await _invoke(mock_ctx, "testEnum", json.dumps([0]))

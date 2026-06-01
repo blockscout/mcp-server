@@ -8,6 +8,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
     ChainNotFoundError,
+    ensure_chain_supported,
     get_blockscout_base_url,
     make_bens_request,
     make_blockscout_request,
@@ -204,3 +205,27 @@ async def test_get_blockscout_base_url_for_pro_api_only_chain():
 async def test_get_blockscout_base_url_for_chainscout_only_chain():
     with pytest.raises(ChainNotFoundError):
         await get_blockscout_base_url("17000")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_ensure_chain_supported_for_known_chain():
+    """
+    Confirms that ensure_chain_supported does not raise for a well-known chain.
+    """
+
+    async def run_check():
+        await ensure_chain_supported("1")
+
+    await retry_on_network_error(run_check, action_description="ensure_chain_supported known chain")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_ensure_chain_supported_for_bogus_chain():
+    """
+    Confirms that ensure_chain_supported raises ChainNotFoundError for an
+    obviously-unsupported chain id.
+    """
+    with pytest.raises(ChainNotFoundError):
+        await ensure_chain_supported("99999999")
