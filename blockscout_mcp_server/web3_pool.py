@@ -19,6 +19,7 @@ appended automatically.
 
 from __future__ import annotations
 
+import asyncio
 from itertools import count
 from typing import Any
 
@@ -137,12 +138,12 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
 
 
 class Web3Pool:
-    """Manage pooled ``AsyncWeb3`` instances with shared sessions.
+    """Manage pooled ``AsyncWeb3`` instances with a single shared session.
 
     Each unique combination of chain and non-secret headers gets its own
-    ``AsyncWeb3`` instance backed by a shared ``aiohttp.ClientSession``.
-    Reusing these connections avoids the overhead of establishing new TCP
-    handshakes for every contract call.
+    ``AsyncWeb3`` instance.  All providers share one ``aiohttp.ClientSession``
+    so the per-host connection limit becomes a true global cap now that every
+    chain's JSON-RPC traffic targets the same host (``api.blockscout.com``).
 
     Auth headers (``Authorization``) are intentionally excluded from cache
     keys and resolved at request time on every call (including cache hits), so
@@ -151,7 +152,30 @@ class Web3Pool:
 
     def __init__(self) -> None:
         self._pool: dict[tuple[str, tuple[tuple[str, str], ...]], AsyncWeb3] = {}
-        self._sessions: dict[tuple[str, tuple[tuple[str, str], ...]], aiohttp.ClientSession] = {}
+        self._session: aiohttp.ClientSession | None = None
+        self._session_lock: asyncio.Lock = asyncio.Lock()
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Return the shared session, lazily creating it if necessary.
+
+        Uses a double-checked pattern under an ``asyncio.Lock`` so two
+        concurrent first-callers cannot create two separate sessions.
+        """
+        if self._session is not None and not self._session.closed:
+            return self._session
+        async with self._session_lock:
+            # Re-check inside the lock in case another coroutine created it
+            # while this one was waiting to acquire.
+            if self._session is None or self._session.closed:
+                self._session = aiohttp.ClientSession(
+                    # With a single host the global ``limit`` and the
+                    # per-host ``limit_per_host`` are the same cap.
+                    connector=aiohttp.TCPConnector(
+                        limit=config.rpc_pool_per_host,
+                        limit_per_host=config.rpc_pool_per_host,
+                    )
+                )
+        return self._session
 
     async def get(self, chain_id: str, headers: dict[str, str] | None = None) -> AsyncWeb3:
         # Fail fast when no PRO API key is configured — no network call should be
@@ -175,11 +199,14 @@ class Web3Pool:
         hdr_items = tuple(sorted(combined_headers.items()))
         key = (chain_id, hdr_items)
 
+        session = await self._get_session()
+
         if key in self._pool:
             w3 = self._pool[key]
             # Refresh auth headers on every call — including cache hits — so a
             # rotated key takes effect immediately without requiring a new provider.
             w3.provider.set_request_headers(_request_headers(hdr_items))
+            w3.provider.set_pooled_session(session)
             return w3
 
         endpoint = f"{config.pro_api_base_url}/{chain_id}/json-rpc"
@@ -191,19 +218,10 @@ class Web3Pool:
                 "timeout": config.rpc_request_timeout,
             },
         )
+        provider.set_pooled_session(session)
         w3 = AsyncWeb3(provider)
 
-        session = aiohttp.ClientSession(
-            # The connector speaks to a single host so ``limit`` matches ``limit_per_host``.
-            connector=aiohttp.TCPConnector(
-                limit=config.rpc_pool_per_host,
-                limit_per_host=config.rpc_pool_per_host,
-            )
-        )
-        provider.set_pooled_session(session)
-
         self._pool[key] = w3
-        self._sessions[key] = session
         return w3
 
     async def close(self) -> None:
@@ -212,14 +230,13 @@ class Web3Pool:
                 await w3.provider.disconnect()
             except Exception:
                 pass
-        for sess in list(self._sessions.values()):
-            if not sess.closed:
-                try:
-                    await sess.close()
-                except Exception:
-                    pass
+        if self._session is not None and not self._session.closed:
+            try:
+                await self._session.close()
+            except Exception:
+                pass
+        self._session = None
         self._pool.clear()
-        self._sessions.clear()
 
 
 WEB3_POOL = Web3Pool()

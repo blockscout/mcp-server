@@ -259,3 +259,100 @@ async def test_ensure_chain_supported_is_awaited_with_chain_id():
         await pool.get("42161")
 
     mock_ensure.assert_awaited_once_with("42161")
+
+
+@pytest.mark.asyncio
+async def test_different_chains_share_one_session():
+    """Two get() calls for different chain ids create ClientSession exactly once."""
+    pool = Web3Pool()
+    mock_session = MagicMock()
+    mock_session.closed = False
+    with (
+        patch(
+            "blockscout_mcp_server.web3_pool.ensure_chain_supported",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.web3_pool.aiohttp.ClientSession",
+            return_value=mock_session,
+        ) as mock_session_cls,
+        patch.object(config, "pro_api_key", "test-key"),
+        patch.object(config, "pro_api_base_url", "https://api.blockscout.com"),
+    ):
+        w3_chain1 = await pool.get("1")
+        w3_chain2 = await pool.get("137")
+
+    # ClientSession must be constructed exactly once across both calls
+    mock_session_cls.assert_called_once()
+    # But the two chains produce distinct provider instances
+    assert w3_chain1 is not w3_chain2
+    assert w3_chain1.provider.endpoint_uri == "https://api.blockscout.com/1/json-rpc"
+    assert w3_chain2.provider.endpoint_uri == "https://api.blockscout.com/137/json-rpc"
+
+
+@pytest.mark.asyncio
+async def test_same_chain_returns_same_provider():
+    """get() for the same chain id twice returns the same provider instance."""
+    pool = Web3Pool()
+    mock_session = MagicMock()
+    mock_session.closed = False
+    with (
+        patch(
+            "blockscout_mcp_server.web3_pool.ensure_chain_supported",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.web3_pool.aiohttp.ClientSession",
+            return_value=mock_session,
+        ),
+        patch.object(config, "pro_api_key", "test-key"),
+        patch.object(config, "pro_api_base_url", "https://api.blockscout.com"),
+    ):
+        w3_first = await pool.get("1")
+        w3_second = await pool.get("1")
+
+    assert w3_first is w3_second
+
+
+@pytest.mark.asyncio
+async def test_close_clears_session_and_new_get_creates_fresh_session():
+    """close() closes the shared session; a subsequent get() lazily creates a new one."""
+    pool = Web3Pool()
+
+    first_session = MagicMock()
+    first_session.closed = False
+    first_session.close = AsyncMock()
+
+    second_session = MagicMock()
+    second_session.closed = False
+    second_session.close = AsyncMock()
+
+    session_side_effects = [first_session, second_session]
+
+    with (
+        patch(
+            "blockscout_mcp_server.web3_pool.ensure_chain_supported",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "blockscout_mcp_server.web3_pool.aiohttp.ClientSession",
+            side_effect=session_side_effects,
+        ) as mock_session_cls,
+        patch.object(config, "pro_api_key", "test-key"),
+        patch.object(config, "pro_api_base_url", "https://api.blockscout.com"),
+    ):
+        await pool.get("1")
+
+        # Simulate close
+        await pool.close()
+
+        # After close, session field must be reset and pool cleared
+        assert pool._session is None
+        assert len(pool._pool) == 0
+        first_session.close.assert_awaited_once()
+
+        # A subsequent get() must create a brand-new session
+        await pool.get("1")
+
+    assert mock_session_cls.call_count == 2
+    assert pool._session is second_session
