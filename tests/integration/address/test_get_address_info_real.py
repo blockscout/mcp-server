@@ -29,6 +29,7 @@ def _assert_no_oversized_strings(value: object) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_address_info_integration(mock_ctx):
     """Validate get_address_info against the live API for a well-known contract."""
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
@@ -70,6 +71,7 @@ async def test_get_address_info_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_address_info_vitalik_metadata_meta_is_parsed_and_truncated(mock_ctx):
     address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"  # vitalik.eth
 

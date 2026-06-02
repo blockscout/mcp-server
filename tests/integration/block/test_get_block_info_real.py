@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.block.get_block_info import get_block_info
 from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_block_info_integration(mock_ctx):
     """Test get_block_info for a stable, historical block without transactions."""
     block_number = "46282562"
@@ -24,6 +26,7 @@ async def test_get_block_info_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_block_info_with_transactions_integration(mock_ctx):
     """Test get_block_info with include_transactions=True and verify live transaction counts."""
     block_number = "46282564"
@@ -50,6 +53,7 @@ async def test_get_block_info_with_transactions_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_block_info_with_no_transactions_integration(mock_ctx):
     """Test get_block_info with include_transactions=True for a block with zero transactions."""
     block_number = "46282562"

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
 from blockscout_mcp_server.tools.transaction.get_token_transfers_by_address import (
     get_token_transfers_by_address,
@@ -10,6 +11,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_token_transfers_by_address_integration(mock_ctx):
     """Tests that get_token_transfers_by_address returns a transformed list of transfers."""
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
@@ -52,6 +54,7 @@ async def test_get_token_transfers_by_address_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_token_transfers_by_address_pagination_integration(mock_ctx):
     """Tests that get_token_transfers_by_address can successfully use a cursor to fetch a second page."""
     address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"

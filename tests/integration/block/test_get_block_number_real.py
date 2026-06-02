@@ -15,12 +15,14 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 from tests.integration.helpers import retry_on_network_error
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_block_number_latest_real(mock_ctx):
     """Test that get_block_number returns a latest block number and timestamp."""
     result = await retry_on_network_error(
@@ -34,6 +36,7 @@ async def test_get_block_number_latest_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_block_number_by_time_real(mock_ctx):
     """Test that get_block_number resolves a block by datetime."""
     target_datetime = (datetime.now(UTC) - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%S.00Z")

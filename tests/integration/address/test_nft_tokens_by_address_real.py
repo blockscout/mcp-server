@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import NftCollectionHolding, ToolResponse
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
 from tests.integration.helpers import retry_on_network_error
@@ -8,6 +9,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_nft_tokens_by_address_integration(mock_ctx):
     address = "0xA94b3E48215c72266f5006bcA6EE67Fff7122307"  # Address with NFT holdings
     result = await retry_on_network_error(
@@ -29,6 +31,7 @@ async def test_nft_tokens_by_address_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_nft_tokens_by_address_pagination_integration(mock_ctx):
     """Tests that nft_tokens_by_address can successfully use a cursor to fetch a second page."""
     address = "0xA94b3E48215c72266f5006bcA6EE67Fff7122307"

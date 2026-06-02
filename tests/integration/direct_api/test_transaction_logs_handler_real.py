@@ -11,6 +11,7 @@ from tests.integration.helpers import is_log_a_truncated_call_executed, retry_on
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_transaction_logs_integration(mock_ctx):
     """Tests that direct_api_call dispatches transaction logs and validates the schema."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
@@ -41,6 +42,7 @@ async def test_direct_api_call_transaction_logs_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_transaction_logs_pagination(mock_ctx):
     """Tests that direct_api_call can use a cursor to fetch a second page."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
@@ -71,6 +73,7 @@ async def test_direct_api_call_transaction_logs_pagination(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
     """Tests that direct_api_call correctly truncates oversized data fields."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"
@@ -102,6 +105,7 @@ async def test_direct_api_call_transaction_logs_with_truncation(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_transaction_logs_paginated_search_for_truncation(mock_ctx):
     """Tests that direct_api_call can find truncated data by searching across pages."""
     tx_hash = "0xa519e3af3f07190727f490c599baf3e65ee335883d6f420b433f7b83f62cb64d"

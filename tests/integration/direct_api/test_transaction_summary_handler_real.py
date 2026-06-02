@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, TransactionSummaryData
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import retry_on_network_error
@@ -8,6 +9,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_transaction_summary_integration(mock_ctx):
     """Tests that direct_api_call dispatches transaction summary and validates the schema."""
     tx_hash = "0x5c7f2f244d91ec281c738393da0be6a38bc9045e29c0566da8c11e7a2f7cbc64"

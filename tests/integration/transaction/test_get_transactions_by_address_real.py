@@ -17,6 +17,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
 from blockscout_mcp_server.tools.transaction._shared import EXCLUDED_TX_TYPES
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
@@ -27,6 +28,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transactions_by_address_integration(mock_ctx):
     """Tests that get_transactions_by_address returns a transformed list of transactions."""
     address = "0x0B98057eA310F4d31F2a452B414647007d1645d9"
@@ -70,6 +72,7 @@ async def test_get_transactions_by_address_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transactions_by_address_pagination_integration(mock_ctx):
     """Tests that get_transactions_by_address can successfully use a cursor to fetch a second page."""
     address = "0x0B98057eA310F4d31F2a452B414647007d1645d9"

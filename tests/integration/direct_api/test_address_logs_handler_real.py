@@ -10,6 +10,7 @@ from tests.integration.helpers import is_log_a_truncated_call_executed, retry_on
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_dispatches_to_logs_handler(mock_ctx):
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC contract
     endpoint_path = f"/api/v2/addresses/{address}/logs"
@@ -27,6 +28,7 @@ async def test_direct_api_call_dispatches_to_logs_handler(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_pagination_integration(mock_ctx):
     """direct_api_call should provide pagination when the handler slices results."""
     address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
@@ -62,6 +64,7 @@ async def test_direct_api_call_pagination_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
     """direct_api_call should surface truncated logs when paging through results."""
 
