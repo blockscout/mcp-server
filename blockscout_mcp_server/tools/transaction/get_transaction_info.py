@@ -9,7 +9,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -45,18 +44,14 @@ async def get_transaction_info(
         message=f"Starting to fetch transaction info for {transaction_hash} on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching transaction data..."
-    )
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching transaction data...")
 
     operations_path = "/api/v2/proxy/account-abstraction/operations"
 
     transaction_result, ops_result = await asyncio.gather(
-        make_blockscout_request(base_url=base_url, api_path=api_path, timeout=config.bs_light_timeout),
+        make_blockscout_request(chain_id=chain_id, api_path=api_path, timeout=config.bs_light_timeout),
         make_blockscout_request(
-            base_url=base_url,
+            chain_id=chain_id,
             api_path=operations_path,
             params={"transaction_hash": transaction_hash},
         ),

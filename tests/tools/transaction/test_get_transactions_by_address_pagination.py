@@ -14,16 +14,11 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_filtered_items = []
     mock_has_more_pages = True  # This should trigger force_pagination
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
             "_fetch_filtered_transactions_with_smart_pagination",
@@ -33,7 +28,6 @@ async def test_get_transactions_by_address_with_pagination(mock_ctx):
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address.create_items_pagination",
         ) as mock_create_pagination,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
         mock_create_pagination.return_value = (
             [],
@@ -63,17 +57,12 @@ async def test_get_transactions_by_address_custom_page_size(mock_ctx):
     chain_id = "1"
     address = "0x123"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     items = [{"block_number": i} for i in range(10)]
     mock_filtered_items = items
     mock_has_more_pages = False
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
             "_fetch_filtered_transactions_with_smart_pagination",
@@ -84,7 +73,6 @@ async def test_get_transactions_by_address_custom_page_size(mock_ctx):
         ) as mock_create_pagination,
         patch.object(config, "advanced_filters_page_size", 5),
     ):
-        mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
         mock_create_pagination.return_value = (items[:5], None)
 
@@ -106,16 +94,11 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
     cursor = "CURSOR"
     decoded = {"page": 2}
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_filtered_items = []
     mock_has_more_pages = False
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
             "_fetch_filtered_transactions_with_smart_pagination",
@@ -125,7 +108,6 @@ async def test_get_transactions_by_address_with_cursor_param(mock_ctx):
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address.apply_cursor_to_params",
         ) as mock_apply_cursor,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
         mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded)
 
@@ -158,25 +140,17 @@ async def test_get_transactions_by_address_smart_pagination_error(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Simulate an error from the smart pagination function
     smart_pagination_error = httpx.HTTPStatusError(
         "Service Unavailable", request=MagicMock(), response=MagicMock(status_code=503)
     )
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
-            "_fetch_filtered_transactions_with_smart_pagination",
-            new_callable=AsyncMock,
-        ) as mock_smart_pagination,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+        "_fetch_filtered_transactions_with_smart_pagination",
+        new_callable=AsyncMock,
+    ) as mock_smart_pagination:
         mock_smart_pagination.side_effect = smart_pagination_error
 
         # ACT & ASSERT
@@ -205,7 +179,6 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Create a scenario where we have many filtered transactions but few valid ones
     # This simulates a real-world scenario where an address has many token transfers
@@ -255,17 +228,12 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
             "_fetch_filtered_transactions_with_smart_pagination",
             new_callable=AsyncMock,
         ) as mock_smart_pagination,
         patch.object(config, "advanced_filters_page_size", 10),
     ):
-        mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (accumulated_valid_transactions, has_more_pages)
 
         # ACT
@@ -282,7 +250,7 @@ async def test_get_transactions_by_address_sparse_data_scenario(mock_ctx):
 
         # Verify the call arguments to smart pagination
         call_args = mock_smart_pagination.call_args
-        assert call_args[1]["base_url"] == mock_base_url
+        assert call_args[1]["chain_id"] == chain_id
         assert call_args[1]["api_path"] == "/api/v2/advanced-filters"
         assert call_args[1]["target_page_size"] == 10
         assert call_args[1]["ctx"] == mock_ctx
@@ -322,7 +290,6 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Mock data that would be returned by smart pagination
     mock_transactions = [
@@ -331,10 +298,6 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
     has_more_pages = False
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
             "_fetch_filtered_transactions_with_smart_pagination",
@@ -346,7 +309,6 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
         ) as mock_progress,
         patch.object(config, "advanced_filters_page_size", 10),
     ):
-        mock_get_url.return_value = mock_base_url
         mock_smart_pagination.return_value = (mock_transactions, has_more_pages)
 
         # ACT
@@ -367,7 +329,7 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
 
         # Should have exactly 3 progress reports from get_transactions_by_address:
         # 1. Initial start (progress=0.0, total=12.0)
-        # 2. After URL resolution (progress=1.0, total=12.0)
+        # 2. Fetching step (progress=1.0, total=12.0)
         # 3. Final completion (progress=12.0, total=12.0)
         assert len(progress_calls) == 3
 
@@ -384,12 +346,12 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
         assert address in initial_call_kwargs["message"]
         assert chain_id in initial_call_kwargs["message"]
 
-        # Verify URL resolution progress (step 1)
-        url_resolution_call_args, url_resolution_call_kwargs = progress_calls[1]
-        assert url_resolution_call_args[0] == mock_ctx  # ctx
-        assert url_resolution_call_kwargs["progress"] == 1.0
-        assert url_resolution_call_kwargs["total"] == 12.0
-        assert "Resolved Blockscout instance URL" in url_resolution_call_kwargs["message"]
+        # Verify fetching progress (step 1)
+        fetching_call_args, fetching_call_kwargs = progress_calls[1]
+        assert fetching_call_args[0] == mock_ctx  # ctx
+        assert fetching_call_kwargs["progress"] == 1.0
+        assert fetching_call_kwargs["total"] == 12.0
+        assert "Fetching transactions" in fetching_call_kwargs["message"]
 
         # Verify final completion progress (step 12)
         completion_call_args, completion_call_kwargs = progress_calls[2]
