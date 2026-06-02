@@ -219,10 +219,7 @@ set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 
 ### Blockscout PRO API Key
 
-The Blockscout PRO API key is required for all Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without a key those tools fail fast with a clear, actionable error and make no network call.
-
-- **Address metadata** (`get_address_info`): enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint. Like every other data tool, the primary address request requires the key; without one it fails fast. When the key is present but the metadata secondary request is rejected (credit/rate-limit/error), the `metadata` field degrades gracefully to `null` with an explanatory note — the primary data is still returned.
-- **Contract reads** (`read_contract`): `eth_call` is routed through the Blockscout PRO API JSON-RPC gateway, which **requires** a key. Without one, `read_contract` fails fast with a clear error and makes no network call.
+The Blockscout PRO API key is required for Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without a key those tools fail fast with a clear, actionable error and make no network call.
 
 Set the key to enable all data access, public-tag enrichment, and contract reads.
 
