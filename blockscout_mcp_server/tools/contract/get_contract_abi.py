@@ -8,7 +8,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -35,14 +34,12 @@ async def get_contract_abi(
         message=f"Starting to fetch contract ABI for {address} on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
-    # Report progress after resolving Blockscout URL
+    # Report progress before fetching
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=2.0,
-        message="Resolved Blockscout instance URL. Fetching contract ABI...",
+        message="Fetching data...",
     )
 
     # 20s light timeout validated empirically: payloads range from ~10 KB
@@ -50,7 +47,7 @@ async def get_contract_abi(
     # Universal Router); worst-case server response is ~10-15s on loaded
     # instances, leaving comfortable headroom under bs_light_timeout.
     response_data = await make_blockscout_request(
-        base_url=base_url,
+        chain_id=chain_id,
         api_path=api_path,
         timeout=config.bs_light_timeout,
     )

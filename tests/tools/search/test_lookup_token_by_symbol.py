@@ -21,7 +21,6 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
     # ARRANGE
     chain_id = "1"
     symbol = "USDC"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -65,24 +64,17 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
     ]
     expected_result = build_tool_response(data=expected_data)
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -98,7 +90,6 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
     """Verify only the first 7 items are returned when API provides more."""
     chain_id = "1"
     symbol = "TEST"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_items = [
         {
@@ -137,22 +128,15 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
     ]
     expected_result = build_tool_response(data=expected_data, notes=expected_notes)
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -170,7 +154,6 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
     """Verify all 7 items are returned when API provides exactly seven."""
     chain_id = "1"
     symbol = "TEST"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_items = [
         {
@@ -202,22 +185,15 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
     ]
     expected_result = build_tool_response(data=expected_data)
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -236,29 +212,21 @@ async def test_lookup_token_by_symbol_empty_results(mock_ctx):
     # ARRANGE
     chain_id = "1"
     symbol = "NONEXISTENT"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
     expected_result = build_tool_response(data=[])
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -276,7 +244,6 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
     # ARRANGE
     chain_id = "1"
     symbol = "PARTIAL"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -312,24 +279,17 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
     ]
     expected_result = build_tool_response(data=expected_data)
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -345,7 +305,6 @@ async def test_lookup_token_by_symbol_total_supply_none(mock_ctx):
 
     chain_id = "137"
     symbol = "FET"
-    mock_base_url = "https://polygon.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -378,24 +337,16 @@ async def test_lookup_token_by_symbol_total_supply_none(mock_ctx):
     ]
     expected_result = build_tool_response(data=expected_data)
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request",
-            new_callable=AsyncMock,
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -414,28 +365,20 @@ async def test_lookup_token_by_symbol_api_error(mock_ctx):
     # ARRANGE
     chain_id = "1"
     symbol = "ERROR"
-    mock_base_url = "https://eth.blockscout.com"
 
     api_error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=MagicMock(status_code=500))
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.side_effect = api_error
 
         # ACT & ASSERT
         with pytest.raises(httpx.HTTPStatusError):
             await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,
@@ -456,15 +399,20 @@ async def test_lookup_token_by_symbol_chain_not_found(mock_ctx):
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
     with patch(
-        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        mock_get_url.side_effect = chain_error
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.side_effect = chain_error
 
         # ACT & ASSERT
         with pytest.raises(ChainNotFoundError):
             await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
+        mock_request.assert_called_once_with(
+            chain_id=chain_id,
+            api_path="/api/v2/search",
+            params={"q": symbol},
+            timeout=config.bs_light_timeout,
+        )
 
 
 @pytest.mark.asyncio
@@ -475,29 +423,21 @@ async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
     # ARRANGE
     chain_id = "1"
     symbol = "TEST"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {}  # No items field
     expected_result = build_tool_response(data=[])
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
-        ) as mock_request,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.search.lookup_token_by_symbol.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await lookup_token_by_symbol(chain_id=chain_id, symbol=symbol, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path="/api/v2/search",
             params={"q": symbol},
             timeout=config.bs_light_timeout,

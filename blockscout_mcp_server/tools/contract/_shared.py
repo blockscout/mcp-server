@@ -6,7 +6,6 @@ from mcp.server.fastmcp import Context
 from blockscout_mcp_server.cache import CachedContract, contract_cache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -32,12 +31,11 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     if cached := await contract_cache.get(cache_key):
         return cached
 
-    base_url = await get_blockscout_base_url(chain_id)
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=2.0,
-        message="Resolved Blockscout instance URL.",
+        message="Fetching data...",
     )
     api_path = f"/api/v2/smart-contracts/{normalized_address}"
     # 20s light timeout validated empirically: payloads range from ~10 KB
@@ -45,7 +43,7 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     # Universal Router); worst-case server response is ~10-15s on loaded
     # instances, leaving comfortable headroom under bs_light_timeout.
     raw_data = await make_blockscout_request(
-        base_url=base_url,
+        chain_id=chain_id,
         api_path=api_path,
         timeout=config.bs_light_timeout,
     )
