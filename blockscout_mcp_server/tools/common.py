@@ -198,13 +198,13 @@ def _extract_http_error_details(response: httpx.Response) -> str:
 
 
 async def make_blockscout_request(
-    base_url: str, api_path: str, params: dict[str, Any] | None = None, *, timeout: float | None = None
+    chain_id: str, api_path: str, params: dict[str, Any] | None = None, *, timeout: float | None = None
 ) -> dict:
     """
-    Make a GET request to the Blockscout API.
+    Make a GET request to the Blockscout PRO API.
 
     Args:
-        base_url: The base URL of the Blockscout API instance
+        chain_id: The chain identifier (e.g. '1' for Ethereum mainnet)
         api_path: The API path to request, e.g. '/api/v2/blocks/19000000'
         params: Optional query parameters
         timeout: Optional override for the HTTP request timeout in seconds.
@@ -215,6 +215,8 @@ async def make_blockscout_request(
         The JSON response as a dictionary. If the API returns a JSON null body, returns an empty dictionary {}.
 
     Raises:
+        ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
+        ChainNotFoundError: If the chain_id is not supported
         httpx.HTTPStatusError: If the HTTP request returns an error status code
         httpx.TimeoutException: If the request times out
         httpx.RequestError: For transport-level errors after final retry
@@ -232,35 +234,60 @@ async def make_blockscout_request(
         network conditions. Centralizing minimal retries here improves robustness
         for all tools and REST endpoints without masking persistent API errors.
     """
+    if not config.pro_api_key:
+        raise ValueError(
+            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
+        )
+    await ensure_chain_supported(chain_id)
+    base_url = f"{config.pro_api_base_url}/{chain_id}"
     return await _make_blockscout_http_request(
         method="GET",
         base_url=base_url,
         api_path=api_path,
         retry_exceptions=(httpx.RequestError,),
+        headers=_pro_api_headers(),
         params=params,
         timeout=timeout,
     )
 
 
 async def make_blockscout_post_request(
-    base_url: str,
+    chain_id: str,
     api_path: str,
     json_body: dict[str, Any],
     params: dict[str, Any] | None = None,
     *,
     timeout: float | None = None,
 ) -> dict:
-    """Make a POST request to the Blockscout API.
+    """Make a POST request to the Blockscout PRO API.
+
+    Args:
+        chain_id: The chain identifier (e.g. '1' for Ethereum mainnet)
+        api_path: The API path to request, e.g. '/json-rpc'
+        json_body: The JSON body for the POST request
+        params: Optional query parameters
+        timeout: Optional override for the HTTP request timeout in seconds.
+
+    Raises:
+        ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
+        ChainNotFoundError: If the chain_id is not supported
 
     Retry behavior is intentionally strict because POST requests are not idempotent:
     retries occur only for connection-establishment failures (ConnectError,
     ConnectTimeout), where the request body is known not to have reached upstream.
     """
+    if not config.pro_api_key:
+        raise ValueError(
+            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
+        )
+    await ensure_chain_supported(chain_id)
+    base_url = f"{config.pro_api_base_url}/{chain_id}"
     return await _make_blockscout_http_request(
         method="POST",
         base_url=base_url,
         api_path=api_path,
         retry_exceptions=(httpx.ConnectError, httpx.ConnectTimeout),
+        headers=_pro_api_headers(),
         json_body=json_body,
         params=params,
         timeout=timeout,
@@ -274,6 +301,7 @@ async def _make_blockscout_http_request(
     retry_exceptions: tuple[type[Exception], ...],
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
     *,
     timeout: float | None = None,
 ) -> dict:
@@ -287,9 +315,9 @@ async def _make_blockscout_http_request(
         for attempt in range(config.bs_request_max_retries):
             try:
                 if method == "GET":
-                    response = await client.get(url, params=local_params)
+                    response = await client.get(url, params=local_params, headers=headers)
                 else:
-                    response = await client.post(url, json=json_body, params=local_params)
+                    response = await client.post(url, json=json_body, params=local_params, headers=headers)
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as e:

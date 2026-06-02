@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for _pro_api_headers() and make_metadata_request() in tools/common.py.
 
-Also contains the security regression test proving the PRO API key never
-leaks to arbitrary Blockscout explorer instances via make_blockscout_request.
+Also contains the security regression test proving the PRO API key is sent
+to the PRO API host via make_blockscout_request (now PRO-API routed).
 """
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -141,53 +141,45 @@ async def test_make_metadata_request_skips_network_when_no_key(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Security: PRO API key must NOT leak to make_blockscout_request
+# Security: PRO API key MUST be sent to the PRO API host via make_blockscout_request
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_make_blockscout_request_does_not_send_pro_api_key(monkeypatch):
-    """PRO API key must never appear in make_blockscout_request outgoing headers.
+async def test_make_blockscout_request_sends_pro_api_key_to_pro_api_host(monkeypatch):
+    """PRO API key must appear in make_blockscout_request outgoing headers, targeting the PRO API host.
 
-    This covers arbitrary / third-party explorer instances whose base URLs
-    come from chain config — the highest-risk upstream per issue #375.
-    Checks both the AsyncClient constructor kwargs and the per-request
-    client.get() kwargs.
+    Now that make_blockscout_request routes through the PRO API, the key must be
+    sent as a Bearer token to config.pro_api_base_url (not a third-party URL).
+    Checks both the URL and the per-request client.get() kwargs for auth headers.
     """
     monkeypatch.setattr(config, "pro_api_key", "proapi_test")
+    chain_id = "1"
+    api_path = "/api/v2/blocks/1"
+    pro_base = config.pro_api_base_url
 
-    ok_resp = _ok_response("https://example-explorer.test/api/v2/blocks/1")
+    ok_resp = _ok_response(f"{pro_base}/{chain_id}{api_path}")
     fake_client = CapturingAsyncClient(ok_resp)
 
-    # Patch httpx.AsyncClient directly (not _create_httpx_client) so we catch
-    # any default-header or auth leak introduced inside _create_httpx_client.
-    captured_constructor_kwargs: dict = {}
+    stub_ensure_chain_supported = AsyncMock()
 
-    class CapturingClientClass:
-        """Mimics httpx.AsyncClient at the class level."""
-
-        def __init__(self, **kwargs):
-            captured_constructor_kwargs.update(kwargs)
-
-        async def __aenter__(self):
-            return fake_client
-
-        async def __aexit__(self, *args):
-            return None
-
-    with patch("blockscout_mcp_server.tools.common.httpx.AsyncClient", CapturingClientClass):
-        result = await make_blockscout_request(
-            base_url="https://example-explorer.test",
-            api_path="/api/v2/blocks/1",
-        )
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", stub_ensure_chain_supported),
+    ):
+        result = await make_blockscout_request(chain_id=chain_id, api_path=api_path)
 
     assert result == {"result": "ok"}
 
-    # Constructor must not carry auth material
-    assert "Authorization" not in (captured_constructor_kwargs.get("headers") or {})
-    assert "auth" not in captured_constructor_kwargs
+    # ensure_chain_supported must have been called with the correct chain_id
+    stub_ensure_chain_supported.assert_awaited_once_with(chain_id)
 
-    # Per-request .get() kwargs must also be clean
+    # URL must target the PRO API host
+    assert fake_client.get_url == f"{pro_base}/{chain_id}{api_path}"
+
+    # Per-request .get() kwargs must carry auth headers
     get_kwargs = fake_client.get_kwargs or {}
-    assert "Authorization" not in (get_kwargs.get("headers") or {})
-    assert "auth" not in get_kwargs
+    sent_headers = get_kwargs.get("headers") or {}
+    assert sent_headers.get("Authorization") == "Bearer proapi_test"
+    assert "User-Agent" in sent_headers
+    assert sent_headers.get("Accept") == "application/json"
