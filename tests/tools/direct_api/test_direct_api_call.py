@@ -14,20 +14,14 @@ from blockscout_mcp_server.tools.common import ResponseTooLargeError
 async def test_direct_api_call_no_params(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/stats"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"result": 1}
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         result = await direct_api_call_module.direct_api_call(
@@ -36,8 +30,7 @@ async def test_direct_api_call_no_params(mock_ctx):
             ctx=mock_ctx,
         )
 
-        mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params={})
+        mock_request.assert_called_once_with(chain_id=chain_id, api_path=endpoint_path, params={})
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, DirectApiData)
         assert result.data.model_dump() == mock_response
@@ -49,14 +42,9 @@ async def test_direct_api_call_no_params(mock_ctx):
 async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/foo"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"data": []}
     query_params = {"limit": "1"}
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
@@ -66,7 +54,6 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
             new_callable=MagicMock,
         ) as mock_apply_cursor,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         # Simulate cursor application updating params and assert inputs
@@ -85,10 +72,9 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
             cursor="abc",
         )
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_apply_cursor.assert_called_once()
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=endpoint_path,
             params={"limit": "1", "page": 2},
         )
@@ -103,20 +89,14 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
 async def test_direct_api_call_with_pagination(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/data"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"next_page_params": {"cursor": 123}, "items": []}
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         result = await direct_api_call_module.direct_api_call(
@@ -133,8 +113,7 @@ async def test_direct_api_call_with_pagination(mock_ctx):
         assert nc["endpoint_path"] == endpoint_path
         assert "cursor" in nc
         assert "query_params" not in nc
-        mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params={})
+        mock_request.assert_called_once_with(chain_id=chain_id, api_path=endpoint_path, params={})
         assert mock_ctx.report_progress.await_count == 3
 
 
@@ -143,20 +122,14 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/data"
     query_params = {"sender": "0xabc"}
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"next_page_params": {"cursor": 456}, "items": []}
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         result = await direct_api_call_module.direct_api_call(
@@ -173,8 +146,7 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
         assert nc["endpoint_path"] == endpoint_path
         assert nc["query_params"] == query_params
         assert "cursor" in nc
-        mock_get_url.assert_called_once_with(chain_id)
-        mock_request.assert_called_once_with(base_url=mock_base_url, api_path=endpoint_path, params=query_params)
+        mock_request.assert_called_once_with(chain_id=chain_id, api_path=endpoint_path, params=query_params)
         assert mock_ctx.report_progress.await_count == 3
 
 
@@ -182,18 +154,12 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
 async def test_direct_api_call_raises_on_request_error(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/data"
-    mock_base_url = "https://eth.blockscout.com"
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.side_effect = TimeoutError("upstream timeout")
         with pytest.raises(TimeoutError):
             await direct_api_call_module.direct_api_call(
@@ -201,7 +167,6 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
                 endpoint_path=endpoint_path,
                 ctx=mock_ctx,
             )
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_awaited_once()
         assert mock_ctx.report_progress.await_count == 2
 
@@ -210,43 +175,28 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
 async def test_direct_api_call_rejects_query_in_path(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/data?foo=bar"
-    mock_base_url = "https://eth.blockscout.com"
-    with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-    ):
-        mock_get_url.return_value = mock_base_url
-        with pytest.raises(ValueError):
-            await direct_api_call_module.direct_api_call(
-                chain_id=chain_id,
-                endpoint_path=endpoint_path,
-                ctx=mock_ctx,
-            )
-        mock_get_url.assert_called_once_with(chain_id)
-        assert mock_ctx.report_progress.await_count == 1
+    with pytest.raises(ValueError):
+        await direct_api_call_module.direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            ctx=mock_ctx,
+        )
+    assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_allows_response_under_limit(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/stats"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"data": "x" * 20}
 
     with (
         patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 100),
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         result = await direct_api_call_module.direct_api_call(
@@ -263,21 +213,15 @@ async def test_direct_api_call_allows_response_under_limit(mock_ctx):
 async def test_direct_api_call_rejects_mcp_over_limit(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/stats"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"data": "x" * 150}
 
     with (
         patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 100),
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         with pytest.raises(ResponseTooLargeError):
@@ -292,22 +236,16 @@ async def test_direct_api_call_rejects_mcp_over_limit(mock_ctx):
 async def test_direct_api_call_rejects_rest_over_limit_without_header():
     chain_id = "1"
     endpoint_path = "/api/v2/stats"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"data": "x" * 150}
     ctx = MockCtx(request=SimpleNamespace(headers={}))
 
     with (
         patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 100),
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         with pytest.raises(ResponseTooLargeError):
@@ -322,22 +260,16 @@ async def test_direct_api_call_rejects_rest_over_limit_without_header():
 async def test_direct_api_call_allows_rest_over_limit_with_header():
     chain_id = "1"
     endpoint_path = "/api/v2/stats"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = {"data": "x" * 150}
     ctx = MockCtx(request=SimpleNamespace(headers={"X-Blockscout-Allow-Large-Response": "true"}))
 
     with (
         patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 100),
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
 
         result = await direct_api_call_module.direct_api_call(
@@ -354,14 +286,9 @@ async def test_direct_api_call_allows_rest_over_limit_with_header():
 async def test_direct_api_call_list_response_wraps_payload_and_has_no_pagination(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/main-page/blocks"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = [{"height": 1}, {"height": 2}]
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
@@ -370,7 +297,6 @@ async def test_direct_api_call_list_response_wraps_payload_and_has_no_pagination
             "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
         ) as mock_dispatch,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
         mock_dispatch.return_value = None
 
@@ -387,14 +313,9 @@ async def test_direct_api_call_list_response_wraps_payload_and_has_no_pagination
 async def test_direct_api_call_list_response_content_text_item_count(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/main-page/blocks"
-    mock_base_url = "https://eth.blockscout.com"
     mock_response = [{"height": 1}, {"height": 2}]
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
@@ -403,7 +324,6 @@ async def test_direct_api_call_list_response_content_text_item_count(mock_ctx):
             "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
         ) as mock_dispatch,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_response
         mock_dispatch.return_value = None
 
@@ -418,16 +338,11 @@ async def test_direct_api_call_list_response_content_text_item_count(mock_ctx):
 async def test_direct_api_call_list_response_size_limit_behavior(mock_ctx):
     chain_id = "1"
     endpoint_path = "/api/v2/main-page/blocks"
-    mock_base_url = "https://eth.blockscout.com"
     under_limit_response = [{"height": 1}]
     over_limit_response = [{"height": i, "hash": "x" * 20} for i in range(5)]
 
     with (
         patch.object(direct_api_call_module.config, "direct_api_response_size_limit", 50),
-        patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
             new_callable=AsyncMock,
@@ -436,7 +351,6 @@ async def test_direct_api_call_list_response_size_limit_behavior(mock_ctx):
             "blockscout_mcp_server.tools.direct_api.direct_api_call.dispatcher.dispatch", new_callable=AsyncMock
         ) as mock_dispatch,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_dispatch.return_value = None
         mock_request.return_value = under_limit_response
 
@@ -456,9 +370,6 @@ async def test_direct_api_call_list_response_size_limit_behavior(mock_ctx):
 async def test_direct_api_call_post_basic(mock_ctx):
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request", new_callable=AsyncMock
         ) as mock_get,
         patch(
@@ -466,16 +377,15 @@ async def test_direct_api_call_post_basic(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_post,
     ):
-        mock_get_url.return_value = "https://eth.blockscout.com"
         mock_post.return_value = {"jsonrpc": "2.0", "result": "0x1"}
         result = await direct_api_call_module.direct_api_call(
-            chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
+            chain_id="1", endpoint_path="/json-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
         )
         assert isinstance(result.data, DirectApiData)
         mock_get.assert_not_called()
         mock_post.assert_awaited_once_with(
-            base_url="https://eth.blockscout.com",
-            api_path="/api/eth-rpc",
+            chain_id="1",
+            api_path="/json-rpc",
             json_body={"id": 1},
             params={},
         )
@@ -484,98 +394,74 @@ async def test_direct_api_call_post_basic(mock_ctx):
 
 @pytest.mark.asyncio
 async def test_direct_api_call_invalid_method_raises(mock_ctx):
-    with patch(
-        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        with pytest.raises(ValueError, match="method must be 'GET' or 'POST'"):
-            await direct_api_call_module.direct_api_call(
-                chain_id="1", endpoint_path="/api/v2/stats", method="PUT", ctx=mock_ctx
-            )  # type: ignore[arg-type]
-        mock_get_url.assert_not_called()
-        assert mock_ctx.report_progress.await_count == 0
+    with pytest.raises(ValueError, match="method must be 'GET' or 'POST'"):
+        await direct_api_call_module.direct_api_call(
+            chain_id="1", endpoint_path="/api/v2/stats", method="PUT", ctx=mock_ctx
+        )  # type: ignore[arg-type]
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_get_with_json_body_raises_before_network(mock_ctx):
-    with patch(
-        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        with pytest.raises(ValueError, match="json_body is only allowed with method='POST'"):
-            await direct_api_call_module.direct_api_call(
-                chain_id="1", endpoint_path="/api/v2/stats", method="GET", json_body={"id": 1}, ctx=mock_ctx
-            )
-        mock_get_url.assert_not_called()
-        assert mock_ctx.report_progress.await_count == 0
+    with pytest.raises(ValueError, match="json_body is only allowed with method='POST'"):
+        await direct_api_call_module.direct_api_call(
+            chain_id="1", endpoint_path="/api/v2/stats", method="GET", json_body={"id": 1}, ctx=mock_ctx
+        )
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_without_body_raises_before_network(mock_ctx):
-    with patch(
-        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        with pytest.raises(ValueError, match="json_body is required when method='POST'"):
-            await direct_api_call_module.direct_api_call(
-                chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body=None, ctx=mock_ctx
-            )
-        mock_get_url.assert_not_called()
-        assert mock_ctx.report_progress.await_count == 0
+    with pytest.raises(ValueError, match="json_body is required when method='POST'"):
+        await direct_api_call_module.direct_api_call(
+            chain_id="1", endpoint_path="/json-rpc", method="POST", json_body=None, ctx=mock_ctx
+        )
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_non_dict_body_raises_before_network(mock_ctx):
-    with patch(
-        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        with pytest.raises(ValueError, match="json_body must be a JSON object \\(dict\\)"):
-            await direct_api_call_module.direct_api_call(
-                chain_id="1",
-                endpoint_path="/api/eth-rpc",
-                method="POST",
-                json_body="not-a-dict",  # type: ignore[arg-type]
-                ctx=mock_ctx,
-            )
-        mock_get_url.assert_not_called()
-        assert mock_ctx.report_progress.await_count == 0
+    with pytest.raises(ValueError, match="json_body must be a JSON object \\(dict\\)"):
+        await direct_api_call_module.direct_api_call(
+            chain_id="1",
+            endpoint_path="/json-rpc",
+            method="POST",
+            json_body="not-a-dict",  # type: ignore[arg-type]
+            ctx=mock_ctx,
+        )
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_with_cursor_raises_before_network(mock_ctx):
-    with patch(
-        "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-    ) as mock_get_url:
-        with pytest.raises(ValueError, match="Pagination \\(cursor\\) is not supported for POST requests"):
-            await direct_api_call_module.direct_api_call(
-                chain_id="1",
-                endpoint_path="/api/eth-rpc",
-                method="POST",
-                json_body={"id": 1},
-                cursor="abc",
-                ctx=mock_ctx,
-            )
-        mock_get_url.assert_not_called()
-        assert mock_ctx.report_progress.await_count == 0
+    with pytest.raises(ValueError, match="Pagination \\(cursor\\) is not supported for POST requests"):
+        await direct_api_call_module.direct_api_call(
+            chain_id="1",
+            endpoint_path="/json-rpc",
+            method="POST",
+            json_body={"id": 1},
+            cursor="abc",
+            ctx=mock_ctx,
+        )
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_ignores_next_page_params_for_pagination(mock_ctx):
     with (
         patch(
-            "blockscout_mcp_server.tools.direct_api.direct_api_call.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_post_request",
             new_callable=AsyncMock,
         ) as mock_post,
     ):
-        mock_get_url.return_value = "https://eth.blockscout.com"
         mock_post.return_value = {"jsonrpc": "2.0", "result": "0x1", "next_page_params": {"cursor": "x"}}
         result = await direct_api_call_module.direct_api_call(
-            chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
+            chain_id="1", endpoint_path="/json-rpc", method="POST", json_body={"id": 1}, ctx=mock_ctx
         )
         assert result.pagination is None
         mock_post.assert_awaited_once_with(
-            base_url="https://eth.blockscout.com",
-            api_path="/api/eth-rpc",
+            chain_id="1",
+            api_path="/json-rpc",
             json_body={"id": 1},
             params={},
         )

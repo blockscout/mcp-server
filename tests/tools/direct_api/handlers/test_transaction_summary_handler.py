@@ -37,7 +37,6 @@ async def test_handle_transaction_summary_success(mock_ctx):
         match=_build_match(transaction_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -55,7 +54,6 @@ async def test_handle_transaction_summary_empty_response_dict(mock_ctx):
         match=_build_match(transaction_hash),
         response_json={},
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -73,7 +71,6 @@ async def test_handle_transaction_summary_empty_response_none(mock_ctx):
         match=_build_match(transaction_hash),
         response_json=None,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -93,7 +90,6 @@ async def test_handle_transaction_summary_missing_data_key(mock_ctx):
             match=_build_match(transaction_hash),
             response_json=response_json,
             chain_id="1",
-            base_url="https://example.blockscout",
             ctx=mock_ctx,
         )
 
@@ -108,7 +104,6 @@ async def test_handle_transaction_summary_missing_summaries_key(mock_ctx):
             match=_build_match(transaction_hash),
             response_json=response_json,
             chain_id="1",
-            base_url="https://example.blockscout",
             ctx=mock_ctx,
         )
 
@@ -123,7 +118,6 @@ async def test_handle_transaction_summary_summaries_none(mock_ctx):
             match=_build_match(transaction_hash),
             response_json=response_json,
             chain_id="1",
-            base_url="https://example.blockscout",
             ctx=mock_ctx,
         )
 
@@ -138,7 +132,6 @@ async def test_handle_transaction_summary_summaries_not_list(mock_ctx):
             match=_build_match(transaction_hash),
             response_json=response_json,
             chain_id="1",
-            base_url="https://example.blockscout",
             ctx=mock_ctx,
         )
 
@@ -152,7 +145,6 @@ async def test_handle_transaction_summary_empty_list(mock_ctx):
         match=_build_match(transaction_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -177,7 +169,6 @@ async def test_handle_transaction_summary_multiple_summaries(mock_ctx):
         match=_build_match(transaction_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 

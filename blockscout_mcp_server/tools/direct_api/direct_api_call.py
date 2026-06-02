@@ -13,7 +13,6 @@ from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
     encode_cursor,
-    get_blockscout_base_url,
     make_blockscout_post_request,
     make_blockscout_request,
     report_and_log_progress,
@@ -79,10 +78,9 @@ async def direct_api_call(
         ctx,
         progress=0.0,
         total=2.0,
-        message=f"Resolving Blockscout URL for chain {chain_id}...",
+        message=f"Preparing request for chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
     if endpoint_path != "/" and endpoint_path.endswith("/"):
         endpoint_path = endpoint_path.rstrip("/")
     if "?" in endpoint_path:
@@ -99,10 +97,10 @@ async def direct_api_call(
         message="Fetching data from Blockscout API...",
     )
     if method == "GET":
-        response_json = await make_blockscout_request(base_url=base_url, api_path=endpoint_path, params=params)
+        response_json = await make_blockscout_request(chain_id=chain_id, api_path=endpoint_path, params=params)
     else:
         response_json = await make_blockscout_post_request(
-            base_url=base_url,
+            chain_id=chain_id,
             api_path=endpoint_path,
             json_body=json_body,
             params=params,
@@ -113,7 +111,6 @@ async def direct_api_call(
         query_params=query_params,
         response_json=response_json,
         chain_id=chain_id,
-        base_url=base_url,
         ctx=ctx,
         method=method,
         json_body=json_body,

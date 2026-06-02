@@ -54,7 +54,6 @@ async def test_user_operation_handler_success(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -88,7 +87,6 @@ async def test_user_operation_handler_with_nulls(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -119,7 +117,6 @@ async def test_user_operation_handler_address_optimization(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -147,7 +144,6 @@ async def test_user_operation_handler_truncation(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -188,7 +184,6 @@ async def test_user_operation_handler_raw_truncation(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -237,7 +232,6 @@ async def test_user_operation_handler_decoded_truncation(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -278,7 +272,6 @@ async def test_user_operation_handler_decoded_execute_truncation(mock_ctx):
         match=_build_match(user_operation_hash),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -305,7 +298,6 @@ async def test_user_operation_handler_complex(mock_ctx):
         match=_build_match(user_operation_hash, trailing_slash=True),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
