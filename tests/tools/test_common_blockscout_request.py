@@ -363,3 +363,53 @@ async def test_make_blockscout_post_request_raises_for_unsupported_chain(monkeyp
     ):
         with pytest.raises(ChainNotFoundError):
             await make_blockscout_post_request(chain_id="99999", api_path="/json-rpc", json_body={})
+
+
+# ---------------------------------------------------------------------------
+# Authenticated-transport test for GET
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_sends_auth_headers_to_pro_api(monkeypatch):
+    """GET requests must carry auth headers and target the PRO API host.
+
+    Mirrors the POST-side test in test_common_post_request.py. The other GET
+    transport tests here use a header-swallowing client, so without this an
+    implementation could build the wrong URL or drop the Bearer token on GET
+    and still pass the unit suite.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "get_test_key")
+    chain_id = "1"
+    api_path = "/api/v2/test"
+    pro_base = config.pro_api_base_url
+
+    captured: dict = {}
+
+    class CapturingClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url, params=None, headers=None, **kwargs):
+            captured["url"] = url
+            captured["headers"] = headers or {}
+            request = httpx.Request("GET", url)
+            return httpx.Response(200, json={"result": "ok"}, request=request)
+
+    stub_ensure_chain_supported = AsyncMock()
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=CapturingClient()),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", stub_ensure_chain_supported),
+    ):
+        result = await make_blockscout_request(chain_id=chain_id, api_path=api_path)
+
+    assert result == {"result": "ok"}
+    stub_ensure_chain_supported.assert_awaited_once_with(chain_id)
+    assert captured["url"] == f"{pro_base}/{chain_id}{api_path}"
+    assert captured["headers"].get("Authorization") == "Bearer get_test_key"
+    assert "User-Agent" in captured["headers"]
+    assert captured["headers"].get("Accept") == "application/json"
