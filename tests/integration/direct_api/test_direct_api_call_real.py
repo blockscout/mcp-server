@@ -138,7 +138,7 @@ async def test_direct_api_call_post_eth_rpc(mock_ctx):
             json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
             ctx=mock_ctx,
         ),
-        action_description="direct_api_call post eth-rpc request",
+        action_description="direct_api_call post json-rpc request",
     )
     assert isinstance(result.data, DirectApiData)
     payload = result.data.model_dump()

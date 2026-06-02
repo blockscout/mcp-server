@@ -194,7 +194,7 @@ This architecture provides the flexibility of a multi-protocol server without th
    - MCP Host requests blockchain data (e.g., `get_block_number`) with specific chain_id, optionally requesting progress updates
    - MCP Server, if progress is requested, reports starting the operation
    - MCP Server validates the chain against the cached PRO API configuration and builds the PRO API URL (`<pro_api_base_url>/<chain_id>/...`)
-   - MCP Server reports progress after resolving the Blockscout URL
+   - MCP Server reports progress before fetching data
    - MCP Server forwards the request to the Blockscout PRO API gateway, authenticated with `BLOCKSCOUT_PRO_API_KEY`
    - For potentially long-running API calls (e.g., advanced transaction filters), MCP Server provides periodic progress updates every 15 seconds (configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`) showing elapsed time and estimated duration
    - MCP Server reports progress after fetching data from Blockscout

@@ -238,6 +238,7 @@ async def make_blockscout_request(
         raise ValueError(
             "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
         )
+    # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
     return await _make_blockscout_http_request(
@@ -280,6 +281,7 @@ async def make_blockscout_post_request(
         raise ValueError(
             "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
         )
+    # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
     return await _make_blockscout_http_request(
