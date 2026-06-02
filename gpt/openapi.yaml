@@ -120,10 +120,10 @@ paths:
         - name: endpoint_path
           in: query
           required: true
-          description: The Blockscout API path to call (e.g., '/api/eth-rpc')
+          description: The Blockscout API path to call (e.g., '/json-rpc')
           schema:
             type: string
-          example: "/api/eth-rpc"
+          example: "/json-rpc"
         - name: query_params
           in: query
           required: false

@@ -258,7 +258,7 @@ mcp-server/
             * `BLOCKSCOUT_BENS_URL`: Base URL for the BENS (Blockscout ENS) API.
             * `BLOCKSCOUT_BENS_TIMEOUT`: Timeout for BENS API requests.
             * `BLOCKSCOUT_METADATA_TIMEOUT`: Timeout for PRO API metadata requests.
-            * `BLOCKSCOUT_PRO_API_KEY`: Blockscout PRO API key used to authenticate address-metadata requests in `get_address_info`; when unset, metadata is omitted gracefully.
+            * `BLOCKSCOUT_PRO_API_KEY`: Blockscout PRO API key used to authenticate all Blockscout data requests (every data tool routes through the PRO API gateway). It is required; without it, data requests fail fast with a clear error.
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
             * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.

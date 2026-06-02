@@ -71,14 +71,14 @@ The unit tests are organized as follows:
 
 ## Integration Testing
 
-The project also includes a suite of integration tests that verify live connectivity and API contracts with external services like Chainscout, BENS, and Blockscout instances.
+The project also includes a suite of integration tests that verify live connectivity and API contracts with external services like Chainscout, BENS, and the Blockscout PRO API gateway.
 
 ### How it Works
 
 - **Real Network Calls:** Unlike unit tests, these tests require an active internet connection.
 - **`@pytest.mark.integration`:** Each integration test is marked with a custom `pytest` marker, allowing them to be run separately from unit tests.
 - **Excluded by Default:** To keep the default test run fast and offline-friendly, integration tests are **excluded** by default (as configured in `pytest.ini`).
-- **PRO API key for some tests:** A subset of integration tests requires a Blockscout PRO API key. The `read_contract` integration tests issue `eth_call` through the PRO API JSON-RPC gateway, and the address-metadata test calls the PRO metadata endpoint; both are **skipped** (not failed) when `BLOCKSCOUT_PRO_API_KEY` is unset. A skip here means the key is missing in the environment, not that the test passed.
+- **PRO API key for most data tests:** Most data integration tests now require a Blockscout PRO API key because they issue real requests through the Blockscout PRO API gateway. Tests are **skipped** (not failed) when `BLOCKSCOUT_PRO_API_KEY` is unset. A skip here means the key is missing in the environment, not that the test passed.
 
 ### Running Integration Tests
 
@@ -247,7 +247,7 @@ curl "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/
 #### 6b. Direct API Call (POST with JSON body)
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc" \
+curl -X POST "http://127.0.0.1:8000/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
