@@ -166,6 +166,7 @@ For tools that query Blockscout API (which route through the PRO API gateway):
 
 ```python
 from typing import Annotated, Optional
+from mcp.server.fastmcp import Context
 from pydantic import Field
 from blockscout_mcp_server.tools.common import (
     make_blockscout_request,
@@ -178,12 +179,19 @@ from blockscout_mcp_server.models import ToolResponse, YourDataModel
 async def tool_name(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     required_arg: Annotated[str, Field(description="Description of required argument")],
+    ctx: Context,  # MCP context, used for progress reporting (see Progress Reporting below)
     optional_arg: Annotated[Optional[str], Field(description="Description of optional argument")] = None
 ) -> ToolResponse[YourDataModel]:  # Return strongly-typed ToolResponse
     """
     Descriptive docstring explaining what the tool does.
     Include use cases and examples if helpful.
     **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
+
+    Args:
+        chain_id: The ID of the blockchain.
+        required_arg: Description of required argument.
+        ctx: The MCP context, used for progress reporting.
+        optional_arg: Description of optional argument.
     """
     # Construct API path, often with argument interpolation
     api_path = f"/api/v2/some_endpoint/{required_arg}"
@@ -212,6 +220,7 @@ For tools that use fixed API endpoints (like BENS or other services):
 
 ```python
 from typing import Annotated, Optional
+from mcp.server.fastmcp import Context
 from pydantic import Field
 from blockscout_mcp_server.tools.common import (
     make_bens_request,
@@ -223,11 +232,17 @@ from blockscout_mcp_server.models import ToolResponse, YourDataModel
 @log_tool_invocation
 async def tool_name(
     required_arg: Annotated[str, Field(description="Description of required argument")],
+    ctx: Context,  # MCP context, used for progress reporting (see Progress Reporting below)
     optional_arg: Annotated[Optional[str], Field(description="Description of optional argument")] = None
 ) -> ToolResponse[YourDataModel]:  # Return strongly-typed ToolResponse
     """
     Descriptive docstring explaining what the tool does.
     Include use cases and examples if helpful.
+
+    Args:
+        required_arg: Description of required argument.
+        ctx: The MCP context, used for progress reporting.
+        optional_arg: Description of optional argument.
     """
     # Construct API path, often with argument interpolation
     api_path = f"/api/v1/some_endpoint/{required_arg}"

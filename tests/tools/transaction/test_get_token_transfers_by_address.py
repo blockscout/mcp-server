@@ -78,7 +78,10 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_chain_error(mock_ctx):
     """
-    Verify that chain lookup errors are properly propagated without calling the wrapper.
+    Verify that a chain lookup error raised by the wrapper is propagated to the caller.
+
+    The wrapper (make_request_with_periodic_progress) is invoked, and the exception it
+    raises during chain resolution bubbles up to the caller unchanged.
     """
     # ARRANGE
     chain_id = "999999"  # Invalid chain ID
