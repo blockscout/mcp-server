@@ -776,6 +776,24 @@ async def test_direct_api_call_post_success(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_post_with_query_params(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.post(
+        "/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc&query_params[foo]=bar", json={"id": 1}
+    )
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        endpoint_path="/json-rpc",
+        method="POST",
+        json_body={"id": 1},
+        query_params={"foo": "bar"},
+        ctx=ANY,
+    )
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_post_missing_body(client: AsyncClient):
     response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc")
     assert response.status_code == 400

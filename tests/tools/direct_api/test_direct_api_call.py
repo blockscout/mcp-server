@@ -393,6 +393,37 @@ async def test_direct_api_call_post_basic(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_direct_api_call_post_with_query_params(mock_ctx):
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_get,
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_post_request",
+            new_callable=AsyncMock,
+        ) as mock_post,
+    ):
+        mock_post.return_value = {"jsonrpc": "2.0", "result": "0x1"}
+        result = await direct_api_call_module.direct_api_call(
+            chain_id="1",
+            endpoint_path="/json-rpc",
+            method="POST",
+            query_params={"foo": "bar"},
+            json_body={"id": 1},
+            ctx=mock_ctx,
+        )
+        assert isinstance(result.data, DirectApiData)
+        mock_get.assert_not_called()
+        mock_post.assert_awaited_once_with(
+            chain_id="1",
+            api_path="/json-rpc",
+            json_body={"id": 1},
+            params={"foo": "bar"},
+        )
+        assert mock_ctx.report_progress.await_count == 3
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_invalid_method_raises(mock_ctx):
     with pytest.raises(ValueError, match="method must be 'GET' or 'POST'"):
         await direct_api_call_module.direct_api_call(
