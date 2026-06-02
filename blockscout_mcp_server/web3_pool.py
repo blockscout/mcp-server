@@ -68,8 +68,8 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
     connection pooling and fine-grained timeout control.
 
     The :meth:`set_request_headers` method replaces the provider's request
-    headers at runtime, enabling credential rotation without creating a new
-    provider instance.
+    headers, letting the pool (re)apply the configured ``Authorization`` to a
+    reused provider without creating a new instance.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -85,9 +85,9 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
     def set_request_headers(self, headers: dict[str, str]) -> None:
         """Replace the provider's request headers.
 
-        Mirrors :meth:`set_pooled_session` as a hook for the pool to refresh
-        credentials at request time (including on cache hits) without creating
-        a new provider instance.
+        Mirrors :meth:`set_pooled_session` as a hook for the pool to (re)apply
+        the configured ``Authorization`` header on every fetch (including cache
+        hits), since auth is not part of the provider's cache key.
         """
         self._request_kwargs["headers"] = headers
 
@@ -146,8 +146,9 @@ class Web3Pool:
     chain's JSON-RPC traffic targets the same host (``api.blockscout.com``).
 
     Auth headers (``Authorization``) are intentionally excluded from cache
-    keys and resolved at request time on every call (including cache hits), so
-    a rotated key takes effect immediately without creating a new provider.
+    keys so the secret never enters internal dictionaries; the configured key
+    is (re)applied on every fetch (including cache hits), so a pooled provider
+    always carries the currently configured key.
     """
 
     def __init__(self) -> None:
@@ -203,8 +204,9 @@ class Web3Pool:
 
         if key in self._pool:
             w3 = self._pool[key]
-            # Refresh auth headers on every call — including cache hits — so a
-            # rotated key takes effect immediately without requiring a new provider.
+            # Re-apply auth headers on every fetch — including cache hits — since auth
+            # is excluded from the cache key, so the provider always carries the
+            # currently configured key.
             w3.provider.set_request_headers(_request_headers(hdr_items))
             w3.provider.set_pooled_session(session)
             return w3
