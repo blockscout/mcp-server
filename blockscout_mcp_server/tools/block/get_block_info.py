@@ -9,7 +9,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockInfoData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -38,18 +37,16 @@ async def get_block_info(
         message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=total_steps,
-        message="Resolved Blockscout instance URL. Fetching block data...",
+        message="Fetching data...",
     )
 
     if not include_transactions:
         response_data = await make_blockscout_request(
-            base_url=base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/blocks/{number_or_hash}",
             timeout=config.bs_light_timeout,
         )
@@ -71,8 +68,8 @@ async def get_block_info(
     txs_api_path = f"/api/v2/blocks/{number_or_hash}/transactions"
 
     results = await asyncio.gather(
-        make_blockscout_request(base_url=base_url, api_path=block_api_path, timeout=config.bs_light_timeout),
-        make_blockscout_request(base_url=base_url, api_path=txs_api_path),
+        make_blockscout_request(chain_id=chain_id, api_path=block_api_path, timeout=config.bs_light_timeout),
+        make_blockscout_request(chain_id=chain_id, api_path=txs_api_path),
         return_exceptions=True,
     )
     await report_and_log_progress(

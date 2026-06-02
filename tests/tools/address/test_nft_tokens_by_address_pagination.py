@@ -20,7 +20,6 @@ async def test_nft_tokens_by_address_with_pagination(mock_ctx):
     """Verify pagination hint is included when next_page_params present."""
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     items = [
         {
@@ -42,16 +41,12 @@ async def test_nft_tokens_by_address_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
         patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination",
         ) as mock_create_pagination,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # Create processed items format that the function expects
@@ -98,20 +93,15 @@ async def test_nft_tokens_by_address_with_cursor(mock_ctx):
     """Verify decoded cursor parameters are passed to the API call."""
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
     decoded_params = {"block_number": 100, "index": 1, "items_count": 25}
     cursor = encode_cursor(decoded_params)
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
         patch("blockscout_mcp_server.tools.address.nft_tokens_by_address.apply_cursor_to_params") as mock_apply_cursor,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = {"items": []}
         mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded_params)
 
@@ -119,7 +109,7 @@ async def test_nft_tokens_by_address_with_cursor(mock_ctx):
 
         mock_apply_cursor.assert_called_once_with(cursor, ANY)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155", **decoded_params},
         )
@@ -144,7 +134,6 @@ async def test_nft_tokens_by_address_invalid_cursor(mock_ctx):
 async def test_nft_tokens_by_address_response_sliced(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     items = [
         {
@@ -165,16 +154,12 @@ async def test_nft_tokens_by_address_response_sliced(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
         patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.create_items_pagination",
         ) as mock_create_pagination,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # Create processed items format that the function expects
@@ -214,7 +199,6 @@ async def test_nft_tokens_by_address_response_sliced(mock_ctx):
 async def test_nft_tokens_by_address_custom_page_size(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     items = [
         {
@@ -235,9 +219,6 @@ async def test_nft_tokens_by_address_custom_page_size(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
         patch(
@@ -245,7 +226,6 @@ async def test_nft_tokens_by_address_custom_page_size(mock_ctx):
         ) as mock_create_pagination,
         patch.object(config, "nft_page_size", 5),
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # Create processed items format that the function expects

@@ -30,17 +30,12 @@ async def test_get_address_info_metadata_failure(mock_ctx):
     """Return ToolResponse with notes when metadata API fails."""
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_blockscout_response = {"hash": address, "is_contract": False}
     mock_first_tx_response = {"items": []}
     metadata_error = httpx.RequestError("Network error")
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
             new_callable=AsyncMock,
@@ -50,22 +45,20 @@ async def test_get_address_info_metadata_failure(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_meta_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
         mock_meta_request.side_effect = metadata_error
 
         result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_bs_request.assert_has_calls(
             [
                 call(
-                    base_url=mock_base_url,
+                    chain_id=chain_id,
                     api_path=f"/api/v2/addresses/{address}",
                     timeout=config.bs_light_timeout,
                 ),
                 call(
-                    base_url=mock_base_url,
+                    chain_id=chain_id,
                     api_path=f"/api/v2/addresses/{address}/transactions",
                     params={"sort": "block_number", "order": "asc"},
                 ),
@@ -99,7 +92,6 @@ async def test_get_address_info_metadata_http_status_error_degrades_gracefully(s
     """A rejected PRO API call (401/402/429) degrades softly — primary data is still returned."""
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_blockscout_response = {"hash": address, "is_contract": False}
     mock_first_tx_response = {"items": []}
@@ -110,10 +102,6 @@ async def test_get_address_info_metadata_http_status_error_degrades_gracefully(s
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_bs_request,
@@ -122,7 +110,6 @@ async def test_get_address_info_metadata_http_status_error_degrades_gracefully(s
             new_callable=AsyncMock,
         ) as mock_meta_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
         mock_meta_request.side_effect = metadata_error
 
@@ -141,50 +128,34 @@ async def test_get_address_info_metadata_http_status_error_degrades_gracefully(s
 
 
 # ---------------------------------------------------------------------------
-# Metadata skipped — no PRO API key configured
+# Primary request fails fast — no PRO API key configured
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_get_address_info_skips_metadata_request_when_no_key(mock_ctx, monkeypatch):
-    """With no PRO API key, get_address_info never calls the PRO API yet still degrades gracefully.
-
-    The real make_metadata_request runs (it is NOT mocked here) and must short-circuit
-    before any network client is created, leaving primary data intact plus a note.
-    """
+async def test_get_address_info_fails_fast_when_no_key(mock_ctx, monkeypatch):
+    """With no PRO API key, the primary make_blockscout_request fails fast and get_address_info raises the error."""
     monkeypatch.setattr(config, "pro_api_key", "")
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
-    mock_blockscout_response = {"hash": address, "is_contract": False}
-    mock_first_tx_response = {"items": []}
-
-    def _fail_create_client(*args, **kwargs):
-        raise AssertionError("No PRO API HTTP request should be made when the key is absent")
+    missing_key_error = ValueError("BLOCKSCOUT_PRO_API_KEY is not set")
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
             new_callable=AsyncMock,
         ) as mock_bs_request,
-        patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail_create_client),
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
+            new_callable=AsyncMock,
+        ) as mock_meta_request,
     ):
-        mock_get_url.return_value = mock_base_url
-        mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
+        mock_bs_request.side_effect = missing_key_error
+        mock_meta_request.return_value = {}
 
-        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
-
-    assert isinstance(result, ToolResponse)
-    assert isinstance(result.data, AddressInfoData)
-    assert result.data.basic_info == mock_blockscout_response
-    assert result.data.metadata is None
-    assert result.notes is not None
-    assert any("Could not retrieve address metadata" in note for note in result.notes)
+        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+            await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +275,6 @@ def test_process_metadata_tags_handles_none_metadata():
 async def test_get_address_info_adds_note_when_metadata_meta_is_truncated(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
     mock_blockscout_response = {"hash": address, "is_contract": True}
     mock_first_tx_response = {"items": []}
     mock_metadata_response = {
@@ -315,16 +285,12 @@ async def test_get_address_info_adds_note_when_metadata_meta_is_truncated(mock_c
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_address_info.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request", new_callable=AsyncMock
         ) as mock_bs_request,
         patch(
             "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request", new_callable=AsyncMock
         ) as mock_meta_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
         mock_meta_request.return_value = mock_metadata_response
 

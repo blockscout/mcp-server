@@ -21,7 +21,6 @@ async def test_nft_tokens_by_address_success(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -57,22 +56,17 @@ async def test_nft_tokens_by_address_success(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
@@ -105,28 +99,22 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
@@ -144,7 +132,6 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -173,22 +160,17 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
@@ -221,22 +203,17 @@ async def test_nft_tokens_by_address_api_error(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.side_effect = api_error
 
         # ACT & ASSERT
         with pytest.raises(httpx.HTTPStatusError):
             await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
@@ -253,7 +230,6 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -285,22 +261,17 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.nft_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.nft_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await nft_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url,
+            chain_id=chain_id,
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
