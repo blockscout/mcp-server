@@ -28,20 +28,13 @@ async def get_block_info(
     Get block information like timestamp, gas used, burnt fees, transaction count etc.
     Can optionally include the list of transaction hashes contained in the block. Transaction hashes are omitted by default; request them only when you truly need them, because on high-traffic chains the list may exhaust the context.
     """  # noqa: E501
-    total_steps = 3.0 if include_transactions else 2.0
+    total_steps = 2.0 if include_transactions else 1.0
 
     await report_and_log_progress(
         ctx,
         progress=0.0,
         total=total_steps,
         message=f"Starting to fetch block info for {number_or_hash} on chain {chain_id}...",
-    )
-
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=total_steps,
-        message="Fetching data...",
     )
 
     if not include_transactions:
@@ -52,7 +45,7 @@ async def get_block_info(
         )
         await report_and_log_progress(
             ctx,
-            progress=2.0,
+            progress=1.0,
             total=total_steps,
             message="Successfully fetched block data.",
         )
@@ -74,9 +67,9 @@ async def get_block_info(
     )
     await report_and_log_progress(
         ctx,
-        progress=2.0,
+        progress=1.0,
         total=total_steps,
-        message="Fetched block and transaction data.",
+        message="Block and transaction requests completed; processing results.",
     )
 
     block_info_result, txs_result = results
@@ -94,7 +87,7 @@ async def get_block_info(
 
     await report_and_log_progress(
         ctx,
-        progress=3.0,
+        progress=2.0,
         total=total_steps,
         message="Successfully fetched all block data.",
     )

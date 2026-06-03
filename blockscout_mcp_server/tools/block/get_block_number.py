@@ -52,15 +52,8 @@ async def get_block_number(
         await report_and_log_progress(
             ctx,
             progress=0.0,
-            total=2.0,
+            total=1.0,
             message=f"Starting to fetch latest block info on chain {chain_id}...",
-        )
-
-        await report_and_log_progress(
-            ctx,
-            progress=1.0,
-            total=2.0,
-            message="Fetching data...",
         )
 
         response_data = await make_blockscout_request(
@@ -71,8 +64,8 @@ async def get_block_number(
 
         await report_and_log_progress(
             ctx,
-            progress=2.0,
-            total=2.0,
+            progress=1.0,
+            total=1.0,
             message="Successfully fetched latest block data.",
         )
 
@@ -95,15 +88,8 @@ async def get_block_number(
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=3.0,
+        total=2.0,
         message=f"Starting to resolve block number on chain {chain_id}...",
-    )
-
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=3.0,
-        message="Fetching data...",
     )
 
     block_lookup = await make_blockscout_request(
@@ -135,8 +121,8 @@ async def get_block_number(
 
     await report_and_log_progress(
         ctx,
-        progress=2.0,
-        total=3.0,
+        progress=1.0,
+        total=2.0,
         message="Resolved block number. Fetching block timestamp...",
     )
 
@@ -152,8 +138,8 @@ async def get_block_number(
 
     await report_and_log_progress(
         ctx,
-        progress=3.0,
-        total=3.0,
+        progress=2.0,
+        total=2.0,
         message="Successfully resolved block number by time.",
     )
 

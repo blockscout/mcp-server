@@ -32,8 +32,8 @@ async def test_get_block_number_latest_success(mock_ctx):
         assert isinstance(result.data, BlockNumberData)
         assert result.data.block_number == 12345
         assert result.data.timestamp == "2023-01-01T00:00:00Z"
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         assert "Latest block on chain" in result.content_text
 
 
@@ -71,9 +71,28 @@ async def test_get_block_number_by_time_success(mock_ctx):
             "api_path": "/api/v2/blocks/12345",
             "timeout": config.bs_light_timeout,
         }
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert "closest block before" in result.content_text
+
+
+@pytest.mark.asyncio
+async def test_get_block_number_latest_upstream_failure(mock_ctx):
+    """Verify get_block_number (latest branch) emits only the start beat when the request fails."""
+    chain_id = "1"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
+        mock_request.side_effect = ValueError("upstream error")
+
+        with pytest.raises(ValueError, match="upstream error"):
+            await get_block_number(chain_id=chain_id, ctx=mock_ctx)
+
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio
