@@ -6,10 +6,9 @@ import anyio
 import httpx
 import pytest
 
-from blockscout_mcp_server.cache import ChainCache, ProApiConfigCache
+from blockscout_mcp_server.cache import ProApiConfigCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools import common
-from blockscout_mcp_server.tools.common import ChainNotFoundError
 
 pytestmark = pytest.mark.anyio
 
@@ -34,7 +33,6 @@ class MockAsyncClient:
 @pytest.fixture(autouse=True)
 def reset_caches(monkeypatch):
     monkeypatch.setattr(common, "pro_api_config_cache", ProApiConfigCache())
-    monkeypatch.setattr(common, "chain_cache", ChainCache())
 
 
 async def test_fetch_pro_api_config_normalizes_urls_and_accepts_empty():
@@ -126,28 +124,6 @@ async def test_ensure_pro_api_config_concurrent_dedup():
     assert calls == 1
 
 
-async def test_get_blockscout_base_url_paths():
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config", AsyncMock(return_value={"1": "https://eth"})
-    ) as ensure:
-        assert await common.get_blockscout_base_url("1") == "https://eth"
-        ensure.assert_awaited_once()
-
-    common.pro_api_config_cache.store_snapshot({"1": "https://cached"})
-    await common.chain_cache.set("1", "https://cached")
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config", AsyncMock(return_value={"1": "https://eth"})
-    ) as ensure:
-        assert await common.get_blockscout_base_url("1") == "https://cached"
-        ensure.assert_not_awaited()
-
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config", AsyncMock(return_value={"480": "https://world"})
-    ):
-        with pytest.raises(ChainNotFoundError):
-            await common.get_blockscout_base_url("17000")
-
-
 async def test_fetch_pro_api_config_rejects_non_dict_chains():
     request = httpx.Request("GET", "https://api.blockscout.com/api/json/config")
     response = httpx.Response(200, json={"chains": "not-a-dict"}, request=request)
@@ -222,23 +198,6 @@ async def test_ensure_pro_api_config_stale_logs_warning(monkeypatch):
     ):
         await common.ensure_pro_api_config()
     warn.assert_called_once()
-
-
-async def _deprecated_test_get_blockscout_base_url_failure_expires_with_short_ttl(monkeypatch):
-    t = 0.0
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
-    monkeypatch.setattr(config, "chains_list_ttl_seconds", 1)
-    with patch("blockscout_mcp_server.tools.common.ensure_pro_api_config", new_callable=AsyncMock, return_value={}):
-        with pytest.raises(ChainNotFoundError):
-            await common.get_blockscout_base_url("999")
-    t = 2.0
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config",
-        new_callable=AsyncMock,
-        return_value={"999": "https://new"},
-    ) as ensure:
-        assert await common.get_blockscout_base_url("999") == "https://new"
-        ensure.assert_awaited_once()
 
 
 async def test_ensure_pro_api_config_stale_failure_uses_cooldown(monkeypatch):
@@ -322,18 +281,6 @@ async def test_ensure_pro_api_config_stale_fallback_does_not_invalidate_chains_l
     assert common.chains_list_cache.get_if_fresh() == []
 
 
-async def test_get_blockscout_base_url_populates_chain_cache_on_success():
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config",
-        AsyncMock(return_value={"1": "https://eth"}),
-    ) as ensure:
-        assert await common.get_blockscout_base_url("1") == "https://eth"
-        ensure.assert_awaited_once()
-        common.pro_api_config_cache.store_snapshot({"1": "https://eth"})
-        assert await common.get_blockscout_base_url("1") == "https://eth"
-        assert ensure.await_count == 1
-
-
 async def test_ensure_pro_api_config_does_not_swallow_programming_errors(monkeypatch):
     t = 0.0
     monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
@@ -353,65 +300,6 @@ async def test_ensure_pro_api_config_does_not_swallow_programming_errors(monkeyp
     ):
         with pytest.raises(AttributeError):
             await common.ensure_pro_api_config()
-
-
-async def test_get_blockscout_base_url_uses_positive_cache_when_pro_config_fresh():
-    common.pro_api_config_cache.store_snapshot({"999": "https://cached"})
-    await common.chain_cache.set("999", "https://cached")
-    with patch("blockscout_mcp_server.tools.common.ensure_pro_api_config", new_callable=AsyncMock) as ensure:
-        assert await common.get_blockscout_base_url("999") == "https://cached"
-        ensure.assert_not_awaited()
-
-
-async def test_get_blockscout_base_url_revalidates_positive_cache_when_pro_config_stale(monkeypatch):
-    t = 0.0
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
-    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
-    monkeypatch.setattr(config, "chain_cache_ttl_seconds", 100)
-
-    with patch(
-        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
-        new_callable=AsyncMock,
-        return_value={"999": "https://old"},
-    ):
-        assert await common.get_blockscout_base_url("999") == "https://old"
-
-    t = 2.0
-    with patch(
-        "blockscout_mcp_server.tools.common._fetch_pro_api_config",
-        new_callable=AsyncMock,
-        return_value={"1": "https://eth"},
-    ):
-        with pytest.raises(ChainNotFoundError):
-            await common.get_blockscout_base_url("999")
-
-
-async def test_get_blockscout_base_url_failure_expires_with_pro_api_config_ttl(monkeypatch):
-    t = 0.0
-    monkeypatch.setattr("blockscout_mcp_server.cache.time.monotonic", lambda: t)
-    monkeypatch.setattr(config, "pro_api_config_ttl_seconds", 1)
-    with patch("blockscout_mcp_server.tools.common.ensure_pro_api_config", new_callable=AsyncMock, return_value={}):
-        with pytest.raises(ChainNotFoundError):
-            await common.get_blockscout_base_url("999")
-    t = 2.0
-    with patch(
-        "blockscout_mcp_server.tools.common.ensure_pro_api_config",
-        new_callable=AsyncMock,
-        return_value={"999": "https://new"},
-    ) as ensure:
-        assert await common.get_blockscout_base_url("999") == "https://new"
-        ensure.assert_awaited_once()
-
-
-async def test_get_blockscout_base_url_rejects_positive_cache_when_out_of_sync_fresh_snapshot():
-    common.pro_api_config_cache.store_snapshot({"1": "https://eth"})
-    await common.chain_cache.set("999", "https://old")
-
-    with pytest.raises(ChainNotFoundError):
-        await common.get_blockscout_base_url("999")
-
-    cached = common.chain_cache.get("999")
-    assert cached is not None and cached[0] is None
 
 
 async def test_fetch_pro_api_config_does_not_send_pro_api_key(monkeypatch):
