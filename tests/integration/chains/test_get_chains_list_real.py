@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import asyncio
-import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -8,7 +7,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
-from blockscout_mcp_server.tools.common import chain_cache, chains_list_cache, get_blockscout_base_url
+from blockscout_mcp_server.tools.common import chains_list_cache
 from tests.integration.helpers import retry_on_network_error
 
 
@@ -50,23 +49,6 @@ async def test_get_chains_list_integration(mock_ctx):
     assert op_chain.ecosystem == ["Optimism", "Superchain"]
     assert op_chain.settlement_layer_chain_id == "1"
     assert any(c.chain_id == "480" for c in result.data)
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_get_chains_list_warms_cache(mock_ctx):
-    """Ensure calling get_chains_list populates the chain cache."""
-    await retry_on_network_error(
-        lambda: get_chains_list(ctx=mock_ctx),
-        action_description="get_chains_list request",
-    )
-
-    cached_entry = chain_cache.get("1")
-    assert cached_entry is not None
-    cached_url, expiry = cached_entry
-    expected_url = await get_blockscout_base_url("1")
-    assert cached_url == expected_url
-    assert expiry > time.monotonic()
 
 
 @pytest.mark.integration

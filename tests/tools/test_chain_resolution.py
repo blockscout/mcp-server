@@ -80,12 +80,10 @@ async def test_ensure_pro_api_config_cache_and_failures(monkeypatch):
             return_value={"1": "https://eth"},
         ),
         patch.object(common.pro_api_config_cache, "store_snapshot") as store,
-        patch.object(common.chain_cache, "replace_success_entries", new_callable=AsyncMock) as bulk,
     ):
         out = await common.ensure_pro_api_config()
         assert out["1"] == "https://eth"
         store.assert_called_once()
-        bulk.assert_awaited_once()
 
     with (
         patch(
@@ -94,12 +92,10 @@ async def test_ensure_pro_api_config_cache_and_failures(monkeypatch):
             side_effect=ValueError("bad"),
         ),
         patch.object(common.pro_api_config_cache, "store_snapshot") as store,
-        patch.object(common.chain_cache, "replace_success_entries", new_callable=AsyncMock) as bulk,
     ):
         with pytest.raises(ValueError):
             await common.ensure_pro_api_config()
         store.assert_not_called()
-        bulk.assert_not_awaited()
 
 
 async def test_ensure_pro_api_config_refresh_after_ttl(monkeypatch):

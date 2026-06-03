@@ -86,7 +86,6 @@ async def ensure_pro_api_config() -> dict[str, str]:
         try:
             chain_urls = await _fetch_pro_api_config()
             pro_api_config_cache.store_snapshot(chain_urls)
-            await chain_cache.replace_success_entries(chain_urls)
             chains_list_cache.invalidate()
             return chain_urls
         except (httpx.HTTPStatusError, httpx.RequestError, ValueError, OSError):
