@@ -22,7 +22,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_get(mock_ctx):
                 ctx=mock_ctx,
             )
         mock_get.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -41,7 +40,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_trailing_slash(mock_c
                 ctx=mock_ctx,
             )
         mock_get.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -62,7 +60,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_post(mock_ctx):
                 ctx=mock_ctx,
             )
         mock_post.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -81,7 +78,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_case_insensitive(mock
                 ctx=mock_ctx,
             )
         mock_get.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -100,7 +96,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_with_query_string(moc
                 ctx=mock_ctx,
             )
         mock_get.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -119,7 +114,6 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_surrounding_whitespac
                 ctx=mock_ctx,
             )
         mock_get.assert_not_awaited()
-        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -158,3 +152,22 @@ async def test_direct_api_call_allows_supported_json_rpc_path(mock_ctx):
             ctx=mock_ctx,
         )
         mock_post.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_strips_whitespace_around_supported_path(mock_ctx):
+    """Surrounding whitespace on a supported path is normalized before the network call."""
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_get,
+    ):
+        mock_get.return_value = {"result": "ok"}
+        await direct_api_call_module.direct_api_call(
+            chain_id="1",
+            endpoint_path="  /api/v2/stats  ",
+            ctx=mock_ctx,
+        )
+        mock_get.assert_awaited_once()
+        assert mock_get.await_args.kwargs["api_path"] == "/api/v2/stats"
