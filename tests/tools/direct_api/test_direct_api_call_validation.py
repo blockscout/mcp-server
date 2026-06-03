@@ -117,6 +117,42 @@ async def test_direct_api_call_rejects_legacy_eth_rpc_path_surrounding_whitespac
 
 
 @pytest.mark.asyncio
+async def test_direct_api_call_rejects_legacy_eth_rpc_path_trailing_slash_with_query_string(mock_ctx):
+    """A trailing slash combined with a query string still yields the legacy-path error."""
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_get,
+    ):
+        with pytest.raises(ValueError, match="no longer supported"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1",
+                endpoint_path="/api/eth-rpc/?id=1",
+                ctx=mock_ctx,
+            )
+        mock_get.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_rejects_legacy_eth_rpc_path_whitespace_before_query_string(mock_ctx):
+    """Whitespace between the legacy path and its query string still yields the legacy-path error."""
+    with (
+        patch(
+            "blockscout_mcp_server.tools.direct_api.direct_api_call.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_get,
+    ):
+        with pytest.raises(ValueError, match="no longer supported"):
+            await direct_api_call_module.direct_api_call(
+                chain_id="1",
+                endpoint_path="/api/eth-rpc ?id=1",
+                ctx=mock_ctx,
+            )
+        mock_get.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_allows_non_legacy_lookalike_path(mock_ctx):
     """A path that merely contains 'eth-rpc' as a substring is not rejected and reaches the network."""
     with (
