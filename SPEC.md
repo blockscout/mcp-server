@@ -173,7 +173,6 @@ This architecture provides the flexibility of a multi-protocol server without th
    - The snapshot is cached in-process with a TTL (configurable via `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`).
    - This chains-list cache is derived from PRO API config + Chainscout metadata and is invalidated after successful PRO API config refreshes.
    - The PRO API config mapping is cached separately with its own TTL (configurable via `BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS`).
-   - The per-chain `ChainCache` is an optimization layer authoritatively synchronized/replaced from the latest PRO API snapshot on each successful refresh. Positive entries are trusted only while the corresponding PRO API snapshot is fresh.
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs
 
@@ -373,7 +372,7 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
 4. **Async Web3 Connection Pool**:
    - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to perform `eth_call` requests through the Blockscout PRO API JSON-RPC gateway (`https://api.blockscout.com/{chain_id}/json-rpc`) rather than per-chain public RPC endpoints.
    - Requests authenticate against the gateway as described in the "Blockscout PRO API Authentication" section (the `Authorization` header is resolved at request time and excluded from pool cache keys); when no key is configured, contract reads fail fast before any network call is made.
-   - Chain support is validated independently of instance URL resolution, against the authoritative PRO API chain configuration.
+   - Chain support is validated against the authoritative PRO API chain configuration.
    - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
    - Because all chains target a single gateway host, the pool maintains one shared `aiohttp` session whose connector enforces a global per-host connection limit across every chain.
    - Credit-exhaustion and rate-limit responses are currently treated the same as general service unavailability.

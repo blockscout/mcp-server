@@ -11,7 +11,7 @@ This document provides detailed guidelines for writing effective integration tes
 
 ### Category 1: Helper-Level Integration Tests (Connectivity & Basic Contract)
 
-These tests target the low-level helper functions in `tools/common.py` (e.g., `make_blockscout_request`, `get_blockscout_base_url`).
+These tests target the low-level helper functions in `tools/common.py` (e.g., `make_blockscout_request`, `ensure_chain_supported`).
 
 - **Purpose:** To verify basic network connectivity and ensure the fundamental HTTP request/response cycle with each external service is working.
 - **Location:** `tests/integration/test_common_helpers.py`.
