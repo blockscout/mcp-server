@@ -247,6 +247,16 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
             "Starting to fetch transaction info" in call.kwargs.get("message", "")
             for call in mock_ctx.report_progress.await_args_list
         )
+        # Watershed beat (index 1) must stay neutral and honest even though the ops request failed,
+        # and the completion beat (index 2) reports overall success on the total=2.0 scale.
+        calls = mock_ctx.report_progress.await_args_list
+        assert calls[0].kwargs["total"] == 2.0
+        assert calls[1].kwargs["progress"] == 1.0
+        assert calls[1].kwargs["total"] == 2.0
+        assert calls[1].kwargs["message"] == "Transaction and user operations requests completed; processing results."
+        assert calls[2].kwargs["progress"] == 2.0
+        assert calls[2].kwargs["total"] == 2.0
+        assert calls[2].kwargs["message"] == "Successfully fetched all transaction data."
         assert result.data.user_operations is None
         assert result.notes is not None
         assert any("Could not retrieve user operations" in note for note in result.notes)
@@ -462,8 +472,8 @@ async def test_get_transaction_info_not_found(mock_ctx):
                 ),
             ]
         )
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -487,8 +497,8 @@ async def test_get_transaction_info_chain_not_found(mock_ctx):
         with pytest.raises(ChainNotFoundError):
             await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
 
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio

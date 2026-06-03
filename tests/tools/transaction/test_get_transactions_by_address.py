@@ -55,8 +55,8 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
         assert call_kwargs["chain_id"] == chain_id
         assert call_kwargs["api_path"] == "/api/v2/advanced-filters"
         assert call_kwargs["ctx"] == mock_ctx
-        assert call_kwargs["progress_start_step"] == 2.0
-        assert call_kwargs["total_steps"] == 12.0
+        assert call_kwargs["progress_start_step"] == 1.0
+        assert call_kwargs["total_steps"] == 11.0
 
         # Check the initial_params that should be passed to the smart pagination function
         expected_initial_params = {
@@ -68,8 +68,9 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
         }
         assert call_kwargs["initial_params"] == expected_initial_params
 
-        # Verify progress was reported correctly before the smart pagination call
-        assert mock_ctx.report_progress.call_count == 3  # Start + after URL resolution + completion
+        # Verify progress was reported correctly around the smart pagination call.
+        # Start + completion only; per-page beats are emitted inside the (mocked) helper.
+        assert mock_ctx.report_progress.call_count == 2
 
 
 @pytest.mark.asyncio

@@ -60,7 +60,7 @@ async def get_transactions_by_address(
 
     apply_cursor_to_params(cursor, query_params)
 
-    tool_overall_total_steps = 12.0
+    tool_overall_total_steps = 11.0
 
     await report_and_log_progress(
         ctx,
@@ -69,20 +69,13 @@ async def get_transactions_by_address(
         message=f"Starting to fetch transactions for {address} on chain {chain_id}...",
     )
 
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=tool_overall_total_steps,
-        message="Fetching transactions...",
-    )
-
     filtered_items, has_more_pages = await _fetch_filtered_transactions_with_smart_pagination(
         chain_id=chain_id,
         api_path=api_path,
         initial_params=query_params,
         target_page_size=config.advanced_filters_page_size,
         ctx=ctx,
-        progress_start_step=2.0,
+        progress_start_step=1.0,
         total_steps=tool_overall_total_steps,
     )
 

@@ -35,7 +35,7 @@ async def test_direct_api_call_no_params(mock_ctx):
         assert isinstance(result.data, DirectApiData)
         assert result.data.model_dump() == mock_response
         assert result.pagination is None
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -82,7 +82,7 @@ async def test_direct_api_call_with_query_params_and_cursor(mock_ctx):
         assert isinstance(result.data, DirectApiData)
         assert result.data.model_dump() == mock_response
         assert result.pagination is None
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -114,7 +114,7 @@ async def test_direct_api_call_with_pagination(mock_ctx):
         assert "cursor" in nc
         assert "query_params" not in nc
         mock_request.assert_called_once_with(chain_id=chain_id, api_path=endpoint_path, params={})
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -147,7 +147,7 @@ async def test_direct_api_call_with_query_params_pagination(mock_ctx):
         assert nc["query_params"] == query_params
         assert "cursor" in nc
         mock_request.assert_called_once_with(chain_id=chain_id, api_path=endpoint_path, params=query_params)
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -168,7 +168,7 @@ async def test_direct_api_call_raises_on_request_error(mock_ctx):
                 ctx=mock_ctx,
             )
         mock_request.assert_awaited_once()
-        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -181,7 +181,8 @@ async def test_direct_api_call_rejects_query_in_path(mock_ctx):
             endpoint_path=endpoint_path,
             ctx=mock_ctx,
         )
-    assert mock_ctx.report_progress.await_count == 1
+    assert mock_ctx.report_progress.await_count == 0
+    assert mock_ctx.info.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -389,7 +390,7 @@ async def test_direct_api_call_post_basic(mock_ctx):
             json_body={"id": 1},
             params={},
         )
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -420,7 +421,7 @@ async def test_direct_api_call_post_with_query_params(mock_ctx):
             json_body={"id": 1},
             params={"foo": "bar"},
         )
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -496,4 +497,4 @@ async def test_direct_api_call_post_ignores_next_page_params_for_pagination(mock
             json_body={"id": 1},
             params={},
         )
-        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2

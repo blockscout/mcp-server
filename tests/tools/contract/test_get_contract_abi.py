@@ -6,6 +6,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
+from blockscout_mcp_server.tools.common import ChainNotFoundError
 from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 
 
@@ -59,15 +60,14 @@ async def test_get_contract_abi_success(mock_ctx):
             timeout=config.bs_light_timeout,
         )
         assert_contract_abi_response(result, mock_abi_list)
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         progress_calls = mock_ctx.report_progress.await_args_list
-        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
-        assert [call.kwargs["total"] for call in progress_calls] == [2.0, 2.0, 2.0]
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0]
+        assert [call.kwargs["total"] for call in progress_calls] == [1.0, 1.0]
         info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
         assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
-        assert "Fetching data" in info_messages[1]
-        assert "Successfully fetched contract ABI." in info_messages[2]
+        assert "Successfully fetched contract ABI." in info_messages[1]
 
 
 @pytest.mark.asyncio
@@ -96,15 +96,14 @@ async def test_get_contract_abi_missing_abi_field(mock_ctx):
             timeout=config.bs_light_timeout,
         )
         assert_contract_abi_response(result, None)
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         progress_calls = mock_ctx.report_progress.await_args_list
-        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
-        assert [call.kwargs["total"] for call in progress_calls] == [2.0, 2.0, 2.0]
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0]
+        assert [call.kwargs["total"] for call in progress_calls] == [1.0, 1.0]
         info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
         assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
-        assert "Fetching data" in info_messages[1]
-        assert "Successfully fetched contract ABI." in info_messages[2]
+        assert "Successfully fetched contract ABI." in info_messages[1]
 
 
 @pytest.mark.asyncio
@@ -133,15 +132,14 @@ async def test_get_contract_abi_empty_abi(mock_ctx):
             timeout=config.bs_light_timeout,
         )
         assert_contract_abi_response(result, [])
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         progress_calls = mock_ctx.report_progress.await_args_list
-        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
-        assert [call.kwargs["total"] for call in progress_calls] == [2.0, 2.0, 2.0]
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0]
+        assert [call.kwargs["total"] for call in progress_calls] == [1.0, 1.0]
         info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
         assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
-        assert "Fetching data" in info_messages[1]
-        assert "Successfully fetched contract ABI." in info_messages[2]
+        assert "Successfully fetched contract ABI." in info_messages[1]
 
 
 @pytest.mark.asyncio
@@ -169,7 +167,7 @@ async def test_get_contract_abi_api_error(mock_ctx):
             api_path=f"/api/v2/smart-contracts/{address}",
             timeout=config.bs_light_timeout,
         )
-        assert mock_ctx.report_progress.await_count == 2  # 0.0 and 1.0 only
+        assert mock_ctx.report_progress.await_count == 1  # 0.0 only
         infos = [c.args[0] for c in mock_ctx.info.await_args_list]
         assert any("Starting to fetch contract ABI" in message for message in infos)
         assert not any("Successfully fetched contract ABI." in message for message in infos)
@@ -183,8 +181,6 @@ async def test_get_contract_abi_chain_not_found(mock_ctx):
     # ARRANGE
     chain_id = "999999"
     address = "0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0"
-
-    from blockscout_mcp_server.tools.common import ChainNotFoundError
 
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
@@ -202,7 +198,7 @@ async def test_get_contract_abi_chain_not_found(mock_ctx):
             api_path=f"/api/v2/smart-contracts/{address}",
             timeout=config.bs_light_timeout,
         )
-        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
         assert mock_ctx.report_progress.await_args_list[0].kwargs["progress"] == 0.0
 
 
@@ -232,7 +228,7 @@ async def test_get_contract_abi_invalid_address_format(mock_ctx):
             api_path=f"/api/v2/smart-contracts/{address}",
             timeout=config.bs_light_timeout,
         )
-        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -291,11 +287,10 @@ async def test_get_contract_abi_complex_abi(mock_ctx):
             timeout=config.bs_light_timeout,
         )
         assert_contract_abi_response(result, mock_abi_list)
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         progress_calls = mock_ctx.report_progress.await_args_list
-        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0, 2.0]
+        assert [call.kwargs["progress"] for call in progress_calls] == [0.0, 1.0]
         info_messages = [call.args[0] for call in mock_ctx.info.await_args_list]
         assert "Starting to fetch contract ABI for 0xa0b86a33e6dd0ba3c70de3b8e2b9e48cd6efb7b0" in info_messages[0]
-        assert "Fetching data" in info_messages[1]
-        assert "Successfully fetched contract ABI." in info_messages[2]
+        assert "Successfully fetched contract ABI." in info_messages[1]

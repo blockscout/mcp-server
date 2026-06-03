@@ -87,8 +87,8 @@ async def test_nft_tokens_by_address_success(mock_ctx):
         assert isinstance(holding.token_instances[1].metadata_attributes, dict)
         assert holding.token_instances[1].metadata_attributes["trait_type"] == "Common"
         assert holding.token_instances[1].metadata_attributes["value"] == "Gray"
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -120,8 +120,8 @@ async def test_nft_tokens_by_address_empty_response(mock_ctx):
         )
         assert isinstance(result, ToolResponse)
         assert result.data == []
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -183,8 +183,8 @@ async def test_nft_tokens_by_address_missing_fields(mock_ctx):
         assert result.data[0].token_instances[0].id == "999"
         assert result.data[1].collection.address == "0xempty456"
         assert result.data[1].token_instances == []
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -217,9 +217,9 @@ async def test_nft_tokens_by_address_api_error(mock_ctx):
             api_path=f"/api/v2/addresses/{address}/nft/collections",
             params={"type": "ERC-721,ERC-404,ERC-1155"},
         )
-        # Ensure the tool does not report a success step after the failure
-        assert mock_ctx.report_progress.await_count <= 2
-        assert mock_ctx.info.await_count <= 2
+        # Ensure the tool reports only the start beat before the failure
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -281,5 +281,5 @@ async def test_nft_tokens_by_address_erc1155(mock_ctx):
         assert holding.collection.address == "0xmulti123"
         assert holding.token_instances[0].description == "First token"
         assert holding.token_instances[0].external_app_url == "https://example.com/1"
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2

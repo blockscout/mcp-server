@@ -62,13 +62,14 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
         assert call_kwargs["request_args"] == expected_request_args
 
         # Verify other wrapper configuration
-        assert call_kwargs["tool_overall_total_steps"] == 2.0
-        assert call_kwargs["current_step_number"] == 2.0
+        assert call_kwargs["tool_overall_total_steps"] == 1.0
+        assert call_kwargs["current_step_number"] == 1.0
         assert call_kwargs["current_step_message_prefix"] == "Fetching token transfers"
 
-        # Verify progress was reported correctly before the wrapper call
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        # Only the start beat is reported before the wrapper call;
+        # the wrapper owns the in-progress/completion beats for the single real fetch.
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
         # Verify timing hints are passed through from config
         assert call_kwargs["total_duration_hint"] == config.bs_timeout
@@ -110,9 +111,9 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
         # Verify the wrapper was called and raised the error
         mock_wrapper.assert_called_once()
 
-        # Progress should have been reported twice (start + fetching step) before the error
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        # Only the start beat is reported before the wrapper raises during chain resolution
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1
 
 
 @pytest.mark.asyncio

@@ -77,8 +77,8 @@ async def test_get_address_info_metadata_failure(mock_ctx):
         assert result.notes is not None and len(result.notes) == 1
         assert "Could not retrieve address metadata" in result.notes[0]
 
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 # ---------------------------------------------------------------------------

@@ -35,8 +35,8 @@ async def test_get_block_info_success_no_txs(mock_ctx):
         assert result.data.block_details == mock_api_response
         assert result.data.transaction_hashes is None
         assert result.notes is None
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
         assert "mined at" in result.content_text
 
 
@@ -80,8 +80,8 @@ async def test_get_block_info_with_txs_success(mock_ctx):
         assert result.data.block_details == mock_block_response
         assert result.data.transaction_hashes == ["0xtx1", "0xtx2"]
         assert result.notes is None
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert "transactions, mined at" in result.content_text
 
 
@@ -126,8 +126,12 @@ async def test_get_block_info_with_txs_partial_failure(mock_ctx):
         assert result.data.transaction_hashes is None
         assert result.notes is not None
         assert "Could not retrieve the list of transactions" in result.notes[0]
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        # Watershed beat (index 1) must carry the neutral message and total=2.0
+        watershed_call = mock_ctx.report_progress.await_args_list[1]
+        assert watershed_call.kwargs["message"] == "Block and transaction requests completed; processing results."
+        assert watershed_call.kwargs["total"] == 2.0
 
 
 @pytest.mark.asyncio
@@ -154,5 +158,29 @@ async def test_get_block_info_total_failure(mock_ctx):
                 chain_id=chain_id, number_or_hash=number_or_hash, include_transactions=True, ctx=mock_ctx
             )
         assert mock_request.await_count == 2
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
+        # Watershed beat (index 1) must carry the neutral message and total=2.0
+        watershed_call = mock_ctx.report_progress.await_args_list[1]
+        assert watershed_call.kwargs["message"] == "Block and transaction requests completed; processing results."
+        assert watershed_call.kwargs["total"] == 2.0
+
+
+@pytest.mark.asyncio
+async def test_get_block_info_no_txs_upstream_failure(mock_ctx):
+    """Verify get_block_info (no-transactions branch) emits only the start beat when the request fails."""
+    chain_id = "1"
+    number_or_hash = "19000000"
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.block.get_block_info.make_blockscout_request", new_callable=AsyncMock
+        ) as mock_request,
+    ):
+        mock_request.side_effect = ValueError("upstream error")
+
+        with pytest.raises(ValueError, match="upstream error"):
+            await get_block_info(chain_id=chain_id, number_or_hash=number_or_hash, ctx=mock_ctx)
+
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1

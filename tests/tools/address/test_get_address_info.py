@@ -95,8 +95,12 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
         for instr in expected_instructions:
             assert instr in result.instructions
 
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        calls = mock_ctx.report_progress.call_args_list
+        assert calls[0].kwargs["total"] == 2.0
+        assert calls[1].kwargs["total"] == 2.0
+        assert calls[2].kwargs["total"] == 2.0
 
 
 @pytest.mark.asyncio
@@ -180,8 +184,12 @@ async def test_get_address_info_success_without_metadata(mock_ctx):
         assert result.notes is None
         assert result.instructions is not None and len(result.instructions) > 0
 
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+        calls = mock_ctx.report_progress.call_args_list
+        assert calls[0].kwargs["total"] == 2.0
+        assert calls[1].kwargs["total"] == 2.0
+        assert calls[2].kwargs["total"] == 2.0
 
 
 @pytest.mark.asyncio
@@ -236,8 +244,16 @@ async def test_get_address_info_first_transaction_failure(mock_ctx):
         assert result.notes is not None and len(result.notes) == 1
         assert "Could not retrieve first transaction details" in result.notes[0]
 
-        assert mock_ctx.report_progress.await_count == 4
-        assert mock_ctx.info.await_count == 4
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
+
+        # Verify watershed beat carries the neutral message (honest even when first-tx failed)
+        calls = mock_ctx.report_progress.call_args_list
+        assert calls[1].kwargs["message"] == "Address data requests completed; processing results."
+        assert calls[2].kwargs["message"] == "Successfully fetched all address data."
+        assert calls[0].kwargs["total"] == 2.0
+        assert calls[1].kwargs["total"] == 2.0
+        assert calls[2].kwargs["total"] == 2.0
 
 
 @pytest.mark.asyncio
@@ -283,5 +299,5 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
             api_path="/services/metadata/api/v1/metadata", params={"addresses": address, "chainId": chain_id}
         )
 
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1

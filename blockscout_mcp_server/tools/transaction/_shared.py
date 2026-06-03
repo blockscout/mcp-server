@@ -135,13 +135,18 @@ async def _fetch_filtered_transactions_with_smart_pagination(
     ctx: Context,
     *,
     max_pages_to_fetch: int = 10,
-    progress_start_step: float = 2.0,
-    total_steps: float = 12.0,
+    progress_start_step: float = 1.0,
+    total_steps: float = 11.0,
 ) -> tuple[list[dict], bool]:
     """
     Fetch and accumulate filtered transaction items across multiple pages until we have enough items.
 
     Returns a tuple of (filtered_items, has_more_pages_available).
+
+    Progress model: the first page is ``progress_start_step`` (step 1, right after the
+    caller's step-0 start beat), each subsequent page advances one step, and the caller
+    reports the final completion beat at ``total_steps`` (= ``progress_start_step`` +
+    ``max_pages_to_fetch``) once processing is done.
     """
     accumulated_items = []
     current_params = initial_params.copy()

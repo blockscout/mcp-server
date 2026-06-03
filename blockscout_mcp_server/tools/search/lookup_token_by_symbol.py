@@ -34,15 +34,8 @@ async def lookup_token_by_symbol(
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=2.0,
+        total=1.0,
         message=f"Starting token search for '{symbol}' on chain {chain_id}...",
-    )
-
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=2.0,
-        message="Fetching data...",
     )
 
     response_data = await make_blockscout_request(
@@ -54,8 +47,8 @@ async def lookup_token_by_symbol(
 
     await report_and_log_progress(
         ctx,
-        progress=2.0,
-        total=2.0,
+        progress=1.0,
+        total=1.0,
         message="Successfully completed token search.",
     )
 

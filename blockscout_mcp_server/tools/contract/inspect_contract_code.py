@@ -38,11 +38,17 @@ async def inspect_contract_code(
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=2.0,
+        total=1.0,
         message=start_msg,
     )
 
-    processed = await _fetch_and_process_contract(chain_id, address, ctx)
+    processed = await _fetch_and_process_contract(chain_id, address)
+    await report_and_log_progress(
+        ctx,
+        progress=1.0,
+        total=1.0,
+        message="Contract data ready.",
+    )
     if file_name is None:
         metadata = ContractMetadata.model_validate(processed.metadata)
         instructions = None

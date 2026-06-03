@@ -68,20 +68,13 @@ async def get_token_transfers_by_address(
 
     apply_cursor_to_params(cursor, query_params)
 
-    tool_overall_total_steps = 2.0
+    tool_overall_total_steps = 1.0
 
     await report_and_log_progress(
         ctx,
         progress=0.0,
         total=tool_overall_total_steps,
         message=f"Starting to fetch token transfers for {address} on chain {chain_id}...",
-    )
-
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=tool_overall_total_steps,
-        message="Fetching token transfers...",
     )
 
     response_data = await make_request_with_periodic_progress(
@@ -92,7 +85,7 @@ async def get_token_transfers_by_address(
         progress_interval_seconds=config.progress_interval_seconds,
         in_progress_message_template="Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s hint)",
         tool_overall_total_steps=tool_overall_total_steps,
-        current_step_number=2.0,
+        current_step_number=1.0,
         current_step_message_prefix="Fetching token transfers",
     )
 

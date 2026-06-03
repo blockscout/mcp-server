@@ -44,16 +44,13 @@ async def get_tokens_by_address(
 
     # Report start of operation
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=1.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
     )
-
-    # Report progress before fetching data
-    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching data...")
 
     response_data = await make_blockscout_request(chain_id=chain_id, api_path=api_path, params=params)
 
     # Report completion
-    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched token data.")
+    await report_and_log_progress(ctx, progress=1.0, total=1.0, message="Successfully fetched token data.")
 
     items_data = response_data.get("items", [])
     token_holdings = []

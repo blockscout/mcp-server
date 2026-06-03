@@ -90,8 +90,8 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
         assert result.pagination.next_call.params["address"] == address
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -175,8 +175,8 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -236,8 +236,8 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         assert result.pagination.next_call.params["address"] == address
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -288,8 +288,8 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -353,8 +353,8 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
         assert result.pagination is None
 
         # Check progress reporting and logging
-        assert mock_ctx.report_progress.await_count == 3
-        assert mock_ctx.info.await_count == 3
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -384,6 +384,6 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
         mock_request.assert_called_once_with(
             chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
-        # Progress should have been reported twice (start + before fetch) before the error
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        # Progress should have been reported once (start only) before the error
+        assert mock_ctx.report_progress.await_count == 1
+        assert mock_ctx.info.await_count == 1

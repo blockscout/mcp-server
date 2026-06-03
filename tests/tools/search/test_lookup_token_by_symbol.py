@@ -6,7 +6,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import TokenSearchResult
-from blockscout_mcp_server.tools.common import build_tool_response
+from blockscout_mcp_server.tools.common import ChainNotFoundError, build_tool_response
 from blockscout_mcp_server.tools.search.lookup_token_by_symbol import (
     TOKEN_RESULTS_LIMIT,
     lookup_token_by_symbol,
@@ -81,8 +81,8 @@ async def test_lookup_token_by_symbol_success(mock_ctx):
         )
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -144,9 +144,8 @@ async def test_lookup_token_by_symbol_limit_more_than_seven(mock_ctx):
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
         assert len(result.data) == 7
-        assert mock_ctx.report_progress.call_count == 3
-        assert mock_ctx.info.call_count == 3
-        assert mock_ctx.info.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
+        assert mock_ctx.info.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -201,7 +200,7 @@ async def test_lookup_token_by_symbol_limit_exactly_seven(mock_ctx):
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
         assert len(result.data) == 7
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -233,7 +232,7 @@ async def test_lookup_token_by_symbol_empty_results(mock_ctx):
         )
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -296,7 +295,7 @@ async def test_lookup_token_by_symbol_missing_fields(mock_ctx):
         )
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -354,7 +353,7 @@ async def test_lookup_token_by_symbol_total_supply_none(mock_ctx):
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
         assert result.data[0].total_supply is None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -393,8 +392,6 @@ async def test_lookup_token_by_symbol_chain_not_found(mock_ctx):
     # ARRANGE
     chain_id = "999999"
     symbol = "TEST"
-
-    from blockscout_mcp_server.tools.common import ChainNotFoundError
 
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Chainscout.")
 
@@ -444,4 +441,4 @@ async def test_lookup_token_by_symbol_no_items_field(mock_ctx):
         )
         assert result.model_dump() == expected_result.model_dump()
         assert result.content_text is not None
-        assert mock_ctx.report_progress.call_count == 3
+        assert mock_ctx.report_progress.call_count == 2
