@@ -73,10 +73,8 @@ async def get_address_info(
     Essential for address analysis, contract investigation, token research, and DeFi protocol analysis.
     """  # noqa: E501
     await report_and_log_progress(
-        ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=2.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
-
-    await report_and_log_progress(ctx, progress=1.0, total=3.0, message="Fetching data...")
 
     blockscout_api_path = f"/api/v2/addresses/{address}"
     first_tx_api_path = f"/api/v2/addresses/{address}/transactions"
@@ -119,9 +117,9 @@ async def get_address_info(
 
     await report_and_log_progress(
         ctx,
-        progress=2.0,
-        total=3.0,
-        message="Fetched first transaction details.",
+        progress=1.0,
+        total=2.0,
+        message="Address data requests completed; processing results.",
     )
 
     if isinstance(metadata_result, Exception):
@@ -157,7 +155,7 @@ async def get_address_info(
         metadata=metadata_data,
     )
 
-    await report_and_log_progress(ctx, progress=3.0, total=3.0, message="Successfully fetched all address data.")
+    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched all address data.")
     instructions = [
         "This is only the native coin balance. You MUST also call `get_tokens_by_address` to get the full portfolio.",
         (f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address."),
