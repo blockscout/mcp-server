@@ -19,10 +19,8 @@ If your new tool needs to access an API endpoint that is different from the exis
        bens_timeout: float = 30.0
        chainscout_url: str = "https://chains.blockscout.com"
        chainscout_timeout: float = 15.0
-       metadata_url: str = "https://metadata.services.blockscout.com"
        metadata_timeout: float = 30.0
-       chain_cache_ttl_seconds: int = 1800
-       
+
        # Add your new endpoint
        new_api_url: str = "https://api.example.com"
        new_api_timeout: float = 60.0
@@ -79,7 +77,6 @@ If your new tool needs to access an API endpoint that is different from the exis
      # Existing environment variables
      ENV BLOCKSCOUT_BS_TIMEOUT="120.0"
      ENV BLOCKSCOUT_BENS_URL="https://bens.services.blockscout.com"
-     ENV BLOCKSCOUT_METADATA_URL="https://metadata.services.blockscout.com"
      ENV BLOCKSCOUT_METADATA_TIMEOUT="30.0"
      
      # New environment variables

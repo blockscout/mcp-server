@@ -3,7 +3,6 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, UserOperationData
-from blockscout_mcp_server.tools.common import get_blockscout_base_url
 from blockscout_mcp_server.tools.direct_api.direct_api_call import direct_api_call
 from tests.integration.helpers import retry_on_network_error
 
@@ -17,13 +16,11 @@ HUGE_SIGNATURE_HASH = "0xa2235963faaacbcce49ee36f84379bc92ec73c82e7812b1ea222d39
 
 async def _assert_user_operation_pro_endpoint_notes(notes: list[str] | None, operation_hash: str) -> None:
     assert notes is not None
-    base_url = await get_blockscout_base_url("1")
     assert any(
         f"{config.pro_api_base_url}/1/api/v2/proxy/account-abstraction/operations/{operation_hash}" in note
         for note in notes
     )
     assert all("curl" not in note for note in notes)
-    assert all(base_url.rstrip("/") not in note for note in notes)
     assert any("`web3-dev` skill" in note for note in notes)
 
 

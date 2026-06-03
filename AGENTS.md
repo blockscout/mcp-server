@@ -172,7 +172,8 @@ mcp-server/
 │       │   │   ├── test_transaction_summary_handler.py  # Unit tests for transaction summary handler
 │       │   │   └── test_user_operation_handler.py  # Unit tests for user operation handler
 │       │   ├── test_dispatcher.py  # Unit tests for direct API dispatcher
-│       │   └── test_direct_api_call.py  # Unit tests for direct_api_call
+│       │   ├── test_direct_api_call.py  # Unit tests for direct_api_call
+│       │   └── test_direct_api_call_validation.py  # Unit tests for direct_api_call input validation
 │       ├── ens/                # Tests for ENS-related MCP tools
 │       │   └── test_get_address_by_ens_name.py  # Unit tests for get_address_by_ens_name
 │       ├── initialization/     # Tests for initialization MCP tools
@@ -261,7 +262,6 @@ mcp-server/
             * `BLOCKSCOUT_PRO_API_KEY`: Blockscout PRO API key used to authenticate all Blockscout data requests (every data tool routes through the PRO API gateway). It is required; without it, data requests fail fast with a clear error.
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
-            * `BLOCKSCOUT_CHAIN_CACHE_TTL_SECONDS`: Time-to-live for chain resolution cache.
             * `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`: Time-to-live for the Chains List cache.
             * `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`: Interval for periodic progress updates in long-running operations.
             * `BLOCKSCOUT_NFT_PAGE_SIZE`: Page size for NFT token queries (default: 10).
