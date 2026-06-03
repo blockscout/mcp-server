@@ -167,7 +167,7 @@ async def test_direct_api_call_allows_non_legacy_lookalike_path(mock_ctx):
             endpoint_path="/api/eth-rpc-foo",
             ctx=mock_ctx,
         )
-        mock_get.assert_awaited_once()
+        mock_get.assert_awaited_once_with(chain_id="1", api_path="/api/eth-rpc-foo", params={})
 
 
 @pytest.mark.asyncio
@@ -187,7 +187,12 @@ async def test_direct_api_call_allows_supported_json_rpc_path(mock_ctx):
             json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "id": 1},
             ctx=mock_ctx,
         )
-        mock_post.assert_awaited_once()
+        mock_post.assert_awaited_once_with(
+            chain_id="1",
+            api_path="/json-rpc",
+            json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "id": 1},
+            params={},
+        )
 
 
 @pytest.mark.asyncio
@@ -205,5 +210,4 @@ async def test_direct_api_call_strips_whitespace_around_supported_path(mock_ctx)
             endpoint_path="  /api/v2/stats  ",
             ctx=mock_ctx,
         )
-        mock_get.assert_awaited_once()
-        assert mock_get.await_args.kwargs["api_path"] == "/api/v2/stats"
+        mock_get.assert_awaited_once_with(chain_id="1", api_path="/api/v2/stats", params={})
