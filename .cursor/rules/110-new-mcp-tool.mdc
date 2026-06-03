@@ -662,33 +662,32 @@ Instead of calling `ctx.report_progress` directly, **always use the `report_and_
 ```python
 from blockscout_mcp_server.tools.common import report_and_log_progress
 
-async def some_tool_with_progress(
+async def some_single_fetch_tool(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     ctx: Context
 ):
-    """A tool demonstrating correct progress reporting."""
-    # Report start
+    """A single-fetch tool demonstrating correct progress reporting."""
+    # Report the start. The message says what is being requested and why it may
+    # take time, so clients can warn about delays before the fetch begins.
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0, message="Starting operation..."
+        ctx, progress=0.0, total=1.0,
+        message=f"Starting to fetch ... on chain {chain_id}...",
     )
 
-    # Report intermediate step
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Fetching data from PRO API gateway..."
-    )
-
-    # ... perform the final step ...
+    # ... perform the single awaited operation ...
     response_data = await make_blockscout_request(chain_id=chain_id, api_path="/api/v2/some_endpoint")
 
-    # Report completion
+    # Report completion on the same 1.0 scale.
     await report_and_log_progress(
-        ctx, progress=2.0, total=2.0, message="Successfully fetched data."
+        ctx, progress=1.0, total=1.0, message="Successfully fetched data."
     )
 
     return response_data
 ```
 
 This centralized helper ensures that every progress update is visible, regardless of the MCP client's capabilities.
+
+**Number of beats = number of real operations.** Report one beat per genuinely distinct, awaited operation. A single-fetch tool reports only a start and a completion on a `total=1.0` scale — do not add an instant "before fetch" beat. Tools with several real awaited steps (parallel fetches with post-processing milestones, sequential multi-request flows, long-running queries) scale `total` to the number of those operations and report a beat for each.
 
 ### Performance Optimization
 

@@ -179,12 +179,12 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 4. **Blockchain Data Retrieval**:
    - MCP Host requests blockchain data (e.g., `get_block_number`) with specific chain_id, optionally requesting progress updates
-   - MCP Server, if progress is requested, reports starting the operation
-   - MCP Server validates the chain against the cached PRO API configuration and builds the PRO API URL (`<pro_api_base_url>/<chain_id>/...`)
-   - MCP Server reports progress before fetching data
+   - If progress is requested, MCP Server reports the start beat first — before chain validation — then beats that reflect the number of genuinely distinct, awaited operations rather than a fixed sequence, and never an instant pre-fetch beat. Single-fetch tools report only a start beat and a completion beat (a `total=1.0` scale). A tool with one genuine watershed after a real wait — for example concurrent fetches followed by processing, or the boundary between two sequential requests — reports `start → watershed → completion` on a `total=2.0` scale; a watershed that follows concurrent fetches (`gather`) uses neutral, result-oriented text because it fires whether or not each individual fetch succeeded. Tools with more real awaited steps (additional sequential requests, long-running queries) report a beat for each genuinely observable operation.
+   - The start beat's message states what is being requested and why it may take time, so clients that surface progress can warn about possible delays even before the fetch begins.
+   - MCP Server validates the chain against the cached PRO API configuration and builds the PRO API URL (`<pro_api_base_url>/<chain_id>/...`); this validation happens inside the request helper, after the start beat has already been reported, so an unsupported chain or a missing PRO API key raises only once the start beat (and its paired `info` log) has fired
    - MCP Server forwards the request to the Blockscout PRO API gateway
    - For potentially long-running API calls (e.g., advanced transaction filters), MCP Server provides periodic progress updates every 15 seconds (configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`) showing elapsed time and estimated duration
-   - MCP Server reports progress after fetching data from Blockscout
+   - MCP Server reports a completion beat after the operation finishes. The start, watershed, and completion beats described here are emitted through the `report_and_log_progress` helper, so each is paired with an `info` log and clients that do not render progress UIs still receive feedback. (The separate periodic-progress mechanism for long-running calls reports its own intermediate and final notifications and is not governed by this beat-count convention.)
    - Response is processed and formatted before returning to the agent
 
 ### Blockscout PRO API Authentication
