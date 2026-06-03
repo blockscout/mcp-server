@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -27,42 +27,54 @@ class MockAsyncClient:
 
 @pytest.mark.asyncio
 async def test_make_blockscout_request_uses_timeout_override():
-    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    request = httpx.Request("GET", "https://api.blockscout.com/1/api/v2/test")
     response = httpx.Response(200, json={"ok": True}, request=request)
 
-    with patch(
-        "blockscout_mcp_server.tools.common._create_httpx_client",
-        return_value=MockAsyncClient(response),
-    ) as mock_create_client:
-        await make_blockscout_request("https://example.com", "/api/v2/test", timeout=20)
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            return_value=MockAsyncClient(response),
+        ) as mock_create_client,
+        patch.object(config, "pro_api_key", "test_key"),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        await make_blockscout_request(chain_id="1", api_path="/api/v2/test", timeout=20)
 
     mock_create_client.assert_called_once_with(timeout=20)
 
 
 @pytest.mark.asyncio
 async def test_make_blockscout_request_without_timeout_uses_heavy_timeout():
-    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    request = httpx.Request("GET", "https://api.blockscout.com/1/api/v2/test")
     response = httpx.Response(200, json={"ok": True}, request=request)
 
-    with patch(
-        "blockscout_mcp_server.tools.common._create_httpx_client",
-        return_value=MockAsyncClient(response),
-    ) as mock_create_client:
-        await make_blockscout_request("https://example.com", "/api/v2/test")
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            return_value=MockAsyncClient(response),
+        ) as mock_create_client,
+        patch.object(config, "pro_api_key", "test_key"),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        await make_blockscout_request(chain_id="1", api_path="/api/v2/test")
 
     mock_create_client.assert_called_once_with(timeout=config.bs_timeout)
 
 
 @pytest.mark.asyncio
 async def test_make_blockscout_request_explicit_none_uses_heavy_timeout():
-    request = httpx.Request("GET", "https://example.com/api/v2/test")
+    request = httpx.Request("GET", "https://api.blockscout.com/1/api/v2/test")
     response = httpx.Response(200, json={"ok": True}, request=request)
 
-    with patch(
-        "blockscout_mcp_server.tools.common._create_httpx_client",
-        return_value=MockAsyncClient(response),
-    ) as mock_create_client:
-        await make_blockscout_request("https://example.com", "/api/v2/test", timeout=None)
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            return_value=MockAsyncClient(response),
+        ) as mock_create_client,
+        patch.object(config, "pro_api_key", "test_key"),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        await make_blockscout_request(chain_id="1", api_path="/api/v2/test", timeout=None)
 
     mock_create_client.assert_called_once_with(timeout=config.bs_timeout)
 
@@ -93,11 +105,15 @@ async def test_make_blockscout_request_timeout_reaches_httpx_client():
         captured["timeout"] = client.timeout
         return client
 
-    with patch(
-        "blockscout_mcp_server.tools.common._create_httpx_client",
-        build_real_client,
+    with (
+        patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            build_real_client,
+        ),
+        patch.object(config, "pro_api_key", "test_key"),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
     ):
-        await make_blockscout_request("https://example.com", "/api/v2/test", timeout=7.5)
+        await make_blockscout_request(chain_id="1", api_path="/api/v2/test", timeout=7.5)
 
     assert "timeout" in captured, "_create_httpx_client was not invoked"
     timeout_obj = captured["timeout"]

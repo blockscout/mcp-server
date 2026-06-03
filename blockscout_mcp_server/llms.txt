@@ -86,7 +86,7 @@ All tools are available via both MCP and REST API interfaces:
 
 ## Key Features for AI Agents
 
-1. **Multi-chain Support:** 50+ EVM-compatible blockchains via dynamic URL resolution
+1. **Multi-chain Support:** 50+ EVM-compatible blockchains via the Blockscout PRO API gateway
 2. **Context Optimization:** Intelligent response slicing and field truncation to conserve tokens
 3. **Smart Pagination:** Opaque cursors prevent parameter confusion
 4. **Progress Tracking:** Real-time updates for long-running blockchain queries

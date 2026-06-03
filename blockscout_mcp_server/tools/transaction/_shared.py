@@ -128,7 +128,7 @@ def _transform_user_ops(raw_ops_response: dict | None) -> list[dict] | None:
 
 
 async def _fetch_filtered_transactions_with_smart_pagination(
-    base_url: str,
+    chain_id: str,
     api_path: str,
     initial_params: dict,
     target_page_size: int,
@@ -155,7 +155,7 @@ async def _fetch_filtered_transactions_with_smart_pagination(
         response_data = await make_request_with_periodic_progress(
             ctx=ctx,
             request_function=make_blockscout_request,
-            request_args={"base_url": base_url, "api_path": api_path, "params": current_params},
+            request_args={"chain_id": chain_id, "api_path": api_path, "params": current_params},
             total_duration_hint=config.bs_timeout,
             progress_interval_seconds=config.progress_interval_seconds,
             in_progress_message_template=(

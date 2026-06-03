@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
 from blockscout_mcp_server.tools.search.lookup_token_by_symbol import (
     TOKEN_RESULTS_LIMIT,
@@ -11,6 +12,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_lookup_token_by_symbol_integration(mock_ctx):
     result = await retry_on_network_error(
         lambda: lookup_token_by_symbol(chain_id="1", symbol="USDC", ctx=mock_ctx),

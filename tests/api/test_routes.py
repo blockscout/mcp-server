@@ -768,23 +768,41 @@ async def test_report_tool_usage_missing_header(client: AsyncClient):
 @patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
 async def test_direct_api_call_post_success(mock_tool, client: AsyncClient):
     mock_tool.return_value = ToolResponse(data={"ok": True})
-    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc", json={"id": 1})
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc", json={"id": 1})
     assert response.status_code == 200
     mock_tool.assert_called_once_with(
-        chain_id="1", endpoint_path="/api/eth-rpc", method="POST", json_body={"id": 1}, ctx=ANY
+        chain_id="1", endpoint_path="/json-rpc", method="POST", json_body={"id": 1}, ctx=ANY
+    )
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.direct_api_call", new_callable=AsyncMock)
+async def test_direct_api_call_post_with_query_params(mock_tool, client: AsyncClient):
+    mock_tool.return_value = ToolResponse(data={"ok": True})
+    response = await client.post(
+        "/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc&query_params[foo]=bar", json={"id": 1}
+    )
+    assert response.status_code == 200
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        endpoint_path="/json-rpc",
+        method="POST",
+        json_body={"id": 1},
+        query_params={"foo": "bar"},
+        ctx=ANY,
     )
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_missing_body(client: AsyncClient):
-    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc")
+    response = await client.post("/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc")
     assert response.status_code == 400
 
 
 @pytest.mark.asyncio
 async def test_direct_api_call_post_invalid_json_body(client: AsyncClient):
     response = await client.post(
-        "/v1/direct_api_call?chain_id=1&endpoint_path=/api/eth-rpc",
+        "/v1/direct_api_call?chain_id=1&endpoint_path=/json-rpc",
         content="not-json-at-all",
         headers={"Content-Type": "application/json"},
     )

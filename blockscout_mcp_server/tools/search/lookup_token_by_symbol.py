@@ -8,7 +8,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -39,17 +38,15 @@ async def lookup_token_by_symbol(
         message=f"Starting token search for '{symbol}' on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=2.0,
-        message="Resolved Blockscout instance URL. Searching for tokens...",
+        message="Fetching data...",
     )
 
     response_data = await make_blockscout_request(
-        base_url=base_url,
+        chain_id=chain_id,
         api_path=api_path,
         params=params,
         timeout=config.bs_light_timeout,

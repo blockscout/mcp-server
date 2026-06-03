@@ -10,6 +10,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_stats_counters(mock_ctx):
     result = await retry_on_network_error(
         lambda: direct_api_call(chain_id="1", endpoint_path="/stats-service/api/v1/counters", ctx=mock_ctx),
@@ -20,6 +21,7 @@ async def test_direct_api_call_stats_counters(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_arbitrum_messages_pagination(mock_ctx):
     first = await retry_on_network_error(
         lambda: direct_api_call(
@@ -40,6 +42,7 @@ async def test_direct_api_call_arbitrum_messages_pagination(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_blocks_validated_pagination(mock_ctx):
     path = "/api/v2/addresses/0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97/blocks-validated"
     first = await retry_on_network_error(
@@ -57,6 +60,7 @@ async def test_direct_api_call_blocks_validated_pagination(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
     sender = "0x9bE1B9b87D189dF444f4f8a66f1A50398bcEba37"
     first = await retry_on_network_error(
@@ -90,6 +94,7 @@ async def test_direct_api_call_operations_query_params_pagination(mock_ctx):
 # Do not remove the monkeypatch in pursuit of realism.
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
     monkeypatch.setattr(config, "direct_api_response_size_limit", 10)
     with pytest.raises(ResponseTooLargeError):
@@ -105,6 +110,7 @@ async def test_direct_api_call_raises_on_large_response(mock_ctx, monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_main_page_blocks_list_response(mock_ctx):
     result = await retry_on_network_error(
         lambda: direct_api_call(chain_id="1", endpoint_path="/api/v2/main-page/blocks", ctx=mock_ctx),
@@ -122,16 +128,17 @@ async def test_direct_api_call_main_page_blocks_list_response(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_direct_api_call_post_eth_rpc(mock_ctx):
     result = await retry_on_network_error(
         lambda: direct_api_call(
             chain_id="1",
-            endpoint_path="/api/eth-rpc",
+            endpoint_path="/json-rpc",
             method="POST",
             json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
             ctx=mock_ctx,
         ),
-        action_description="direct_api_call post eth-rpc request",
+        action_description="direct_api_call post json-rpc request",
     )
     assert isinstance(result.data, DirectApiData)
     payload = result.data.model_dump()

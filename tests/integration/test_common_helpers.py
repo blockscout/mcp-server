@@ -116,22 +116,18 @@ async def test_get_blockscout_base_url_for_nonexistent_chain():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_make_blockscout_request_for_block_info():
     """
-    Tests the full flow: resolving a URL and then making a request
-    to that Blockscout instance.
+    Tests that make_blockscout_request routes through the PRO API using chain_id.
     """
     # ARRANGE
     chain_id = "100"  # Gnosis Chain
     block_number = "46282564"
     api_path = f"/api/v2/blocks/{block_number}"
 
-    # First, get the base URL for our target chain. This re-uses a function
-    # we've already tested, which is fine for an integration test.
-    base_url = await get_blockscout_base_url(chain_id=chain_id)
-
     # ACT
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path)
+    response_data = await make_blockscout_request(chain_id=chain_id, api_path=api_path)
 
     # ASSERT
     # Check the structure of the response for this specific block.
@@ -171,13 +167,13 @@ async def test_make_metadata_request_for_address_tags():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_make_blockscout_post_request_eth_rpc():
     from blockscout_mcp_server.tools.common import make_blockscout_post_request
 
-    base_url = await get_blockscout_base_url(chain_id="1")
     response_data = await make_blockscout_post_request(
-        base_url=base_url,
-        api_path="/api/eth-rpc",
+        chain_id="1",
+        api_path="/json-rpc",
         json_body={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
     )
     assert isinstance(response_data, dict)

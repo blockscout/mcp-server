@@ -131,8 +131,8 @@ async def test_auth_header_in_request_headers_not_in_cache_key():
 
 
 @pytest.mark.asyncio
-async def test_key_rotation_refreshes_auth_on_cache_hit():
-    """Key rotation takes effect on the next call even when the provider is cached."""
+async def test_changed_key_is_reapplied_on_cache_hit():
+    """A changed configured key is re-applied on the next call even when the provider is cached."""
     pool = Web3Pool()
     mock_session = MagicMock()
     mock_session.closed = False
@@ -150,7 +150,7 @@ async def test_key_rotation_refreshes_auth_on_cache_hit():
     ):
         w3_first = await pool.get("1")
 
-    # Rotate the key and call get() again for the same chain
+    # Change the configured key and call get() again for the same chain
     with (
         patch(
             "blockscout_mcp_server.web3_pool.ensure_chain_supported",
@@ -165,7 +165,7 @@ async def test_key_rotation_refreshes_auth_on_cache_hit():
     # Same provider instance (cache hit)
     assert w3_first is w3_second
 
-    # Auth header must reflect the second (rotated) key
+    # Auth header must reflect the second (changed) key
     hdrs = w3_second.provider._request_kwargs["headers"]
     assert hdrs.get("Authorization") == f"Bearer {second_key}"
     assert f"Bearer {first_key}" not in hdrs.get("Authorization", "")

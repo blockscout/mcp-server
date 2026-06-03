@@ -39,7 +39,6 @@ async def test_handle_address_logs_success(mock_ctx):
         match=_build_match(address),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -85,7 +84,6 @@ async def test_handle_address_logs_pagination(mock_ctx):
             match=_build_match(address),
             response_json=response_json,
             chain_id="10",
-            base_url="https://example.blockscout",
             ctx=mock_ctx,
         )
 
@@ -121,7 +119,6 @@ async def test_handle_address_logs_truncation_notes(mock_ctx):
         match=_build_match(address),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 
@@ -147,7 +144,6 @@ async def test_handle_address_logs_empty_items(mock_ctx):
         match=_build_match(address),
         response_json=response_json,
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
 

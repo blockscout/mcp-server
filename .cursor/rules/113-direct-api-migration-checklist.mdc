@@ -29,7 +29,6 @@ See PR #270 for a complete example of migrating `get_transaction_logs` to a `dir
   - `match: re.Match[str]`
   - `response_json: dict[str, Any]`
   - `chain_id: str`
-  - `base_url: str`
   - `ctx: Context` (use `# noqa: ARG001` if unused)
   - `query_params: dict[str, Any] | None` (use `# noqa: ARG001` if unused)
 - [ ] Use `tool_name="direct_api_call"` in `create_items_pagination` calls
@@ -49,7 +48,6 @@ async def handle_resource_endpoint(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,
     ctx: Context,  # noqa: ARG001
     query_params: dict[str, Any] | None = None,  # noqa: ARG001
 ) -> ToolResponse[list[SpecificModel]]:

@@ -31,8 +31,7 @@ A handler MUST adhere to the following contract:
 - `match: re.Match` - **Always required** - Contains regex match groups for path parameters
 - `response_json: dict` - **Always required** - The raw JSON response from the API
 - `query_params: dict | None` - **Always required** - Query parameters from the original request (use `# noqa: ARG001` if unused)
-- `chain_id: str` - **Always required** - The blockchain chain identifier
-- `base_url: str` - **Always required** - The base URL of the Blockscout instance
+- `chain_id: str` - **Always required** - The blockchain chain identifier (handlers receive this, not a per-instance `base_url`; build any PRO endpoint hints from `config.pro_api_base_url` + `chain_id`)
 - `ctx: Context` - **Always required** - The MCP context for progress reporting (use `# noqa: ARG001` if unused)
 
 **Example:**
@@ -44,7 +43,6 @@ async def handle_my_endpoint(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,
     ctx: Context,  # noqa: ARG001 - reserved for future use
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint
 ) -> ToolResponse[MyModel]:

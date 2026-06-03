@@ -27,6 +27,7 @@ def find_truncated_value(value):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_integration(mock_ctx):
     """Tests that get_transaction_info returns full data and omits raw_input by default."""
     tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
@@ -52,6 +53,7 @@ async def test_get_transaction_info_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_round_trip_with_token_transfers(mock_ctx):
     """Ensure token transfer aliases survive the production round-trip path."""
     tx_hash = "0xd4df84bf9e45af2aa8310f74a2577a28b420c59f2e3da02c52b6d39dc83ef10f"
@@ -79,6 +81,7 @@ async def test_get_transaction_info_round_trip_with_token_transfers(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
     """Tests that get_transaction_info keeps raw_input when decoded_input is null."""
     tx_hash = "0x12341be874149efc8c714f4ef431db0ce29f64532e5c70d3882257705e2b1ad2"
@@ -114,6 +117,7 @@ async def test_get_transaction_info_integration_no_decoded_input(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_with_truncation_integration(mock_ctx):
     """Tests that get_transaction_info correctly truncates oversized decoded_input fields."""
     tx_hash = "0x2daa533b1e4e6fddd9118503a28cde58eadeb965201e5739ca61aafeb83424ed"
@@ -143,6 +147,7 @@ async def test_get_transaction_info_with_truncation_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_integration_user_ops(mock_ctx):
     """Tests that get_transaction_info returns user operations for an AA transaction on Base."""
     tx_hash = "0xf477d77e222a8ba10923a5c8876af11a01845795bc5bfe7cb1a5e1eaecc898fc"
@@ -165,6 +170,7 @@ async def test_get_transaction_info_integration_user_ops(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_transaction_info_integration_null_token_metadata(mock_ctx):
     """Tests that get_transaction_info accepts null token metadata on Base."""
     tx_hash = "0xc24036ecca307090efee492f1da40d3abda9f86b9e8edde1f77e4a79fb99853f"

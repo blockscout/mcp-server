@@ -32,17 +32,11 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
             "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
-        patch(
-            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
-            new_callable=AsyncMock,
-            return_value="https://base",
-        ) as mock_get_url,
     ):
         await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
     mock_get.assert_awaited_once_with("1:0xabc")
-    mock_get_url.assert_awaited_once_with("1")
     mock_request.assert_awaited_once_with(
-        base_url="https://base",
+        chain_id="1",
         api_path="/api/v2/smart-contracts/0xabc",
         timeout=config.bs_light_timeout,
     )
@@ -51,7 +45,7 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
     assert key_arg == "1:0xabc"
     assert isinstance(value_arg, CachedContract)
     assert mock_ctx.report_progress.await_count == 2
-    assert mock_ctx.report_progress.await_args_list[0].kwargs["message"] == "Resolved Blockscout instance URL."
+    assert mock_ctx.report_progress.await_args_list[0].kwargs["message"] == "Fetching data..."
     assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
 
 
@@ -100,11 +94,6 @@ async def test_process_logic_single_solidity_file(mock_ctx):
             "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
-        patch(
-            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
-            new_callable=AsyncMock,
-            return_value="https://base",
-        ),
     ):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
     assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
@@ -137,11 +126,6 @@ async def test_process_logic_multi_file_missing_main_path(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
-        ),
-        patch(
-            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
-            new_callable=AsyncMock,
-            return_value="https://base",
         ),
     ):
         result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
@@ -179,11 +163,6 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
             "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
         ) as mock_set,
-        patch(
-            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
-            new_callable=AsyncMock,
-            return_value="https://base",
-        ) as mock_get_url,
     ):
         with patch(
             "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
@@ -200,7 +179,6 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
     assert set(multi.metadata["source_code_tree_structure"]) == {"A.sol", "B.sol"}
     assert vyper.metadata["source_code_tree_structure"] == ["VyperC.vy"]
     assert mock_ctx.report_progress.await_count == 4
-    assert mock_get_url.await_count == 2
     assert mock_set.await_count == 2
 
 
@@ -227,11 +205,6 @@ async def test_process_logic_unverified_contract(mock_ctx):
         patch(
             "blockscout_mcp_server.tools.contract._shared.contract_cache.set",
             new_callable=AsyncMock,
-        ),
-        patch(
-            "blockscout_mcp_server.tools.contract._shared.get_blockscout_base_url",
-            new_callable=AsyncMock,
-            return_value="https://base",
         ),
     ):
         result = await _fetch_and_process_contract("1", "0xAbC", mock_ctx)

@@ -51,7 +51,6 @@ async def handle_user_operation(
     match: re.Match[str],
     response_json: dict[str, Any],
     chain_id: str,
-    base_url: str,  # noqa: ARG001 - required by dispatcher but not used in PRO endpoint hints
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
     query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context

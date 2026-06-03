@@ -16,7 +16,6 @@ from blockscout_mcp_server.models import (
 from blockscout_mcp_server.tools.common import (
     _recursively_truncate_and_flag_long_strings,
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     make_metadata_request,
     report_and_log_progress,
@@ -77,10 +76,7 @@ async def get_address_info(
         ctx, progress=0.0, total=3.0, message=f"Starting to fetch address info for {address} on chain {chain_id}..."
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-    await report_and_log_progress(
-        ctx, progress=1.0, total=3.0, message="Resolved Blockscout instance URL. Fetching data..."
-    )
+    await report_and_log_progress(ctx, progress=1.0, total=3.0, message="Fetching data...")
 
     blockscout_api_path = f"/api/v2/addresses/{address}"
     first_tx_api_path = f"/api/v2/addresses/{address}/transactions"
@@ -90,12 +86,12 @@ async def get_address_info(
 
     address_info_result, metadata_result, first_tx_result = await asyncio.gather(
         make_blockscout_request(
-            base_url=base_url,
+            chain_id=chain_id,
             api_path=blockscout_api_path,
             timeout=config.bs_light_timeout,
         ),
         make_metadata_request(api_path=metadata_api_path, params=metadata_params),
-        make_blockscout_request(base_url=base_url, api_path=first_tx_api_path, params=first_tx_params),
+        make_blockscout_request(chain_id=chain_id, api_path=first_tx_api_path, params=first_tx_params),
         return_exceptions=True,
     )
 

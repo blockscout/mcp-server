@@ -17,7 +17,6 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -55,22 +54,17 @@ async def test_get_tokens_by_address_with_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -105,19 +99,14 @@ async def test_get_tokens_by_address_includes_portfolio_instruction(mock_ctx):
     """Verify get_tokens_by_address includes portfolio analysis guidance."""
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
@@ -137,7 +126,6 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -161,22 +149,17 @@ async def test_get_tokens_by_address_without_pagination(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -208,7 +191,6 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
     id_param = 42
     items_count = 25
     value = "5000"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [],
@@ -217,13 +199,9 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
@@ -237,8 +215,6 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
         )
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
-
         # Verify that all pagination parameters were passed to the API
         expected_params = {
             "type": "ERC-20",
@@ -248,7 +224,7 @@ async def test_get_tokens_by_address_with_pagination_params(mock_ctx):
             "value": value,
         }
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params=expected_params
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params=expected_params
         )
 
         assert isinstance(result, ToolResponse)
@@ -286,7 +262,6 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": []
@@ -295,22 +270,17 @@ async def test_get_tokens_by_address_empty_response(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -330,7 +300,6 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Mock response with incomplete token data
     mock_api_response = {
@@ -353,22 +322,17 @@ async def test_get_tokens_by_address_missing_token_fields(mock_ctx):
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.return_value = mock_api_response
 
         # ACT
         result = await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # ASSERT
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
 
         assert isinstance(result, ToolResponse)
@@ -401,20 +365,15 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
     # ARRANGE
     chain_id = "1"
     address = "0x123abc"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Simulate a 404 error from the API
     api_error = httpx.HTTPStatusError("Not Found", request=MagicMock(), response=MagicMock(status_code=404))
 
     with (
         patch(
-            "blockscout_mcp_server.tools.address.get_tokens_by_address.get_blockscout_base_url", new_callable=AsyncMock
-        ) as mock_get_url,
-        patch(
             "blockscout_mcp_server.tools.address.get_tokens_by_address.make_blockscout_request", new_callable=AsyncMock
         ) as mock_request,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_request.side_effect = api_error
 
         # ACT & ASSERT
@@ -422,10 +381,9 @@ async def test_get_tokens_by_address_api_error(mock_ctx):
             await get_tokens_by_address(chain_id=chain_id, address=address, ctx=mock_ctx)
 
         # Verify mocks were called as expected before the exception
-        mock_get_url.assert_called_once_with(chain_id)
         mock_request.assert_called_once_with(
-            base_url=mock_base_url, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
+            chain_id=chain_id, api_path=f"/api/v2/addresses/{address}/tokens", params={"type": "ERC-20"}
         )
-        # Progress should have been reported twice (start + after chain URL resolution) before the error
+        # Progress should have been reported twice (start + before fetch) before the error
         assert mock_ctx.report_progress.await_count == 2
         assert mock_ctx.info.await_count == 2

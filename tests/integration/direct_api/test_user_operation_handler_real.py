@@ -29,6 +29,7 @@ async def _assert_user_operation_pro_endpoint_notes(notes: list[str] | None, ope
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_dispatch_real(mock_ctx):
     """Ensure direct_api_call dispatches user operation responses to the specialized handler."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{USER_OPERATION_HASH}"
@@ -52,6 +53,7 @@ async def test_user_operation_handler_dispatch_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_data_types_real(mock_ctx):
     """Validate basic schema expectations for user operation responses."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{USER_OPERATION_HASH}"
@@ -75,6 +77,7 @@ async def test_user_operation_handler_data_types_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_complex_decoded_call_data_real(mock_ctx):
     """Ensure complex decoded_call_data is preserved and optimized."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{COMPLEX_DECODED_CALL_DATA_HASH}"
@@ -93,6 +96,7 @@ async def test_user_operation_handler_complex_decoded_call_data_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_failed_with_init_code_real(mock_ctx):
     """Validate failed user operation includes factory and raw init_code truncation flags."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{FAILED_WITH_INIT_CODE_HASH}"
@@ -114,6 +118,7 @@ async def test_user_operation_handler_failed_with_init_code_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_huge_call_data_real(mock_ctx):
     """Validate huge raw.call_data and decoded parameters trigger truncation flags."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{HUGE_CALL_DATA_HASH}"
@@ -135,6 +140,7 @@ async def test_user_operation_handler_huge_call_data_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_huge_execute_params_real(mock_ctx):
     """Validate huge decoded_execute_call_data parameters trigger truncation flags."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{HUGE_EXECUTE_PARAMS_HASH}"
@@ -155,6 +161,7 @@ async def test_user_operation_handler_huge_execute_params_real(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_user_operation_handler_huge_signature_real(mock_ctx):
     """Validate huge signature is truncated and flagged."""
     endpoint_path = f"/api/v2/proxy/account-abstraction/operations/{HUGE_SIGNATURE_HASH}"

@@ -19,23 +19,15 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
     age_from = "2023-01-01T00:00:00.00Z"
     age_to = "2023-01-02T00:00:00.00Z"
     methods = "0x304e6ade"
-    mock_base_url = "https://eth.blockscout.com"
     mock_filtered_items = []
     mock_has_more_pages = False
 
-    # We patch the smart pagination function and the base URL getter
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
-            "_fetch_filtered_transactions_with_smart_pagination",
-            new_callable=AsyncMock,
-        ) as mock_smart_pagination,
-    ):
-        mock_get_url.return_value = mock_base_url
+    # We patch the smart pagination function
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+        "_fetch_filtered_transactions_with_smart_pagination",
+        new_callable=AsyncMock,
+    ) as mock_smart_pagination:
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
 
         # ACT
@@ -52,7 +44,6 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
         assert result.data == []
-        mock_get_url.assert_called_once_with(chain_id)
 
         # Assert that the smart pagination function was called once
         mock_smart_pagination.assert_called_once()
@@ -61,7 +52,7 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
         call_args, call_kwargs = mock_smart_pagination.call_args
 
         # Verify the smart pagination function was called with correct parameters
-        assert call_kwargs["base_url"] == mock_base_url
+        assert call_kwargs["chain_id"] == chain_id
         assert call_kwargs["api_path"] == "/api/v2/advanced-filters"
         assert call_kwargs["ctx"] == mock_ctx
         assert call_kwargs["progress_start_step"] == 2.0
@@ -90,22 +81,14 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
     mock_filtered_items = [{"hash": "0xabc123"}]
     mock_has_more_pages = False
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
-            "_fetch_filtered_transactions_with_smart_pagination",
-            new_callable=AsyncMock,
-        ) as mock_smart_pagination,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+        "_fetch_filtered_transactions_with_smart_pagination",
+        new_callable=AsyncMock,
+    ) as mock_smart_pagination:
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
 
         # ACT - Only provide required parameters
@@ -122,7 +105,6 @@ async def test_get_transactions_by_address_minimal_params(mock_ctx):
         assert len(result.data) == 1
         assert isinstance(result.data[0], AdvancedFilterItem)
         assert result.data[0].model_dump(by_alias=True)["hash"] == "0xabc123"
-        mock_get_url.assert_called_once_with(chain_id)
         mock_smart_pagination.assert_called_once()
 
         # Check that the initial_params only include the required parameters
@@ -142,7 +124,6 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
     chain_id = "1"
     address = "0x123"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     # Mock the filtered items returned by smart pagination (ERC-20 transactions already filtered out)
     mock_filtered_items = [
@@ -176,18 +157,11 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
         },
     ]
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
-            "_fetch_filtered_transactions_with_smart_pagination",
-            new_callable=AsyncMock,
-        ) as mock_smart_pagination,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+        "_fetch_filtered_transactions_with_smart_pagination",
+        new_callable=AsyncMock,
+    ) as mock_smart_pagination:
         mock_smart_pagination.return_value = (mock_filtered_items, mock_has_more_pages)
 
         result = await get_transactions_by_address(

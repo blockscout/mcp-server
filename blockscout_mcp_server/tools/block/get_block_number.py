@@ -9,7 +9,6 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockNumberData, ToolResponse
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -57,17 +56,15 @@ async def get_block_number(
             message=f"Starting to fetch latest block info on chain {chain_id}...",
         )
 
-        base_url = await get_blockscout_base_url(chain_id)
-
         await report_and_log_progress(
             ctx,
             progress=1.0,
             total=2.0,
-            message="Resolved Blockscout instance URL. Fetching latest block data...",
+            message="Fetching data...",
         )
 
         response_data = await make_blockscout_request(
-            base_url=base_url,
+            chain_id=chain_id,
             api_path="/api/v2/main-page/blocks",
             timeout=config.bs_light_timeout,
         )
@@ -102,17 +99,15 @@ async def get_block_number(
         message=f"Starting to resolve block number on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=3.0,
-        message="Resolved Blockscout instance URL. Finding block by time...",
+        message="Fetching data...",
     )
 
     block_lookup = await make_blockscout_request(
-        base_url=base_url,
+        chain_id=chain_id,
         api_path="/api",
         params={
             "module": "block",
@@ -146,7 +141,7 @@ async def get_block_number(
     )
 
     block_details = await make_blockscout_request(
-        base_url=base_url,
+        chain_id=chain_id,
         api_path=f"/api/v2/blocks/{block_number_int}",
         timeout=config.bs_light_timeout,
     )

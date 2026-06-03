@@ -14,7 +14,6 @@ from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
     encode_cursor,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -48,14 +47,10 @@ async def get_tokens_by_address(
         ctx, progress=0.0, total=2.0, message=f"Starting to fetch token holdings for {address} on chain {chain_id}..."
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
+    # Report progress before fetching data
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching data...")
 
-    # Report progress after resolving Blockscout URL
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching token data..."
-    )
-
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    response_data = await make_blockscout_request(chain_id=chain_id, api_path=api_path, params=params)
 
     # Report completion
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched token data.")

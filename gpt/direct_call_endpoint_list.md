@@ -1,6 +1,9 @@
 ADVANCED API USAGE: For specialized or chain-specific data not covered by other tools, you can use `direct_api_call`. This tool can call a curated list of raw Blockscout API endpoints.
 
 <common>
+<group name="JSON-RPC">
+"/json-rpc" - "PRO API gateway JSON-RPC endpoint; use method='POST' with a JSON-RPC json_body (e.g., eth_blockNumber). This is the only POST entry; all other endpoints in this list are GET."
+</group>
 <group name="Stats">
 "/stats-service/api/v1/counters" - "Get consolidated historical and recent-window counters—totals and 24h/30m rollups for blockchain activity (transactions, accounts, contracts, verified contracts, ERC-4337 user ops), plus average block time and fee aggregates"
 "/api/v2/stats" - "Get real-time network status and market context—current gas price tiers with last-update and next-update timing, network utilization, today's transactions, average block time 'now', and coin price/market cap."

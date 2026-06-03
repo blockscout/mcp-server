@@ -15,7 +15,6 @@ from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
     create_items_pagination,
-    get_blockscout_base_url,
     make_blockscout_request,
     report_and_log_progress,
 )
@@ -63,13 +62,9 @@ async def nft_tokens_by_address(
         ctx, progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
+    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching data...")
 
-    await report_and_log_progress(
-        ctx, progress=1.0, total=2.0, message="Resolved Blockscout instance URL. Fetching NFT data..."
-    )
-
-    response_data = await make_blockscout_request(base_url=base_url, api_path=api_path, params=params)
+    response_data = await make_blockscout_request(chain_id=chain_id, api_path=api_path, params=params)
 
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data.")
 

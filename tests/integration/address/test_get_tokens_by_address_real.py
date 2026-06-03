@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from tests.integration.helpers import retry_on_network_error
@@ -8,6 +9,7 @@ from tests.integration.helpers import retry_on_network_error
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_tokens_by_address_integration(mock_ctx):
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"  # Binance wallet
     result = await retry_on_network_error(
@@ -22,6 +24,7 @@ async def test_get_tokens_by_address_integration(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_tokens_by_address_pagination_integration(mock_ctx):
     """Tests that get_tokens_by_address can successfully use a cursor to fetch a second page."""
     address = "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503"

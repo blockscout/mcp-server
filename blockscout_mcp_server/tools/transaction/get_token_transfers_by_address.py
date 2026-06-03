@@ -11,7 +11,6 @@ from blockscout_mcp_server.tools.common import (
     build_tool_response,
     create_items_pagination,
     extract_advanced_filters_cursor_params,
-    get_blockscout_base_url,
     make_blockscout_request,
     make_request_with_periodic_progress,
     report_and_log_progress,
@@ -78,19 +77,17 @@ async def get_token_transfers_by_address(
         message=f"Starting to fetch token transfers for {address} on chain {chain_id}...",
     )
 
-    base_url = await get_blockscout_base_url(chain_id)
-
     await report_and_log_progress(
         ctx,
         progress=1.0,
         total=tool_overall_total_steps,
-        message="Resolved Blockscout instance URL. Now fetching token transfers...",
+        message="Fetching token transfers...",
     )
 
     response_data = await make_request_with_periodic_progress(
         ctx=ctx,
         request_function=make_blockscout_request,
-        request_args={"base_url": base_url, "api_path": api_path, "params": query_params},
+        request_args={"chain_id": chain_id, "api_path": api_path, "params": query_params},
         total_duration_hint=config.bs_timeout,
         progress_interval_seconds=config.progress_interval_seconds,
         in_progress_message_template="Query in progress... ({elapsed_seconds:.0f}s / {total_hint:.0f}s hint)",

@@ -26,7 +26,6 @@ async def test_dispatch_routes_to_correct_handler(mock_ctx):
         endpoint_path=endpoint_path,
         response_json={"items": []},
         chain_id="1",
-        base_url="https://example.blockscout",
         ctx=mock_ctx,
     )
     assert response is not None, "Dispatcher did not invoke the handler"

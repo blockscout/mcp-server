@@ -19,21 +19,12 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
     age_from = "2023-01-01T00:00:00.00Z"
     age_to = "2023-01-02T00:00:00.00Z"
     token = "0xDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaD"  # gitleaks:allow (test placeholder)
-    mock_base_url = "https://eth.blockscout.com"
     mock_api_response = {"items": [], "next_page_params": None}
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
-            "make_request_with_periodic_progress",
-            new_callable=AsyncMock,
-        ) as mock_wrapper,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+        new_callable=AsyncMock,
+    ) as mock_wrapper:
         mock_wrapper.return_value = mock_api_response
 
         # ACT
@@ -45,7 +36,6 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
         assert result.data == []
-        mock_get_url.assert_called_once_with(chain_id)
         mock_wrapper.assert_called_once()
 
         # Check the wrapper call arguments
@@ -58,7 +48,7 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
 
         # Check the request_args for token transfers
         expected_request_args = {
-            "base_url": mock_base_url,
+            "chain_id": chain_id,
             "api_path": "/api/v2/advanced-filters",
             "params": {
                 "transaction_types": "ERC-20",
@@ -88,7 +78,10 @@ async def test_get_token_transfers_by_address_calls_wrapper_correctly(mock_ctx):
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_chain_error(mock_ctx):
     """
-    Verify that chain lookup errors are properly propagated without calling the wrapper.
+    Verify that a chain lookup error raised by the wrapper is propagated to the caller.
+
+    The wrapper (make_request_with_periodic_progress) is invoked, and the exception it
+    raises during chain resolution bubbles up to the caller unchanged.
     """
     # ARRANGE
     chain_id = "999999"  # Invalid chain ID
@@ -99,18 +92,11 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
 
     chain_error = ChainNotFoundError(f"Chain with ID '{chain_id}' not found on Blockscout.")
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
-            "make_request_with_periodic_progress",
-            new_callable=AsyncMock,
-        ) as mock_wrapper,
-    ):
-        mock_get_url.side_effect = chain_error
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+        new_callable=AsyncMock,
+    ) as mock_wrapper:
+        mock_wrapper.side_effect = chain_error
 
         # ACT & ASSERT
         with pytest.raises(ChainNotFoundError):
@@ -121,15 +107,12 @@ async def test_get_token_transfers_by_address_chain_error(mock_ctx):
                 ctx=mock_ctx,
             )
 
-        # Verify the chain lookup was attempted
-        mock_get_url.assert_called_once_with(chain_id)
+        # Verify the wrapper was called and raised the error
+        mock_wrapper.assert_called_once()
 
-        # Verify the wrapper was NOT called since chain lookup failed
-        mock_wrapper.assert_not_called()
-
-        # Progress should have been reported once (at start) before the error
-        assert mock_ctx.report_progress.await_count == 1
-        assert mock_ctx.info.await_count == 1
+        # Progress should have been reported twice (start + fetching step) before the error
+        assert mock_ctx.report_progress.await_count == 2
+        assert mock_ctx.info.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -138,7 +121,6 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
     chain_id = "1"
     address = "0x123"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {
         "items": [
@@ -164,18 +146,10 @@ async def test_get_token_transfers_by_address_transforms_response(mock_ctx):
         }
     ]
 
-    with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
-            "make_request_with_periodic_progress",
-            new_callable=AsyncMock,
-        ) as mock_wrapper,
-    ):
-        mock_get_url.return_value = mock_base_url
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.make_request_with_periodic_progress",
+        new_callable=AsyncMock,
+    ) as mock_wrapper:
         mock_wrapper.return_value = mock_api_response
 
         result = await get_token_transfers_by_address(
@@ -207,15 +181,10 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
     chain_id = "1"
     address = "0x123abc"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     mock_api_response = {"items": []}
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
             "make_request_with_periodic_progress",
@@ -225,7 +194,6 @@ async def test_get_token_transfers_by_address_with_pagination(mock_ctx):
             "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.create_items_pagination",
         ) as mock_create_pagination,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
         mock_create_pagination.return_value = (
             [],
@@ -255,16 +223,11 @@ async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
     chain_id = "1"
     address = "0x123"
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     items = [{"block_number": i} for i in range(10)]
     mock_api_response = {"items": items}
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
             "make_request_with_periodic_progress",
@@ -275,7 +238,6 @@ async def test_get_token_transfers_by_address_custom_page_size(mock_ctx):
         ) as mock_create_pagination,
         patch.object(config, "advanced_filters_page_size", 5),
     ):
-        mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = mock_api_response
         mock_create_pagination.return_value = (items[:5], None)
 
@@ -297,13 +259,8 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
     cursor = "CURSOR"
     decoded = {"page": 2}
     age_from = "2024-01-01T00:00:00Z"
-    mock_base_url = "https://eth.blockscout.com"
 
     with (
-        patch(
-            "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.get_blockscout_base_url",
-            new_callable=AsyncMock,
-        ) as mock_get_url,
         patch(
             "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address."
             "make_request_with_periodic_progress",
@@ -313,7 +270,6 @@ async def test_get_token_transfers_by_address_with_cursor_param(mock_ctx):
             "blockscout_mcp_server.tools.transaction.get_token_transfers_by_address.apply_cursor_to_params",
         ) as mock_apply_cursor,
     ):
-        mock_get_url.return_value = mock_base_url
         mock_wrapper.return_value = {"items": []}
         mock_apply_cursor.side_effect = lambda cur, params: params.update(decoded)
 

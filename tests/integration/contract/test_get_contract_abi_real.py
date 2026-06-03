@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
 from blockscout_mcp_server.tools.contract.get_contract_abi import get_contract_abi
 from tests.integration.helpers import retry_on_network_error
@@ -10,6 +11,7 @@ CHAIN_ID_MAINNET = "1"
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_get_contract_abi_integration(mock_ctx):
     """Use the WETH contract to ensure a rich, stable ABI is returned."""
     address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"

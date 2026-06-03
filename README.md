@@ -219,12 +219,9 @@ set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 
 ### Blockscout PRO API Key
 
-The Blockscout PRO API key powers two features:
+The Blockscout PRO API key is required for Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without a key those tools fail fast with a clear, actionable error and make no network call.
 
-- **Address metadata** (`get_address_info`): enriches an address with public tags and name metadata fetched from the Blockscout PRO API metadata endpoint. This is **optional** — without a key the server still runs, the metadata request is skipped entirely (no call is made to the PRO API), and the `metadata` field is returned as `null` together with a note explaining it was unavailable.
-- **Contract reads** (`read_contract`): `eth_call` is routed through the Blockscout PRO API JSON-RPC gateway, which **requires** a key. Without one, `read_contract` fails fast with a clear error and makes no network call; all other tools continue to work.
-
-Set the key to enable public-tag enrichment and contract reads.
+Set the key to enable all data access, public-tag enrichment, and contract reads.
 
 To obtain one, create an account at https://dev.blockscout.com (the free tier does not require a credit card) and generate an API key in the portal; keys are prefixed `proapi_`. Provide it to the server via the `BLOCKSCOUT_PRO_API_KEY` environment variable — exported in your shell or placed in a gitignored `.env` file in the project root. Never commit the key or embed it in a client-shipped binary; when running via Docker, pass it at runtime (e.g. `-e BLOCKSCOUT_PRO_API_KEY=...`) rather than baking it into the image.
 

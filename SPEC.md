@@ -77,8 +77,7 @@ sequenceDiagram
     participant BENS as ENS Service
     participant CS as Chainscout
     participant ProAPI as PRO API Config
-    participant BS as Blockscout Instance
-    participant Metadata as Metadata Service
+    participant BS as Blockscout PRO API
 
     AI->>MCP: __unlock_blockchain_analysis__
     MCP-->>AI: Reference data + skill pointer
@@ -103,16 +102,16 @@ sequenceDiagram
     Note over AI: Host selects chain_id as per the user's initial prompt
 
     AI->>MCP: Tool request with chain_id
-    MCP->>MCP: Resolve URL from cached PRO API config
+    MCP->>MCP: Validate chain via cached PRO API config
     par Concurrent API Calls (when applicable)
-        MCP->>BS: Request to Blockscout API (Basic Info)
+        MCP->>BS: Request to Blockscout API (for Basic Info)
         BS-->>MCP: Primary data response
     and
-        MCP->>BS: Request to Blockscout API (First Transaction)
+        MCP->>BS: Request to Blockscout API (for First Transaction of Account)
         BS-->>MCP: First transaction response
     and
-        MCP->>Metadata: Request to PRO API metadata endpoint (for enriched data)
-        Metadata-->>MCP: Metadata response
+        MCP->>BS: Request to Metadata endpoint through PRO API (for enriched data)
+        BS-->>MCP: Metadata response
     end
     MCP-->>AI: Formatted & combined information
 ```
@@ -127,7 +126,7 @@ sequenceDiagram
     participant MCP as MCP Server
     participant CS as Chainscout
     participant ProAPI as PRO API Config
-    participant BS as Blockscout Instance
+    participant BS as Blockscout PRO API
 
     Note over REST, MCP: Static Endpoints
     REST->>MCP: GET /
@@ -178,26 +177,57 @@ This architecture provides the flexibility of a multi-protocol server without th
    - Concurrent refreshes are deduplicated with an async lock.
    - MCP Host selects appropriate chain based on user needs
 
-4. **Optimized Data Retrieval with Concurrent API Calls**:
-   - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
-     - `get_address_info`: Executes three concurrent requests to gather a comprehensive profile in a single turn:
-       1. **Basic Info**: Basic on-chain data from Blockscout (balance, contract status).
-       2. **First Transaction**: Retrieves the account's earliest transaction to identify inception block and timestamp.
-       3. **Metadata**: Public tags and name resolution from the Blockscout PRO API metadata endpoint, authenticated with `BLOCKSCOUT_PRO_API_KEY`. When the key is absent the metadata request is skipped entirely (no call is made to the PRO API); when the key is present but the request is rejected (including credit/rate-limit rejections), metadata is treated as unavailable. In both cases the field is returned null with an explanatory note — exactly like any other secondary-request failure.
-       *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request, ensuring the primary address information is always returned.
-     - `get_block_info` with transactions: Concurrent requests for block data and transaction list from the same Blockscout instance
-     - `get_transaction_info`: Concurrent requests to fetch transaction details and check for associated ERC-4337 User Operations
-   - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
-
-5. **Blockchain Data Retrieval**:
+4. **Blockchain Data Retrieval**:
    - MCP Host requests blockchain data (e.g., `get_block_number`) with specific chain_id, optionally requesting progress updates
    - MCP Server, if progress is requested, reports starting the operation
-   - MCP Server resolves the Blockscout instance URL from the cached PRO API configuration
-   - MCP Server reports progress after resolving the Blockscout URL
-   - MCP Server forwards the request to the appropriate Blockscout instance
+   - MCP Server validates the chain against the cached PRO API configuration and builds the PRO API URL (`<pro_api_base_url>/<chain_id>/...`)
+   - MCP Server reports progress before fetching data
+   - MCP Server forwards the request to the Blockscout PRO API gateway
    - For potentially long-running API calls (e.g., advanced transaction filters), MCP Server provides periodic progress updates every 15 seconds (configurable via `BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS`) showing elapsed time and estimated duration
    - MCP Server reports progress after fetching data from Blockscout
    - Response is processed and formatted before returning to the agent
+
+### Blockscout PRO API Authentication
+
+All Blockscout data flows through the authenticated Blockscout PRO API gateway. Authentication and the request identity (`User-Agent`) are centralized here rather than scattered across individual tools.
+
+**Credential**
+
+- The single credential is the `BLOCKSCOUT_PRO_API_KEY` environment variable (`config.pro_api_key`, empty by default). When set, it is sent as an `Authorization: Bearer <key>` header on every PRO API request.
+- The header is built and attached per request inside the request helpers, never configured on a shared HTTP client, so the key is never sent to other upstreams (BENS, Chainscout). A bare `Bearer` token is never emitted: the `Authorization` header is added only when the key is non-empty.
+
+**Two transports, one scheme**
+
+The server reaches the PRO API over two transports, each with its own header builder, but both follow the same `Bearer` scheme:
+
+- **REST / data path** (`make_blockscout_request`, `make_blockscout_post_request`, `make_metadata_request`): headers come from `_pro_api_headers()` in `blockscout_mcp_server/tools/common.py` — always `User-Agent` and `Accept: application/json`, plus `Authorization: Bearer <key>` when a key is configured.
+- **JSON-RPC path** for `read_contract` (the Async Web3 Connection Pool): base headers come from `_default_headers()` in `blockscout_mcp_server/web3_pool.py`, and `Authorization` is appended at request time by `_request_headers()`. The auth header is deliberately excluded from the pool's cache keys and resolved on every call (including cache hits), so the secret never enters internal cache dictionaries and the current key is always applied — even to already-pooled providers.
+
+**User-Agent**
+
+- The `User-Agent` is `<mcp_user_agent>/<server_version>`, where `mcp_user_agent` defaults to `Blockscout MCP` and is configurable via `BLOCKSCOUT_MCP_USER_AGENT`; the server version is appended automatically.
+- RPC-pool traffic uses the same value with a `(+pool)` suffix so PRO API operators can distinguish JSON-RPC pool requests from REST/data requests.
+
+**Effect of a missing key**
+
+The key requirement is enforced as a single chokepoint: each PRO API entry point checks `config.pro_api_key` first and raises a `ValueError` *before any network call*, so the server never issues a request the gateway is guaranteed to reject. The chain-support validation runs only after this check, keeping the key as the first gate.
+
+- **Primary data requests** (`make_blockscout_request` / `make_blockscout_post_request`) and **contract reads** (`Web3Pool.get`) fail fast — the tool returns a clear error and makes no network call.
+- **Secondary metadata requests** (`make_metadata_request`, used by `get_address_info`) also fail fast, but callers treat this like any other metadata failure: the `metadata` field is returned `null` with an explanatory note while the primary data is still returned.
+
+**What does not require the key**
+
+- Chain discovery and validation read the PRO API *config* endpoint (`/api/json/config`) without authentication, so `get_chains_list` and chain-support checks work regardless of the key. Only *data access* is gated.
+- BENS (ENS resolution) and Chainscout (chain metadata) are separate services and are never sent the PRO API key.
+
+**Extended HTTP / REST mode**
+
+- The PRO API key stays server-side config; REST consumers never supply it. A REST client authenticates (if at all) to the MCP server itself, while the server authenticates to the PRO API with its own configured key.
+- An `Authorization` header sent by a REST client is never forwarded to the PRO API. The data path builds PRO API headers solely from server config and does not read incoming request headers, and the Web3 pool explicitly strips any caller-supplied `Authorization` before constructing requests or cache keys.
+
+**Error semantics**
+
+Credit-exhaustion and rate-limit responses from the PRO API are currently not special-cased; they surface as general request / service-unavailability failures.
 
 ### Key Architectural Decisions
 
@@ -342,7 +372,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
 4. **Async Web3 Connection Pool**:
    - The server uses a custom `AsyncHTTPProviderBlockscout` and `Web3Pool` to perform `eth_call` requests through the Blockscout PRO API JSON-RPC gateway (`https://api.blockscout.com/{chain_id}/json-rpc`) rather than per-chain public RPC endpoints.
-   - Requests authenticate with the Blockscout PRO API key as a `Bearer` token. When no key is configured, contract reads fail fast with a clear error before any network call is made.
+   - Requests authenticate against the gateway as described in the "Blockscout PRO API Authentication" section (the `Authorization` header is resolved at request time and excluded from pool cache keys); when no key is configured, contract reads fail fast before any network call is made.
    - Chain support is validated independently of instance URL resolution, against the authoritative PRO API chain configuration.
    - The provider ensures request IDs never start at zero and normalizes parameters to lists for Blockscout compatibility.
    - Because all chains target a single gateway host, the pool maintains one shared `aiohttp` session whose connector enforces a global per-host connection limit across every chain.
@@ -479,7 +509,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 
     4. **Output Conciseness**: Endpoints that return excessively large or complex raw data payloads are generally excluded from the curated list, preventing LLM context overflow and maintaining the server's overall context optimization strategy.
 
-    **Implementation**: The tool functions as a thin wrapper around the core HTTP request helpers. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, an optional `cursor` for pagination, an optional `method` (`"GET"` or `"POST"`, defaulting to `"GET"`), and an optional `json_body` (dict) for POST requests. For GET requests, behavior is unchanged: pagination is supported via opaque cursors that encode raw `next_page_params` from the Blockscout API. For POST requests (e.g., JSON-RPC calls to `/api/eth-rpc`), the `json_body` is sent as the request body; pagination is not supported for POST responses. The tool enforces strict parameter validation: `json_body` is only allowed with `method="POST"`, `method="POST"` requires a non-null `json_body`, `json_body` must be a dict (not a scalar or list), and `cursor` is rejected for POST requests. The POST request helper uses a strictly conservative retry policy — retrying only on connection-level failures (`ConnectError`, `ConnectTimeout`) where the request provably never reached the server, since POST requests are not idempotent. The tool leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms. To ensure safety, the tool enforces a configurable response size limit (controlled by `BLOCKSCOUT_DIRECT_API_RESPONSE_SIZE_LIMIT`). In REST mode, this limit can be bypassed by setting the `X-Blockscout-Allow-Large-Response: true` header, allowing scripts to retrieve full datasets while protecting AI agents from context overflow.
+    **Implementation**: The tool functions as a thin wrapper around the core HTTP request helpers. It accepts a `chain_id`, the full `endpoint_path`, optional `query_params`, an optional `cursor` for pagination, an optional `method` (`"GET"` or `"POST"`, defaulting to `"GET"`), and an optional `json_body` (dict) for POST requests. For GET requests, behavior is unchanged: pagination is supported via opaque cursors that encode raw `next_page_params` from the Blockscout API. For POST requests (e.g., JSON-RPC calls to `/json-rpc`), the `json_body` is sent as the request body; pagination is not supported for POST responses. The tool enforces strict parameter validation: `json_body` is only allowed with `method="POST"`, `method="POST"` requires a non-null `json_body`, `json_body` must be a dict (not a scalar or list), and `cursor` is rejected for POST requests. The POST request helper uses a strictly conservative retry policy — retrying only on connection-level failures (`ConnectError`, `ConnectTimeout`) where the request provably never reached the server, since POST requests are not idempotent. The tool leverages the existing `ToolResponse` model for consistent output and integrates with the server's robust HTTP request handling and error propagation mechanisms. To ensure safety, the tool enforces a configurable response size limit (controlled by `BLOCKSCOUT_DIRECT_API_RESPONSE_SIZE_LIMIT`). In REST mode, this limit can be bypassed by setting the `X-Blockscout-Allow-Large-Response: true` header, allowing scripts to retrieve full datasets while protecting AI agents from context overflow.
 
     **Specialized Response Handling via Dispatcher**
 
@@ -530,7 +560,7 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Mechanism**: Before including metadata in the `get_address_info` response, the server parses each tag's `meta` JSON string into a structured JSON value (dict, list, or primitive). The parsed value is then processed by the same recursive truncation function used for transaction input data and log decoded values. Any individual string value exceeding `INPUT_DATA_TRUNCATION_LIMIT` (514 characters) is replaced with `{"value_sample": "...", "value_truncated": true}`. If `meta` is already a dict or list (rather than a JSON string), the truncation is applied directly.
     - **Graceful Degradation**: If a `meta` value is not valid JSON, the raw string itself is passed through the truncation function as a fallback, ensuring that even unparseable large strings do not bypass the context optimization.
     - **Schema Agnosticism**: Because different tag types (e.g., `warpcast-account`, `gitcoin-grantee`) have different `meta` schemas, the truncation is applied generically to all string values rather than targeting specific field names. This ensures the optimization remains effective as new tag types are introduced.
-    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response that references the Blockscout PRO API metadata endpoint (presented as an endpoint reference, not a ready-to-run command) so agents can retrieve the complete untruncated payload when needed, and points to the `web3-dev` skill for how to call it. Address metadata is fetched from the Blockscout PRO API metadata endpoint (`/services/metadata/api/v1/metadata`) using the `BLOCKSCOUT_PRO_API_KEY` credential; the truncation note's reference URL therefore points at the same endpoint the server itself calls.
+    - **Truncation Notification**: When any metadata tag field is truncated, a note is appended to the tool response that references the Blockscout PRO API metadata endpoint (presented as an endpoint reference, not a ready-to-run command) so agents can retrieve the complete untruncated payload when needed, and points to the `web3-dev` skill for how to call it. Address metadata is fetched from the Blockscout PRO API metadata endpoint (`/services/metadata/api/v1/metadata`); the truncation note's reference URL therefore points at the same endpoint the server itself calls.
 
 
 7. **HTTP Request Robustness**
@@ -610,6 +640,18 @@ This architecture provides the flexibility of a multi-protocol server without th
     - **Deferred Validator Age**: While the first validated/mined block could also serve as an account-age signal for validators, the server does not currently fetch it because Blockscout's `api/v2/addresses/{address_hash}/blocks-validated` endpoint only returns the most recent blocks and does not expose a sort-order override for earliest-first retrieval.
 
     This approach flattens the reasoning tree required for tasks like account age analysis or history reconstruction, allowing agents to move from "discovery" to "analysis" in a single step.
+
+12. **Optimized Data Retrieval with Concurrent API Calls**:
+
+    - The MCP Server employs concurrent API calls as a performance optimization whenever tools need data from multiple sources. Examples include:
+      - `get_address_info`: Executes three concurrent requests to gather a comprehensive profile in a single turn:
+        1. **Basic Info**: Basic on-chain data from Blockscout (balance, contract status).
+        2. **First Transaction**: Retrieves the account's earliest transaction to identify inception block and timestamp.
+        3. **Metadata**: Public tags and name resolution from the Blockscout PRO API metadata endpoint.
+        *Robustness Note*: Failures in secondary requests (metadata, first transaction) are reported in the response `notes` field rather than failing the entire request.
+      - `get_block_info` with transactions: Concurrent requests for block data and transaction list
+      - `get_transaction_info`: Concurrent requests to fetch transaction details and check for associated ERC-4337 User Operations
+    - This approach significantly reduces response times by parallelizing independent API calls rather than making sequential requests. The server combines all responses into a single, comprehensive response for the agent.
 
 ### Instructions Delivery and the `__unlock_blockchain_analysis__` Tool
 
@@ -871,9 +913,8 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 #### read_contract
 
 - **RPC used**: `eth_call`.
-- **RPC transport**: `eth_call` is issued through the Blockscout PRO API JSON-RPC gateway at `https://api.blockscout.com/{chain_id}/json-rpc`, authenticated with the PRO API key as a `Bearer` token. The same key that enables address metadata enables contract reads across all supported chains.
-- **API key requirement**: A configured `BLOCKSCOUT_PRO_API_KEY` is required. Without it the tool fails fast with a clear error and makes no network call. Credit-exhaustion and rate-limit responses currently surface as general request failures.
-- **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding. This leverages Web3's well-tested argument handling and return value decoding.
+- **RPC transport**: `eth_call` is issued through the Blockscout PRO API JSON-RPC gateway at `https://api.blockscout.com/{chain_id}/json-rpc`.
+- **Implementation**: Uses Web3.py for ABI-based input encoding and output decoding (over the Async Web3 Connection Pool described in "Key Architectural Decisions"). This leverages Web3's well-tested argument handling and return value decoding.
 - **ABI requirement**: Accepts the ABI of the specific function variant to call (a single ABI object for that function signature). This avoids ambiguity when contracts overload function names.
 - **Function name**: The `function_name` parameter must match the `name` field in the provided function ABI. Although redundant, it is kept intentionally to improve LLM tool-selection behavior and may be removed later.
 - **Arguments**: The `args` parameter is a JSON string containing an array of arguments, defaulting to `[]` when omitted. Nested structures and complex ABIv2 types are supported (arrays, tuples, structs). Argument normalization rules:
@@ -902,4 +943,3 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 - Write operations are not supported; `eth_call` does not change state.
 - No caller context (`from`) or gas simulation tuning is provided.
 - Multi-function ABI arrays are not accepted for `read_contract`; provide exactly the ABI item for the intended function signature.
-- Requires a Blockscout PRO API key (`BLOCKSCOUT_PRO_API_KEY`); contract reads are unavailable when it is not configured.
