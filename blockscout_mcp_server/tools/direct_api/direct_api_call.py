@@ -83,7 +83,11 @@ async def direct_api_call(
 
     if endpoint_path != "/" and endpoint_path.endswith("/"):
         endpoint_path = endpoint_path.rstrip("/")
-    if endpoint_path.lower() == "/api/eth-rpc":
+    # Reject the legacy JSON-RPC path before any network call, and before the generic
+    # query-param check below so the corrective message wins. Normalizing away surrounding
+    # whitespace, a trailing slash, and any query string maps variants like "/api/eth-rpc/",
+    # "/API/ETH-RPC", "/api/eth-rpc?id=1", and "/api/eth-rpc " onto the same rejection.
+    if endpoint_path.split("?", 1)[0].strip().rstrip("/").lower() == "/api/eth-rpc":
         raise ValueError(
             "The legacy JSON-RPC path '/api/eth-rpc' is no longer supported. Retry with endpoint_path='/json-rpc'."
         )
