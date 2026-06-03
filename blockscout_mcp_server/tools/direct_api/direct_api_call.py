@@ -74,28 +74,26 @@ async def direct_api_call(
         raise ValueError("json_body must be a JSON object (dict).")
     if method == "POST" and cursor is not None:
         raise ValueError("Pagination (cursor) is not supported for POST requests.")
-    await report_and_log_progress(
-        ctx,
-        progress=0.0,
-        total=2.0,
-        message=f"Preparing request for chain {chain_id}...",
-    )
 
     if endpoint_path != "/" and endpoint_path.endswith("/"):
         endpoint_path = endpoint_path.rstrip("/")
     if "?" in endpoint_path:
         raise ValueError("Do not include query parameters in endpoint_path. Use query_params instead.")
 
+    start_message = f"Starting {method} request to {endpoint_path} on chain {chain_id}..."
+    if cursor is not None:
+        start_message += " (next page)"
+    await report_and_log_progress(
+        ctx,
+        progress=0.0,
+        total=1.0,
+        message=start_message,
+    )
+
     params = dict(query_params) if query_params else {}
     if method == "GET":
         apply_cursor_to_params(cursor, params)
 
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=2.0,
-        message="Fetching data from Blockscout API...",
-    )
     if method == "GET":
         response_json = await make_blockscout_request(chain_id=chain_id, api_path=endpoint_path, params=params)
     else:
@@ -118,8 +116,8 @@ async def direct_api_call(
     if handler_response is not None:
         await report_and_log_progress(
             ctx,
-            progress=2.0,
-            total=2.0,
+            progress=1.0,
+            total=1.0,
             message="Successfully fetched data.",
         )
         return handler_response
@@ -140,8 +138,8 @@ async def direct_api_call(
 
     await report_and_log_progress(
         ctx,
-        progress=2.0,
-        total=2.0,
+        progress=1.0,
+        total=1.0,
         message="Successfully fetched data.",
     )
 
