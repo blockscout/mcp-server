@@ -21,6 +21,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/bootstrap-worktree.sh",
+            "timeout": 300,
+            "statusMessage": "Bootstrapping worktree Python environment…"
+          },
+          {
+            "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/append_context.sh"
           }
         ]
