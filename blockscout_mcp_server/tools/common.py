@@ -10,7 +10,7 @@ import anyio
 import httpx
 from mcp.server.fastmcp import Context
 
-from blockscout_mcp_server.cache import ChainCache, ChainsListCache, ProApiConfigCache
+from blockscout_mcp_server.cache import ChainsListCache, ProApiConfigCache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -52,8 +52,6 @@ class ResponseTooLargeError(Exception):
     pass
 
 
-# Shared cache instance for chain data
-chain_cache = ChainCache()
 chains_list_cache = ChainsListCache()
 pro_api_config_cache = ProApiConfigCache()
 
@@ -86,7 +84,6 @@ async def ensure_pro_api_config() -> dict[str, str]:
         try:
             chain_urls = await _fetch_pro_api_config()
             pro_api_config_cache.store_snapshot(chain_urls)
-            await chain_cache.replace_success_entries(chain_urls)
             chains_list_cache.invalidate()
             return chain_urls
         except (httpx.HTTPStatusError, httpx.RequestError, ValueError, OSError):
@@ -115,42 +112,6 @@ async def ensure_chain_supported(chain_id: str) -> None:
     chain_urls = await ensure_pro_api_config()
     if chain_id not in chain_urls:
         raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
-
-
-async def get_blockscout_base_url(chain_id: str) -> str:
-    current_time = time.monotonic()
-    cached_entry = chain_cache.get(chain_id)
-
-    if cached_entry:
-        cached_url, expiry_timestamp = cached_entry
-        if current_time < expiry_timestamp:
-            if cached_url is None:
-                raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
-            fresh_snapshot = pro_api_config_cache.get_if_fresh()
-            if fresh_snapshot is not None:
-                fresh_url = fresh_snapshot.get(chain_id)
-                if fresh_url:
-                    if fresh_url != cached_url:
-                        await chain_cache.set(chain_id, fresh_url)
-                    return fresh_url
-                await chain_cache.set_failure(chain_id)
-                raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
-            chain_urls = await ensure_pro_api_config()
-            if chain_id in chain_urls:
-                await chain_cache.set(chain_id, chain_urls[chain_id])
-                return chain_urls[chain_id]
-            await chain_cache.set_failure(chain_id)
-            raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
-        await chain_cache.invalidate(chain_id)
-
-    chain_urls = await ensure_pro_api_config()
-    blockscout_url = chain_urls.get(chain_id)
-    if blockscout_url:
-        await chain_cache.set(chain_id, blockscout_url)
-        return blockscout_url
-
-    await chain_cache.set_failure(chain_id)
-    raise ChainNotFoundError(f"Chain ID '{chain_id}' is not supported by the Blockscout API.")
 
 
 def _extract_http_error_details(response: httpx.Response) -> str:
