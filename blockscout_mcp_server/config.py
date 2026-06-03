@@ -36,7 +36,6 @@ class ServerConfig(BaseSettings):
     # Metadata configuration (PRO API metadata endpoint)
     metadata_timeout: float = 30.0
 
-    chain_cache_ttl_seconds: int = 1800  # Default 30 minutes
     chains_list_ttl_seconds: int = 300  # Default 5 minutes
     progress_interval_seconds: float = 15.0  # Default interval for periodic progress updates
 
