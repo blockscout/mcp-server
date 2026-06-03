@@ -172,7 +172,8 @@ mcp-server/
 │       │   │   ├── test_transaction_summary_handler.py  # Unit tests for transaction summary handler
 │       │   │   └── test_user_operation_handler.py  # Unit tests for user operation handler
 │       │   ├── test_dispatcher.py  # Unit tests for direct API dispatcher
-│       │   └── test_direct_api_call.py  # Unit tests for direct_api_call
+│       │   ├── test_direct_api_call.py  # Unit tests for direct_api_call
+│       │   └── test_direct_api_call_validation.py  # Unit tests for direct_api_call input validation
 │       ├── ens/                # Tests for ENS-related MCP tools
 │       │   └── test_get_address_by_ens_name.py  # Unit tests for get_address_by_ens_name
 │       ├── initialization/     # Tests for initialization MCP tools
