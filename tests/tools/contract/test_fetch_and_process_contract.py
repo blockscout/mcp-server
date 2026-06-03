@@ -33,7 +33,7 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_set,
     ):
-        await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
+        await _fetch_and_process_contract("1", "0xAbC")
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_awaited_once_with(
         chain_id="1",
@@ -44,9 +44,7 @@ async def test_fetch_and_process_cache_miss(mock_ctx):
     key_arg, value_arg = mock_set.await_args.args
     assert key_arg == "1:0xabc"
     assert isinstance(value_arg, CachedContract)
-    assert mock_ctx.report_progress.await_count == 2
-    assert mock_ctx.report_progress.await_args_list[0].kwargs["message"] == "Fetching data..."
-    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -63,7 +61,7 @@ async def test_fetch_and_process_cache_hit(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_request,
     ):
-        result = await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
+        result = await _fetch_and_process_contract("1", "0xAbC")
     assert result is cached
     mock_get.assert_awaited_once_with("1:0xabc")
     mock_request.assert_not_called()
@@ -95,11 +93,11 @@ async def test_process_logic_single_solidity_file(mock_ctx):
             new_callable=AsyncMock,
         ) as mock_set,
     ):
-        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+        result = await _fetch_and_process_contract("1", "0xabc")
     assert result.metadata["source_code_tree_structure"] == ["MyContract.sol"]
     assert set(result.source_files.keys()) == {"MyContract.sol"}
     mock_set.assert_awaited_once()
-    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -128,12 +126,12 @@ async def test_process_logic_multi_file_missing_main_path(mock_ctx):
             new_callable=AsyncMock,
         ),
     ):
-        result = await _fetch_and_process_contract("1", "0xabc", mock_ctx)
+        result = await _fetch_and_process_contract("1", "0xabc")
     assert set(result.metadata["source_code_tree_structure"]) == {"Main.sol", "B.sol"}
     assert set(result.source_files.keys()) == {"Main.sol", "B.sol"}
     assert result.source_files["Main.sol"] == "a"
     assert result.source_files["B.sol"] == "b"
-    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.report_progress.await_count == 0
 
 
 @pytest.mark.asyncio
@@ -169,16 +167,16 @@ async def test_process_logic_multi_file_and_vyper(mock_ctx):
             new_callable=AsyncMock,
             return_value=multi_resp,
         ):
-            multi = await _fetch_and_process_contract("1", "0x1", mock_ctx)
+            multi = await _fetch_and_process_contract("1", "0x1")
         with patch(
             "blockscout_mcp_server.tools.contract._shared.make_blockscout_request",
             new_callable=AsyncMock,
             return_value=vyper_resp,
         ):
-            vyper = await _fetch_and_process_contract("1", "0x2", mock_ctx)
+            vyper = await _fetch_and_process_contract("1", "0x2")
     assert set(multi.metadata["source_code_tree_structure"]) == {"A.sol", "B.sol"}
     assert vyper.metadata["source_code_tree_structure"] == ["VyperC.vy"]
-    assert mock_ctx.report_progress.await_count == 4
+    assert mock_ctx.report_progress.await_count == 0
     assert mock_set.await_count == 2
 
 
@@ -207,7 +205,7 @@ async def test_process_logic_unverified_contract(mock_ctx):
             new_callable=AsyncMock,
         ),
     ):
-        result = await _fetch_and_process_contract("1", "0xAbC", mock_ctx)
+        result = await _fetch_and_process_contract("1", "0xAbC")
     assert result.source_files == {}
     assert result.metadata["source_code_tree_structure"] == []
     assert result.metadata["name"] == "0xabc"
@@ -216,4 +214,4 @@ async def test_process_logic_unverified_contract(mock_ctx):
     assert "deployed_bytecode" not in result.metadata
     assert "source_code" not in result.metadata
     assert "additional_sources" not in result.metadata
-    assert mock_ctx.report_progress.await_count == 2
+    assert mock_ctx.report_progress.await_count == 0

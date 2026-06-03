@@ -1,13 +1,11 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 from typing import Any
 
-from mcp.server.fastmcp import Context
-
 from blockscout_mcp_server.cache import CachedContract, contract_cache
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.tools.common import (
+    _truncate_constructor_args,
     make_blockscout_request,
-    report_and_log_progress,
 )
 
 
@@ -23,7 +21,7 @@ def _determine_file_path(raw_data: dict[str, Any]) -> str:
     return file_path
 
 
-async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context) -> CachedContract:
+async def _fetch_and_process_contract(chain_id: str, address: str) -> CachedContract:
     """Fetch contract data from cache or Blockscout API."""
 
     normalized_address = address.lower()
@@ -31,12 +29,6 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     if cached := await contract_cache.get(cache_key):
         return cached
 
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=2.0,
-        message="Fetching data...",
-    )
     api_path = f"/api/v2/smart-contracts/{normalized_address}"
     # 20s light timeout validated empirically: payloads range from ~10 KB
     # (simple proxies) to ~350 KB (large multi-file projects like Uniswap V3
@@ -46,12 +38,6 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
         chain_id=chain_id,
         api_path=api_path,
         timeout=config.bs_light_timeout,
-    )
-    await report_and_log_progress(
-        ctx,
-        progress=2.0,
-        total=2.0,
-        message="Successfully fetched contract data.",
     )
     raw_data.setdefault("name", normalized_address)
     for key in [
@@ -85,8 +71,6 @@ async def _fetch_and_process_contract(chain_id: str, address: str, ctx: Context)
     metadata_copy = raw_data.copy()
 
     # Process constructor args on the copy instead of the original
-    from blockscout_mcp_server.tools.common import _truncate_constructor_args  # Local import to avoid cycles
-
     processed_args, truncated_flag = _truncate_constructor_args(metadata_copy.get("constructor_args"))
     metadata_copy["constructor_args"] = processed_args
     metadata_copy["constructor_args_truncated"] = truncated_flag
