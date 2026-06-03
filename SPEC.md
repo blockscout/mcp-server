@@ -206,7 +206,7 @@ The server reaches the PRO API over two transports, each with its own header bui
 **User-Agent**
 
 - The `User-Agent` is `<mcp_user_agent>/<server_version>`, where `mcp_user_agent` defaults to `Blockscout MCP` and is configurable via `BLOCKSCOUT_MCP_USER_AGENT`; the server version is appended automatically.
-- RPC-pool traffic uses the same value with a ` (+pool)` suffix so PRO API operators can distinguish JSON-RPC pool requests from REST/data requests.
+- RPC-pool traffic uses the same value with a `(+pool)` suffix so PRO API operators can distinguish JSON-RPC pool requests from REST/data requests.
 
 **Effect of a missing key**
 
