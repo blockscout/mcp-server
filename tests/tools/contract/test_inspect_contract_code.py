@@ -43,7 +43,7 @@ async def test_inspect_contract_metadata_mode_success(mock_ctx):
         == "Starting to fetch contract metadata for 0xabc on chain 1..."
     )
     assert mock_ctx.report_progress.await_args_list[0].kwargs["total"] == 1.0
-    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
+    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Contract data ready."
     assert mock_ctx.report_progress.await_args_list[1].kwargs["total"] == 1.0
     assert isinstance(result, ToolResponse)
     assert isinstance(result.data, ContractMetadata)
@@ -74,7 +74,7 @@ async def test_inspect_contract_file_content_mode_success(mock_ctx):
         == "Starting to fetch source code for 'A.sol' of contract 0xabc on chain 1..."
     )
     assert mock_ctx.report_progress.await_args_list[0].kwargs["total"] == 1.0
-    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
+    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Contract data ready."
     assert mock_ctx.report_progress.await_args_list[1].kwargs["total"] == 1.0
     assert isinstance(result.data, ContractSourceFile)
     assert result.data.file_content == "pragma"
@@ -97,7 +97,7 @@ async def test_inspect_contract_file_not_found_raises_error(mock_ctx):
         == "Starting to fetch source code for 'B.sol' of contract 0xabc on chain 1..."
     )
     assert mock_ctx.report_progress.await_args_list[0].kwargs["total"] == 1.0
-    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
+    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Contract data ready."
     assert mock_ctx.report_progress.await_args_list[1].kwargs["total"] == 1.0
     assert "Available files: A.sol" in str(exc.value)
 
@@ -150,4 +150,4 @@ async def test_inspect_contract_metadata_mode_truncated_sets_notes(mock_ctx):
     assert result.notes == ["Constructor arguments were truncated to limit context size."]
     assert result.instructions is None
     assert mock_ctx.report_progress.await_count == 2
-    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Successfully fetched contract data."
+    assert mock_ctx.report_progress.await_args_list[1].kwargs["message"] == "Contract data ready."

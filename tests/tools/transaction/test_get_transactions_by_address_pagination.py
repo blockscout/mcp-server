@@ -282,9 +282,8 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
     This test verifies that the enhanced progress reporting system correctly tracks
     and reports progress through all phases of the multi-page smart pagination:
     1. Initial operation start (step 0)
-    2. URL resolution (step 1)
-    3. Multi-page fetching (steps 2-11, handled by smart pagination)
-    4. Final completion (step 12)
+    2. Multi-page fetching (steps 1-10, handled by smart pagination)
+    3. Final completion (step 11)
     """
     # ARRANGE
     chain_id = "1"
@@ -327,11 +326,11 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
         # Verify progress reporting was called correctly
         progress_calls = mock_progress.call_args_list
 
-        # Should have exactly 3 progress reports from get_transactions_by_address:
-        # 1. Initial start (progress=0.0, total=12.0)
-        # 2. Fetching step (progress=1.0, total=12.0)
-        # 3. Final completion (progress=12.0, total=12.0)
-        assert len(progress_calls) == 3
+        # Should have exactly 2 progress reports from get_transactions_by_address:
+        # 1. Initial start (progress=0.0, total=11.0)
+        # 2. Final completion (progress=11.0, total=11.0)
+        # (Per-page beats for steps 1-10 are emitted inside the mocked smart-pagination helper.)
+        assert len(progress_calls) == 2
 
         # Each call structure: call(ctx, progress=X, total=Y, message=Z)
         # args are in call_args_list[i][0] tuple (just ctx)
@@ -341,27 +340,20 @@ async def test_get_transactions_by_address_multi_page_progress_reporting(mock_ct
         initial_call_args, initial_call_kwargs = progress_calls[0]
         assert initial_call_args[0] == mock_ctx  # ctx
         assert initial_call_kwargs["progress"] == 0.0
-        assert initial_call_kwargs["total"] == 12.0
+        assert initial_call_kwargs["total"] == 11.0
         assert "Starting to fetch transactions" in initial_call_kwargs["message"]
         assert address in initial_call_kwargs["message"]
         assert chain_id in initial_call_kwargs["message"]
 
-        # Verify fetching progress (step 1)
-        fetching_call_args, fetching_call_kwargs = progress_calls[1]
-        assert fetching_call_args[0] == mock_ctx  # ctx
-        assert fetching_call_kwargs["progress"] == 1.0
-        assert fetching_call_kwargs["total"] == 12.0
-        assert "Fetching transactions" in fetching_call_kwargs["message"]
-
-        # Verify final completion progress (step 12)
-        completion_call_args, completion_call_kwargs = progress_calls[2]
+        # Verify final completion progress (step 11)
+        completion_call_args, completion_call_kwargs = progress_calls[1]
         assert completion_call_args[0] == mock_ctx  # ctx
-        assert completion_call_kwargs["progress"] == 12.0
-        assert completion_call_kwargs["total"] == 12.0
+        assert completion_call_kwargs["progress"] == 11.0
+        assert completion_call_kwargs["total"] == 11.0
         assert "Successfully fetched transaction data" in completion_call_kwargs["message"]
 
         # Verify smart pagination was called with correct progress parameters
         smart_pagination_call_args = mock_smart_pagination.call_args[1]
-        assert smart_pagination_call_args["progress_start_step"] == 2.0
-        assert smart_pagination_call_args["total_steps"] == 12.0
+        assert smart_pagination_call_args["progress_start_step"] == 1.0
+        assert smart_pagination_call_args["total_steps"] == 11.0
         assert smart_pagination_call_args["ctx"] == mock_ctx

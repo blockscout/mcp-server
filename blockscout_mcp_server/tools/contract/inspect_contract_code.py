@@ -47,7 +47,7 @@ async def inspect_contract_code(
         ctx,
         progress=1.0,
         total=1.0,
-        message="Successfully fetched contract data.",
+        message="Contract data ready.",
     )
     if file_name is None:
         metadata = ContractMetadata.model_validate(processed.metadata)
