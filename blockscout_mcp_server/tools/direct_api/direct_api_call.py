@@ -83,6 +83,10 @@ async def direct_api_call(
 
     if endpoint_path != "/" and endpoint_path.endswith("/"):
         endpoint_path = endpoint_path.rstrip("/")
+    if endpoint_path.lower() == "/api/eth-rpc":
+        raise ValueError(
+            "The legacy JSON-RPC path '/api/eth-rpc' is no longer supported. Retry with endpoint_path='/json-rpc'."
+        )
     if "?" in endpoint_path:
         raise ValueError("Do not include query parameters in endpoint_path. Use query_params instead.")
 
