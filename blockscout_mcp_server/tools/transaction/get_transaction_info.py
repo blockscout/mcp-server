@@ -37,10 +37,14 @@ async def get_transaction_info(
     """  # noqa: E501
     api_path = f"/api/v2/transactions/{transaction_hash}"
 
+    # Two genuine awaited operations: the concurrent fetch (gather) and the
+    # processing that follows it. Reported as start -> watershed -> completion.
+    total_steps = 2.0
+
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=1.0,
+        total=total_steps,
         message=f"Starting to fetch transaction info for {transaction_hash} on chain {chain_id}...",
     )
 
@@ -65,7 +69,14 @@ async def get_transaction_info(
     if isinstance(ops_result, Exception):
         ops_error_note = f"Could not retrieve user operations. The 'user_operations' field is null. Error: {ops_result}"
 
-    await report_and_log_progress(ctx, progress=1.0, total=1.0, message="Successfully fetched transaction data.")
+    # Watershed: the concurrent requests have returned. Neutral, result-oriented
+    # wording stays truthful even when the optional user-operations request failed.
+    await report_and_log_progress(
+        ctx,
+        progress=1.0,
+        total=total_steps,
+        message="Transaction and user operations requests completed; processing results.",
+    )
 
     processed_data, was_truncated = _process_and_truncate_tx_info_data(response_data, include_raw_input)
 
@@ -73,6 +84,13 @@ async def get_transaction_info(
 
     user_operations = _transform_user_ops(raw_ops_response)
     final_data_dict["user_operations"] = user_operations
+
+    await report_and_log_progress(
+        ctx,
+        progress=2.0,
+        total=total_steps,
+        message="Successfully fetched all transaction data.",
+    )
 
     transaction_data = TransactionInfoData(**final_data_dict)
 

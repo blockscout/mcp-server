@@ -82,8 +82,8 @@ async def test_get_transaction_info_success(mock_ctx):
         data = result.data.model_dump(by_alias=True)
         for key, value in expected_transformed_result.items():
             assert data[key] == value
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert result.instructions is not None
         assert all("/api/v2/proxy/account-abstraction/operations" not in instr for instr in result.instructions)
 
@@ -124,8 +124,8 @@ async def test_get_transaction_info_with_user_ops(mock_ctx):
                 ),
             ]
         )
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert any(
             "Starting to fetch transaction info" in call.kwargs.get("message", "")
             for call in mock_ctx.report_progress.await_args_list
@@ -200,8 +200,8 @@ async def test_get_transaction_info_no_user_ops(mock_ctx):
                 ),
             ]
         )
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert any(
             "Starting to fetch transaction info" in call.kwargs.get("message", "")
             for call in mock_ctx.report_progress.await_args_list
@@ -241,12 +241,22 @@ async def test_get_transaction_info_ops_api_failure(mock_ctx):
                 ),
             ]
         )
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert any(
             "Starting to fetch transaction info" in call.kwargs.get("message", "")
             for call in mock_ctx.report_progress.await_args_list
         )
+        # Watershed beat (index 1) must stay neutral and honest even though the ops request failed,
+        # and the completion beat (index 2) reports overall success on the total=2.0 scale.
+        calls = mock_ctx.report_progress.await_args_list
+        assert calls[0].kwargs["total"] == 2.0
+        assert calls[1].kwargs["progress"] == 1.0
+        assert calls[1].kwargs["total"] == 2.0
+        assert calls[1].kwargs["message"] == "Transaction and user operations requests completed; processing results."
+        assert calls[2].kwargs["progress"] == 2.0
+        assert calls[2].kwargs["total"] == 2.0
+        assert calls[2].kwargs["message"] == "Successfully fetched all transaction data."
         assert result.data.user_operations is None
         assert result.notes is not None
         assert any("Could not retrieve user operations" in note for note in result.notes)
@@ -288,8 +298,8 @@ async def test_get_transaction_info_pagination_note(mock_ctx):
                 ),
             ]
         )
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
         assert any(
             "Starting to fetch transaction info" in call.kwargs.get("message", "")
             for call in mock_ctx.report_progress.await_args_list
@@ -537,8 +547,8 @@ async def test_get_transaction_info_minimal_response(mock_ctx):
         data = result.data.model_dump(by_alias=True)
         for key, value in expected_result.items():
             assert data[key] == value
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -587,8 +597,8 @@ async def test_get_transaction_info_with_token_transfers_transformation(mock_ctx
         assert result.data.to_address == "0x3328..."
         assert isinstance(result.data.token_transfers[0], TokenTransfer)
         assert result.data.token_transfers[0].transfer_type == "token_minting"
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
 
 
 @pytest.mark.asyncio
@@ -633,5 +643,5 @@ async def test_get_transaction_info_handles_null_token_transfer_metadata(mock_ct
         assert isinstance(result.data, TransactionInfoData)
         assert isinstance(result.data.token_transfers[0], TokenTransfer)
         assert result.data.token_transfers[0].token is None
-        assert mock_ctx.report_progress.await_count == 2
-        assert mock_ctx.info.await_count == 2
+        assert mock_ctx.report_progress.await_count == 3
+        assert mock_ctx.info.await_count == 3
