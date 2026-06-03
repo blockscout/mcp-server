@@ -59,14 +59,12 @@ async def nft_tokens_by_address(
     apply_cursor_to_params(cursor, params)
 
     await report_and_log_progress(
-        ctx, progress=0.0, total=2.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
+        ctx, progress=0.0, total=1.0, message=f"Starting to fetch NFT tokens for {address} on chain {chain_id}..."
     )
-
-    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching data...")
 
     response_data = await make_blockscout_request(chain_id=chain_id, api_path=api_path, params=params)
 
-    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched NFT data.")
+    await report_and_log_progress(ctx, progress=1.0, total=1.0, message="Successfully fetched NFT data.")
 
     # Process all items first to prepare for pagination
     original_items = response_data.get("items", [])
