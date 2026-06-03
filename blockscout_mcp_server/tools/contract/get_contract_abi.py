@@ -30,16 +30,8 @@ async def get_contract_abi(
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=2.0,
+        total=1.0,
         message=f"Starting to fetch contract ABI for {address} on chain {chain_id}...",
-    )
-
-    # Report progress before fetching
-    await report_and_log_progress(
-        ctx,
-        progress=1.0,
-        total=2.0,
-        message="Fetching data...",
     )
 
     # 20s light timeout validated empirically: payloads range from ~10 KB
@@ -55,8 +47,8 @@ async def get_contract_abi(
     # Report completion
     await report_and_log_progress(
         ctx,
-        progress=2.0,
-        total=2.0,
+        progress=1.0,
+        total=1.0,
         message="Successfully fetched contract ABI.",
     )
 

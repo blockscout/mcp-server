@@ -40,11 +40,9 @@ async def get_transaction_info(
     await report_and_log_progress(
         ctx,
         progress=0.0,
-        total=2.0,
+        total=1.0,
         message=f"Starting to fetch transaction info for {transaction_hash} on chain {chain_id}...",
     )
-
-    await report_and_log_progress(ctx, progress=1.0, total=2.0, message="Fetching transaction data...")
 
     operations_path = "/api/v2/proxy/account-abstraction/operations"
 
@@ -67,7 +65,7 @@ async def get_transaction_info(
     if isinstance(ops_result, Exception):
         ops_error_note = f"Could not retrieve user operations. The 'user_operations' field is null. Error: {ops_result}"
 
-    await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched transaction data.")
+    await report_and_log_progress(ctx, progress=1.0, total=1.0, message="Successfully fetched transaction data.")
 
     processed_data, was_truncated = _process_and_truncate_tx_info_data(response_data, include_raw_input)
 
