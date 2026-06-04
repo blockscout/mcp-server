@@ -378,27 +378,43 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
     PRO API is guaranteed to reject. Callers treat this like any other
     metadata failure (the ``metadata`` field is null with an explanatory note).
 
+    This helper routes through the shared ``_make_blockscout_http_request`` core
+    and therefore inherits the same conservative GET retry policy
+    (``httpx.RequestError`` retries) and ``"<code> <reason> - Details: …"``
+    error enrichment as ``make_blockscout_request``.  The metadata endpoint is
+    not chain-scoped, so this helper calls the low-level core directly with
+    ``base_url=config.pro_api_base_url`` — bypassing ``ensure_chain_supported``
+    and the ``/{chain_id}`` segment that ``make_blockscout_request`` would add.
+
     Args:
         api_path: The API path to request
         params: Optional query parameters
 
     Returns:
-        The JSON response as a dictionary
+        The JSON response as a dictionary.  A JSON ``null`` response body is
+        normalized to ``{}``.
 
     Raises:
         ValueError: If ``BLOCKSCOUT_PRO_API_KEY`` is not configured
         httpx.HTTPStatusError: If the HTTP request returns an error status code
-        httpx.TimeoutException: If the request times out
+        httpx.TimeoutException: If the request times out (retried as a subclass
+            of ``httpx.RequestError`` before being surfaced)
+        httpx.RequestError: For transport-level errors surfaced after the final
+            retry
     """
     if not config.pro_api_key:
         raise ValueError(
             "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); address metadata is disabled."
         )
-    async with _create_httpx_client(timeout=config.metadata_timeout) as client:
-        url = f"{config.pro_api_base_url}{api_path}"
-        response = await client.get(url, params=params, headers=_pro_api_headers())
-        response.raise_for_status()
-        return response.json()
+    return await _make_blockscout_http_request(
+        method="GET",
+        base_url=config.pro_api_base_url,
+        api_path=api_path,
+        retry_exceptions=(httpx.RequestError,),
+        headers=_pro_api_headers(),
+        params=params,
+        timeout=config.metadata_timeout,
+    )
 
 
 async def make_request_with_periodic_progress(
