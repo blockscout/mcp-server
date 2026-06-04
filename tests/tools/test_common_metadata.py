@@ -141,6 +141,190 @@ async def test_make_metadata_request_skips_network_when_no_key(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# New behaviors acquired by routing through _make_blockscout_http_request
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_uses_metadata_timeout(monkeypatch):
+    """make_metadata_request creates the HTTP client with config.metadata_timeout.
+
+    This guards the most likely silent regression: an implementation that forgets
+    the explicit timeout= argument and lets the core fall back to config.bs_timeout
+    (120s), silently widening the metadata budget from 30s to 120s.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "api_key_12345")
+    api_path = "/api/v1/metadata/address"
+
+    request = httpx.Request("GET", f"{config.pro_api_base_url}{api_path}")
+    ok_resp = httpx.Response(200, json={"result": "ok"}, request=request)
+
+    class _MockClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            return ok_resp
+
+    with patch(
+        "blockscout_mcp_server.tools.common._create_httpx_client",
+        return_value=_MockClient(),
+    ) as mock_create_client:
+        await make_metadata_request(api_path)
+
+    mock_create_client.assert_called_once_with(timeout=config.metadata_timeout)
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_retries_then_succeeds(monkeypatch):
+    """make_metadata_request retries on httpx.RequestError and returns result on success.
+
+    Simulates two transient failures followed by a successful response.
+    Asserts that .get() is called exactly 3 times and anyio.sleep is awaited twice
+    (once per backoff between attempts).
+    The retry cap is pinned to 3 via monkeypatch so the assertion is deterministic.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "api_key_12345")
+    monkeypatch.setattr(config, "bs_request_max_retries", 3)
+    api_path = "/api/v1/metadata/address"
+
+    attempt_count = {"n": 0}
+
+    request = httpx.Request("GET", f"{config.pro_api_base_url}{api_path}")
+    ok_resp = httpx.Response(200, json={"data": "value"}, request=request)
+
+    class _TransientClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            attempt_count["n"] += 1
+            if attempt_count["n"] < 3:
+                raise httpx.RequestError("transient error")
+            return ok_resp
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_TransientClient()),
+        patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep,
+    ):
+        result = await make_metadata_request(api_path)
+
+    assert result == {"data": "value"}
+    assert attempt_count["n"] == 3
+    assert mock_sleep.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_retry_exhaustion_raises(monkeypatch):
+    """make_metadata_request re-raises httpx.RequestError after all retries are exhausted.
+
+    With the retry cap pinned to 3, the client's .get() should be called exactly 3
+    times before the error surfaces, and anyio.sleep should be awaited exactly twice.
+    """
+    monkeypatch.setattr(config, "pro_api_key", "api_key_12345")
+    monkeypatch.setattr(config, "bs_request_max_retries", 3)
+    api_path = "/api/v1/metadata/address"
+
+    attempt_count = {"n": 0}
+
+    class _AlwaysFailingClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            attempt_count["n"] += 1
+            raise httpx.RequestError("persistent error")
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_AlwaysFailingClient()),
+        patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep,
+    ):
+        with pytest.raises(httpx.RequestError):
+            await make_metadata_request(api_path)
+
+    assert attempt_count["n"] == 3
+    assert mock_sleep.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_null_body_normalized_to_empty_dict(monkeypatch):
+    """A JSON null response body is normalized to {} instead of None.
+
+    This prevents a latent AttributeError in the caller (get_address_info calls
+    .get("addresses") on the result, which would fail on None).
+    """
+    monkeypatch.setattr(config, "pro_api_key", "api_key_12345")
+    api_path = "/api/v1/metadata/address"
+
+    request = httpx.Request("GET", f"{config.pro_api_base_url}{api_path}")
+    # Use content=b"null" so httpx.Response.json() returns Python None (not an empty body).
+    null_resp = httpx.Response(200, content=b"null", headers={"content-type": "application/json"}, request=request)
+
+    class _NullBodyClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            return null_resp
+
+    with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_NullBodyClient()):
+        result = await make_metadata_request(api_path)
+
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_enriched_error_message_and_no_retry_on_http_error(monkeypatch):
+    """HTTP error status raises HTTPStatusError with enriched message and is not retried.
+
+    Asserts:
+    - The error message contains the status code and 'Details:' segment.
+    - The client's .get() is called exactly once (HTTP errors are not retried).
+    """
+    monkeypatch.setattr(config, "pro_api_key", "bad_key")
+    monkeypatch.setattr(config, "bs_request_max_retries", 3)
+    api_path = "/api/v1/metadata/address"
+
+    attempt_count = {"n": 0}
+
+    class _UnauthorizedClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            attempt_count["n"] += 1
+            request = httpx.Request("GET", url)
+            return httpx.Response(401, content=b"Unauthorized", request=request)
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_UnauthorizedClient()),
+        patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep,
+    ):
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            await make_metadata_request(api_path)
+
+    assert "401" in str(exc_info.value)
+    assert "Details:" in str(exc_info.value)
+    assert attempt_count["n"] == 1
+    mock_sleep.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
 # Security: PRO API key MUST be sent to the PRO API host via make_blockscout_request
 # ---------------------------------------------------------------------------
 
