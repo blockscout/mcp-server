@@ -567,17 +567,21 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
 
 7. **HTTP Request Robustness**
 
-   Blockscout HTTP requests are centralized via the helper `make_blockscout_request`. To improve resilience against transient, transport-level issues observed in real-world usage (for example, incomplete chunked reads), the helper employs a small and conservative retry policy:
+   Blockscout PRO API requests are centralized through a single shared low-level core, `_make_blockscout_http_request`, which backs every PRO API request helper: `make_blockscout_request` (GET), `make_blockscout_post_request` (POST), and `make_metadata_request` (the non-chain-scoped address-metadata GET). To improve resilience against transient, transport-level issues observed in real-world usage (for example, incomplete chunked reads), this core employs a small and conservative retry policy:
 
-   - Applies only to idempotent GETs (this function is GET-only)
-   - Retries up to 3 attempts on `httpx.RequestError` (transport errors)
-   - Does not retry on `httpx.HTTPStatusError` (4xx/5xx responses)
+   - The retry **exception set is selected by each helper**, because idempotency differs by HTTP method:
+     - The idempotent GET helpers `make_blockscout_request` and `make_metadata_request` retry on `httpx.RequestError` (transport errors, which include `httpx.TimeoutException`).
+     - The non-idempotent `make_blockscout_post_request` deliberately narrows its retry set to connection-establishment failures only (`httpx.ConnectError`, `httpx.ConnectTimeout`), so a POST that may already have reached the server is never silently re-sent.
+   - Retries up to 3 attempts (configurable; see below)
+   - Never retries on `httpx.HTTPStatusError` (4xx/5xx responses), for any helper
    - Uses short exponential backoff between attempts (0.5s, then 1.0s)
 
    Configuration:
    - The maximum number of retry attempts is configurable via the environment variable `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` (default: `3`).
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
+
+   Because all PRO API helpers share this core, their HTTP-status-error enrichment and JSON-`null`-body normalization are identical, and they share the same retry orchestration (attempt count and backoff schedule); only the set of exceptions treated as retryable differs by helper, as detailed in the bullets above. In particular, `make_metadata_request` — used by `get_address_info` — now inherits the shared GET retry policy (retrying `httpx.RequestError`, which includes `httpx.TimeoutException`), the same `"<code> <reason> - Details: …"` error enrichment, and the same normalization of a JSON `null` body to an empty object that the primary data path already provides.
 
    Exhausted internal retries surface differently per access mode:
    - **REST clients** see `500 Internal Server Error` for generic transport failures, or `504 Gateway Timeout` for `httpx.TimeoutException`. Because the server has already retried internally, downstream retry policies that also retry on `5xx` should stay conservative on `500`/`504` from this server to avoid multiplicative attempt cascades.
