@@ -204,7 +204,7 @@ The key's purpose is to ensure every request the server makes to the Blockscout 
 
 - In addition to the server-side key, an MCP client may supply its own PRO API key in a dedicated request header whose name is configured by `BLOCKSCOUT_PRO_API_KEY_HEADER` (`config.pro_api_key_header`, default `Blockscout-MCP-Pro-Api-Key`). Setting this config to an empty string disables the feature.
 - Resolution is pure precedence with **no fallback on a bad client key**: a valid client-supplied key is used for that request; if the client supplies no key, the server-side key is used; if neither exists, the request fails with the not-configured error. A client key that is present but malformed (control characters, or over the length bound) is a terminal error for any PRO-authenticated request that would consume it — the server never silently falls back to its own key for a malformed client key. Tools that never call the PRO API (for example `get_chains_list` or ENS lookups) are unaffected: the malformed state is recorded for the invocation but only the PRO API request helpers consult it.
-- The credential is resolved per request via a request-scoped `ContextVar` in `blockscout_mcp_server/pro_api_key_context.py`. The `@pro_api_key_scope` decorator (applied alongside `@log_tool_invocation` on every tool, but kept independent of it) records the client-key state for the duration of a single tool invocation, and the PRO API request helpers call `resolve_pro_api_key()` at the moment they build the `Authorization` header. The header is read only for genuine MCP calls (skipped when `ctx.call_source == "rest"`) and the client key is never written to logs, analytics, or cache keys.
+- The credential is resolved per request and scoped to a single tool invocation (see `blockscout_mcp_server/pro_api_key_context.py`). The client key is read only for genuine MCP calls (never in REST mode) and is never written to logs, analytics, or cache keys.
 - Because the key authorizes upstream requests rather than gating MCP functionality, a response served entirely from cache (e.g. contract metadata/source) requires only that some effective key be present, not that the client-supplied key was validated upstream. A well-formed but invalid, expired, or out-of-credit client key may therefore receive cached PRO-gated data — no protected upstream request is made on its behalf. This is a deliberate consequence of the principle above, not a validation gap.
 
 **Two transports, one scheme**
@@ -212,7 +212,7 @@ The key's purpose is to ensure every request the server makes to the Blockscout 
 The server reaches the PRO API over two transports, each with its own header builder, but both follow the same `Bearer` scheme:
 
 - **REST / data path** (`make_blockscout_request`, `make_blockscout_post_request`, `make_metadata_request`): headers come from `_pro_api_headers()` in `blockscout_mcp_server/tools/common.py` — always `User-Agent` and `Accept: application/json`, plus `Authorization: Bearer <key>` when a key is configured.
-- **JSON-RPC path** for `read_contract` (the Async Web3 Connection Pool): base (non-secret) headers come from `_default_headers()` in `blockscout_mcp_server/web3_pool.py` and are the only header material in the pool's cache keys. `Authorization` is injected at request time inside the provider's `_make_http_request`, which calls `resolve_pro_api_key()` for each individual JSON-RPC POST. Because the secret is built per request rather than stored on the shared provider, it never enters the pool's cache keys, pooled providers are never mutated with a caller's key, and two concurrent requests carrying different client keys cannot cross-contaminate.
+- **JSON-RPC path** for `read_contract` (the Async Web3 Connection Pool): the `Authorization` header is injected per request rather than stored on the shared pooled provider, so the key never enters the pool's cache keys and concurrent requests carrying different client keys cannot cross-contaminate (see `blockscout_mcp_server/web3_pool.py`).
 
 **User-Agent**
 
@@ -221,12 +221,12 @@ The server reaches the PRO API over two transports, each with its own header bui
 
 **Effect of a missing key**
 
-The key requirement is enforced as a single chokepoint: each PRO API entry point resolves the effective key via `require_pro_api_key()` (which calls `resolve_pro_api_key()`) and raises a `ValueError` *before any network call*, so the server never issues a request the gateway is guaranteed to reject. The effective key is the client-supplied key when present and valid, otherwise the server-side `config.pro_api_key`; resolution runs before chain-support validation, keeping the key as the first gate.
+The key requirement is enforced as a single chokepoint: each PRO API entry point resolves the effective key and raises a `ValueError` *before any network call*, so the server never issues a request the gateway is guaranteed to reject. The effective key is the client-supplied key when present and valid, otherwise the server-side key; resolution runs before chain-support validation, keeping the key as the first gate.
 
 - **Primary data requests** (`make_blockscout_request` / `make_blockscout_post_request`) and **contract reads** (`Web3Pool.get`) fail fast — the tool returns a clear error and makes no network call.
 - **Secondary metadata requests** (`make_metadata_request`, used by `get_address_info`) also fail fast, but callers treat this like any other metadata failure: the `metadata` field is returned `null` with an explanatory note while the primary data is still returned.
 
-These guards check the *resolved* effective key (`resolve_pro_api_key()`): a valid client-supplied key satisfies them, a malformed client key raises a distinct terminal error (no fallback), and only the genuine absence of both a client key and a server key raises the not-configured error.
+A malformed client key raises a distinct terminal error (no fallback); only the genuine absence of both a client key and a server key raises the not-configured error.
 
 **What does not require the key**
 
