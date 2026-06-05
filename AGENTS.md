@@ -108,6 +108,8 @@ mcp-server/
 │   │       ├── test_get_transaction_info_real.py  # Integration tests for get_transaction_info
 │   │       └── test_get_transactions_by_address_real.py  # Integration tests for get_transactions_by_address
 │   ├── api/                      # Unit tests for the REST API
+│   │   ├── test_helpers.py       # Unit tests for REST error-handling helpers (e.g. handle_rest_errors)
+│   │   ├── test_resource_routes.py  # Unit tests for resource discovery routes (/v1/resources)
 │   │   ├── test_routes.py        # Unit tests for API route definitions
 │   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
 │   ├── conftest.py

@@ -229,7 +229,7 @@ The key requirement is enforced as a single chokepoint: each PRO API entry point
 
 **Error semantics**
 
-Credit-exhaustion and rate-limit responses from the PRO API are currently not special-cased; they surface as general request / service-unavailability failures.
+Credit-exhaustion responses on the PRO API *data path* are special-cased: the shared `_make_blockscout_http_request` core maps `HTTP 402` (body `{"error": "Out of credits"}`) to a dedicated `CreditsExhaustedError` (see §8, "Credit Exhaustion"). Rate-limit responses are not special-cased and still surface as general request / service-unavailability failures. The Web3/RPC transport used by `read_contract` is separate and is not covered by this mapping.
 
 ### Key Architectural Decisions
 
@@ -581,7 +581,7 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
-   Because all PRO API helpers share this core, their HTTP-status-error enrichment and JSON-`null`-body normalization are identical, and they share the same retry orchestration (attempt count and backoff schedule); only the set of exceptions treated as retryable differs by helper, as detailed in the bullets above. In particular, `make_metadata_request` — used by `get_address_info` — now inherits the shared GET retry policy (retrying `httpx.RequestError`, which includes `httpx.TimeoutException`), the same `"<code> <reason> - Details: …"` error enrichment, and the same normalization of a JSON `null` body to an empty object that the primary data path already provides.
+   Because all PRO API helpers share this core, their HTTP-status-error enrichment (for non-`402` statuses — `HTTP 402` is intercepted in the same core and mapped to `CreditsExhaustedError` before enrichment; see §8, "Credit Exhaustion") and JSON-`null`-body normalization are identical, and they share the same retry orchestration (attempt count and backoff schedule); only the set of exceptions treated as retryable differs by helper, as detailed in the bullets above. In particular, `make_metadata_request` — used by `get_address_info` — now inherits the shared GET retry policy (retrying `httpx.RequestError`, which includes `httpx.TimeoutException`), the same `"<code> <reason> - Details: …"` error enrichment, and the same normalization of a JSON `null` body to an empty object that the primary data path already provides.
 
    Exhausted internal retries surface differently per access mode:
    - **REST clients** see `500 Internal Server Error` for generic transport failures, or `504 Gateway Timeout` for `httpx.TimeoutException`. Because the server has already retried internally, downstream retry policies that also retry on `5xx` should stay conservative on `500`/`504` from this server to avoid multiplicative attempt cascades.
@@ -601,6 +601,18 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
    - **Safety**: For non-JSON errors (like HTML 502 pages), the raw response text is included but strictly truncated (200 characters) to protect the LLM context window.
 
    This ensures that the AI receives the specific feedback needed to adjust its tool usage without overwhelming it with raw HTML or stack traces.
+
+   **Credit Exhaustion (`402 Payment Required`)**
+
+   The Blockscout PRO API meters access by credits and returns `HTTP 402` with body `{"error": "Out of credits"}` when the daily allowance is exhausted, halting the request in its rate-limit gate before it reaches the upstream Blockscout instance. The shared `_make_blockscout_http_request` core maps any `402` status to a dedicated `CreditsExhaustedError` (a direct `Exception` subclass, kept separate from the generic `HTTPStatusError` enrichment path above) so credit exhaustion is surfaced as a clearly-labeled error rather than a generic transient upstream failure. Because every PRO API helper — `make_blockscout_request` (GET), `make_blockscout_post_request` (POST), and `make_metadata_request` — funnels through this single core, the mapping applies uniformly to all of them. `CreditsExhaustedError` is not part of any helper's retry set, so it propagates immediately without retries.
+
+   The mapping is **plan-agnostic**. The server always authenticates with an API key, so it never reaches the keyless x402 `402` payment paths, and it does not distinguish PRO plan types: the PRO API returns `402` only for free-plan or admin-managed keys at a non-positive balance, while paid-plan keys are allowed through at a negative balance (allow-then-bill) and never receive `402` from this gate. If the deployment key is on a paid plan, `402` simply never arrives — which is acceptable.
+
+   The error surfaces differently per access mode:
+   - **REST clients** receive `402 Payment Required` with the standard `{"error": ...}` body, emitted by the `handle_rest_errors` decorator.
+   - **Native MCP clients** receive a `tools/call` result with `isError: true` whose text content carries the `CreditsExhaustedError` message; no special registration is required because FastMCP surfaces uncaught tool exceptions as error results.
+
+   Note on composite tools: several tools issue multiple PRO API requests concurrently via `asyncio.gather(..., return_exceptions=True)`, with exactly one hard-fail *primary* request whose exception is re-raised and surfaces directly, plus one or more optional *side* requests whose isolated failures are each downgraded to a null field plus an explanatory note. This applies to `get_address_info` (primary: address-info; side: metadata and first-transaction), `get_block_info` with `include_transactions=True` (primary: block details; side: the transactions list), and `get_transaction_info` (primary: the transaction; side: account-abstraction user operations). Because the side requests share the same `_make_blockscout_http_request` core, a `402` raised by a side request *alone* is mapped to `CreditsExhaustedError` and then absorbed into a note (partial data is still returned) rather than surfaced as a hard error. Under genuine credit exhaustion, however, every request — including the primary one — is rejected, so the `CreditsExhaustedError` still reaches the client through the primary request's re-raise.
 
 9. **Tool Title and Annotations**:
 
