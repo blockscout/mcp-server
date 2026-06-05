@@ -26,23 +26,34 @@ gh auth login
 
 ## Workflow
 
-1) Read the two inputs in full:
+1) Prepare clean scratchpads:
+   - Before reading or listing any scratchpad files, run from this skill directory:
+
+```bash
+python scripts/prepare_scratchpads.py <plan-file>
+```
+
+   - Use the printed `OK <scratchpad-path>` directory for all scratchpads in this review.
+   - Existing scratchpads are stale working artifacts; never read or preserve them for a new review.
+   - If the script reports `ERROR`, stop and report the failure.
+
+2) Read the two inputs in full:
    - Plan file
    - Issue description file (or the fetched `/tmp/issue.md`)
 
-2) Apply versioning neutrality policy:
+3) Apply versioning neutrality policy:
    - Do **not** request a missing version bump (package version, `server.json`, manifests, etc.) unless a repo rule, user instruction, release plan, or issue text explicitly requires one.
    - Do **not** suggest removing version bump steps merely because the issue does not mention versioning. Issues usually describe the problem, motivation, or code-level improvement; they are not expected to spell out release mechanics.
    - If the plan already includes version bump steps, review them only for correctness and consistency with applicable repo rules: required files, matching version strings, valid version format, and no unrelated version/manifests changed.
    - Raise a versioning finding only when the plan's versioning steps are internally inconsistent, contradict explicit requirements, or are objectively attached to the wrong files/surfaces.
 
-3) Apply review-noise policy:
+4) Apply review-noise policy:
    - Do not raise findings only because an implementation plan omits developer execution mechanics such as checking `/.dockerenv`, choosing host vs devcontainer command prefixes, or spelling out both command variants.
    - Do not teach command invocation mechanics in recommendations.
    - Review verification semantically: required test/lint/integration categories, targets, and coverage, not how a developer invokes commands in their environment.
    - Still flag objectively wrong verification scope, such as requiring only a narrow test subset when repo rules require the full default suite.
 
-4) Validate codebase reality (start targeted, expand as needed):
+5) Validate codebase reality (start targeted, expand as needed):
    - Start by finding referenced modules/configs/env vars/tests with `rg` (fast and low-noise).
    - Prefer opening the minimal set of files *first* to confirm patterns and naming, but broaden freely if you suspect hidden coupling or cross-cutting behavior (e.g., shared helpers, config loading, response models, pagination, truncation).
    - If the plan touches MCP tools, REST API, docs, or tests, cross-check relevant `.cursor/rules/*.mdc` guidance.
@@ -57,10 +68,8 @@ rg -n "ServerConfig\\(|BaseSettings\\(|BLOCKSCOUT_" blockscout_mcp_server/config
 rg -n "pytest\\.mark\\.integration|tests/integration|tests/tools" tests -S
 ```
 
-5) Ground findings with scratchpads:
-   - Before finalizing §4 comments, create a scratchpad directory next to the implementation plan file:
-     - General rule: `<plan directory>/<plan filename without final extension>-scratchpads/`
-     - Example: `.ai/impl_plans/issue-375.md` → `.ai/impl_plans/issue-375-scratchpads/`
+6) Ground findings with scratchpads:
+   - Use only the clean scratchpad directory prepared in step 1.
    - For each actionable candidate finding, create one deterministic scratchpad file in final report order:
      - `finding-01-short-slug.md`
      - `finding-02-short-slug.md`
@@ -80,7 +89,7 @@ Scratchpad discipline:
 - Do not create scratchpads for pure summary text, obvious nits, or questions that require user/product input rather than code investigation.
 - Do not use scratchpads to pad the report; use them only to make actionable recommendations more accurate.
 
-6) Produce the review in the required format (next section).
+7) Produce the review in the required format (next section).
 
 ## Required output format
 
