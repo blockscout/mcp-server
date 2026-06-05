@@ -170,6 +170,45 @@ def test_track_event_noop_when_disabled(monkeypatch):
         mp_cls.assert_not_called()
 
 
+def test_pro_api_key_not_in_analytics_payload(monkeypatch):
+    """The client-supplied PRO API key must not appear in the Mixpanel payload or kwargs.
+
+    analytics.track_tool_invocation runs inside log_tool_invocation, which executes
+    *outside* the pro_api_key_scope. Even so, this test exercises the case where the
+    context object carries the configured header to ensure no code path leaks it.
+    """
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+
+    client_key = "client-secret"
+    headers = {
+        "x-forwarded-for": "203.0.113.5",
+        "user-agent": "pytest-UA",
+        "Blockscout-MCP-Pro-Api-Key": client_key,
+    }
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="test-client", client_version="1.0.0")
+
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "some_tool", {"x": 1})
+
+        assert mp_instance.track.called
+        call_args = mp_instance.track.call_args
+
+        # Inspect every string in the call for the key value and header name
+        all_text = str(call_args)
+        assert client_key not in all_text
+        assert "Blockscout-MCP-Pro-Api-Key" not in all_text
+
+        # Also explicitly check that the properties dict doesn't contain the key
+        args, kwargs = call_args
+        properties = args[2] if len(args) > 2 else {}
+        assert client_key not in str(properties)
+        assert client_key not in str(kwargs)
+
+
 def test_track_community_usage(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:

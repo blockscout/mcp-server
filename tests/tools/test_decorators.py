@@ -8,12 +8,16 @@ import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
 from mcp.types import RequestParams
+from starlette.datastructures import Headers
 
+from blockscout_mcp_server.api.dependencies import MockCtx
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
     UNDEFINED_CLIENT_VERSION,
     UNKNOWN_PROTOCOL_VERSION,
 )
+from blockscout_mcp_server.config import config as server_config
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope, resolve_pro_api_key
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
@@ -185,3 +189,93 @@ async def test_log_tool_invocation_no_meta_no_log(caplog: pytest.LogCaptureFixtu
     log_text = caplog.text
     assert "Tool invoked: dummy_tool" in log_text
     assert "Meta:" not in log_text
+
+
+# ---------------------------------------------------------------------------
+# pro_api_key_scope decorator tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_pro_api_key_scope_mcp_context_resolves_client_key(monkeypatch, mock_ctx: Context) -> None:
+    """Invoking a tool stacked with log_tool_invocation + pro_api_key_scope and an MCP-like
+    context carrying the client-key header causes resolve_pro_api_key() to return the
+    client key during the tool body, and the ContextVar is reset to its default afterward."""
+    monkeypatch.setattr(server_config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "server-key", raising=False)
+
+    client_key_during_call = None
+
+    @log_tool_invocation
+    @pro_api_key_scope
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        nonlocal client_key_during_call
+        client_key_during_call = resolve_pro_api_key()
+        return a
+
+    # Build a real Starlette Headers object with a non-canonical header casing
+    headers = Headers(headers={"BLOCKSCOUT-MCP-PRO-API-KEY": "my-client-secret"})
+    mock_ctx.call_source = "mcp"
+    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    mock_ctx.session = None
+
+    await dummy_tool(42, ctx=mock_ctx)
+
+    # The client key was resolved inside the tool body
+    assert client_key_during_call == "my-client-secret"
+
+    # After the call the ContextVar is reset — resolve_pro_api_key falls back to server key
+    assert resolve_pro_api_key() == "server-key"
+
+
+@pytest.mark.asyncio
+async def test_pro_api_key_scope_rest_context_ignores_client_key(monkeypatch) -> None:
+    """A REST MockCtx call ignores the client key header and resolves the server key."""
+    monkeypatch.setattr(server_config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "server-key", raising=False)
+
+    resolved_key = None
+
+    @log_tool_invocation
+    @pro_api_key_scope
+    async def dummy_tool(a: int, ctx) -> int:  # type: ignore[no-untyped-def]
+        nonlocal resolved_key
+        resolved_key = resolve_pro_api_key()
+        return a
+
+    # Build a REST-style MockCtx that carries the header — it must be ignored
+    rest_ctx = MockCtx()
+    # Attach a fake request with the client-key header on the wrapper
+    headers = Headers(headers={"Blockscout-MCP-Pro-Api-Key": "client-secret"})
+    rest_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+
+    await dummy_tool(1, ctx=rest_ctx)
+
+    assert resolved_key == "server-key"
+
+
+@pytest.mark.asyncio
+async def test_pro_api_key_never_appears_in_logs(
+    monkeypatch, caplog: pytest.LogCaptureFixture, mock_ctx: Context
+) -> None:
+    """The client-key value must not appear in any log output from log_tool_invocation
+    or any other logger captured during the invocation."""
+    monkeypatch.setattr(server_config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    caplog.set_level(logging.DEBUG)
+
+    client_key = "super-secret-key-xyz"
+
+    @log_tool_invocation
+    @pro_api_key_scope
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    headers = Headers(headers={"Blockscout-MCP-Pro-Api-Key": client_key})
+    mock_ctx.call_source = "mcp"
+    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    mock_ctx.session = None
+
+    await dummy_tool(7, ctx=mock_ctx)
+
+    assert client_key not in caplog.text
+    assert "Blockscout-MCP-Pro-Api-Key" not in caplog.text

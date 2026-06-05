@@ -10,6 +10,7 @@ from blockscout_mcp_server.models import (
     InstructionsData,
     ToolResponse,
 )
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     report_and_log_progress,
@@ -20,6 +21,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 # It is very important to keep the tool description in such form to force the LLM to call this tool first
 # before calling any other tool. Altering of the description could provide opportunity to LLM to skip this tool.
 @log_tool_invocation
+@pro_api_key_scope
 async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[InstructionsData]:
     """Mandatory initialization step for any session against the Blockscout MCP server.
 
