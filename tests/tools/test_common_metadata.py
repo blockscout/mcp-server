@@ -12,6 +12,7 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import SERVER_VERSION
+from blockscout_mcp_server.pro_api_key_context import _client_key_state, _Valid
 from blockscout_mcp_server.tools.common import (
     _pro_api_headers,
     make_blockscout_request,
@@ -367,3 +368,116 @@ async def test_make_blockscout_request_sends_pro_api_key_to_pro_api_host(monkeyp
     assert sent_headers.get("Authorization") == "Bearer proapi_test"
     assert "User-Agent" in sent_headers
     assert sent_headers.get("Accept") == "application/json"
+
+
+# ---------------------------------------------------------------------------
+# Phase 4: _pro_api_headers() and make_metadata_request() with resolved key
+# ---------------------------------------------------------------------------
+
+
+def test_pro_api_headers_client_key_overrides_server_key(monkeypatch):
+    """_pro_api_headers() uses the client key when the ContextVar holds a valid key."""
+    monkeypatch.setattr(config, "pro_api_key", "server-key")
+    token = _client_key_state.set(_Valid(value="client-key"))
+    try:
+        headers = _pro_api_headers()
+    finally:
+        _client_key_state.reset(token)
+    assert headers["Authorization"] == "Bearer client-key"
+
+
+def test_pro_api_headers_serverless_client_key(monkeypatch):
+    """_pro_api_headers() includes client key Authorization even with empty server key."""
+    monkeypatch.setattr(config, "pro_api_key", "")
+    token = _client_key_state.set(_Valid(value="client-key-only"))
+    try:
+        headers = _pro_api_headers()
+    finally:
+        _client_key_state.reset(token)
+    assert headers["Authorization"] == "Bearer client-key-only"
+
+
+def test_pro_api_headers_falls_back_to_server_key_when_client_absent(monkeypatch):
+    """_pro_api_headers() returns the server key when no client key is in the ContextVar."""
+    monkeypatch.setattr(config, "pro_api_key", "server-only-key")
+    headers = _pro_api_headers()
+    assert headers["Authorization"] == "Bearer server-only-key"
+
+
+def test_pro_api_headers_omits_authorization_when_both_absent(monkeypatch):
+    """_pro_api_headers() omits Authorization when both server key and ContextVar are absent."""
+    monkeypatch.setattr(config, "pro_api_key", "")
+    headers = _pro_api_headers()
+    assert "Authorization" not in headers
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_serverless_valid_client_key(monkeypatch):
+    """With empty server key and valid client key in ContextVar, make_metadata_request succeeds."""
+    monkeypatch.setattr(config, "pro_api_key", "")
+    api_path = "/api/v1/metadata/address"
+
+    fake_client = CapturingAsyncClient(_ok_response(config.pro_api_base_url + api_path))
+    token = _client_key_state.set(_Valid(value="client-only-key"))
+    try:
+        with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client):
+            result = await make_metadata_request(api_path)
+    finally:
+        _client_key_state.reset(token)
+
+    assert result == {"result": "ok"}
+    sent_headers = (fake_client.get_kwargs or {}).get("headers", {})
+    assert sent_headers.get("Authorization") == "Bearer client-only-key"
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_raises_malformed_key_before_network(monkeypatch):
+    """make_metadata_request raises ValueError for malformed key before any HTTP call."""
+    from blockscout_mcp_server.pro_api_key_context import _Malformed
+
+    monkeypatch.setattr(config, "pro_api_key", "server-key")
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("No HTTP client should be created for a malformed key")
+
+    token = _client_key_state.set(_Malformed())
+    try:
+        with patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail):
+            with pytest.raises(ValueError, match="malformed"):
+                await make_metadata_request("/api/v1/metadata/address")
+    finally:
+        _client_key_state.reset(token)
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_no_fallback_on_upstream_rejection(monkeypatch):
+    """With a valid client key and server key both set, an upstream 401 raises HTTPStatusError without retry."""
+    monkeypatch.setattr(config, "pro_api_key", "server-key")
+    api_path = "/api/v1/metadata/address"
+
+    attempt_count = {"n": 0}
+    captured_headers: list[dict] = []
+
+    class _RejectingClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            attempt_count["n"] += 1
+            captured_headers.append(dict(kwargs.get("headers") or {}))
+            request = httpx.Request("GET", url)
+            return httpx.Response(401, content=b"Unauthorized", request=request)
+
+    token = _client_key_state.set(_Valid(value="client-key"))
+    try:
+        with patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_RejectingClient()):
+            with pytest.raises(httpx.HTTPStatusError):
+                await make_metadata_request(api_path)
+    finally:
+        _client_key_state.reset(token)
+
+    assert attempt_count["n"] == 1
+    assert captured_headers[0].get("Authorization") == "Bearer client-key"
