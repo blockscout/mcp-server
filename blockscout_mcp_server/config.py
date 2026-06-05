@@ -22,6 +22,7 @@ class ServerConfig(BaseSettings):
     pro_api_config_ttl_seconds: int = 300
     pro_api_config_refresh_retry_seconds: int = 30
     pro_api_key: str = ""
+    pro_api_key_header: str = "Blockscout-MCP-Pro-Api-Key"
 
     @field_validator("pro_api_base_url")
     @classmethod
@@ -31,6 +32,11 @@ class ServerConfig(BaseSettings):
     @field_validator("pro_api_key")
     @classmethod
     def normalize_pro_api_key(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("pro_api_key_header")
+    @classmethod
+    def normalize_pro_api_key_header(cls, value: str) -> str:
         return value.strip()
 
     # Metadata configuration (PRO API metadata endpoint)
