@@ -48,6 +48,8 @@ For each rule file:
 
 ### 3. Compose the Implementation Plan
 
+**This skill is the complete and only source for the plan's format.** The template below, the slice-marker rules, and the `--inspect` validator in step 6 define every convention you need — section order, marker syntax, the shape of the verification command blocks, all of it. Because the format is fully specified here, you never need to look at another plan to copy its conventions, and you must not: do not open or grep any other file under `.ai/impl_plans/` or `temp/impl_plans/`. Reading a sibling plan does two kinds of harm — it spends context on a document irrelevant to this issue, and, more insidiously, it anchors you to another feature's scope, phasing, and wording, biasing the plan you're writing now. If you're unsure your markers are correct, don't compare against an example — write them per this template and let the step-6 `--inspect` check prove them. (The pattern examples this skill asks you to cite are *source and test files for this feature*, referenced by path — never other plans.)
+
 Create a detailed Markdown document at `.ai/impl_plans/issue-$1.md` with the following structure.
 
 **Slice markers — required.** Wrap every section in paired, namespaced HTML-comment markers so the plan can be sliced deterministically by `scripts/slice_impl_plan.py` (headings alone are unreliable — plans embed code blocks and exact documentation that legitimately contain `#`/`##` as content). Rules:
@@ -329,6 +331,7 @@ Awaiting your instructions to proceed.
 - **Do NOT implement the plan** - only create the plan document
 - **Slice markers are mandatory.** Wrap preamble / each phase / final checklist in paired `<!-- impl-plan:begin slug="…" -->` … `<!-- impl-plan:end slug="…" -->` markers (see step 3) and confirm the plan passes the step-6 `--inspect` self-check before handing back
 - The plan must be self-contained and not assume access to conversation history
+- **Never read other plans.** This SKILL.md fully defines the format; opening another `.ai/impl_plans/` or `temp/impl_plans/` file only burns context and biases this plan toward another feature (see step 3)
 - **Only include phases with actual work** - do not create placeholder phases that say "no changes needed"
 - **No code snippets** for functional changes or tests - explain WHAT and WHY instead
 - Point to existing files as pattern examples (e.g., "follow the pattern in `tools/address/get_address_info.py`")
