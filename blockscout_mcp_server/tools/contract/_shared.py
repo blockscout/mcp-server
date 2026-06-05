@@ -33,6 +33,10 @@ async def _fetch_and_process_contract(chain_id: str, address: str) -> CachedCont
 
     normalized_address = address.lower()
     cache_key = f"{chain_id}:{normalized_address}"
+    # Serving a cached contract requires only that some effective key be present
+    # (checked above), not that a client-supplied key was validated upstream.
+    # This is deliberate: the key authorizes the server's upstream requests, and
+    # a cache hit makes none, so there is nothing to authorize here.
     if cached := await contract_cache.get(cache_key):
         return cached
 
