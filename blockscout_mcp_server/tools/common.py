@@ -18,7 +18,7 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
-from blockscout_mcp_server.pro_api_key_context import resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import require_pro_api_key, resolve_pro_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -196,10 +196,7 @@ async def make_blockscout_request(
         network conditions. Centralizing minimal retries here improves robustness
         for all tools and REST endpoints without masking persistent API errors.
     """
-    if not resolve_pro_api_key():
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
-        )
+    require_pro_api_key("data access")
     # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
@@ -239,10 +236,7 @@ async def make_blockscout_post_request(
     retries occur only for connection-establishment failures (ConnectError,
     ConnectTimeout), where the request body is known not to have reached upstream.
     """
-    if not resolve_pro_api_key():
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
-        )
+    require_pro_api_key("data access")
     # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
@@ -407,10 +401,7 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         httpx.RequestError: For transport-level errors surfaced after the final
             retry
     """
-    if not resolve_pro_api_key():
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); address metadata is disabled."
-        )
+    require_pro_api_key("address metadata")
     return await _make_blockscout_http_request(
         method="GET",
         base_url=config.pro_api_base_url,

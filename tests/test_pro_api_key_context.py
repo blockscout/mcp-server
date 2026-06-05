@@ -94,12 +94,12 @@ def test_normalize_control_char_del_is_malformed():
 
 
 def test_normalize_over_length_is_malformed():
-    state = _normalize_key("a" * 4097)
+    state = _normalize_key("a" * 257)
     assert isinstance(state, _Malformed)
 
 
 def test_normalize_exactly_max_length_is_valid():
-    state = _normalize_key("a" * 4096)
+    state = _normalize_key("a" * 256)
     assert isinstance(state, _Valid)
 
 
@@ -229,7 +229,7 @@ def test_malformed_error_does_not_embed_control_char_value(monkeypatch):
 def test_malformed_error_does_not_embed_over_length_value(monkeypatch):
     """ValueError message must not reproduce an over-length submitted value."""
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    raw_value = "a" * 4097
+    raw_value = "a" * 257
     with _set_key_state(_Malformed()):
         with pytest.raises(ValueError) as exc_info:
             resolve_pro_api_key()

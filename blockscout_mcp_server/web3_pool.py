@@ -37,7 +37,7 @@ from web3.providers.rpc import AsyncHTTPProvider
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import SERVER_VERSION
-from blockscout_mcp_server.pro_api_key_context import resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import require_pro_api_key, resolve_pro_api_key
 from blockscout_mcp_server.tools.common import ensure_chain_supported
 
 
@@ -184,14 +184,10 @@ class Web3Pool:
     async def get(self, chain_id: str, headers: dict[str, str] | None = None) -> AsyncWeb3:
         # Fail fast when no effective PRO API key is available — no network call
         # should be made when the gateway is guaranteed to reject the request.
-        # resolve_pro_api_key() raises ValueError for a malformed client key;
-        # we raise ValueError (not-configured) when the resolved key is empty.
-        resolved_key = resolve_pro_api_key()
-        if not resolved_key:
-            raise ValueError(
-                "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); "
-                "contract reads via the PRO API gateway are disabled."
-            )
+        # require_pro_api_key() propagates ValueError for a malformed client
+        # key and raises the standard not-configured error when both keys are
+        # absent.
+        require_pro_api_key("contract reads via the PRO API gateway")
 
         # Validate the chain before constructing anything.
         await ensure_chain_supported(chain_id)
