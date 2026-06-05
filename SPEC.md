@@ -604,7 +604,7 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
 
    **Credit Exhaustion (`402 Payment Required`)**
 
-   The shared `_make_blockscout_http_request` core maps any `402` response to a dedicated `CreditsExhaustedError`, which propagates immediately without retries. REST clients receive `402 Payment Required`; native MCP clients receive an `isError: true` tool result.
+   The shared `_make_blockscout_http_request` core maps `HTTP 402` responses with body `{"error": "Out of credits"}` to a dedicated `CreditsExhaustedError`, which propagates immediately without retries. REST clients receive `402 Payment Required`; native MCP clients receive an `isError: true` tool result.
 
    In composite tools (`get_address_info`, `get_block_info`, `get_transaction_info`), side requests absorb `CreditsExhaustedError` into a note (returning partial data) while the primary request hard-fails normally.
 
