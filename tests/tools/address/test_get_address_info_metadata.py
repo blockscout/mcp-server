@@ -14,6 +14,7 @@ from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import _process_metadata_tags, get_address_info
+from blockscout_mcp_server.tools.common import CreditsExhaustedError
 
 
 def _long_string() -> str:
@@ -87,9 +88,14 @@ async def test_get_address_info_metadata_failure(mock_ctx):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status_code", [401, 402, 429])
+@pytest.mark.parametrize("status_code", [401, 429])
 async def test_get_address_info_metadata_http_status_error_degrades_gracefully(status_code, mock_ctx):
-    """A rejected PRO API call (401/402/429) degrades softly — primary data is still returned."""
+    """A rejected PRO API call (401/429) degrades softly — primary data is still returned.
+
+    Note: 402 is excluded because after Phase 1, a real metadata 402 arrives as
+    CreditsExhaustedError (not httpx.HTTPStatusError). See
+    test_get_address_info_metadata_credits_exhausted_degrades_gracefully below.
+    """
     chain_id = "1"
     address = "0x123abc"
 
@@ -156,6 +162,50 @@ async def test_get_address_info_fails_fast_when_no_key(mock_ctx, monkeypatch):
 
         with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
             await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+
+# ---------------------------------------------------------------------------
+# Metadata failure — CreditsExhaustedError (PRO API credit exhaustion)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_metadata_credits_exhausted_degrades_gracefully(mock_ctx):
+    """A CreditsExhaustedError from make_metadata_request degrades softly — primary data is still returned."""
+    chain_id = "1"
+    address = "0x123abc"
+
+    mock_blockscout_response = {"hash": address, "is_contract": False}
+    mock_first_tx_response = {"items": []}
+    metadata_error = CreditsExhaustedError(
+        "Blockscout PRO API credits exhausted (HTTP 402): the API key's credit allowance is depleted."
+    )
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
+            new_callable=AsyncMock,
+        ) as mock_meta_request,
+    ):
+        mock_bs_request.side_effect = [mock_blockscout_response, mock_first_tx_response]
+        mock_meta_request.side_effect = metadata_error
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        mock_meta_request.assert_called_once_with(
+            api_path="/services/metadata/api/v1/metadata", params={"addresses": address, "chainId": chain_id}
+        )
+
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, AddressInfoData)
+        assert result.data.basic_info == mock_blockscout_response
+        assert result.data.metadata is None
+        assert result.notes is not None and len(result.notes) >= 1
+        assert any("Could not retrieve address metadata" in note for note in result.notes)
 
 
 # ---------------------------------------------------------------------------

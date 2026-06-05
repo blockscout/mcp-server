@@ -13,6 +13,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import SERVER_VERSION
 from blockscout_mcp_server.tools.common import (
+    CreditsExhaustedError,
     _pro_api_headers,
     make_blockscout_request,
     make_metadata_request,
@@ -367,3 +368,40 @@ async def test_make_blockscout_request_sends_pro_api_key_to_pro_api_host(monkeyp
     assert sent_headers.get("Authorization") == "Bearer proapi_test"
     assert "User-Agent" in sent_headers
     assert sent_headers.get("Accept") == "application/json"
+
+
+# ---------------------------------------------------------------------------
+# CreditsExhaustedError: metadata 402 → distinct error, no retry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_make_metadata_request_402_raises_credits_exhausted_error(monkeypatch):
+    """A 402 response from make_metadata_request raises CreditsExhaustedError and is not retried."""
+    monkeypatch.setattr(config, "pro_api_key", "bad_key")
+    monkeypatch.setattr(config, "bs_request_max_retries", 3)
+    api_path = "/api/v1/metadata/address"
+
+    attempt_count = {"n": 0}
+
+    class _PaymentRequiredClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, **kwargs):
+            attempt_count["n"] += 1
+            request = httpx.Request("GET", url)
+            return httpx.Response(402, content=b'{"error": "Out of credits"}', request=request)
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_PaymentRequiredClient()),
+        patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep,
+    ):
+        with pytest.raises(CreditsExhaustedError):
+            await make_metadata_request(api_path)
+
+    assert attempt_count["n"] == 1
+    mock_sleep.assert_not_called()

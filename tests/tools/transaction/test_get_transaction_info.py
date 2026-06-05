@@ -7,7 +7,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import INPUT_DATA_TRUNCATION_LIMIT
 from blockscout_mcp_server.models import TokenTransfer, ToolResponse, TransactionInfoData
-from blockscout_mcp_server.tools.common import ChainNotFoundError
+from blockscout_mcp_server.tools.common import ChainNotFoundError, CreditsExhaustedError
 from blockscout_mcp_server.tools.transaction.get_transaction_info import get_transaction_info
 
 
@@ -645,3 +645,32 @@ async def test_get_transaction_info_handles_null_token_transfer_metadata(mock_ct
         assert result.data.token_transfers[0].token is None
         assert mock_ctx.report_progress.await_count == 3
         assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_get_transaction_info_ops_credits_exhausted_degrades_gracefully(mock_ctx):
+    """CreditsExhaustedError on the user-operations side request degrades softly.
+
+    Mirrors test_get_transaction_info_ops_api_failure but with the new
+    exception type to prove the composite-tool soft-fail path handles it.
+    """
+    chain_id = "1"
+    tx_hash = "0xabc123"
+
+    mock_api_response = {"hash": tx_hash, "status": "ok"}
+    ops_error = CreditsExhaustedError(
+        "Blockscout PRO API credits exhausted (HTTP 402): the API key's credit allowance is depleted."
+    )
+
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transaction_info.make_blockscout_request",
+        new_callable=AsyncMock,
+    ) as mock_request:
+        mock_request.side_effect = [mock_api_response, ops_error]
+
+        result = await get_transaction_info(chain_id=chain_id, transaction_hash=tx_hash, ctx=mock_ctx)
+
+        assert result.data.user_operations is None
+        assert result.notes is not None
+        assert any("Could not retrieve user operations" in note for note in result.notes)
+        assert all("USER OPERATIONS REQUIRE EXPANSION" not in instr for instr in result.instructions)

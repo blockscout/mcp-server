@@ -7,6 +7,7 @@ import pytest
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AddressInfoData, ToolResponse
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
+from blockscout_mcp_server.tools.common import CreditsExhaustedError
 
 
 @pytest.mark.asyncio
@@ -301,3 +302,78 @@ async def test_get_address_info_blockscout_failure(mock_ctx):
 
         assert mock_ctx.report_progress.await_count == 1
         assert mock_ctx.info.await_count == 1
+
+
+# ---------------------------------------------------------------------------
+# CreditsExhaustedError composite-tool tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_first_transaction_credits_exhausted_degrades_gracefully(mock_ctx):
+    """CreditsExhaustedError on the first-transaction side request degrades softly.
+
+    Mirrors test_get_address_info_first_transaction_failure but with the new
+    exception type to prove the composite-tool soft-fail path handles it.
+    """
+    chain_id = "1"
+    address = "0x123abc"
+
+    mock_blockscout_response = {"hash": address, "is_contract": False}
+    first_tx_error = CreditsExhaustedError(
+        "Blockscout PRO API credits exhausted (HTTP 402): the API key's credit allowance is depleted."
+    )
+    mock_metadata_response = {"addresses": {}}
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
+            new_callable=AsyncMock,
+        ) as mock_meta_request,
+    ):
+        mock_bs_request.side_effect = [mock_blockscout_response, first_tx_error]
+        mock_meta_request.return_value = mock_metadata_response
+
+        result = await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
+
+        assert isinstance(result, ToolResponse)
+        assert isinstance(result.data, AddressInfoData)
+        assert result.data.basic_info == mock_blockscout_response
+        assert result.data.first_transaction_details is None
+        assert result.notes is not None and len(result.notes) >= 1
+        assert any("Could not retrieve first transaction details" in note for note in result.notes)
+
+
+@pytest.mark.asyncio
+async def test_get_address_info_primary_credits_exhausted_raises(mock_ctx):
+    """CreditsExhaustedError on the primary address-info request is re-raised unchanged.
+
+    Mirrors test_get_address_info_blockscout_failure but with CreditsExhaustedError
+    to prove the tool surfaces the distinct error rather than swallowing it.
+    """
+    chain_id = "1"
+    address = "0x123abc"
+
+    primary_error = CreditsExhaustedError(
+        "Blockscout PRO API credits exhausted (HTTP 402): the API key's credit allowance is depleted."
+    )
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_blockscout_request",
+            new_callable=AsyncMock,
+        ) as mock_bs_request,
+        patch(
+            "blockscout_mcp_server.tools.address.get_address_info.make_metadata_request",
+            new_callable=AsyncMock,
+        ) as mock_meta_request,
+    ):
+        mock_bs_request.side_effect = [primary_error, {"items": []}]
+        mock_meta_request.return_value = {}
+
+        with pytest.raises(CreditsExhaustedError):
+            await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)

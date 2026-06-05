@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.tools.common import make_blockscout_post_request
+from blockscout_mcp_server.tools.common import CreditsExhaustedError, make_blockscout_post_request
 
 
 class MockResponse:
@@ -239,3 +239,37 @@ async def test_make_blockscout_post_request_sends_auth_headers_to_pro_api(monkey
     assert captured["headers"].get("Authorization") == "Bearer post_test_key"
     assert "User-Agent" in captured["headers"]
     assert captured["headers"].get("Accept") == "application/json"
+
+
+# ---------------------------------------------------------------------------
+# CreditsExhaustedError: POST 402 → distinct error, no retry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_post_request_402_raises_credits_exhausted_error():
+    """A 402 response from POST raises CreditsExhaustedError and is not retried."""
+    attempts = {"count": 0}
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, *_args, **_kwargs):
+            attempts["count"] += 1
+            return MockResponse({"error": "Out of credits"}, status_code=402)
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=Client()),
+        patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep,
+        patch.object(config, "pro_api_key", "test_key"),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        with pytest.raises(CreditsExhaustedError):
+            await make_blockscout_post_request("1", "/b", {"x": 1})
+
+    assert attempts["count"] == 1
+    mock_sleep.assert_not_called()
