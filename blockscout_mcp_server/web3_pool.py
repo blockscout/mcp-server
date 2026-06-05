@@ -15,6 +15,14 @@ resources on constrained hosts. Extend the timeout if the remote Blockscout
 instance is slow or under heavy load. The ``BLOCKSCOUT_MCP_USER_AGENT`` variable
 customizes the leading part of the ``User-Agent`` header; the server version is
 appended automatically.
+
+Authorization is injected at request time inside
+:meth:`AsyncHTTPProviderBlockscout._make_http_request` by calling
+:func:`~blockscout_mcp_server.pro_api_key_context.resolve_pro_api_key`.  This
+means each in-flight request resolves the effective key from the request-scoped
+``ContextVar`` rather than reading it from the shared provider instance, so two
+concurrent requests with different client keys cannot cross-contaminate each
+other's headers.
 """
 
 from __future__ import annotations
@@ -29,6 +37,7 @@ from web3.providers.rpc import AsyncHTTPProvider
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import SERVER_VERSION
+from blockscout_mcp_server.pro_api_key_context import resolve_pro_api_key
 from blockscout_mcp_server.tools.common import ensure_chain_supported
 
 
@@ -37,20 +46,6 @@ def _default_headers() -> dict[str, str]:
     return {
         "User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION} (+pool)",
     }
-
-
-def _request_headers(hdr_items: tuple[tuple[str, str], ...]) -> dict[str, str]:
-    """Build full request headers from non-secret cache-key items.
-
-    Copies the non-secret header items and appends ``Authorization: Bearer
-    <key>`` only when ``config.pro_api_key`` is non-empty (never send a bare
-    ``Bearer``).  The ``Authorization`` header is therefore never stored in
-    cache keys; it is resolved at request time on every call.
-    """
-    headers = dict(hdr_items)
-    if config.pro_api_key:
-        headers["Authorization"] = f"Bearer {config.pro_api_key}"
-    return headers
 
 
 class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
@@ -67,9 +62,13 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
     managed ``aiohttp.ClientSession`` to be reused for all requests, enabling
     connection pooling and fine-grained timeout control.
 
-    The :meth:`set_request_headers` method replaces the provider's request
-    headers, letting the pool (re)apply the configured ``Authorization`` to a
-    reused provider without creating a new instance.
+    The provider's stored ``_request_kwargs["headers"]`` contain only
+    non-secret headers (``User-Agent`` and any caller-supplied non-auth
+    headers).  ``Authorization`` is **never** stored on the provider; it is
+    resolved at request time inside :meth:`_make_http_request` via
+    :func:`~blockscout_mcp_server.pro_api_key_context.resolve_pro_api_key`,
+    so concurrent requests each carry their own key without mutating shared
+    state.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -82,24 +81,26 @@ class AsyncHTTPProviderBlockscout(AsyncHTTPProvider):
     def set_pooled_session(self, session: aiohttp.ClientSession) -> None:
         self.pooled_session = session
 
-    def set_request_headers(self, headers: dict[str, str]) -> None:
-        """Replace the provider's request headers.
-
-        Mirrors :meth:`set_pooled_session` as a hook for the pool to (re)apply
-        the configured ``Authorization`` header on every fetch (including cache
-        hits), since auth is not part of the provider's cache key.
-        """
-        self._request_kwargs["headers"] = headers
-
     async def _make_http_request(self, session: aiohttp.ClientSession, rpc_dict: dict[str, Any]) -> dict[str, Any]:
         """Perform the HTTP request using the given session.
 
         A dedicated helper lets us share the implementation between pooled and
         fallback sessions while keeping tight control over timeouts.
+
+        ``Authorization`` is injected here at request time by calling
+        :func:`~blockscout_mcp_server.pro_api_key_context.resolve_pro_api_key`.
+        A fresh header dict is built on every call so the shared provider
+        instance is never mutated and concurrent requests remain isolated.
         """
         headers = dict(self._request_kwargs.get("headers", {}))
         headers.setdefault("Content-Type", "application/json")
         headers.setdefault("Accept", "application/json")
+        # Resolve the effective PRO API key for this specific request.
+        # resolve_pro_api_key() raises ValueError for a malformed client key,
+        # which propagates out of the JSON-RPC call as the tool error.
+        effective_key = resolve_pro_api_key()
+        if effective_key:
+            headers["Authorization"] = f"Bearer {effective_key}"
         timeout = aiohttp.ClientTimeout(total=self._request_kwargs.get("timeout", config.rpc_request_timeout))
         async with session.post(
             self.endpoint_uri,
@@ -146,9 +147,11 @@ class Web3Pool:
     chain's JSON-RPC traffic targets the same host (``api.blockscout.com``).
 
     Auth headers (``Authorization``) are intentionally excluded from cache
-    keys so the secret never enters internal dictionaries; the configured key
-    is (re)applied on every fetch (including cache hits), so a pooled provider
-    always carries the currently configured key.
+    keys and from the provider's stored headers.  The effective key is resolved
+    per request inside :meth:`AsyncHTTPProviderBlockscout._make_http_request`
+    via :func:`~blockscout_mcp_server.pro_api_key_context.resolve_pro_api_key`,
+    so two concurrent requests against the same pooled provider each carry
+    their own key without any shared-state mutation.
     """
 
     def __init__(self) -> None:
@@ -179,9 +182,12 @@ class Web3Pool:
         return self._session
 
     async def get(self, chain_id: str, headers: dict[str, str] | None = None) -> AsyncWeb3:
-        # Fail fast when no PRO API key is configured — no network call should be
-        # made when the gateway is guaranteed to reject the request.
-        if not config.pro_api_key:
+        # Fail fast when no effective PRO API key is available — no network call
+        # should be made when the gateway is guaranteed to reject the request.
+        # resolve_pro_api_key() raises ValueError for a malformed client key;
+        # we raise ValueError (not-configured) when the resolved key is empty.
+        resolved_key = resolve_pro_api_key()
+        if not resolved_key:
             raise ValueError(
                 "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); "
                 "contract reads via the PRO API gateway are disabled."
@@ -204,10 +210,6 @@ class Web3Pool:
 
         if key in self._pool:
             w3 = self._pool[key]
-            # Re-apply auth headers on every fetch — including cache hits — since auth
-            # is excluded from the cache key, so the provider always carries the
-            # currently configured key.
-            w3.provider.set_request_headers(_request_headers(hdr_items))
             w3.provider.set_pooled_session(session)
             return w3
 
@@ -216,7 +218,7 @@ class Web3Pool:
         provider = AsyncHTTPProviderBlockscout(
             endpoint_uri=endpoint,
             request_kwargs={
-                "headers": _request_headers(hdr_items),
+                "headers": dict(hdr_items),
                 "timeout": config.rpc_request_timeout,
             },
         )
