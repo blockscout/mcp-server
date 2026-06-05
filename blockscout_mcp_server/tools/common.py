@@ -53,6 +53,12 @@ class ResponseTooLargeError(Exception):
     pass
 
 
+class CreditsExhaustedError(Exception):
+    """Exception raised when the Blockscout PRO API rejects a request due to credit exhaustion (HTTP 402, body {"error": "Out of credits"})."""  # noqa: E501
+
+    pass
+
+
 chains_list_cache = ChainsListCache()
 pro_api_config_cache = ProApiConfigCache()
 
@@ -179,7 +185,8 @@ async def make_blockscout_request(
     Raises:
         ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
         ChainNotFoundError: If the chain_id is not supported
-        httpx.HTTPStatusError: If the HTTP request returns an error status code
+        CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
+        httpx.HTTPStatusError: If the HTTP request returns a non-402 error status code
         httpx.TimeoutException: If the request times out
         httpx.RequestError: For transport-level errors after final retry
 
@@ -231,6 +238,7 @@ async def make_blockscout_post_request(
     Raises:
         ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
         ChainNotFoundError: If the chain_id is not supported
+        CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
 
     Retry behavior is intentionally strict because POST requests are not idempotent:
     retries occur only for connection-establishment failures (ConnectError,
@@ -279,6 +287,12 @@ async def _make_blockscout_http_request(
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 402:
+                        raise CreditsExhaustedError(
+                            "Blockscout PRO API credits exhausted (HTTP 402): the API key's credit allowance is "
+                            "depleted. Top up credits or wait for the daily reset; retrying will not succeed until "
+                            "credits are replenished."
+                        ) from e
                     details = _extract_http_error_details(e.response)
                     reason = e.response.reason_phrase or "Error"
                     message = f"{e.response.status_code} {reason}"
@@ -395,7 +409,8 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
 
     Raises:
         ValueError: If ``BLOCKSCOUT_PRO_API_KEY`` is not configured
-        httpx.HTTPStatusError: If the HTTP request returns an error status code
+        CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
+        httpx.HTTPStatusError: If the HTTP request returns a non-402 error status code
         httpx.TimeoutException: If the request times out (retried as a subclass
             of ``httpx.RequestError`` before being surfaced)
         httpx.RequestError: For transport-level errors surfaced after the final

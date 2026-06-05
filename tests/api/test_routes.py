@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
 
 from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
+from blockscout_mcp_server.tools.common import CreditsExhaustedError
 
 
 @pytest.mark.asyncio
@@ -710,6 +711,7 @@ async def test_direct_api_call_missing_chain_id(client: AsyncClient):
         ),
         (httpx.TimeoutException("timeout"), 504),
         (ValueError("bad input"), 400),
+        (CreditsExhaustedError("Out of credits"), 402),
     ],
 )
 @patch("blockscout_mcp_server.api.routes.get_block_number", new_callable=AsyncMock)

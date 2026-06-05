@@ -241,7 +241,7 @@ A malformed client key raises a distinct terminal error (no fallback); only the 
 
 **Error semantics**
 
-Credit-exhaustion and rate-limit responses from the PRO API are currently not special-cased; they surface as general request / service-unavailability failures.
+Credit-exhaustion responses on the PRO API *data path* are special-cased: the shared `_make_blockscout_http_request` core maps `HTTP 402` (body `{"error": "Out of credits"}`) to a dedicated `CreditsExhaustedError` (see §8, "Credit Exhaustion"). Rate-limit responses are not special-cased and still surface as general request / service-unavailability failures. The Web3/RPC transport used by `read_contract` is separate and is not covered by this mapping.
 
 ### Key Architectural Decisions
 
@@ -593,7 +593,7 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
 
    This keeps API semantics intact, avoids masking persistent upstream problems, and improves reliability for both MCP tools and the REST API endpoints that proxy through the same business logic.
 
-   Because all PRO API helpers share this core, their HTTP-status-error enrichment and JSON-`null`-body normalization are identical, and they share the same retry orchestration (attempt count and backoff schedule); only the set of exceptions treated as retryable differs by helper, as detailed in the bullets above. In particular, `make_metadata_request` — used by `get_address_info` — now inherits the shared GET retry policy (retrying `httpx.RequestError`, which includes `httpx.TimeoutException`), the same `"<code> <reason> - Details: …"` error enrichment, and the same normalization of a JSON `null` body to an empty object that the primary data path already provides.
+   Because all PRO API helpers share this core, their HTTP-status-error enrichment (for non-`402` statuses — `HTTP 402` is intercepted in the same core and mapped to `CreditsExhaustedError` before enrichment; see §8, "Credit Exhaustion") and JSON-`null`-body normalization are identical, and they share the same retry orchestration (attempt count and backoff schedule); only the set of exceptions treated as retryable differs by helper, as detailed in the bullets above. In particular, `make_metadata_request` — used by `get_address_info` — now inherits the shared GET retry policy (retrying `httpx.RequestError`, which includes `httpx.TimeoutException`), the same `"<code> <reason> - Details: …"` error enrichment, and the same normalization of a JSON `null` body to an empty object that the primary data path already provides.
 
    Exhausted internal retries surface differently per access mode:
    - **REST clients** see `500 Internal Server Error` for generic transport failures, or `504 Gateway Timeout` for `httpx.TimeoutException`. Because the server has already retried internally, downstream retry policies that also retry on `5xx` should stay conservative on `500`/`504` from this server to avoid multiplicative attempt cascades.
@@ -613,6 +613,12 @@ Credit-exhaustion and rate-limit responses from the PRO API are currently not sp
    - **Safety**: For non-JSON errors (like HTML 502 pages), the raw response text is included but strictly truncated (200 characters) to protect the LLM context window.
 
    This ensures that the AI receives the specific feedback needed to adjust its tool usage without overwhelming it with raw HTML or stack traces.
+
+   **Credit Exhaustion (`402 Payment Required`)**
+
+   The shared `_make_blockscout_http_request` core maps `HTTP 402` responses with body `{"error": "Out of credits"}` to a dedicated `CreditsExhaustedError`, which propagates immediately without retries. REST clients receive `402 Payment Required`; native MCP clients receive an `isError: true` tool result.
+
+   In composite tools (`get_address_info`, `get_block_info`, `get_transaction_info`), side requests absorb `CreditsExhaustedError` into a note (returning partial data) while the primary request hard-fails normally.
 
 9. **Tool Title and Annotations**:
 
