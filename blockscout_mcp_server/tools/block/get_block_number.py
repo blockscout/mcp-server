@@ -7,6 +7,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockNumberData, ToolResponse
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_blockscout_request,
@@ -29,6 +30,7 @@ def _parse_datetime_to_timestamp(value: str) -> int:
 
 
 @log_tool_invocation
+@pro_api_key_scope
 async def get_block_number(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     ctx: Context,

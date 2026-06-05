@@ -18,6 +18,7 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
+from blockscout_mcp_server.pro_api_key_context import require_pro_api_key, resolve_pro_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -202,10 +203,7 @@ async def make_blockscout_request(
         network conditions. Centralizing minimal retries here improves robustness
         for all tools and REST endpoints without masking persistent API errors.
     """
-    if not config.pro_api_key:
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
-        )
+    require_pro_api_key("data access")
     # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
@@ -246,10 +244,7 @@ async def make_blockscout_post_request(
     retries occur only for connection-establishment failures (ConnectError,
     ConnectTimeout), where the request body is known not to have reached upstream.
     """
-    if not config.pro_api_key:
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); data access is disabled."
-        )
+    require_pro_api_key("data access")
     # Validate per request: cheap on a warm cache; keeps this helper the one chokepoint no caller can bypass.
     await ensure_chain_supported(chain_id)
     base_url = f"{config.pro_api_base_url}/{chain_id}"
@@ -319,18 +314,22 @@ def _pro_api_headers() -> dict[str, str]:
     """Return HTTP headers for Blockscout PRO API requests.
 
     Always includes ``User-Agent`` and ``Accept: application/json``.
-    When ``config.pro_api_key`` is non-empty, also includes
+    When ``resolve_pro_api_key()`` returns a non-empty key, also includes
     ``Authorization: Bearer <key>``.  Callers are expected to skip the
     request entirely when no key is configured (see ``make_metadata_request``),
     so the keyless branch here is purely defensive: it omits the
     ``Authorization`` header rather than sending a bare ``Bearer`` token.
+
+    ``resolve_pro_api_key()`` may raise ``ValueError`` for a malformed
+    client key — that propagation is intended and must not be caught here.
     """
     headers: dict[str, str] = {
         "User-Agent": f"{config.mcp_user_agent}/{SERVER_VERSION}",
         "Accept": "application/json",
     }
-    if config.pro_api_key:
-        headers["Authorization"] = f"Bearer {config.pro_api_key}"
+    effective_key = resolve_pro_api_key()
+    if effective_key:
+        headers["Authorization"] = f"Bearer {effective_key}"
     return headers
 
 
@@ -417,10 +416,7 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         httpx.RequestError: For transport-level errors surfaced after the final
             retry
     """
-    if not config.pro_api_key:
-        raise ValueError(
-            "Blockscout PRO API key is not configured (set BLOCKSCOUT_PRO_API_KEY); address metadata is disabled."
-        )
+    require_pro_api_key("address metadata")
     return await _make_blockscout_http_request(
         method="GET",
         base_url=config.pro_api_base_url,

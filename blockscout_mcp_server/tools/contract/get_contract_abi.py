@@ -6,6 +6,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ContractAbiData, ToolResponse
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_blockscout_request,
@@ -15,6 +16,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation
+@pro_api_key_scope
 async def get_contract_abi(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Smart contract address")],

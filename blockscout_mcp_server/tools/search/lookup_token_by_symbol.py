@@ -6,6 +6,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import TokenSearchResult, ToolResponse
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_blockscout_request,
@@ -18,6 +19,7 @@ TOKEN_RESULTS_LIMIT = 7
 
 
 @log_tool_invocation
+@pro_api_key_scope
 async def lookup_token_by_symbol(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     symbol: Annotated[str, Field(description="Token symbol or name to search for")],

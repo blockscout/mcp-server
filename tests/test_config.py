@@ -100,3 +100,27 @@ def test_pro_api_key_whitespace_only_becomes_empty(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY", "   ")
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_key == ""
+
+
+def test_pro_api_key_header_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_KEY_HEADER", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_header == "Blockscout-MCP-Pro-Api-Key"
+
+
+def test_pro_api_key_header_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_HEADER", "X-Custom-Pro-Key")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_header == "X-Custom-Pro-Key"
+
+
+def test_pro_api_key_header_strips_surrounding_whitespace(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_HEADER", "  Blockscout-MCP-Pro-Api-Key  ")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_header == "Blockscout-MCP-Pro-Api-Key"
+
+
+def test_pro_api_key_header_empty_string_preserved(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_HEADER", "")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_header == ""

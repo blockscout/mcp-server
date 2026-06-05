@@ -23,6 +23,7 @@ mcp-server/
 │   ├── analytics.py            # Centralized Mixpanel analytics for tool invocations (HTTP mode only)
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
+│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -131,6 +132,7 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_pro_api_key_context.py  # Unit tests for client-supplied PRO API key resolution
 │   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
@@ -360,6 +362,7 @@ mcp-server/
         * Provides a singleton configuration object that can be imported and used by other modules, especially by `tools/common.py` for API calls.
         * `mcp_allowed_hosts: str`: Comma-separated list of allowed `Host` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
+        * `pro_api_key_header: str`: Name of the request header an MCP client uses to supply its own Blockscout PRO API key (default: `Blockscout-MCP-Pro-Api-Key`; empty string disables the feature).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits.
         * Ensures consistency between different parts of the application.
@@ -381,6 +384,10 @@ mcp-server/
         * Provides `ClientMeta` dataclass and `extract_client_meta_from_ctx()` function.
         * Falls back to User-Agent header when MCP client name is unavailable.
         * Ensures consistent sentinel defaults ("N/A", "Unknown") across logging and analytics modules.
+    * **`pro_api_key_context.py`**:
+        * Owns request-scoped resolution of a client-supplied Blockscout PRO API key, kept separate from logging/observability.
+        * Provides a `ContextVar` of the per-request client-key state, a normalization/validation helper, `extract_client_pro_api_key_from_ctx()`, `resolve_pro_api_key()` (precedence: valid client key → server key → not-configured error; malformed client key → terminal error, no fallback), and the `@pro_api_key_scope` decorator.
+        * Honored only for genuine MCP calls (ignored when `ctx.call_source == "rest"`); the key is never logged or placed in cache keys.
     * **`cache.py`**:
         * Encapsulates in-memory caching of chain data with TTL management.
     * **`web3_pool.py`**:

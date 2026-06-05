@@ -5,6 +5,7 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     chains_list_cache,
@@ -16,6 +17,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
 @log_tool_invocation
+@pro_api_key_scope
 async def get_chains_list(
     ctx: Context,
     query: Annotated[

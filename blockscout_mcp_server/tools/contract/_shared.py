@@ -3,6 +3,7 @@ from typing import Any
 
 from blockscout_mcp_server.cache import CachedContract, contract_cache
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.pro_api_key_context import require_pro_api_key
 from blockscout_mcp_server.tools.common import (
     _truncate_constructor_args,
     make_blockscout_request,
@@ -24,8 +25,18 @@ def _determine_file_path(raw_data: dict[str, Any]) -> str:
 async def _fetch_and_process_contract(chain_id: str, address: str) -> CachedContract:
     """Fetch contract data from cache or Blockscout API."""
 
+    # Gate on the effective PRO API key before the cache lookup so that a
+    # malformed or absent key fails closed even when protected data is cached.
+    # require_pro_api_key() propagates ValueError for a malformed client key
+    # and raises the standard not-configured error when both keys are absent.
+    require_pro_api_key("data access")
+
     normalized_address = address.lower()
     cache_key = f"{chain_id}:{normalized_address}"
+    # Serving a cached contract requires only that some effective key be present
+    # (checked above), not that a client-supplied key was validated upstream.
+    # This is deliberate: the key authorizes the server's upstream requests, and
+    # a cache hit makes none, so there is nothing to authorize here.
     if cached := await contract_cache.get(cache_key):
         return cached
 
