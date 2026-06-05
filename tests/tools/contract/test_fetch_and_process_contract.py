@@ -5,7 +5,7 @@ import pytest
 
 from blockscout_mcp_server.cache import CachedContract
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.pro_api_key_context import _client_key_state, _Valid
+from blockscout_mcp_server.pro_api_key_context import _client_key_state, _Malformed, _Valid
 from blockscout_mcp_server.tools.contract._shared import _fetch_and_process_contract
 
 
@@ -259,8 +259,6 @@ async def test_fetch_and_process_cache_hit_serverless_valid_client_key(mock_ctx)
 @pytest.mark.asyncio
 async def test_fetch_and_process_cache_hit_malformed_key_fails_closed(mock_ctx):
     """Cache hit with malformed client key: gate raises ValueError before cache is consulted."""
-    from blockscout_mcp_server.pro_api_key_context import _Malformed
-
     cached = CachedContract(metadata={}, source_files={})
     token = _client_key_state.set(_Malformed())
     try:

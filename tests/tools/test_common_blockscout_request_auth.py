@@ -251,6 +251,8 @@ async def test_get_context_var_propagates_into_periodic_progress_task(monkeypatc
         _client_key_state.reset(token)
 
     assert result == {"result": "ok"}
+    # Progress beats must have been emitted along the periodic-progress path.
+    mock_ctx.report_progress.assert_awaited()
     # The key must have been visible inside the spawned child task
     assert fake_client.get_headers.get("Authorization") == "Bearer propagated-client-key"
 

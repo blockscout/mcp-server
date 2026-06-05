@@ -277,5 +277,7 @@ async def test_pro_api_key_never_appears_in_logs(
 
     await dummy_tool(7, ctx=mock_ctx)
 
-    assert client_key not in caplog.text
-    assert "Blockscout-MCP-Pro-Api-Key" not in caplog.text
+    # Case-insensitive: catch a leaked header name/value regardless of logger casing.
+    logged_text = caplog.text.lower()
+    assert client_key.lower() not in logged_text
+    assert "blockscout-mcp-pro-api-key" not in logged_text

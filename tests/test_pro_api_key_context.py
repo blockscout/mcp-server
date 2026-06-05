@@ -216,24 +216,52 @@ def test_resolve_malformed_does_not_fall_back_to_server_key(monkeypatch):
 # ===========================================================================
 
 
-def test_malformed_error_does_not_embed_control_char_value(monkeypatch):
-    """ValueError message must not reproduce the raw submitted value."""
+@pytest.mark.asyncio
+async def test_malformed_error_does_not_embed_control_char_value(monkeypatch):
+    """The malformed-key ValueError must not reproduce the raw submitted value.
+
+    The value flows through the real extraction → scope → resolve path: the
+    decorator extracts the control-char header, records the ``_Malformed`` state,
+    and ``resolve_pro_api_key()`` raises inside the scope.
+    """
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
     raw_value = "key-with\ncontrol-char"
-    with _set_key_state(_Malformed()):
-        with pytest.raises(ValueError) as exc_info:
-            resolve_pro_api_key()
-        assert raw_value not in str(exc_info.value)
+
+    @pro_api_key_scope
+    async def dummy(ctx) -> None:
+        resolve_pro_api_key()
+
+    # Plain dict headers: real starlette Headers reject control-char values at
+    # construction time, while the extractor works with any Mapping.
+    request = SimpleNamespace(headers={"Blockscout-MCP-Pro-Api-Key": raw_value})
+    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+
+    with pytest.raises(ValueError) as exc_info:
+        await dummy(ctx=ctx)
+    assert raw_value not in str(exc_info.value)
 
 
-def test_malformed_error_does_not_embed_over_length_value(monkeypatch):
-    """ValueError message must not reproduce an over-length submitted value."""
+@pytest.mark.asyncio
+async def test_malformed_error_does_not_embed_over_length_value(monkeypatch):
+    """The malformed-key ValueError must not reproduce an over-length submitted value.
+
+    Same real extraction → scope → resolve path as the control-char case.
+    """
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
     raw_value = "a" * 257
-    with _set_key_state(_Malformed()):
-        with pytest.raises(ValueError) as exc_info:
-            resolve_pro_api_key()
-        assert raw_value not in str(exc_info.value)
+
+    @pro_api_key_scope
+    async def dummy(ctx) -> None:
+        resolve_pro_api_key()
+
+    request = SimpleNamespace(headers={"Blockscout-MCP-Pro-Api-Key": raw_value})
+    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+
+    with pytest.raises(ValueError) as exc_info:
+        await dummy(ctx=ctx)
+    assert raw_value not in str(exc_info.value)
 
 
 # ===========================================================================

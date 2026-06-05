@@ -200,7 +200,8 @@ def test_pro_api_key_not_in_analytics_payload(monkeypatch):
         # Inspect every string in the call for the key value and header name
         all_text = str(call_args)
         assert client_key not in all_text
-        assert "Blockscout-MCP-Pro-Api-Key" not in all_text
+        # Case-insensitive: catch a leaked header name regardless of casing.
+        assert "blockscout-mcp-pro-api-key" not in all_text.lower()
 
         # Also explicitly check that the properties dict doesn't contain the key
         args, kwargs = call_args
