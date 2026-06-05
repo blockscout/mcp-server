@@ -12,7 +12,7 @@ import httpx
 import pytest
 
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.tools.common import ChainNotFoundError, make_blockscout_request
+from blockscout_mcp_server.tools.common import ChainNotFoundError, CreditsExhaustedError, make_blockscout_request
 
 # ---------------------------------------------------------------------------
 # Fake httpx.AsyncClient for transport tests
@@ -413,3 +413,59 @@ async def test_make_blockscout_request_sends_auth_headers_to_pro_api(monkeypatch
     assert captured["headers"].get("Authorization") == "Bearer get_test_key"
     assert "User-Agent" in captured["headers"]
     assert captured["headers"].get("Accept") == "application/json"
+
+
+# ---------------------------------------------------------------------------
+# CreditsExhaustedError: 402 → distinct error, no retry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_make_blockscout_request_402_raises_credits_exhausted_error():
+    """A 402 response raises CreditsExhaustedError (not HTTPStatusError) exactly once — no retry."""
+    response = _make_response(402, json_data={"error": "Out of credits"})
+
+    call_count = {"n": 0}
+
+    class CountingClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, params=None, **kwargs):
+            call_count["n"] += 1
+            return response
+
+    patch_key, stub_chain = _patch_guards()
+    with patch_key, stub_chain:
+        with patch(
+            "blockscout_mcp_server.tools.common._create_httpx_client",
+            return_value=CountingClient(),
+        ):
+            with patch("blockscout_mcp_server.tools.common.anyio.sleep") as mock_sleep:
+                with pytest.raises(CreditsExhaustedError) as excinfo:
+                    await make_blockscout_request(chain_id="1", api_path="/api/v2/test")
+
+    # Must NOT be an HTTPStatusError (wrong base class would silently mis-route in Phase 2)
+    assert not isinstance(excinfo.value, httpx.HTTPStatusError)
+    # Message must carry the actionable signals the MCP agent needs
+    message = str(excinfo.value).lower()
+    assert "credits" in message
+    assert "402" in message
+    assert "retry" in message
+    # Must not retry: exactly one HTTP call, sleep never called
+    assert call_count["n"] == 1
+    mock_sleep.assert_not_called()
+
+
+def test_credits_exhausted_error_is_exception_not_value_error():
+    """CreditsExhaustedError must subclass Exception but NOT ValueError.
+
+    This guards the Phase 2 design: handle_rest_errors has an `except ValueError → 400`
+    branch; if CreditsExhaustedError were a ValueError subclass it would be mis-routed
+    to 400 instead of 402.
+    """
+    assert issubclass(CreditsExhaustedError, Exception)
+    assert not issubclass(CreditsExhaustedError, ValueError)

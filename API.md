@@ -83,9 +83,10 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
 
 #### Error Categories
 
-- **Client-Side Errors (`4xx` status codes)**: These errors indicate a problem with the request itself. Common examples include:
+- **Client-Side Errors (`4xx` status codes)**: These errors usually indicate a problem with the request itself, though some (such as `402 Payment Required`) instead reflect a server-side account/quota state rather than anything wrong with the request. Common examples include:
   - **Validation Errors (`400 Bad Request`)**: Occur when a required parameter is missing or a parameter value is invalid.
   - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
+  - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the server's API key has been exhausted. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects the server's API-key quota state, not a problem with the client's request: the client should stop and top up credits or wait for the daily reset rather than retry.
 
 - **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
   - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.

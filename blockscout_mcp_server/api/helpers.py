@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from blockscout_mcp_server.models import ToolResponse
-from blockscout_mcp_server.tools.common import ResponseTooLargeError
+from blockscout_mcp_server.tools.common import CreditsExhaustedError, ResponseTooLargeError
 
 
 def str_to_bool(val: str) -> bool:
@@ -68,6 +68,8 @@ def handle_rest_errors(
             return await func(request)
         except ResponseTooLargeError as e:
             return JSONResponse({"error": str(e)}, status_code=413)
+        except CreditsExhaustedError as e:
+            return JSONResponse({"error": str(e)}, status_code=402)
         except ValueError as e:
             return JSONResponse({"error": str(e)}, status_code=400)
         except httpx.HTTPStatusError as e:
