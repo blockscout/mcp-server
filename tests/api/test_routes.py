@@ -818,3 +818,77 @@ async def test_direct_api_call_reserved_query_keys_not_forwarded(mock_tool, clie
     response = await client.get("/v1/direct_api_call?chain_id=1&endpoint_path=/api/v2/stats&method=POST&json_body=foo")
     assert response.status_code == 200
     mock_tool.assert_called_once_with(chain_id="1", endpoint_path="/api/v2/stats", ctx=ANY)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Cross-mode end-to-end — REST mode, credit advisory note
+# ---------------------------------------------------------------------------
+
+
+class _MockBlockResponse:
+    """Minimal fake httpx response used inside the REST end-to-end credit test."""
+
+    def __init__(self, json_data, headers=None):
+        self._json_data = json_data
+        self.status_code = 200
+        self.reason_phrase = "OK"
+        self.request = httpx.Request("GET", "https://api.blockscout.com/1/x")
+        self.text = ""
+        self.headers = headers if headers is not None else {}
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self._json_data
+
+
+class _SimpleBlockClient:
+    """Async context-manager HTTP client that returns a fixed response."""
+
+    def __init__(self, response):
+        self._response = response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        return False
+
+    async def get(self, url, **kwargs):
+        return self._response
+
+
+@pytest.mark.asyncio
+async def test_rest_mode_low_credits_note_in_response(client: AsyncClient):
+    """REST mode: /v1/get_block_number endpoint produces a JSON response whose
+    `notes` array contains the low-credits advisory when the underlying PRO API
+    call returns a low x-credits-remaining header.
+
+    The real get_block_number tool + build_tool_response run end-to-end; only
+    the HTTP transport layer is patched.  This is intentional: patching the tool
+    itself (with AsyncMock returning a pre-built ToolResponse) would bypass the
+    decorator/capture path and produce no advisory note.
+    """
+    from blockscout_mcp_server.config import config as bms_config
+
+    block_payload = [{"height": 21000000, "timestamp": "2025-01-01T00:00:00.000000Z"}]
+    # x-credits-remaining below the threshold so the advisory note is emitted.
+    response = _MockBlockResponse(block_payload, headers={"x-credits-remaining": "3000"})
+
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=_SimpleBlockClient(response)),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+        patch.object(bms_config, "pro_api_key", "test_key"),
+        patch.object(bms_config, "pro_api_low_credits_threshold", 5000),
+    ):
+        http_response = await client.get("/v1/get_block_number?chain_id=1")
+
+    assert http_response.status_code == 200
+    payload = http_response.json()
+    notes = payload.get("notes")
+    assert notes is not None, "Expected 'notes' in response payload but got None"
+    assert any("3000" in note for note in notes), f"Expected credit advisory in notes, got: {notes}"
+    assert any("https://dev.blockscout.com" in note for note in notes), (
+        f"Expected dev.blockscout.com URL in advisory note, got: {notes}"
+    )
