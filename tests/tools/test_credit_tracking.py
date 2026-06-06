@@ -142,6 +142,33 @@ def test_credit_sink_negative_beats_positive():
     assert sink.remaining == -5.0
 
 
+@pytest.mark.parametrize("non_finite", [float("nan"), float("inf"), float("-inf")])
+def test_credit_sink_ignores_non_finite_values(non_finite):
+    """nan / ±inf are rejected at the door: the sink stays at its prior state.
+
+    float("-Infinity") would otherwise crash a downstream int() display
+    conversion, and a nan/-inf recorded first would poison the running minimum.
+    """
+    sink = CreditSink()
+    sink.record(non_finite)
+    assert sink.remaining is None
+
+
+@pytest.mark.parametrize("non_finite", [float("nan"), float("-inf")])
+def test_credit_sink_non_finite_does_not_poison_minimum(non_finite):
+    """Regression: a non-finite observation first must not block a later real
+    low value from being recorded.
+
+    Without the finite guard, `value < self.remaining` is always False once
+    `remaining` is nan/-inf, so the genuine 2000 would be dropped and the
+    low-credits advisory silently suppressed for the whole invocation.
+    """
+    sink = CreditSink()
+    sink.record(non_finite)
+    sink.record(2000.0)
+    assert sink.remaining == 2000.0
+
+
 # ---------------------------------------------------------------------------
 # _capture_credits_remaining via make_blockscout_request (GET path)
 # ---------------------------------------------------------------------------
@@ -771,6 +798,28 @@ def test_build_tool_response_note_present_for_negative_balance():
     assert response.notes is not None
     assert len(response.notes) == 1
     assert "-50" in response.notes[0]
+
+
+@pytest.mark.parametrize("header_value", ["-Infinity", "-inf", "nan", "Infinity"])
+def test_build_tool_response_no_crash_on_non_finite_captured_header(header_value):
+    """End-to-end regression: a non-finite ``x-credits-remaining`` header must
+    not crash ``build_tool_response`` and must not emit an advisory note.
+
+    ``float("-Infinity")`` previously reached ``int(remaining)`` in the display
+    branch and raised ``OverflowError``.  With the finite guard in
+    ``CreditSink.record`` the value never enters the sink, so ``remaining``
+    stays ``None`` and no note is produced.
+    """
+    from blockscout_mcp_server.tools.common import _capture_credits_remaining, build_tool_response
+
+    sink = CreditSink()
+    with _set_sink(sink):
+        _capture_credits_remaining(_MockResponse(headers={"x-credits-remaining": header_value}))
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert sink.remaining is None
+    assert response.notes is None
 
 
 def test_build_tool_response_note_absent_when_threshold_disabled():

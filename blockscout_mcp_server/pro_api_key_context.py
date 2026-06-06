@@ -49,6 +49,7 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
+import math
 from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -121,6 +122,9 @@ class CreditSink:
 
     The minimum is retained (rather than the latest) as the conservative choice:
     it warns earlier and is order-independent across concurrent requests.
+
+    Invariant: ``remaining`` is either ``None`` or a *finite* float.  See
+    :meth:`record` for why non-finite values are rejected at the door.
     """
 
     def __init__(self) -> None:
@@ -130,7 +134,21 @@ class CreditSink:
         """Update the stored minimum with *value*.
 
         First observation sets the value; subsequent observations only lower it.
+
+        Non-finite values (``nan``, ``+inf``, ``-inf``) are silently ignored so
+        the invariant "``remaining`` is ``None`` or a *finite* float" always
+        holds.  This is the single chokepoint every value enters through, so the
+        guard belongs here:
+        - ``float("-Infinity")`` would otherwise crash a downstream
+          ``int(remaining)`` display conversion with ``OverflowError``.
+        - A ``nan`` (or ``-inf``) recorded first would *poison* the minimum: the
+          ``value < self.remaining`` comparison is ``False`` for every later
+          real observation (``x < nan`` is always ``False``; nothing is ``<
+          -inf``), so a genuine low balance would be dropped and the advisory
+          note silently suppressed for the whole invocation.
         """
+        if not math.isfinite(value):
+            return
         if self.remaining is None or value < self.remaining:
             self.remaining = value
 
