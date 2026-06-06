@@ -743,6 +743,32 @@ def build_tool_response(
     Returns:
         A ToolResponse instance.
     """
+    # Check for a low-credits advisory note.  All three conditions must hold:
+    # 1. A CreditSink was established for this invocation (sink is not None).
+    # 2. A PRO API call actually happened (sink.remaining is not None).
+    # 3. The threshold gate is enabled (> 0) and the remaining balance is below it.
+    # Silence is the default; emit nothing when any condition is unmet.
+    final_notes: list[str] | None = notes
+    sink = _credit_sink.get()
+    if (
+        sink is not None
+        and sink.remaining is not None
+        and config.pro_api_low_credits_threshold > 0
+        and sink.remaining < config.pro_api_low_credits_threshold
+    ):
+        remaining = sink.remaining
+        threshold = config.pro_api_low_credits_threshold
+        # Display the remaining value as an integer when it is whole (e.g. 4999, not 4999.0).
+        remaining_display: int | float = int(remaining) if remaining == int(remaining) else remaining
+        advisory = (
+            f"⚠️ Blockscout PRO API credits are running low: {remaining_display} credits remaining "
+            f"(warning threshold: {threshold}). Top up your account to keep Blockscout PRO API access ready "
+            f"for continued high-volume usage — see https://dev.blockscout.com."
+        )
+        # Build a new list — never mutate the caller-supplied list in place.
+        final_notes = list(notes) if notes is not None else []
+        final_notes.append(advisory)
+
     # Automatically add pagination instructions when pagination is present
     final_instructions = list(instructions) if instructions is not None else []
 
@@ -761,7 +787,7 @@ def build_tool_response(
     return ToolResponse(
         data=data,
         data_description=data_description,
-        notes=notes,
+        notes=final_notes,
         instructions=final_instructions_output,
         pagination=pagination,
         content_text=content_text,

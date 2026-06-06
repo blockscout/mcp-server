@@ -688,3 +688,189 @@ def test_credit_scope_preserves_function_metadata() -> None:
 
     assert my_named_tool.__name__ == "my_named_tool"
     assert my_named_tool.__wrapped__ is not None  # type: ignore[attr-defined]
+
+
+# ===========================================================================
+# Phase 4: build_tool_response low-credits advisory note
+# ===========================================================================
+
+
+def test_build_tool_response_note_present_below_threshold():
+    """Advisory note appears when the sink's remaining value is below the threshold."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(4999.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is not None
+    assert len(response.notes) == 1
+    assert "4999" in response.notes[0]
+    assert "5000" in response.notes[0]
+    assert "https://dev.blockscout.com" in response.notes[0]
+
+
+def test_build_tool_response_note_absent_at_threshold():
+    """No advisory note when remaining equals the threshold (not strictly below)."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(5000.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is None
+
+
+def test_build_tool_response_note_absent_above_threshold():
+    """No advisory note when remaining is well above the threshold."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(9000.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is None
+
+
+def test_build_tool_response_note_present_for_zero_balance():
+    """Advisory note appears when remaining is exactly zero."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(0.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is not None
+    assert len(response.notes) == 1
+    assert "0" in response.notes[0]
+
+
+def test_build_tool_response_note_present_for_negative_balance():
+    """Advisory note appears when remaining is negative (overdrawn paid account)."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(-50.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is not None
+    assert len(response.notes) == 1
+    assert "-50" in response.notes[0]
+
+
+def test_build_tool_response_note_absent_when_threshold_disabled():
+    """No advisory note when threshold is 0 (feature disabled), even with a low balance."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(100.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 0):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is None
+
+
+def test_build_tool_response_note_absent_when_no_sink():
+    """No advisory note when there is no sink in context (_credit_sink is None)."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    # _credit_sink defaults to None — do not set a sink
+    assert _credit_sink.get() is None
+    response = build_tool_response(data={"ok": True})
+
+    assert response.notes is None
+
+
+def test_build_tool_response_note_absent_when_sink_has_no_value():
+    """No advisory note when a sink exists but never captured a value (remaining is None)."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    # Do not call sink.record() — remaining stays None
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is None
+
+
+def test_build_tool_response_note_coexists_with_caller_notes():
+    """Advisory note is appended to caller-supplied notes without mutating the original list."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(100.0)
+
+    original_notes = ["existing note"]
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True}, notes=original_notes)
+
+    # Original list must not be mutated
+    assert original_notes == ["existing note"]
+
+    assert response.notes is not None
+    assert len(response.notes) == 2
+    assert response.notes[0] == "existing note"
+    assert "https://dev.blockscout.com" in response.notes[1]
+
+
+def test_build_tool_response_note_coexists_with_pagination_instructions():
+    """Advisory note in notes does not disturb auto-appended pagination instructions."""
+    from blockscout_mcp_server.models import NextCallInfo, PaginationInfo
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(1000.0)
+
+    pagination = PaginationInfo(
+        next_call=NextCallInfo(tool_name="get_block_info", params={"chain_id": "1", "cursor": "abc"})
+    )
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True}, pagination=pagination)
+
+    # Advisory note must appear in notes
+    assert response.notes is not None
+    assert any("https://dev.blockscout.com" in n for n in response.notes)
+
+    # Pagination instructions must be present
+    assert response.instructions is not None
+    assert any("MORE DATA AVAILABLE" in i for i in response.instructions)
+
+
+def test_build_tool_response_integer_display_for_whole_number():
+    """Remaining balance is displayed as an integer (4999, not 4999.0) when it is whole."""
+    from blockscout_mcp_server.tools.common import build_tool_response
+
+    sink = CreditSink()
+    sink.record(4999.0)
+
+    with _set_sink(sink):
+        with patch.object(config, "pro_api_low_credits_threshold", 5000):
+            response = build_tool_response(data={"ok": True})
+
+    assert response.notes is not None
+    note = response.notes[0]
+    assert "4999 credits" in note
+    assert "4999.0" not in note
