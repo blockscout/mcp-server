@@ -11,6 +11,7 @@ import httpx
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.cache import ChainsListCache, ProApiConfigCache
+from blockscout_mcp_server.client_meta import get_header_case_insensitive
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -18,7 +19,11 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
-from blockscout_mcp_server.pro_api_key_context import require_pro_api_key, resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import (
+    _credit_sink,
+    require_pro_api_key,
+    resolve_pro_api_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,45 @@ def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
     """
 
     return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
+
+
+def _capture_credits_remaining(response: Any) -> None:
+    """Record the ``x-credits-remaining`` header value into the current CreditSink.
+
+    This is a pure side effect — it never changes the response, never raises,
+    and is a no-op when no sink is established for the current context (i.e.
+    ``_credit_sink.get()`` is ``None``).
+
+    Defensive design:
+    - Reads headers via ``getattr(response, "headers", {})`` so mock responses
+      without a ``headers`` attribute do not raise.
+    - Uses ``get_header_case_insensitive`` (same helper as the PRO API key
+      extraction) so casing behaviour matches the rest of the codebase.
+    - Requires ``isinstance(value, str)`` before parsing: ``float(MagicMock())``
+      returns ``1.0`` without raising (MagicMock implements ``__float__``), so
+      the type guard is mandatory — without it a mocked/headerless path would
+      silently capture a bogus ``1.0`` and emit a false low-credits note.
+    - Wraps the numeric parse in ``try/except (TypeError, ValueError)`` so a
+      non-numeric string header still yields no capture rather than an error.
+    - Parses as ``float`` because the header is a serialised Decimal and can be
+      negative (paid plans served while overdrawn).
+    """
+    sink = _credit_sink.get()
+    if sink is None:
+        return
+
+    headers = getattr(response, "headers", {})
+    raw = get_header_case_insensitive(headers, "x-credits-remaining", "")
+
+    # Require a real, non-empty str before parsing.  A MagicMock or any other
+    # non-str value must be silently ignored.
+    if not isinstance(raw, str) or not raw.strip():
+        return
+
+    try:
+        sink.record(float(raw))
+    except (TypeError, ValueError):
+        pass
 
 
 class ChainNotFoundError(ValueError):
@@ -300,6 +344,10 @@ async def _make_blockscout_http_request(
                         message = f"{message} - Details: {details}"
                     raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
                 data = response.json()
+                # Capture remaining credits as a side effect on the success
+                # path only.  This is intentionally kept separate from the
+                # 402-exhaustion error path above.
+                _capture_credits_remaining(response)
                 return data if data is not None else {}
             except retry_exceptions as e:
                 last_error = e

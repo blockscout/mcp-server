@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-"""Request-scoped PRO API key resolution for MCP tool calls.
+"""Request-scoped PRO API key resolution and credit-tracking for MCP tool calls.
 
-This module owns everything about a client-supplied PRO API key:
+This module owns everything about a client-supplied PRO API key and the
+per-request remaining-credits observation:
+
 - An immutable state representation (absent / valid / malformed).
 - A module-level ContextVar holding that state.
 - A normalization/validation helper.
@@ -10,6 +12,9 @@ This module owns everything about a client-supplied PRO API key:
 - A ``require_pro_api_key()`` helper that wraps the resolver with the standard
   not-configured error so every PRO API entry point raises the same message.
 - A @pro_api_key_scope decorator that populates the ContextVar per request.
+- A ``CreditSink`` mutable box and ``_credit_sink`` ContextVar for tracking the
+  minimum ``x-credits-remaining`` value observed across all PRO API calls within
+  a single tool invocation.
 
 Kept intentionally separate from tools/decorators.py so authentication and
 observability remain decoupled.
@@ -23,6 +28,20 @@ never consulted — a malformed client header is effectively a no-op — but
 applying the decorator uniformly means a future contributor cannot accidentally
 add a PRO API call to a tool that lacks request-scoped key resolution.  Do not
 "optimize" by removing it from a tool that today doesn't need it.
+
+Credit-sink box design
+----------------------
+``_credit_sink`` stores a *mutable* ``CreditSink`` object rather than a plain
+``ContextVar[float | None]``.  In asyncio, a child task spawned by
+``asyncio.gather`` or an ``anyio`` task group runs in a **copied** context, so
+a child calling ``ContextVar.set(...)`` would not be visible to the parent.
+Storing a mutable box in the ContextVar sidesteps this: the copied context
+shares the *same object reference*, so a child that **mutates** the box is
+immediately visible to the parent.
+
+The minimum value is retained (rather than the latest) because it is the
+conservative choice — it warns earlier — and it is order-independent across
+concurrent requests where completion order is non-deterministic.
 """
 
 from __future__ import annotations
@@ -79,10 +98,47 @@ _MALFORMED: ClientKeyState = _Malformed()
 
 
 # ---------------------------------------------------------------------------
-# 2. Module-level ContextVar (not per-call — required for correct semantics)
+# 2. Module-level ContextVars (not per-call — required for correct semantics)
 # ---------------------------------------------------------------------------
 
 _client_key_state: ContextVar[ClientKeyState] = ContextVar("_client_key_state", default=_ABSENT)
+
+
+# ---------------------------------------------------------------------------
+# 2b. CreditSink — mutable box for the per-invocation remaining-credits value
+# ---------------------------------------------------------------------------
+
+
+class CreditSink:
+    """Mutable box that records the minimum ``x-credits-remaining`` value seen.
+
+    Stored in ``_credit_sink`` (a module-level ContextVar).  Because asyncio
+    child tasks receive a *copy* of the parent context, a plain
+    ``ContextVar[float]`` set inside a child would be invisible to the parent.
+    Storing a mutable object instead means both parent and child share the same
+    reference, so a child that *mutates* the box is immediately visible to the
+    parent.
+
+    The minimum is retained (rather than the latest) as the conservative choice:
+    it warns earlier and is order-independent across concurrent requests.
+    """
+
+    def __init__(self) -> None:
+        self.remaining: float | None = None
+
+    def record(self, value: float) -> None:
+        """Update the stored minimum with *value*.
+
+        First observation sets the value; subsequent observations only lower it.
+        """
+        if self.remaining is None or value < self.remaining:
+            self.remaining = value
+
+
+# ``None`` default: code paths that build a response without a decorator-
+# established sink (e.g. isolated unit tests) must see "no sink" and stay
+# silent, not share a leaked box.
+_credit_sink: ContextVar[CreditSink | None] = ContextVar("_credit_sink", default=None)
 
 
 # ---------------------------------------------------------------------------
