@@ -23,6 +23,15 @@ class ServerConfig(BaseSettings):
     pro_api_config_refresh_retry_seconds: int = 30
     pro_api_key: str = ""
     pro_api_key_header: str = "Blockscout-MCP-Pro-Api-Key"
+    # Advisory low-credits threshold expressed in PRO API credits (same unit as
+    # `endpoint_pricing` in /api/json/config).  A value of 0 disables the note
+    # entirely (Phase 4 gates on threshold > 0).  The default of 5000 provides
+    # comfortable runway: per-call costs observed live range 20–120 credits, so
+    # 5000 ≈ 250 cheapest (20-credit) calls or ~41 most expensive (120-credit)
+    # calls — enough time for an operator to react before exhaustion.  The ge=0
+    # bound is intentional: a negative value would silently disable the warning
+    # (the opposite of operator intent), so Pydantic rejects it loudly instead.
+    pro_api_low_credits_threshold: int = Field(5000, ge=0)
 
     @field_validator("pro_api_base_url")
     @classmethod
