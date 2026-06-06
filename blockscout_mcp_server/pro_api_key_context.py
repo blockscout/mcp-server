@@ -277,6 +277,50 @@ def require_pro_api_key(disabled_feature: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def pro_api_credit_scope(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+    """Decorator that establishes a fresh ``CreditSink`` per tool invocation.
+
+    Creates and installs a new :class:`CreditSink` in ``_credit_sink`` *before*
+    the tool body (and before any child task is spawned via ``asyncio.gather``
+    or ``make_request_with_periodic_progress``), so all concurrent child tasks
+    inherit the same mutable box and their credit observations are visible to the
+    parent.  Resets the ContextVar to its prior value in ``finally`` so credit
+    state never leaks between sequential invocations.
+
+    Transport-agnostic: the sink is established unconditionally in every
+    transport (MCP, REST, test stubs) because credit capture and the advisory
+    low-credits note are required in both MCP and REST modes.  The decorator
+    reads nothing from ``ctx`` — it only manages the box's lifetime.
+
+    Separate from both ``@pro_api_key_scope`` (authentication concern) and
+    ``log_tool_invocation`` (observability concern): folding credit lifecycle
+    into either would mislead future readers.  ``pro_api_key_context.py``
+    already owns all request-scoped PRO API state, making it the natural home
+    for this sibling decorator.
+
+    Stacking order
+    --------------
+    Apply this decorator *innermost* (closest to the function definition)::
+
+        @log_tool_invocation
+        @pro_api_key_scope
+        @pro_api_credit_scope
+        async def my_tool(...): ...
+
+    This keeps the sink's lifetime tightest around the tool body.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        token = _credit_sink.set(CreditSink())
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            _credit_sink.reset(token)
+
+    return wrapper
+
+
 def pro_api_key_scope(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
     """Decorator that records the per-request client PRO API key state.
 

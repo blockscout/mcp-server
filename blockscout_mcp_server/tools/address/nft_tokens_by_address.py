@@ -11,7 +11,7 @@ from blockscout_mcp_server.models import (
     NftTokenInstance,
     ToolResponse,
 )
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
@@ -39,6 +39,7 @@ def extract_nft_cursor_params(item: dict) -> dict:
 
 @log_tool_invocation
 @pro_api_key_scope
+@pro_api_credit_scope
 async def nft_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="NFT owner address")],
