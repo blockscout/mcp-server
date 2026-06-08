@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-"""Request-scoped PRO API key resolution for MCP tool calls.
+"""Request-scoped PRO API key resolution for HTTP tool calls.
 
 This module owns everything about a client-supplied PRO API key:
 - An immutable state representation (absent / valid / malformed).
 - A module-level ContextVar holding that state.
 - A normalization/validation helper.
-- An extractor that reads the key from an MCP context.
+- An extractor that reads the key from any HTTP request context (MCP-over-HTTP
+  or REST).
 - A resolver that applies the client-key → server-key precedence rule.
 - A ``require_pro_api_key()`` helper that wraps the resolver with the standard
   not-configured error so every PRO API entry point raises the same message.
@@ -56,7 +57,7 @@ _MAX_KEY_LENGTH = 256
 
 @dataclass(frozen=True)
 class _Absent:
-    """No client key was provided (feature disabled / not an MCP call / blank header)."""
+    """No client key was provided (feature disabled / non-HTTP transport / blank header)."""
 
 
 @dataclass(frozen=True)
@@ -115,16 +116,15 @@ def _normalize_key(raw: Any) -> ClientKeyState:
 
 
 # ---------------------------------------------------------------------------
-# 4. Extractor — reads the header from an MCP context
+# 4. Extractor — reads the header from any HTTP request context
 # ---------------------------------------------------------------------------
 
 
 def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
-    """Extract the client PRO API key state from an MCP context.
+    """Extract the client PRO API key state from an HTTP request context.
 
     Returns *absent* when:
     - The feature is disabled (``config.pro_api_key_header`` is empty).
-    - The call comes from the REST layer (``ctx.call_source == "rest"``).
     - There is no HTTP request context (e.g. stdio transport).
     - Any unexpected context shape is encountered.
 
@@ -132,9 +132,6 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
     """
     try:
         if not config.pro_api_key_header:
-            return _ABSENT
-
-        if getattr(ctx, "call_source", None) == "rest":
             return _ABSENT
 
         request_context = getattr(ctx, "request_context", None)
