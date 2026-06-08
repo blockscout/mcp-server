@@ -273,7 +273,7 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
 
    - `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
    - `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
-   - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues. This field includes guidance on how to retrieve full data if it has been truncated.
+   - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues, or a low-credits advisory when the Blockscout PRO API credit balance falls below the configured threshold. This field includes guidance on how to retrieve full data if it has been truncated.
    - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps. When pagination is available, the server automatically appends pagination instructions to motivate LLMs to fetch additional pages.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
@@ -599,6 +599,8 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
    - **Native MCP clients** see a `tools/call` result with `isError: true` and a text content of the form `"Error executing tool <name>: <exception message>"`. There is no HTTP-status indicator in MCP mode — an exhausted-retry transport failure is structurally indistinguishable from an honest upstream `5xx` (the latter carries a `"<code> <reason> - Details: …"` prefix in the text; the former carries the bare `httpx` exception message).
 
    When changing the retry policy, account for both surfaces.
+
+   **Credit usage visibility (advisory low-credits note).** When the PRO API reports a low remaining credit balance, the server surfaces it as an advisory note in `ToolResponse.notes`. The signal is best-effort and HTTP-backed — captured opportunistically from PRO API responses and never affecting the request outcome — and is gated by an operator-configurable threshold that can tune or disable it (configured via environment variable; see README and `.env.example`). It is the plan-agnostic early-warning complement to the credit-exhaustion hard-stop documented in §8 ("Credit Exhaustion"). Implementation mechanics are documented in the relevant code docstrings and exercised by focused unit tests, not restated in this specification.
 
 8. **HTTP Error Handling and Context Propagation**
 

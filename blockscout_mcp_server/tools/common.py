@@ -11,6 +11,7 @@ import httpx
 from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.cache import ChainsListCache, ProApiConfigCache
+from blockscout_mcp_server.client_meta import get_header_case_insensitive
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
@@ -18,7 +19,11 @@ from blockscout_mcp_server.constants import (
     SERVER_VERSION,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
-from blockscout_mcp_server.pro_api_key_context import require_pro_api_key, resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import (
+    _credit_sink,
+    require_pro_api_key,
+    resolve_pro_api_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,45 @@ def _create_httpx_client(*, timeout: float) -> httpx.AsyncClient:
     """
 
     return httpx.AsyncClient(timeout=timeout, follow_redirects=True)
+
+
+def _capture_credits_remaining(response: Any) -> None:
+    """Record the ``x-credits-remaining`` header value into the current CreditSink.
+
+    This is a pure side effect — it never changes the response, never raises,
+    and is a no-op when no sink is established for the current context (i.e.
+    ``_credit_sink.get()`` is ``None``).
+
+    Defensive design:
+    - Reads headers via ``getattr(response, "headers", {})`` so mock responses
+      without a ``headers`` attribute do not raise.
+    - Uses ``get_header_case_insensitive`` (same helper as the PRO API key
+      extraction) so casing behaviour matches the rest of the codebase.
+    - Requires ``isinstance(value, str)`` before parsing: ``float(MagicMock())``
+      returns ``1.0`` without raising (MagicMock implements ``__float__``), so
+      the type guard is mandatory — without it a mocked/headerless path would
+      silently capture a bogus ``1.0`` and emit a false low-credits note.
+    - Wraps the numeric parse in ``try/except (TypeError, ValueError)`` so a
+      non-numeric string header still yields no capture rather than an error.
+    - Parses as ``float`` because the header is a serialised Decimal and can be
+      negative (paid plans served while overdrawn).
+    """
+    sink = _credit_sink.get()
+    if sink is None:
+        return
+
+    headers = getattr(response, "headers", {})
+    raw = get_header_case_insensitive(headers, "x-credits-remaining", "")
+
+    # Require a real, non-empty str before parsing.  A MagicMock or any other
+    # non-str value must be silently ignored.
+    if not isinstance(raw, str) or not raw.strip():
+        return
+
+    try:
+        sink.record(float(raw))
+    except (TypeError, ValueError):
+        pass
 
 
 class ChainNotFoundError(ValueError):
@@ -300,6 +344,10 @@ async def _make_blockscout_http_request(
                         message = f"{message} - Details: {details}"
                     raise httpx.HTTPStatusError(message, request=e.request, response=e.response) from e
                 data = response.json()
+                # Capture remaining credits as a side effect on the success
+                # path only.  This is intentionally kept separate from the
+                # 402-exhaustion error path above.
+                _capture_credits_remaining(response)
                 return data if data is not None else {}
             except retry_exceptions as e:
                 last_error = e
@@ -695,6 +743,32 @@ def build_tool_response(
     Returns:
         A ToolResponse instance.
     """
+    # Check for a low-credits advisory note.  All three conditions must hold:
+    # 1. A CreditSink was established for this invocation (sink is not None).
+    # 2. A PRO API call actually happened (sink.remaining is not None).
+    # 3. The threshold gate is enabled (> 0) and the remaining balance is below it.
+    # Silence is the default; emit nothing when any condition is unmet.
+    final_notes: list[str] | None = notes
+    sink = _credit_sink.get()
+    if (
+        sink is not None
+        and sink.remaining is not None
+        and config.pro_api_low_credits_threshold > 0
+        and sink.remaining < config.pro_api_low_credits_threshold
+    ):
+        remaining = sink.remaining
+        threshold = config.pro_api_low_credits_threshold
+        # Display the remaining value as an integer when it is whole (e.g. 4999, not 4999.0).
+        remaining_display: int | float = int(remaining) if remaining == int(remaining) else remaining
+        advisory = (
+            f"⚠️ Blockscout PRO API credits are running low: {remaining_display} credits remaining "
+            f"(warning threshold: {threshold}). Top up your account to keep Blockscout PRO API access ready "
+            f"for continued high-volume usage — see https://dev.blockscout.com."
+        )
+        # Build a new list — never mutate the caller-supplied list in place.
+        final_notes = list(notes) if notes is not None else []
+        final_notes.append(advisory)
+
     # Automatically add pagination instructions when pagination is present
     final_instructions = list(instructions) if instructions is not None else []
 
@@ -713,7 +787,7 @@ def build_tool_response(
     return ToolResponse(
         data=data,
         data_description=data_description,
-        notes=notes,
+        notes=final_notes,
         instructions=final_instructions_output,
         pagination=pagination,
         content_text=content_text,

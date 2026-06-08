@@ -74,7 +74,7 @@ Tool endpoints under `/v1/` return a consistent JSON object that wraps the tool'
 
 - `data`: The main data payload of the response. Its structure is specific to each endpoint.
 - `data_description`: (Optional) A list of strings explaining the structure or fields of the `data` payload.
-- `notes`: (Optional) A list of important warnings or contextual notes, such as data truncation alerts.
+- `notes`: (Optional) A list of important warnings or contextual notes, such as data truncation alerts or a low-credits advisory emitted when the Blockscout PRO API credit balance drops below the configured threshold.
 - `instructions`: (Optional) A list of suggested follow-up actions for an AI agent.
 - `pagination`: (Optional) An object containing information to retrieve the next page of results.
 

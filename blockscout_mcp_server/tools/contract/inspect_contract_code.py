@@ -9,7 +9,7 @@ from blockscout_mcp_server.models import (
     ContractSourceFile,
     ToolResponse,
 )
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
 from blockscout_mcp_server.tools.common import build_tool_response, report_and_log_progress
 from blockscout_mcp_server.tools.contract._shared import _fetch_and_process_contract
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
@@ -17,6 +17,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 @log_tool_invocation
 @pro_api_key_scope
+@pro_api_credit_scope
 async def inspect_contract_code(
     chain_id: Annotated[str, Field(description="The ID of the blockchain.")],
     address: Annotated[str, Field(description="The address of the smart contract.")],

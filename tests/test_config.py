@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import pytest
+from pydantic import ValidationError
+
 from blockscout_mcp_server.config import ServerConfig
 
 
@@ -124,3 +127,27 @@ def test_pro_api_key_header_empty_string_preserved(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_HEADER", "")
     cfg = ServerConfig(_env_file=None)
     assert cfg.pro_api_key_header == ""
+
+
+def test_pro_api_low_credits_threshold_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_low_credits_threshold == 5000
+
+
+def test_pro_api_low_credits_threshold_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", "1000")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_low_credits_threshold == 1000
+
+
+def test_pro_api_low_credits_threshold_zero_accepted(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", "0")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_low_credits_threshold == 0
+
+
+def test_pro_api_low_credits_threshold_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", "-1")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
