@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import pytest
+from pydantic import ValidationError
+
 from blockscout_mcp_server.config import ServerConfig
 
 
@@ -145,10 +148,6 @@ def test_pro_api_low_credits_threshold_zero_accepted(monkeypatch):
 
 
 def test_pro_api_low_credits_threshold_negative_rejected(monkeypatch):
-    from pydantic import ValidationError
-
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", "-1")
-    import pytest
-
     with pytest.raises(ValidationError):
         ServerConfig(_env_file=None)

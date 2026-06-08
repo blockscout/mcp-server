@@ -8,6 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from mcp.server.fastmcp import FastMCP
 
+from blockscout_mcp_server.config import config as bms_config
 from blockscout_mcp_server.models import AdvancedFilterItem, TokenTransfer, ToolResponse, TransactionInfoData
 from blockscout_mcp_server.tools.common import CreditsExhaustedError
 
@@ -870,8 +871,6 @@ async def test_rest_mode_low_credits_note_in_response(client: AsyncClient):
     itself (with AsyncMock returning a pre-built ToolResponse) would bypass the
     decorator/capture path and produce no advisory note.
     """
-    from blockscout_mcp_server.config import config as bms_config
-
     block_payload = [{"height": 21000000, "timestamp": "2025-01-01T00:00:00.000000Z"}]
     # x-credits-remaining below the threshold so the advisory note is emitted.
     response = _MockBlockResponse(block_payload, headers={"x-credits-remaining": "3000"})

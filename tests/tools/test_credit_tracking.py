@@ -458,6 +458,8 @@ async def test_cross_task_visibility_via_periodic_progress(mock_ctx):
     assert result == {"data": "ok"}
     # The value written by the child task must be visible on the parent's sink.
     assert sink.remaining == 3333.0
+    # Progress must be reported via the periodic-progress helper.
+    assert mock_ctx.report_progress.call_count > 0
 
 
 # ---------------------------------------------------------------------------
@@ -958,6 +960,7 @@ async def test_mcp_mode_low_credits_note_in_tool_response(mock_ctx):
     assert result.notes is not None
     assert any("4200" in note for note in result.notes)
     assert any("https://dev.blockscout.com" in note for note in result.notes)
+    assert mock_ctx.report_progress.call_count > 0
 
 
 @pytest.mark.asyncio
@@ -979,3 +982,4 @@ async def test_mcp_mode_healthy_credits_no_note_in_tool_response(mock_ctx):
 
     # notes should be None (no advisory, no caller-supplied notes)
     assert result.notes is None
+    assert mock_ctx.report_progress.call_count > 0
