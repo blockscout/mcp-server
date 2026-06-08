@@ -268,7 +268,7 @@ mcp-server/
             * `BLOCKSCOUT_BENS_URL`: Base URL for the BENS (Blockscout ENS) API.
             * `BLOCKSCOUT_BENS_TIMEOUT`: Timeout for BENS API requests.
             * `BLOCKSCOUT_METADATA_TIMEOUT`: Timeout for PRO API metadata requests.
-            * `BLOCKSCOUT_PRO_API_KEY`: Blockscout PRO API key used to authenticate all Blockscout data requests (every data tool routes through the PRO API gateway). It is required; without it, data requests fail fast with a clear error.
+            * `BLOCKSCOUT_PRO_API_KEY`: Server-configured Blockscout PRO API key used as the default/fallback credential for data requests.
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
             * `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`: Time-to-live for the Chains List cache.
@@ -367,7 +367,7 @@ mcp-server/
         * Provides a singleton configuration object that can be imported and used by other modules, especially by `tools/common.py` for API calls.
         * `mcp_allowed_hosts: str`: Comma-separated list of allowed `Host` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
         * `mcp_allowed_origins: str`: Comma-separated list of allowed `Origin` header values for DNS rebinding protection (default: empty, auto-detected based on bind host).
-        * `pro_api_key_header: str`: Name of the request header an MCP client uses to supply its own Blockscout PRO API key (default: `Blockscout-MCP-Pro-Api-Key`; empty string disables the feature).
+        * `pro_api_key_header: str`: Name of the request header an HTTP client (MCP-over-HTTP or REST) uses to supply its own Blockscout PRO API key (default: `Blockscout-MCP-Pro-Api-Key`; empty string disables the feature).
     * **`constants.py`**:
         * Defines centralized constants used throughout the application, including data truncation limits.
         * Ensures consistency between different parts of the application.
@@ -392,7 +392,7 @@ mcp-server/
     * **`pro_api_key_context.py`**:
         * Owns request-scoped resolution of a client-supplied Blockscout PRO API key, kept separate from logging/observability.
         * Provides a `ContextVar` of the per-request client-key state, a normalization/validation helper, `extract_client_pro_api_key_from_ctx()`, `resolve_pro_api_key()` (precedence: valid client key → server key → not-configured error; malformed client key → terminal error, no fallback), and the `@pro_api_key_scope` decorator.
-        * Honored only for genuine MCP calls (ignored when `ctx.call_source == "rest"`); the key is never logged or placed in cache keys.
+        * Honored for any HTTP request that carries the configured header (MCP-over-HTTP or REST); the key is never logged or placed in cache keys.
         * Also defines the per-invocation credit-tracking symbols: `CreditSink`, the `_credit_sink` `ContextVar`, and the `@pro_api_credit_scope` decorator (a sibling of `@pro_api_key_scope`).
     * **`cache.py`**:
         * Encapsulates in-memory caching of chain data with TTL management.

@@ -25,7 +25,7 @@ See the [agent-skills README](https://github.com/blockscout/agent-skills) for fu
 - **ChatGPT Apps:** Enable the Blockscout app from the [ChatGPT Apps marketplace](https://chatgpt.com/apps?q=Blockscout)
 - **Cursor and Gemini CLI:** Direct HTTP URL with 180-second timeout
 
-**Authentication (optional):** Tools reach Blockscout data through the Blockscout PRO API. A hosted server is normally already configured with its own key, but when you connect to an HTTP MCP server you may supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header. A client-supplied key takes precedence over the server's own key for that request. The REST API interface ignores this header and always authenticates with the server's configured key.
+**Authentication (optional):** Tools reach Blockscout data through the Blockscout PRO API. A hosted server is normally already configured with its own key, but when you connect over HTTP — either MCP-over-HTTP or the REST API — you may supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header. A client-supplied key takes precedence over the server's own key for that request; if you send no key, the server uses its own.
 
 **Key Tools:** `get_address_info`, `get_transactions_by_address`, `get_tokens_by_address`
 

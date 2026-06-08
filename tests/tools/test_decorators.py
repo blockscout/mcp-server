@@ -229,8 +229,8 @@ async def test_pro_api_key_scope_mcp_context_resolves_client_key(monkeypatch, mo
 
 
 @pytest.mark.asyncio
-async def test_pro_api_key_scope_rest_context_ignores_client_key(monkeypatch) -> None:
-    """A REST MockCtx call ignores the client key header and resolves the server key."""
+async def test_pro_api_key_scope_rest_context_reads_client_key(monkeypatch) -> None:
+    """A REST MockCtx call carrying the configured header resolves the client key."""
     monkeypatch.setattr(server_config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
     monkeypatch.setattr(server_config, "pro_api_key", "server-key", raising=False)
 
@@ -243,15 +243,14 @@ async def test_pro_api_key_scope_rest_context_ignores_client_key(monkeypatch) ->
         resolved_key = resolve_pro_api_key()
         return a
 
-    # Build a REST-style MockCtx that carries the header — it must be ignored
+    # Build a REST-style MockCtx that carries the header — it must now be honored
     rest_ctx = MockCtx()
-    # Attach a fake request with the client-key header on the wrapper
     headers = Headers(headers={"Blockscout-MCP-Pro-Api-Key": "client-secret"})
     rest_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
 
     await dummy_tool(1, ctx=rest_ctx)
 
-    assert resolved_key == "server-key"
+    assert resolved_key == "client-secret"
 
 
 @pytest.mark.asyncio

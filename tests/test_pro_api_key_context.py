@@ -121,8 +121,47 @@ def _mcp_ctx_with_header(header_name: str, header_value: str) -> SimpleNamespace
     return SimpleNamespace(request_context=SimpleNamespace(request=request))
 
 
-def test_extraction_rest_call_source_is_absent(monkeypatch):
+def test_extraction_rest_call_source_reads_header(monkeypatch):
+    """A REST-source context that carries the configured header must yield _Valid."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
+    ctx.call_source = "rest"  # type: ignore[attr-defined]
+    state = extract_client_pro_api_key_from_ctx(ctx)
+    assert isinstance(state, _Valid)
+    assert state.value == "client-key-123"
+
+
+def test_extraction_rest_call_source_absent_header_is_absent(monkeypatch):
+    """A REST-source context with no header value yields _Absent."""
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "")
+    ctx.call_source = "rest"  # type: ignore[attr-defined]
+    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
+
+
+def test_extraction_rest_call_source_malformed_header_is_malformed(monkeypatch):
+    """A REST-source context with a control-char header value yields _Malformed."""
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    # Use a plain dict so we can inject a control-character value that starlette
+    # would refuse to encode.
+    headers = {"Blockscout-MCP-Pro-Api-Key": "bad\nkey"}
+    request = SimpleNamespace(headers=headers)
+    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request), call_source="rest")
+    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
+
+
+def test_extraction_rest_call_source_over_length_header_is_malformed(monkeypatch):
+    """A REST-source context with an over-length header value yields _Malformed."""
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    headers = {"Blockscout-MCP-Pro-Api-Key": "a" * 257}
+    request = SimpleNamespace(headers=headers)
+    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request), call_source="rest")
+    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
+
+
+def test_extraction_rest_call_source_disabled_feature_is_absent(monkeypatch):
+    """Feature disabled (empty header config) → absent even if the header is present."""
+    monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
     ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
     ctx.call_source = "rest"  # type: ignore[attr-defined]
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
@@ -332,7 +371,8 @@ async def test_decorator_resets_state_even_when_wrapped_function_raises(monkeypa
 
 
 @pytest.mark.asyncio
-async def test_decorator_rest_call_source_leaves_state_absent(monkeypatch):
+async def test_decorator_rest_call_source_sets_valid_state(monkeypatch):
+    """The decorator must set _Valid when a REST-source context carries the header."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
 
     observed_state: list[object] = []
@@ -346,7 +386,9 @@ async def test_decorator_rest_call_source_leaves_state_absent(monkeypatch):
 
     await dummy(ctx=ctx)
 
-    assert isinstance(observed_state[0], _Absent)
+    assert len(observed_state) == 1
+    assert isinstance(observed_state[0], _Valid)
+    assert observed_state[0].value == "client-key-xyz"  # type: ignore[union-attr]
 
 
 @pytest.mark.asyncio
