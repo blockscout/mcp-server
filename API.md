@@ -45,7 +45,16 @@ The same artifacts are also reachable via the MCP resources channel under URIs o
 
 ## Authentication
 
-The REST API is currently in an alpha stage and does not require authentication. This may be subject to change in future releases.
+The REST API is currently in an alpha stage and does not require authentication to the MCP server itself. This may be subject to change in future releases.
+
+### Optional client-supplied Blockscout PRO API key
+
+Most data endpoints query Blockscout through its PRO API. A hosted server is normally already configured with its own key, but a REST client may optionally supply its own key for a request via the `Blockscout-MCP-Pro-Api-Key` request header (the header name is configurable on the server through `BLOCKSCOUT_PRO_API_KEY_HEADER`; an operator can disable the feature entirely by setting that name to an empty string).
+
+- A valid client-supplied key takes precedence over the server's configured key for that request, so each caller can consume its own PRO credit allowance.
+- If the header is absent, the server falls back to its own configured key.
+- If the header is present but malformed (it contains control characters or exceeds the maximum allowed length), any request that reaches a PRO-authenticated upstream call fails with HTTP `400`, and the server does not fall back to its own key. Endpoints that don't query the PRO API are unaffected.
+- The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API; only the dedicated header above is honored.
 
 ## General Concepts
 
@@ -83,10 +92,10 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
 
 #### Error Categories
 
-- **Client-Side Errors (`4xx` status codes)**: These errors usually indicate a problem with the request itself, though some (such as `402 Payment Required`) instead reflect a server-side account/quota state rather than anything wrong with the request. Common examples include:
+- **Client-Side Errors (`4xx` status codes)**: These errors usually indicate a problem with the request itself, though some (such as `402 Payment Required`) instead reflect an account/quota state of whichever PRO API key the request uses rather than anything wrong with the request. Common examples include:
   - **Validation Errors (`400 Bad Request`)**: Occur when a required parameter is missing or a parameter value is invalid.
   - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
-  - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the server's API key has been exhausted. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects the server's API-key quota state, not a problem with the client's request: the client should stop and top up credits or wait for the daily reset rather than retry.
+  - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the effective API key used by the request has been exhausted — the client-supplied key when one is provided, otherwise the server's configured key. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects that key's quota state, not a problem with the request itself: the caller should stop and top up credits (or wait for the daily reset) rather than retry.
 
 - **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
   - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.

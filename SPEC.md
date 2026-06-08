@@ -200,11 +200,11 @@ The key's purpose is to ensure every request the server makes to the Blockscout 
 - The single credential is the `BLOCKSCOUT_PRO_API_KEY` environment variable (`config.pro_api_key`, empty by default). When set, it is sent as an `Authorization: Bearer <key>` header on every PRO API request.
 - The header is built and attached per request inside the request helpers, never configured on a shared HTTP client, so the key is never sent to other upstreams (BENS, Chainscout). A bare `Bearer` token is never emitted: the `Authorization` header is added only when the key is non-empty.
 
-**Client-supplied credential (MCP tools over HTTP only)**
+**Client-supplied credential (both HTTP transports)**
 
 - In addition to the server-side key, an MCP client may supply its own PRO API key in a dedicated request header whose name is configured by `BLOCKSCOUT_PRO_API_KEY_HEADER` (`config.pro_api_key_header`, default `Blockscout-MCP-Pro-Api-Key`). Setting this config to an empty string disables the feature.
 - Resolution is pure precedence with **no fallback on a bad client key**: a valid client-supplied key is used for that request; if the client supplies no key, the server-side key is used; if neither exists, the request fails with the not-configured error. A client key that is present but malformed (control characters, or over the length bound) is a terminal error for any PRO-authenticated request that would consume it — the server never silently falls back to its own key for a malformed client key. Tools that never call the PRO API (for example `get_chains_list` or ENS lookups) are unaffected: the malformed state is recorded for the invocation but only the PRO API request helpers consult it.
-- The credential is resolved per request and scoped to a single tool invocation (see `blockscout_mcp_server/pro_api_key_context.py`). The client key is read only for genuine MCP calls (never in REST mode) and is never written to logs, analytics, or cache keys.
+- The credential is resolved per request and scoped to a single tool invocation (see `blockscout_mcp_server/pro_api_key_context.py`). The client key is read for any HTTP request that carries the configured header — both MCP-over-HTTP tool calls and the REST API — and is never written to logs, analytics, or cache keys.
 - Because the key authorizes upstream requests rather than gating MCP functionality, a response served entirely from cache (e.g. contract metadata/source) requires only that some effective key be present, not that the client-supplied key was validated upstream. A well-formed but invalid, expired, or out-of-credit client key may therefore receive cached PRO-gated data — no protected upstream request is made on its behalf. This is a deliberate consequence of the principle above, not a validation gap.
 
 **Two transports, one scheme**
@@ -235,9 +235,8 @@ A malformed client key raises a distinct terminal error (no fallback); only the 
 
 **Extended HTTP / REST mode**
 
-- The PRO API key stays server-side config; REST consumers never supply it. A REST client authenticates (if at all) to the MCP server itself, while the server authenticates to the PRO API with its own configured key.
-- The client-supplied key header (`BLOCKSCOUT_PRO_API_KEY_HEADER`) is honored only for genuine MCP tool calls; the REST layer continues to ignore any client-supplied key and authenticates to the PRO API solely with the server's configured key. Extending client-supplied keys to REST is deliberately out of scope for this iteration.
-- An `Authorization` header sent by a REST client is never forwarded to the PRO API. The data path builds PRO API headers solely from server config and does not read incoming request headers, and the Web3 pool explicitly strips any caller-supplied `Authorization` before constructing requests or cache keys.
+- Both HTTP transports share one credential scheme. A REST client may supply its own PRO API key in the configured `BLOCKSCOUT_PRO_API_KEY_HEADER` exactly as an MCP-over-HTTP client does: a valid client key takes precedence over the server key for that request, an absent header falls back to the server key, and a malformed value is a terminal client error (surfaced as HTTP 400) for any request that consumes it, with no fallback (the existing "Client-supplied credential" bullets above already capture that tools which never call the PRO API are unaffected). Emptying the configured header name disables client-supplied keys for both transports at once.
+- The dedicated client-key header is the only request header honored for this purpose. An `Authorization` header sent by a REST (or MCP) client is never forwarded to the PRO API: the data path builds PRO API headers solely from the resolved key, and the Web3 pool explicitly strips any caller-supplied `Authorization` before constructing requests or cache keys.
 
 **Error semantics**
 
