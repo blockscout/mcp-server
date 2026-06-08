@@ -5,7 +5,7 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 
 from blockscout_mcp_server.models import EnsAddressData, ToolResponse
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_bens_request,
@@ -16,6 +16,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 @log_tool_invocation
 @pro_api_key_scope
+@pro_api_credit_scope
 async def get_address_by_ens_name(
     name: Annotated[str, Field(description="ENS domain name to resolve")], ctx: Context
 ) -> ToolResponse[EnsAddressData]:

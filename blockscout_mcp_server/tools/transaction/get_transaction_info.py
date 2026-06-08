@@ -7,7 +7,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_blockscout_request,
@@ -23,6 +23,7 @@ from blockscout_mcp_server.tools.transaction._shared import (
 
 @log_tool_invocation
 @pro_api_key_scope
+@pro_api_credit_scope
 async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     transaction_hash: Annotated[str, Field(description="Transaction hash")],

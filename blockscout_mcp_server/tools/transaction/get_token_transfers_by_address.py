@@ -6,7 +6,7 @@ from pydantic import Field
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
@@ -22,6 +22,7 @@ from blockscout_mcp_server.tools.transaction._shared import _transform_advanced_
 
 @log_tool_invocation
 @pro_api_key_scope
+@pro_api_credit_scope
 async def get_token_transfers_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either transfer initiator or transfer receiver")],

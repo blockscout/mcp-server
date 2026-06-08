@@ -3,7 +3,7 @@
 import pytest
 
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.pro_api_key_context import _client_key_state, _Valid
+from blockscout_mcp_server.pro_api_key_context import CreditSink, _client_key_state, _credit_sink, _Valid
 from blockscout_mcp_server.tools.common import (
     ChainNotFoundError,
     ensure_chain_supported,
@@ -206,3 +206,50 @@ async def test_make_blockscout_request_client_key_via_context_var(monkeypatch):
     assert "timestamp" in response_data
     assert isinstance(response_data["gas_used"], str)  # Blockscout API returns this as a string
     assert "parent_hash" in response_data
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_credit_capture_on_real_pro_api_response():
+    """
+    Confirms that a real metered PRO API GET response carries ``x-credits-remaining``
+    and that our capture code records a numeric value into the CreditSink.
+
+    This validates the request/response contract the whole feature rests on: the
+    header actually arrives on a live response and the sink records it.  POST and
+    metadata surface coverage is already proven at unit level in Phase 2's
+    parameterized test; live coverage of a single GET here avoids network
+    flakiness without omitting anything meaningful.
+    """
+    # ARRANGE — skip immediately when no key is configured; without an authenticated
+    # metered request the header would never be returned and the test would be
+    # measuring the wrong thing.
+    if not config.pro_api_key:
+        pytest.skip("BLOCKSCOUT_PRO_API_KEY not configured; credit capture requires an authenticated metered request")
+
+    sink = CreditSink()
+    token = _credit_sink.set(sink)
+    try:
+        chain_id = "100"  # Gnosis Chain — same stable target as the existing block test
+        block_number = "46282564"
+        api_path = f"/api/v2/blocks/{block_number}"
+
+        # ACT — real network call; retry_on_network_error skips on transient failures
+        # rather than letting flaky infrastructure cause a false negative.
+        await retry_on_network_error(
+            lambda: make_blockscout_request(chain_id=chain_id, api_path=api_path),
+            action_description="PRO API block request for credit-capture verification",
+        )
+    finally:
+        _credit_sink.reset(token)
+
+    # ASSERT — the header was present and the capture recorded a numeric value.
+    # We do NOT assert a specific magnitude: the balance may be any value
+    # (including negative for overdraft accounts).
+    assert sink.remaining is not None, (
+        "x-credits-remaining was not captured — the header may be absent on this endpoint "
+        "or the capture logic in _make_blockscout_http_request is broken."
+    )
+    assert isinstance(sink.remaining, (int, float)), (
+        f"Expected a numeric remaining-credits value, got {type(sink.remaining).__name__!r}: {sink.remaining!r}"
+    )

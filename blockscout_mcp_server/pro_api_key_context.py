@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-"""Request-scoped PRO API key resolution for MCP tool calls.
+"""Request-scoped PRO API key resolution and credit-tracking for MCP tool calls.
 
-This module owns everything about a client-supplied PRO API key:
+This module owns everything about a client-supplied PRO API key and the
+per-request remaining-credits observation:
+
 - An immutable state representation (absent / valid / malformed).
 - A module-level ContextVar holding that state.
 - A normalization/validation helper.
@@ -10,6 +12,9 @@ This module owns everything about a client-supplied PRO API key:
 - A ``require_pro_api_key()`` helper that wraps the resolver with the standard
   not-configured error so every PRO API entry point raises the same message.
 - A @pro_api_key_scope decorator that populates the ContextVar per request.
+- A ``CreditSink`` mutable box and ``_credit_sink`` ContextVar for tracking the
+  minimum ``x-credits-remaining`` value observed across all PRO API calls within
+  a single tool invocation.
 
 Kept intentionally separate from tools/decorators.py so authentication and
 observability remain decoupled.
@@ -23,6 +28,20 @@ never consulted — a malformed client header is effectively a no-op — but
 applying the decorator uniformly means a future contributor cannot accidentally
 add a PRO API call to a tool that lacks request-scoped key resolution.  Do not
 "optimize" by removing it from a tool that today doesn't need it.
+
+Credit-sink box design
+----------------------
+``_credit_sink`` stores a *mutable* ``CreditSink`` object rather than a plain
+``ContextVar[float | None]``.  In asyncio, a child task spawned by
+``asyncio.gather`` or an ``anyio`` task group runs in a **copied** context, so
+a child calling ``ContextVar.set(...)`` would not be visible to the parent.
+Storing a mutable box in the ContextVar sidesteps this: the copied context
+shares the *same object reference*, so a child that **mutates** the box is
+immediately visible to the parent.
+
+The minimum value is retained (rather than the latest) because it is the
+conservative choice — it warns earlier — and it is order-independent across
+concurrent requests where completion order is non-deterministic.
 """
 
 from __future__ import annotations
@@ -30,6 +49,7 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
+import math
 from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -79,10 +99,64 @@ _MALFORMED: ClientKeyState = _Malformed()
 
 
 # ---------------------------------------------------------------------------
-# 2. Module-level ContextVar (not per-call — required for correct semantics)
+# 2. Module-level ContextVars (not per-call — required for correct semantics)
 # ---------------------------------------------------------------------------
 
 _client_key_state: ContextVar[ClientKeyState] = ContextVar("_client_key_state", default=_ABSENT)
+
+
+# ---------------------------------------------------------------------------
+# 2b. CreditSink — mutable box for the per-invocation remaining-credits value
+# ---------------------------------------------------------------------------
+
+
+class CreditSink:
+    """Mutable box that records the minimum ``x-credits-remaining`` value seen.
+
+    Stored in ``_credit_sink`` (a module-level ContextVar).  Because asyncio
+    child tasks receive a *copy* of the parent context, a plain
+    ``ContextVar[float]`` set inside a child would be invisible to the parent.
+    Storing a mutable object instead means both parent and child share the same
+    reference, so a child that *mutates* the box is immediately visible to the
+    parent.
+
+    The minimum is retained (rather than the latest) as the conservative choice:
+    it warns earlier and is order-independent across concurrent requests.
+
+    Invariant: ``remaining`` is either ``None`` or a *finite* float.  See
+    :meth:`record` for why non-finite values are rejected at the door.
+    """
+
+    def __init__(self) -> None:
+        self.remaining: float | None = None
+
+    def record(self, value: float) -> None:
+        """Update the stored minimum with *value*.
+
+        First observation sets the value; subsequent observations only lower it.
+
+        Non-finite values (``nan``, ``+inf``, ``-inf``) are silently ignored so
+        the invariant "``remaining`` is ``None`` or a *finite* float" always
+        holds.  This is the single chokepoint every value enters through, so the
+        guard belongs here:
+        - ``float("-Infinity")`` would otherwise crash a downstream
+          ``int(remaining)`` display conversion with ``OverflowError``.
+        - A ``nan`` (or ``-inf``) recorded first would *poison* the minimum: the
+          ``value < self.remaining`` comparison is ``False`` for every later
+          real observation (``x < nan`` is always ``False``; nothing is ``<
+          -inf``), so a genuine low balance would be dropped and the advisory
+          note silently suppressed for the whole invocation.
+        """
+        if not math.isfinite(value):
+            return
+        if self.remaining is None or value < self.remaining:
+            self.remaining = value
+
+
+# ``None`` default: code paths that build a response without a decorator-
+# established sink (e.g. isolated unit tests) must see "no sink" and stay
+# silent, not share a leaked box.
+_credit_sink: ContextVar[CreditSink | None] = ContextVar("_credit_sink", default=None)
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +293,50 @@ def require_pro_api_key(disabled_feature: str) -> str:
 # ---------------------------------------------------------------------------
 # 7. Decorator — populates the ContextVar for the duration of a tool call
 # ---------------------------------------------------------------------------
+
+
+def pro_api_credit_scope(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+    """Decorator that establishes a fresh ``CreditSink`` per tool invocation.
+
+    Creates and installs a new :class:`CreditSink` in ``_credit_sink`` *before*
+    the tool body (and before any child task is spawned via ``asyncio.gather``
+    or ``make_request_with_periodic_progress``), so all concurrent child tasks
+    inherit the same mutable box and their credit observations are visible to the
+    parent.  Resets the ContextVar to its prior value in ``finally`` so credit
+    state never leaks between sequential invocations.
+
+    Transport-agnostic: the sink is established unconditionally in every
+    transport (MCP, REST, test stubs) because credit capture and the advisory
+    low-credits note are required in both MCP and REST modes.  The decorator
+    reads nothing from ``ctx`` — it only manages the box's lifetime.
+
+    Separate from both ``@pro_api_key_scope`` (authentication concern) and
+    ``log_tool_invocation`` (observability concern): folding credit lifecycle
+    into either would mislead future readers.  ``pro_api_key_context.py``
+    already owns all request-scoped PRO API state, making it the natural home
+    for this sibling decorator.
+
+    Stacking order
+    --------------
+    Apply this decorator *innermost* (closest to the function definition)::
+
+        @log_tool_invocation
+        @pro_api_key_scope
+        @pro_api_credit_scope
+        async def my_tool(...): ...
+
+    This keeps the sink's lifetime tightest around the tool body.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        token = _credit_sink.set(CreditSink())
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            _credit_sink.reset(token)
+
+    return wrapper
 
 
 def pro_api_key_scope(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
