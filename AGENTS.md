@@ -189,7 +189,11 @@ mcp-server/
 │       ├── test_common_truncate.py   # Unit tests for truncation helpers
 │       ├── test_common_post_request.py   # Unit tests for POST request helper
 │       ├── test_decorators.py        # Unit tests for logging decorators
-│       └── test_credit_tracking.py   # Unit tests for PRO API credit capture and low-credits note
+│       ├── test_credit_tracking_sink.py        # Unit tests for CreditSink running-minimum semantics
+│       ├── test_credit_tracking_capture.py     # Unit tests for x-credits-remaining capture via HTTP helpers
+│       ├── test_credit_tracking_decorator.py   # Unit tests for the @pro_api_credit_scope decorator
+│       ├── test_credit_tracking_note.py        # Unit tests for the build_tool_response low-credits note
+│       └── test_credit_tracking_end_to_end.py  # End-to-end MCP-mode low-credits advisory note tests
 ├── mcpb/                       # MCP Bundle package for Claude Desktop
 │   ├── README.md               # MCPB documentation and build instructions
 │   ├── manifest.json           # Bundle manifest for development builds
