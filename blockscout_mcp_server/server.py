@@ -302,12 +302,14 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
+    # Normalize transport setting once; reused by the guard below and HTTP-mode detection.
+    mcp_transport = (config.mcp_transport or "stdio").lower()
+
     # Reject --rest without --http early, before any startup work (including the diagnostic).
-    if rest and not http and (config.mcp_transport or "stdio").lower() != "http":
+    if rest and not http and mcp_transport != "http":
         raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
 
-    # Normalize transport setting and detect whether env var triggered HTTP mode.
-    mcp_transport = (config.mcp_transport or "stdio").lower()
+    # Detect whether the env var (not the CLI flag) triggered HTTP mode.
     env_triggered = not http and mcp_transport == "http"
 
     # Determine if we should run in HTTP mode based on CLI flag or environment variable.
