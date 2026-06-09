@@ -295,7 +295,7 @@ async def test_no_key_raises_value_error():
         patch("blockscout_mcp_server.web3_pool.aiohttp.ClientSession", session_cls_mock),
         patch.object(config, "pro_api_key", ""),
     ):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await pool.get("1")
 
     ensure_mock.assert_not_called()

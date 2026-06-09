@@ -272,18 +272,22 @@ def require_pro_api_key(disabled_feature: str) -> str:
 
     Propagates ``ValueError`` from :func:`resolve_pro_api_key` for a malformed
     client key.  When both the client key and the server key are absent, raises
-    a ``ValueError`` whose message names ``BLOCKSCOUT_PRO_API_KEY`` and — when
-    client-supplied keys are enabled — the configured request header.  Callers
-    pass a short ``disabled_feature`` label ("data access", "address metadata",
-    "contract reads via the PRO API gateway") so the caller's context survives
-    without each call site duplicating the full sentence.
+    a ``ValueError`` with the minimal client-facing message:
+    ``PRO API key required for {disabled_feature}; not configured.``
+
+    The message intentionally names only the gated feature and contains no
+    operator-remediation instructions (no environment-variable name, no
+    "set … on the server", no request-header name).  Operator remediation lives
+    in the startup log and the documentation — not in the string returned to MCP
+    clients (LLM agents), who cannot act on server-side configuration advice.
+
+    Callers pass a short ``disabled_feature`` label ("data access", "address
+    metadata", "contract reads via the PRO API gateway") so the caller's context
+    survives without each call site duplicating the full sentence.
     """
     key = resolve_pro_api_key()
     if not key:
-        hint = "set BLOCKSCOUT_PRO_API_KEY"
-        if config.pro_api_key_header:
-            hint = f"set BLOCKSCOUT_PRO_API_KEY on the server, or send the {config.pro_api_key_header} request header"
-        raise ValueError(f"Blockscout PRO API key is not configured ({hint}); {disabled_feature} is disabled.")
+        raise ValueError(f"PRO API key required for {disabled_feature}; not configured.")
     return key
 
 

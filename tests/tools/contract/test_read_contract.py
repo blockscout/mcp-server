@@ -84,12 +84,12 @@ async def test_read_contract_missing_pro_api_key_propagates_value_error(mock_ctx
     Unlike the other tests, this one does NOT mock ``WEB3_POOL.get`` — it drives
     the real pool with an empty key so the tool's wiring (the ``WEB3_POOL.get``
     call sits outside any try/except) is exercised end to end. This locks in the
-    user-facing contract: the clear "set BLOCKSCOUT_PRO_API_KEY" message is not
-    swallowed or rewrapped into a generic error.
+    user-facing contract: the minimal "PRO API key required for …; not configured."
+    message is not swallowed or rewrapped into a generic error.
     """
     abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
     with patch.object(config, "pro_api_key", ""):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await read_contract(
                 chain_id="1",
                 address="0x0000000000000000000000000000000000000abc",
