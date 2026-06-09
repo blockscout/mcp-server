@@ -428,6 +428,8 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
     - **Improved Robustness**: It treats pagination as an atomic unit, preventing the AI from incorrectly constructing or omitting parameters for the next request.
     - **Simplified Tool Signatures**: Tool functions only need one optional `cursor: str` argument for pagination, keeping their schemas clean.
 
+    The cursor encodes the server's *position* within the result set, but it is not always the entire replay state. For endpoints that accept a request-side filter, the generated `pagination.next_call.params` carries that filter (for example `direct_api_call`'s `query_params`) alongside the cursor. Clients therefore replay the **complete** `params` object — it, not the cursor alone, is the pagination replay contract.
+
     **Mechanism:**
     When the Blockscout API returns a `next_page_params` dictionary, the server serializes this dictionary into a compact JSON string, which is then Base64URL-encoded. This creates a single, opaque, and URL-safe string that serves as the cursor for the next page.
 
@@ -459,6 +461,8 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
         }
       }
       ```
+
+    This example depicts an **unfiltered** call; when a request-side filter is supplied (via `query_params`), the same `params` object additionally carries the forwarded `query_params` alongside the cursor.
 
     **c) Response Slicing and Context-Aware Pagination:**
 
@@ -530,6 +534,8 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
 
     - **Dispatcher (`dispatcher.py`)**: This module contains logic to match an incoming `endpoint_path` to a specific handler function. It uses a self-registering pattern where handlers use a decorator to associate themselves with a URL path regex.
     - **Handlers (`handlers/`)**: Specialized response processors are located in the `blockscout_mcp_server/tools/direct_api/handlers/` directory. Each handler is responsible for transforming a raw JSON API response into a structured `ToolResponse` with a specific data model, applying logic like data truncation, field curation, and custom pagination.
+
+    When a specialized handler paginates a response for an endpoint that supports request-side filtering, it must carry the caller's `query_params` forward into the generated `pagination.next_call` alongside the opaque cursor. This keeps the generic, no-handler fallback and the handler path behaviorally consistent: a client that replays `pagination.next_call` verbatim continues to receive correctly filtered results on every page, rather than silently reverting to unfiltered data after the first page. Because the generic fallback encodes the upstream `next_page_params` into its cursor while specialized handlers build their cursor from per-item fields, the two paths can produce different cursor payloads; in both cases the complete `pagination.next_call` (the cursor plus any forwarded parameters), not the cursor alone, is the replay contract.
 
     If a matching handler is found, `direct_api_call` returns the rich, structured response from the handler. If no handler matches, it falls back to its default behavior of returning the raw, unprocessed JSON response wrapped in a generic `DirectApiData` model. When the API returns a JSON array instead of an object (as some endpoints like `/api/v2/main-page/blocks` do), the fallback path wraps the array into a `{"items": <array>}` dict before validation and sets pagination to `None`, since array-returning endpoints do not use Blockscout's `next_page_params` convention. This architecture allows for targeted enhancements while keeping the tool surface minimal and the system easily extensible.
 

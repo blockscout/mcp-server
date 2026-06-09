@@ -52,4 +52,16 @@ async def handle_my_endpoint(
 ```
 
 
+## Pagination and Filter Preservation
+
+If a handler paginates its response with `create_items_pagination` **and** its endpoint supports request-side filtering via `query_params`, the handler MUST forward the caller's `query_params` into `next_call_base_params` so the filter survives across pages. Add it under a nested `query_params` key, and only when the dict is non-empty:
+
+```python
+next_call_base_params = {"chain_id": chain_id, "endpoint_path": endpoint_path}
+if query_params:
+    next_call_base_params["query_params"] = query_params
+```
+
+This mirrors how the generic (no-handler) `direct_api_call` path re-attaches `query_params` to its own next call. Without it, the auto-generated `pagination.next_call` keeps only the position cursor and silently drops the filter, so the second and later pages return unfiltered data. In this case the `query_params` argument is genuinely used, so it must **not** carry a `# noqa: ARG001` marker. Handlers that do not paginate, or whose endpoint exposes no filtering parameter, may keep the `# noqa: ARG001` marker on `query_params`.
+
 - Handlers should set `content_text` in `build_tool_response(...)` to provide a concise human-readable summary for MCP `content` output.
