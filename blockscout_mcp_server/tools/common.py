@@ -227,7 +227,7 @@ async def make_blockscout_request(
         The JSON response as a dictionary. If the API returns a JSON null body, returns an empty dictionary {}.
 
     Raises:
-        ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
+        ValueError: If no effective PRO API key is configured (neither a server-side nor a client-supplied key)
         ChainNotFoundError: If the chain_id is not supported
         CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
         httpx.HTTPStatusError: If the HTTP request returns a non-402 error status code
@@ -280,7 +280,7 @@ async def make_blockscout_post_request(
         timeout: Optional override for the HTTP request timeout in seconds.
 
     Raises:
-        ValueError: If BLOCKSCOUT_PRO_API_KEY is not configured
+        ValueError: If no effective PRO API key is configured (neither a server-side nor a client-supplied key)
         ChainNotFoundError: If the chain_id is not supported
         CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
 
@@ -429,15 +429,17 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
     """
     Make an authenticated GET request to the Blockscout PRO API metadata endpoint.
 
-    Authenticates via the ``BLOCKSCOUT_PRO_API_KEY`` environment variable, sent
-    as a ``Bearer`` token scoped only to this request.  The ``User-Agent`` and
+    Authenticates via the effective PRO API key — either a client-supplied key
+    or the server-side ``BLOCKSCOUT_PRO_API_KEY`` environment variable — sent as
+    a ``Bearer`` token scoped only to this request.  The ``User-Agent`` and
     ``Accept`` headers are also attached here, not on the shared httpx client,
     so the key never leaks to other upstreams.
 
-    When no key is configured the request is skipped entirely: a ``ValueError``
-    is raised before any network call so the server never issues a request the
-    PRO API is guaranteed to reject. Callers treat this like any other
-    metadata failure (the ``metadata`` field is null with an explanatory note).
+    When no effective key is configured (neither a server-side nor a
+    client-supplied key) the request is skipped entirely: a ``ValueError`` is
+    raised before any network call so the server never issues a request the PRO
+    API is guaranteed to reject. Callers treat this like any other metadata
+    failure (the ``metadata`` field is null with an explanatory note).
 
     This helper routes through the shared ``_make_blockscout_http_request`` core
     and therefore inherits the same conservative GET retry policy
@@ -456,7 +458,8 @@ async def make_metadata_request(api_path: str, params: dict | None = None) -> di
         normalized to ``{}``.
 
     Raises:
-        ValueError: If ``BLOCKSCOUT_PRO_API_KEY`` is not configured
+        ValueError: If no effective PRO API key is configured (neither a server-side
+            ``BLOCKSCOUT_PRO_API_KEY`` nor a client-supplied key)
         CreditsExhaustedError: If the PRO API returns HTTP 402 (credit allowance depleted)
         httpx.HTTPStatusError: If the HTTP request returns a non-402 error status code
         httpx.TimeoutException: If the request times out (retried as a subclass
