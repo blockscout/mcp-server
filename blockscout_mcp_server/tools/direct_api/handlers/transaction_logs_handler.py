@@ -26,7 +26,10 @@ async def handle_transaction_logs(
     response_json: dict[str, Any],
     chain_id: str,
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
-    query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
+    # This endpoint exposes no request-side filter (verified: passing `topic` returns 0 items
+    # even for a matching topic), so there is nothing to preserve across pagination. The argument
+    # is still required by the dispatcher signature, hence the ARG001 marker below is kept.
+    query_params: dict[str, Any] | None = None,  # noqa: ARG001
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
 ) -> ToolResponse[list[TransactionLogItem]]:
     """Process the raw JSON response for a transaction logs request."""
