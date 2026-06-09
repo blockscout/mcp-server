@@ -26,7 +26,7 @@ async def handle_address_logs(
     response_json: dict[str, Any],
     chain_id: str,
     ctx: Context,  # noqa: ARG001 - reserved for future use in handlers
-    query_params: dict[str, Any] | None = None,  # noqa: ARG001 - not used by this endpoint but required by dispatcher
+    query_params: dict[str, Any] | None = None,  # supplied by the dispatcher
     **kwargs: Any,  # noqa: ARG001 - reserved for forward-compatible dispatcher context
 ) -> ToolResponse[list[AddressLogItem]]:
     """Process the raw JSON response for an address logs request."""
@@ -74,14 +74,18 @@ async def handle_address_logs(
             "See the `web3-dev` skill for how to call it.",
         ]
 
+    next_call_base_params: dict[str, Any] = {
+        "chain_id": chain_id,
+        "endpoint_path": f"/api/v2/addresses/{address}/logs",
+    }
+    if query_params:
+        next_call_base_params["query_params"] = query_params
+
     sliced_items, pagination = create_items_pagination(
         items=log_items_dicts,
         page_size=config.logs_page_size,
         tool_name="direct_api_call",
-        next_call_base_params={
-            "chain_id": chain_id,
-            "endpoint_path": f"/api/v2/addresses/{address}/logs",
-        },
+        next_call_base_params=next_call_base_params,
         cursor_extractor=extract_log_cursor_params,
     )
 
