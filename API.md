@@ -106,7 +106,7 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
 
 ### Pagination
 
-For endpoints that return large datasets, the response will include a `pagination` object. To fetch the next page, you **must** use the `tool_name` and `params` from the `next_call` object to construct your next request. The `cursor` is an opaque string that contains all necessary information for the server.
+For endpoints that return large datasets, the response will include a `pagination` object. To fetch the next page, you **must** use the `tool_name` and `params` from the `next_call` object to construct your next request. The `cursor` is an opaque string that encodes the server's position within the result set, but it is not necessarily the only replay-relevant parameter: some endpoints (for example `direct_api_call` carrying a `query_params` filter) include additional parameters alongside the `cursor` that must be resent on every page. Always replay the **complete** `next_call.params` object verbatim — treat it, not the `cursor` alone, as the pagination replay contract.
 
 **Example Pagination Object:**
 

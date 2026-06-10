@@ -103,3 +103,57 @@ async def test_direct_api_call_paginated_search_for_truncation(mock_ctx):
 
     if not found_truncated_log:
         pytest.skip(f"Could not find a truncated 'CallExecuted' log within the first {max_pages_to_check} pages.")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
+async def test_topic_filter_survives_pagination(mock_ctx):
+    """query_params topic filter must be carried forward into the next-page call."""
+    address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"  # WETH — heavily used, many Transfer logs
+    chain_id = "1"
+    endpoint_path = f"/api/v2/addresses/{address}/logs"
+    transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    query_params = {"topic": transfer_topic}
+
+    first_page = await retry_on_network_error(
+        lambda: direct_api_call(
+            chain_id=chain_id,
+            endpoint_path=endpoint_path,
+            query_params=query_params,
+            ctx=mock_ctx,
+        ),
+        action_description="direct_api_call WETH Transfer logs first page",
+    )
+
+    assert isinstance(first_page.data, list)
+    assert first_page.data, "Expected at least one log item on page 1"
+    for item in first_page.data:
+        assert item.topics, f"Log item has no topics: {item}"
+        assert item.topics[0].lower() == transfer_topic.lower(), (
+            f"Page-1 item topic mismatch: expected {transfer_topic}, got {item.topics[0]}"
+        )
+
+    assert first_page.pagination is not None, "Expected pagination on page 1"
+    assert "query_params" in first_page.pagination.next_call.params, (
+        "query_params must be forwarded into next_call.params"
+    )
+    assert first_page.pagination.next_call.params["query_params"].get("topic") == transfer_topic, (
+        "topic filter must survive in next_call.params['query_params']"
+    )
+
+    second_page = await retry_on_network_error(
+        lambda: direct_api_call(**first_page.pagination.next_call.params, ctx=mock_ctx),
+        action_description="direct_api_call WETH Transfer logs second page (replayed next_call)",
+    )
+
+    assert isinstance(second_page.data, list)
+    assert second_page.data, "Expected at least one log item on page 2"
+    for item in second_page.data:
+        assert item.topics, f"Page-2 log item has no topics: {item}"
+        assert item.topics[0].lower() == transfer_topic.lower(), (
+            f"Page-2 item topic mismatch: expected {transfer_topic}, got {item.topics[0]}. "
+            "The topic filter was likely dropped from the next-page call."
+        )
+
+    assert first_page.data != second_page.data, "Page 1 and page 2 data must differ"

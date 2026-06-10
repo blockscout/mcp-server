@@ -146,7 +146,8 @@ async def direct_api_call(
                 "cursor": next_cursor,
             }
             if query_params:
-                next_call_params["query_params"] = query_params
+                # Defensive copy so the returned pagination params don't alias the caller's dict.
+                next_call_params["query_params"] = dict(query_params)
             pagination = PaginationInfo(next_call=NextCallInfo(tool_name="direct_api_call", params=next_call_params))
 
     await report_and_log_progress(

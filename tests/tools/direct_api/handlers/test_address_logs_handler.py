@@ -136,6 +136,171 @@ async def test_handle_address_logs_truncation_notes(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_handle_address_logs_pagination_no_filter_no_query_params_key(mock_ctx):
+    """No filter supplied → query_params key must NOT appear in next_call.params."""
+    address = "0x" + "5" * 40
+    response_json = {
+        "items": [
+            {
+                "block_number": 19000001,
+                "transaction_hash": "0xtxA",
+                "topics": ["0xtopic"],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 0,
+            },
+            {
+                "block_number": 19000000,
+                "transaction_hash": "0xtxB",
+                "topics": ["0xtopic"],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 1,
+            },
+        ]
+    }
+
+    with patch.object(config, "logs_page_size", 1):
+        result = await handle_address_logs(
+            match=_build_match(address),
+            response_json=response_json,
+            chain_id="1",
+            ctx=mock_ctx,
+        )
+
+    assert result.pagination is not None
+    assert "query_params" not in result.pagination.next_call.params
+
+
+@pytest.mark.asyncio
+async def test_handle_address_logs_pagination_empty_filter_no_query_params_key(mock_ctx):
+    """Empty filter dict → treated as no filter; query_params key must NOT appear."""
+    address = "0x" + "6" * 40
+    response_json = {
+        "items": [
+            {
+                "block_number": 19000001,
+                "transaction_hash": "0xtxA",
+                "topics": ["0xtopic"],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 0,
+            },
+            {
+                "block_number": 19000000,
+                "transaction_hash": "0xtxB",
+                "topics": ["0xtopic"],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 1,
+            },
+        ]
+    }
+
+    with patch.object(config, "logs_page_size", 1):
+        result = await handle_address_logs(
+            match=_build_match(address),
+            response_json=response_json,
+            chain_id="1",
+            ctx=mock_ctx,
+            query_params={},
+        )
+
+    assert result.pagination is not None
+    assert "query_params" not in result.pagination.next_call.params
+
+
+@pytest.mark.asyncio
+async def test_handle_address_logs_pagination_filter_preserved(mock_ctx):
+    """query_params filter is carried into next_call.params when pagination triggers."""
+    address = "0x" + "7" * 40
+    topic = "0x" + "0" * 64
+    response_json = {
+        "items": [
+            {
+                "block_number": 19000001,
+                "transaction_hash": "0xtxA",
+                "topics": [topic],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 0,
+            },
+            {
+                "block_number": 19000000,
+                "transaction_hash": "0xtxB",
+                "topics": [topic],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 1,
+            },
+        ]
+    }
+
+    with patch.object(config, "logs_page_size", 1):
+        result = await handle_address_logs(
+            match=_build_match(address),
+            response_json=response_json,
+            chain_id="1",
+            ctx=mock_ctx,
+            query_params={"topic": topic},
+        )
+
+    assert result.pagination is not None
+    next_call = result.pagination.next_call
+    assert next_call.tool_name == "direct_api_call"
+    assert next_call.params["chain_id"] == "1"
+    assert next_call.params["endpoint_path"] == f"/api/v2/addresses/{address}/logs"
+    assert "cursor" in next_call.params
+    assert next_call.params["query_params"] == {"topic": topic}
+
+
+@pytest.mark.asyncio
+async def test_handle_address_logs_pagination_query_params_not_aliased(mock_ctx):
+    """The returned pagination params must not alias the caller's query_params dict."""
+    address = "0x" + "8" * 40
+    topic = "0x" + "0" * 64
+    caller_query_params = {"topic": topic}
+    response_json = {
+        "items": [
+            {
+                "block_number": 19000001,
+                "transaction_hash": "0xtxA",
+                "topics": [topic],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 0,
+            },
+            {
+                "block_number": 19000000,
+                "transaction_hash": "0xtxB",
+                "topics": [topic],
+                "data": "0xdata",
+                "decoded": None,
+                "index": 1,
+            },
+        ]
+    }
+
+    with patch.object(config, "logs_page_size", 1):
+        result = await handle_address_logs(
+            match=_build_match(address),
+            response_json=response_json,
+            chain_id="1",
+            ctx=mock_ctx,
+            query_params=caller_query_params,
+        )
+
+    assert result.pagination is not None
+    returned_query_params = result.pagination.next_call.params["query_params"]
+    assert returned_query_params == {"topic": topic}
+    assert returned_query_params is not caller_query_params
+
+    # Mutating the caller's dict afterwards must not leak into the response.
+    caller_query_params["topic"] = "0xmutated"
+    assert result.pagination.next_call.params["query_params"] == {"topic": topic}
+
+
+@pytest.mark.asyncio
 async def test_handle_address_logs_empty_items(mock_ctx):
     address = "0x" + "4" * 40
     response_json = {"items": []}
