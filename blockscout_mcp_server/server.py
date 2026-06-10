@@ -54,11 +54,23 @@ logger = logging.getLogger(__name__)
 
 
 def _log_pro_api_key_status() -> None:
-    """Log the server-side PRO API key configuration state at startup."""
+    """Log the server-side PRO API key configuration state at startup.
+
+    A missing server-side key is logged at WARNING — every expected deployment
+    configures one, so its absence is almost certainly an operator mistake and
+    must survive WARNING-level log filtering. The message distinguishes whether
+    client-supplied keys can still compensate or every PRO-gated data tool is
+    guaranteed to fail.
+    """
     if config.pro_api_key:
         logger.info("BLOCKSCOUT_PRO_API_KEY is configured; server-side PRO API key is available.")
+    elif not config.pro_api_key_header:
+        logger.warning(
+            "BLOCKSCOUT_PRO_API_KEY is not configured and client-provided keys are disabled; "
+            "every data tool requiring the PRO API will fail."
+        )
     else:
-        logger.info("BLOCKSCOUT_PRO_API_KEY is not configured; no server-side PRO API key is available.")
+        logger.warning("BLOCKSCOUT_PRO_API_KEY is not configured; no server-side PRO API key is available.")
 
 
 # Compose the instructions string for the MCP server constructor
