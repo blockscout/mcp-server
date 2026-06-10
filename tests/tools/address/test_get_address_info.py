@@ -73,7 +73,7 @@ async def test_get_address_info_success_with_metadata(mock_ctx):
             (
                 f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs`"
                 " to get Logs Emitted by Address."
-                " Optionally pass `query_params={'topic': '<32-byte hex>'}` to filter logs by a single topic."
+                " Optionally pass query_params={'topic': '<32-byte hex>'} to filter logs by a single topic."
             ),
             (
                 f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history-by-day` "
