@@ -15,20 +15,7 @@ runner = CliRunner()
 
 
 def test_no_key_logs_warning_with_env_var_name(caplog, monkeypatch):
-    """When pro_api_key is empty, the startup diagnostic names BLOCKSCOUT_PRO_API_KEY."""
-    from blockscout_mcp_server import server
-
-    monkeypatch.setattr(server.config, "pro_api_key", "")
-    monkeypatch.setattr(server.config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key")
-
-    with caplog.at_level("INFO", logger="blockscout_mcp_server.server"):
-        server._log_pro_api_key_status()
-
-    assert any("BLOCKSCOUT_PRO_API_KEY" in r.message for r in caplog.records)
-
-
-def test_no_key_log_is_warning_level(caplog, monkeypatch):
-    """When pro_api_key is empty, the record is emitted at WARNING level even with client keys enabled."""
+    """When pro_api_key is empty, the startup diagnostic names BLOCKSCOUT_PRO_API_KEY at WARNING level."""
     from blockscout_mcp_server import server
 
     monkeypatch.setattr(server.config, "pro_api_key", "")
