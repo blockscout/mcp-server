@@ -161,7 +161,10 @@ async def get_address_info(
     await report_and_log_progress(ctx, progress=2.0, total=2.0, message="Successfully fetched all address data.")
     instructions = [
         "This is only the native coin balance. You MUST also call `get_tokens_by_address` to get the full portfolio.",
-        (f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address."),
+        (
+            f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/logs` to get Logs Emitted by Address. "
+            "Optionally pass `query_params={'topic': '<32-byte hex>'}` to filter logs by a single topic."
+        ),
         (
             f"Use `direct_api_call` with endpoint `/api/v2/addresses/{address}/coin-balance-history-by-day` "
             "to get daily native coin balance history."
