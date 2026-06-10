@@ -79,7 +79,9 @@ async def handle_address_logs(
         "endpoint_path": f"/api/v2/addresses/{address}/logs",
     }
     if query_params:
-        next_call_base_params["query_params"] = query_params
+        # Defensive copy: create_items_pagination only shallow-copies next_call_base_params,
+        # so without this the returned pagination params would alias the caller's dict.
+        next_call_base_params["query_params"] = dict(query_params)
 
     sliced_items, pagination = create_items_pagination(
         items=log_items_dicts,
