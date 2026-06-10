@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import json
+import logging
 from functools import wraps
 from pathlib import Path
 from typing import Annotated
@@ -48,6 +49,29 @@ from blockscout_mcp_server.tools.transaction.get_transactions_by_address import 
     get_transactions_by_address,
 )
 from blockscout_mcp_server.web3_pool import WEB3_POOL
+
+logger = logging.getLogger(__name__)
+
+
+def _log_pro_api_key_status() -> None:
+    """Log the server-side PRO API key configuration state at startup.
+
+    A missing server-side key is logged at WARNING — every expected deployment
+    configures one, so its absence is almost certainly an operator mistake and
+    must survive WARNING-level log filtering. The message distinguishes whether
+    client-supplied keys can still compensate or every PRO-gated data tool is
+    guaranteed to fail.
+    """
+    if config.pro_api_key:
+        logger.info("BLOCKSCOUT_PRO_API_KEY is configured; server-side PRO API key is available.")
+    elif not config.pro_api_key_header:
+        logger.warning(
+            "BLOCKSCOUT_PRO_API_KEY is not configured and client-provided keys are disabled; "
+            "every data tool requiring the PRO API will fail."
+        )
+    else:
+        logger.warning("BLOCKSCOUT_PRO_API_KEY is not configured; no server-side PRO API key is available.")
+
 
 # Compose the instructions string for the MCP server constructor
 
@@ -290,8 +314,14 @@ def main_command(
     Use --http to enable HTTP Streamable mode.
     Use --http and --rest to enable the REST API.
     """
-    # Normalize transport setting and detect whether env var triggered HTTP mode.
+    # Normalize transport setting once; reused by the guard below and HTTP-mode detection.
     mcp_transport = (config.mcp_transport or "stdio").lower()
+
+    # Reject --rest without --http early, before any startup work (including the diagnostic).
+    if rest and not http and mcp_transport != "http":
+        raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
+
+    # Detect whether the env var (not the CLI flag) triggered HTTP mode.
     env_triggered = not http and mcp_transport == "http"
 
     # Determine if we should run in HTTP mode based on CLI flag or environment variable.
@@ -315,6 +345,9 @@ def main_command(
         final_http_port = config.port
 
     mcp.settings.transport_security = _resolve_transport_security(final_http_host)
+
+    # Emit a single startup diagnostic about the server-side PRO API key status.
+    _log_pro_api_key_status()
 
     if run_in_http:
         if rest:
@@ -347,8 +380,6 @@ def main_command(
 
         asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
         uvicorn.run(asgi_app, host=final_http_host, port=final_http_port)
-    elif rest:
-        raise typer.BadParameter("The --rest flag can only be used with the --http flag.")
     else:
         # This is the original behavior: run in stdio mode
         mcp.run()

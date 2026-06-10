@@ -290,7 +290,7 @@ async def test_fetch_and_process_cache_hit_no_key_fails_closed(mock_ctx):
             return_value=cached,
         ) as mock_get,
     ):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await _fetch_and_process_contract("1", "0xAbC")
 
     mock_get.assert_not_called()

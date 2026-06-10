@@ -218,7 +218,7 @@ async def test_get_raises_not_configured_when_both_keys_absent(monkeypatch):
         patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=NeverCalledClient()),
         patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
     ):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await make_blockscout_request(chain_id=_CHAIN_ID, api_path=_API_PATH)
 
 

@@ -12,7 +12,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.testclient import TestClient
 
 from blockscout_mcp_server.config import config as server_config
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope, resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope, require_pro_api_key, resolve_pro_api_key
 
 _MCP_HEADERS = {
     "Accept": "application/json, text/event-stream",
@@ -84,3 +84,46 @@ def test_missing_client_header_falls_back_to_server_key(mcp_app):
         )
     assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
     assert _extract_text_result(response.text) == "server-key"
+
+
+def test_not_configured_error_terse_contract_over_http(monkeypatch):
+    """The model-facing JSON-RPC error text carries the new terse not-configured contract.
+
+    Proves the transport layer preserves the minimal message: the chokepoint tests in
+    test_require_pro_api_key.py pin the source string, but they do not exercise the
+    FastMCP wrapping path. This test is the literal #404 failure boundary.
+    """
+    monkeypatch.setattr(server_config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+
+    mcp = FastMCP(
+        name="test-not-configured-transport",
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
+    mcp.settings.stateless_http = True
+    mcp.settings.json_response = True
+
+    @mcp.tool()
+    @pro_api_key_scope
+    async def needs_pro_key(ctx: Context) -> str:
+        """Tool that requires a PRO API key for data access."""
+        return require_pro_api_key("data access")
+
+    app = mcp.streamable_http_app()
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/mcp",
+            json=_build_tools_call_body("needs_pro_key"),
+            headers=_MCP_HEADERS,
+        )
+
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    data = json.loads(response.text)
+    assert data["result"]["isError"] is True
+    error_text = data["result"]["content"][0]["text"]
+    assert "PRO API key required" in error_text
+    assert "data access" in error_text
+    assert "BLOCKSCOUT_PRO_API_KEY" not in error_text
+    assert "on the server" not in error_text
+    assert "Blockscout-MCP-Pro-Api-Key" not in error_text

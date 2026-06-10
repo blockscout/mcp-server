@@ -145,7 +145,7 @@ async def test_get_address_info_fails_fast_when_no_key(mock_ctx, monkeypatch):
     chain_id = "1"
     address = "0x123abc"
 
-    missing_key_error = ValueError("BLOCKSCOUT_PRO_API_KEY is not set")
+    missing_key_error = ValueError("PRO API key required for data access; not configured.")
 
     with (
         patch(
@@ -160,7 +160,7 @@ async def test_get_address_info_fails_fast_when_no_key(mock_ctx, monkeypatch):
         mock_bs_request.side_effect = missing_key_error
         mock_meta_request.return_value = {}
 
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await get_address_info(chain_id=chain_id, address=address, ctx=mock_ctx)
 
 

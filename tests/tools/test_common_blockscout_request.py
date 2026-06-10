@@ -300,7 +300,7 @@ async def test_make_blockscout_request_raises_when_no_pro_api_key(monkeypatch):
         raise AssertionError("No HTTP client should be created when PRO API key is absent")
 
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await make_blockscout_request(chain_id="1", api_path="/api/v2/test")
 
 
@@ -315,7 +315,7 @@ async def test_make_blockscout_post_request_raises_when_no_pro_api_key(monkeypat
         raise AssertionError("No HTTP client should be created when PRO API key is absent")
 
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await make_blockscout_post_request(chain_id="1", api_path="/json-rpc", json_body={})
 
 

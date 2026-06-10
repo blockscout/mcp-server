@@ -228,6 +228,8 @@ The key requirement is enforced as a single chokepoint: each PRO API entry point
 
 A malformed client key raises a distinct terminal error (no fallback); only the genuine absence of both a client key and a server key raises the not-configured error.
 
+When no server-side PRO API key is configured, the server logs a startup diagnostic naming `BLOCKSCOUT_PRO_API_KEY` for operators. Client-facing per-request errors report only that the requested feature is unavailable without authorization; they intentionally omit server-side remediation.
+
 **What does not require the key**
 
 - Chain discovery and validation read the PRO API *config* endpoint (`/api/json/config`) without authentication, so `get_chains_list` and chain-support checks work regardless of the key. Only *data access* is gated.

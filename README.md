@@ -219,7 +219,7 @@ set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 
 ### Blockscout PRO API Key
 
-The Blockscout PRO API key is required for Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without a key those tools fail fast with a clear, actionable error and make no network call.
+The Blockscout PRO API key is required for Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without an effective key those tools fail fast before making any upstream request.
 
 Set the key to enable all data access, public-tag enrichment, and contract reads.
 

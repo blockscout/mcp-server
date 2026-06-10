@@ -138,7 +138,7 @@ async def test_make_metadata_request_skips_network_when_no_key(monkeypatch):
         raise AssertionError("No HTTP client should be created when the PRO API key is absent")
 
     with patch("blockscout_mcp_server.tools.common._create_httpx_client", _fail_create_client):
-        with pytest.raises(ValueError, match="BLOCKSCOUT_PRO_API_KEY"):
+        with pytest.raises(ValueError, match="PRO API key required"):
             await make_metadata_request("/services/metadata/api/v1/metadata", {"addresses": "0xabc"})
 
 
