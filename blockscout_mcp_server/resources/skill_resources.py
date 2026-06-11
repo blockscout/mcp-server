@@ -10,6 +10,8 @@ from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import Annotations
 from pydantic import AnyUrl
 
+from blockscout_mcp_server.constants import SKILL_POINTER_TEXT_TEMPLATE
+
 SKILL_URI_PREFIX = "blockscout-mcp://skill/"
 _PACKAGE_NAME = "blockscout_mcp_server"
 _BUNDLED_SKILL_DIR = "_bundled_skill"
@@ -172,3 +174,53 @@ def _build_resources() -> tuple[dict[str, FunctionResource], dict[str, FunctionR
 
 
 _RESOURCES_BY_URI, _RESOURCES_BY_RELATIVE_PATH, _RESOURCE_LIST = _build_resources()
+
+
+def _extract_skill_version(frontmatter: dict[str, str]) -> str | None:
+    """Extract the skill version from a parsed frontmatter dict.
+
+    The ``metadata`` key holds a raw JSON string (e.g.
+    ``'{"author":"blockscout.com","version":"0.5.0",...}'``).  Returns the
+    version string on success, or ``None`` for every off-nominal input —
+    missing key, malformed JSON, absent ``version``, or non-string value.
+    Never raises.
+    """
+    raw = frontmatter.get("metadata")
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    version = obj.get("version") if isinstance(obj, dict) else None
+    if not isinstance(version, str):
+        return None
+    return version
+
+
+def _load_bundled_skill_version() -> str | None:
+    """Read SKILL.md once at import and return the skill version, or None."""
+    try:
+        entries = _iter_whitelisted_files()
+    except RuntimeError:
+        return None
+    for rel, raw_body in entries:
+        if rel == "SKILL.md":
+            metadata, _ = _strip_frontmatter(raw_body)
+            return _extract_skill_version(metadata)
+    return None
+
+
+_BUNDLED_SKILL_VERSION: str | None = _load_bundled_skill_version()
+
+
+def get_bundled_skill_version() -> str | None:
+    """Return the bundled skill version string, or None if unavailable."""
+    return _BUNDLED_SKILL_VERSION
+
+
+def skill_pointer_text() -> str:
+    """Return the skill pointer text, optionally annotated with the bundle version."""
+    version = get_bundled_skill_version()
+    version_note = f" (version {version})" if version is not None else ""
+    return SKILL_POINTER_TEXT_TEMPLATE.format(version_note=version_note)
