@@ -3,7 +3,6 @@ from mcp.server.fastmcp import Context
 
 from blockscout_mcp_server.constants import (
     SERVER_VERSION,
-    SKILL_POINTER_TEXT,
     SKILL_RESOLUTION_RULE_TEXT,
 )
 from blockscout_mcp_server.models import (
@@ -11,6 +10,7 @@ from blockscout_mcp_server.models import (
     ToolResponse,
 )
 from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     report_and_log_progress,
@@ -43,7 +43,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
 
     instructions_data = InstructionsData(
         version=SERVER_VERSION,
-        skill_reference=SKILL_POINTER_TEXT,
+        skill_reference=skill_resources.skill_pointer_text(),
         skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
     )
 

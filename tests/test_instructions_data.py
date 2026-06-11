@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for the slim `InstructionsData` model returned by `__unlock_blockchain_analysis__`."""
 
-from blockscout_mcp_server.constants import SKILL_POINTER_TEXT, SKILL_RESOLUTION_RULE_TEXT
+from blockscout_mcp_server.constants import SKILL_RESOLUTION_RULE_TEXT
 from blockscout_mcp_server.models import InstructionsData
+from blockscout_mcp_server.resources import skill_resources
 
 
 def test_instructions_data_constructs_with_three_fields():
@@ -27,15 +28,16 @@ def test_instructions_data_field_set_is_exactly_three():
     }
 
 
-def test_skill_reference_matches_constant_when_populated_from_it():
-    """When sourced from SKILL_POINTER_TEXT, `skill_reference` equals the constant verbatim."""
+def test_skill_reference_matches_rendered_pointer_when_populated_from_it():
+    """When sourced from skill_pointer_text(), `skill_reference` equals the rendered pointer verbatim."""
+    rendered_pointer = skill_resources.skill_pointer_text()
     instructions = InstructionsData(
         version="1.0.0",
-        skill_reference=SKILL_POINTER_TEXT,
+        skill_reference=rendered_pointer,
         skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
     )
 
-    assert instructions.skill_reference == SKILL_POINTER_TEXT
+    assert instructions.skill_reference == rendered_pointer
     assert instructions.skill_resolution_rule == SKILL_RESOLUTION_RULE_TEXT
 
 

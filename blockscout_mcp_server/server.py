@@ -20,7 +20,6 @@ from blockscout_mcp_server.constants import (
     DEFAULT_HTTP_PORT,
     SERVER_NAME,
     SERVER_VERSION,
-    SKILL_POINTER_TEXT,
     SKILL_RESOLUTION_RULE_TEXT,
     TOOL_INVOCATION_STATUSES,
 )
@@ -117,7 +116,7 @@ composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
 
-{SKILL_POINTER_TEXT}
+{skill_resources.skill_pointer_text()}
 
 {SKILL_RESOLUTION_RULE_TEXT}
 """
