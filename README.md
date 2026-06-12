@@ -31,6 +31,12 @@ For more powerful and efficient blockchain analysis, install the **Blockscout An
 
 ## Configuring MCP Clients
 
+### Blockscout PRO API Key
+
+Configuring the Blockscout MCP server with an AI agent requires a Blockscout PRO API key. Most of the data tools route their requests through the authenticated Blockscout PRO API gateway, so without a valid key those tools fail fast before making any upstream request.
+
+To obtain a key, register on the [Blockscout Developer Portal](https://dev.blockscout.com) (the free tier does not require a credit card) and generate an API key; keys are prefixed `proapi_`. Then supply it when configuring your client, as shown in the sections below.
+
 ### Using Claude Connectors Directory - Recommended
 
 The easiest way to use the Blockscout MCP server with Claude ( Claude Web, Claude Desktop and Claude Code) is through the official [Anthropic Connectors Directory](https://claude.com/connectors). This provides a native, managed installation experience with automatic updates.
@@ -52,10 +58,11 @@ Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscou
 
 ### Claude Code Setup
 
-To quickly install the Blockscout MCP server for use with Claude Code, run the following command in your terminal:
+Pass your PRO API key via the `Blockscout-MCP-Pro-Api-Key` header when adding the server:
 
 ```sh
-claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp
+claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp \
+  --header "Blockscout-MCP-Pro-Api-Key: proapi_your_key_here"
 ```
 
 After running this command, Blockscout will be available as an MCP server in Claude Code, allowing you to access and analyze blockchain data directly from your coding environment.
@@ -71,36 +78,47 @@ Install the Blockscout app from the [ChatGPT Apps marketplace](https://chatgpt.c
 
 1. Open Codex and go to **Settings > MCP Servers > Add server**.
 2. Set **Name** to `Blockscout`, select the **Streamable HTTP** tab, and set **URL** to `https://mcp.blockscout.com/mcp`.
-3. Save and restart the Codex app.
+3. Under **Headers**, add a header with key `Blockscout-MCP-Pro-Api-Key` and value `proapi_your_key_here`.
+4. Save and restart the Codex app.
 
 ### Codex CLI Setup
 
-Run the following command in your terminal:
+Codex CLI cannot attach a custom header from the command line, so configure it in two steps:
 
-```sh
-codex mcp add Blockscout --url https://mcp.blockscout.com/mcp
-```
+1. Scaffold the server entry:
+
+   ```sh
+   codex mcp add Blockscout --url https://mcp.blockscout.com/mcp
+   ```
+
+2. Edit `~/.codex/config.toml` to add the PRO API key header and enable the streamable-HTTP MCP client (required for remote MCP servers to connect). The resulting configuration should look like this:
+
+   ```toml
+   [features]
+   experimental_use_rmcp_client = true
+
+   [mcp_servers.Blockscout]
+   url = "https://mcp.blockscout.com/mcp"
+   http_headers = { "Blockscout-MCP-Pro-Api-Key" = "proapi_your_key_here" }
+   ```
 
 ### Cursor Setup
 
-Use [this deeplink](https://cursor.com/en/install-mcp?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9) to install the Blockscout MCP server in Cursor.
+Add the server to your Cursor MCP configuration — either the project-level `.cursor/mcp.json` or the global `~/.cursor/mcp.json` — supplying your PRO API key via the `Blockscout-MCP-Pro-Api-Key` header:
 
-### Gemini CLI Setup
-
-1. Add the following configuration to your `~/.gemini/settings.json` file:
-
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "httpUrl": "https://mcp.blockscout.com/mcp",
-          "timeout": 180000
-        }
+```json
+{
+  "mcpServers": {
+    "blockscout": {
+      "url": "https://mcp.blockscout.com/mcp",
+      "timeout": 180000,
+      "headers": {
+        "Blockscout-MCP-Pro-Api-Key": "proapi_your_key_here"
       }
     }
-    ```
-
-2. For detailed Gemini CLI MCP server configuration instructions, see the [official documentation](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
+  }
+}
+```
 
 ## Try Blockscout X-Ray GPT
 
@@ -217,13 +235,9 @@ To customize the leading part of the `User-Agent` header used for RPC requests,
 set the `BLOCKSCOUT_MCP_USER_AGENT` environment variable (defaults to
 "Blockscout MCP"). The server version is appended automatically.
 
-### Blockscout PRO API Key
+### Providing the PRO API Key to the Server
 
-The Blockscout PRO API key is required for Blockscout data access. Every data tool routes its requests through the authenticated Blockscout PRO API gateway, so without an effective key those tools fail fast before making any upstream request.
-
-Set the key to enable all data access, public-tag enrichment, and contract reads.
-
-To obtain one, create an account at https://dev.blockscout.com (the free tier does not require a credit card) and generate an API key in the portal; keys are prefixed `proapi_`. Provide it to the server via the `BLOCKSCOUT_PRO_API_KEY` environment variable — exported in your shell or placed in a gitignored `.env` file in the project root. Never commit the key or embed it in a client-shipped binary; when running via Docker, pass it at runtime (e.g. `-e BLOCKSCOUT_PRO_API_KEY=...`) rather than baking it into the image.
+When you run the server yourself, provide the [Blockscout PRO API key](#blockscout-pro-api-key) through the `BLOCKSCOUT_PRO_API_KEY` environment variable — exported in your shell or placed in a gitignored `.env` file in the project root. This enables all data access, public-tag enrichment, and contract reads. Never commit the key or embed it in a client-shipped binary; when running via Docker, pass it at runtime (e.g. `-e BLOCKSCOUT_PRO_API_KEY=...`) rather than baking it into the image.
 
 ```bash
 export BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here
@@ -360,7 +374,7 @@ docker run --rm -p 8000:8000 ghcr.io/blockscout/mcp-server:latest python -m bloc
 
 **With a Blockscout PRO API Key:**
 
-Pass the key at runtime with `-e` rather than baking it into the image (see [Blockscout PRO API Key](#blockscout-pro-api-key)):
+Pass the key at runtime with `-e` rather than baking it into the image (see [Providing the PRO API Key to the Server](#providing-the-pro-api-key-to-the-server)):
 
 ```bash
 docker run --rm -p 8000:8000 -e BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here \
