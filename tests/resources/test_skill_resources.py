@@ -71,7 +71,7 @@ def test_last_modified_annotation_is_iso_when_present():
 def test_last_modified_annotation_absent_when_manifest_value_missing(monkeypatch):
     monkeypatch.setattr(skill_resources, "_load_manifest", lambda: {"commit": None, "last_modified": None})
 
-    _, _, resources = skill_resources._build_resources()
+    _, _, resources, _ = skill_resources._build_resources()
     resource = {str(item.uri): item for item in resources}["blockscout-mcp://skill/SKILL.md"]
 
     assert "lastModified" not in resource.annotations.model_dump()
@@ -174,6 +174,20 @@ def _version_from_disk() -> str:
 def test_get_bundled_skill_version_matches_disk():
     expected = _version_from_disk()
     assert skill_resources.get_bundled_skill_version() == expected
+
+
+def test_build_resources_yields_version_from_frontmatter():
+    *_, version = skill_resources._build_resources()
+    assert version == _version_from_disk()
+
+
+def test_build_resources_version_none_when_frontmatter_lacks_version(monkeypatch):
+    skill_md = '---\nmetadata: {"author": "blockscout.com"}\ndescription: x\n---\nbody\n'
+    monkeypatch.setattr(skill_resources, "_iter_whitelisted_files", lambda: [("SKILL.md", skill_md)])
+
+    *_, version = skill_resources._build_resources()
+
+    assert version is None
 
 
 # ---------------------------------------------------------------------------
