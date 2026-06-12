@@ -3,8 +3,9 @@ from unittest.mock import patch
 
 import pytest
 
-from blockscout_mcp_server.constants import SKILL_POINTER_TEXT, SKILL_RESOLUTION_RULE_TEXT
+from blockscout_mcp_server.constants import SKILL_RESOLUTION_RULE_TEXT
 from blockscout_mcp_server.models import InstructionsData, ToolResponse
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.server import composed_instructions
 from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import __unlock_blockchain_analysis__
 
@@ -19,8 +20,8 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
     with (
         patch("blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SERVER_VERSION", mock_version),
         patch(
-            "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SKILL_POINTER_TEXT",
-            mock_pointer,
+            "blockscout_mcp_server.resources.skill_resources.skill_pointer_text",
+            return_value=mock_pointer,
         ),
         patch(
             "blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis.SKILL_RESOLUTION_RULE_TEXT",
@@ -54,6 +55,6 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
 async def test_unlock_payload_skill_text_matches_server_instructions(mock_ctx):
     result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
 
-    assert result.data.skill_reference == SKILL_POINTER_TEXT
+    assert result.data.skill_reference == skill_resources.skill_pointer_text()
     assert result.data.skill_resolution_rule == SKILL_RESOLUTION_RULE_TEXT
     assert f"{result.data.skill_reference}\n\n{result.data.skill_resolution_rule}" in composed_instructions

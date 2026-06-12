@@ -10,6 +10,8 @@ from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import Annotations
 from pydantic import AnyUrl
 
+from blockscout_mcp_server.constants import SKILL_POINTER_TEXT_TEMPLATE
+
 SKILL_URI_PREFIX = "blockscout-mcp://skill/"
 _PACKAGE_NAME = "blockscout_mcp_server"
 _BUNDLED_SKILL_DIR = "_bundled_skill"
@@ -138,11 +140,37 @@ def _resource_annotations(rel: str, last_modified: str | None) -> Annotations:
     return Annotations(audience=["assistant"], priority=0.2, **kwargs)
 
 
-def _build_resources() -> tuple[dict[str, FunctionResource], dict[str, FunctionResource], list[FunctionResource]]:
+def _extract_skill_version(frontmatter: dict[str, str]) -> str | None:
+    """Extract the skill version from a parsed frontmatter dict.
+
+    The ``metadata`` key holds a raw JSON string (e.g.
+    ``'{"author":"blockscout.com","version":"0.5.0",...}'``).  Returns the
+    trimmed version string on success, or ``None`` for every off-nominal
+    input — missing key, malformed JSON, absent ``version``, non-string
+    value, or an empty/whitespace-only value (which would otherwise render
+    a degenerate ``"(version )"`` in the pointer text). Never raises.
+    """
+    raw = frontmatter.get("metadata")
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    version = obj.get("version") if isinstance(obj, dict) else None
+    if not isinstance(version, str) or not version.strip():
+        return None
+    return version.strip()
+
+
+def _build_resources() -> tuple[
+    dict[str, FunctionResource], dict[str, FunctionResource], list[FunctionResource], str | None
+]:
     manifest = _load_manifest()
     last_modified = manifest.get("last_modified") if isinstance(manifest.get("last_modified"), str) else None
     by_uri: dict[str, FunctionResource] = {}
     by_relative_path: dict[str, FunctionResource] = {}
+    skill_version: str | None = None
 
     for rel, raw_body in _iter_whitelisted_files():
         body = raw_body
@@ -150,6 +178,7 @@ def _build_resources() -> tuple[dict[str, FunctionResource], dict[str, FunctionR
         if rel == "SKILL.md":
             metadata, body = _strip_frontmatter(raw_body)
             description = metadata.get("description") or None
+            skill_version = _extract_skill_version(metadata)
 
         uri = relative_path_to_uri(rel)
         resource = FunctionResource(
@@ -168,7 +197,19 @@ def _build_resources() -> tuple[dict[str, FunctionResource], dict[str, FunctionR
         by_relative_path[rel] = resource
 
     resource_list = sorted(by_uri.values(), key=lambda resource: str(resource.uri))
-    return by_uri, by_relative_path, resource_list
+    return by_uri, by_relative_path, resource_list, skill_version
 
 
-_RESOURCES_BY_URI, _RESOURCES_BY_RELATIVE_PATH, _RESOURCE_LIST = _build_resources()
+_RESOURCES_BY_URI, _RESOURCES_BY_RELATIVE_PATH, _RESOURCE_LIST, _BUNDLED_SKILL_VERSION = _build_resources()
+
+
+def get_bundled_skill_version() -> str | None:
+    """Return the bundled skill version string, or None if unavailable."""
+    return _BUNDLED_SKILL_VERSION
+
+
+def skill_pointer_text() -> str:
+    """Return the skill pointer text, optionally annotated with the bundle version."""
+    version = get_bundled_skill_version()
+    version_note = f" (version {version})" if version is not None else ""
+    return SKILL_POINTER_TEXT_TEMPLATE.format(version_note=version_note)

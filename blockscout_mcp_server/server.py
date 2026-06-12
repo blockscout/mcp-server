@@ -20,7 +20,6 @@ from blockscout_mcp_server.constants import (
     DEFAULT_HTTP_PORT,
     SERVER_NAME,
     SERVER_VERSION,
-    SKILL_POINTER_TEXT,
     SKILL_RESOLUTION_RULE_TEXT,
     TOOL_INVOCATION_STATUSES,
 )
@@ -73,6 +72,27 @@ def _log_pro_api_key_status() -> None:
         logger.warning("BLOCKSCOUT_PRO_API_KEY is not configured; no server-side PRO API key is available.")
 
 
+def _log_bundled_skill_version_status() -> None:
+    """Log the bundled blockscout-analysis skill version at startup.
+
+    The version is resolved once at import (from ``metadata.version`` in the
+    bundled ``SKILL.md`` frontmatter) but only surfaced here, after logging is
+    fully configured. A ``None`` value means ``SKILL.md`` is present (otherwise
+    the import would have raised) but its version could not be parsed, so the
+    skill-pointer text is served without a version — logged at WARNING so the
+    regression does not pass unnoticed. The happy-path INFO leaves a trail for
+    diagnosing "the agent loaded the wrong skill version" incidents.
+    """
+    version = skill_resources.get_bundled_skill_version()
+    if version is None:
+        logger.warning(
+            "Bundled blockscout-analysis skill version could not be determined from SKILL.md "
+            "frontmatter; the skill-pointer text is served without a version."
+        )
+    else:
+        logger.info("Bundled blockscout-analysis skill version is %s.", version)
+
+
 # Compose the instructions string for the MCP server constructor
 
 
@@ -117,7 +137,7 @@ composed_instructions = f"""
 Blockscout MCP server version: {SERVER_VERSION}
 
 
-{SKILL_POINTER_TEXT}
+{skill_resources.skill_pointer_text()}
 
 {SKILL_RESOLUTION_RULE_TEXT}
 """
@@ -346,8 +366,10 @@ def main_command(
 
     mcp.settings.transport_security = _resolve_transport_security(final_http_host)
 
-    # Emit a single startup diagnostic about the server-side PRO API key status.
+    # Emit single startup diagnostics about the server-side PRO API key status and the
+    # bundled skill version, now that logging is fully configured.
     _log_pro_api_key_status()
+    _log_bundled_skill_version_status()
 
     if run_in_http:
         if rest:
