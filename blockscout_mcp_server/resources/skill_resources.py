@@ -145,9 +145,10 @@ def _extract_skill_version(frontmatter: dict[str, str]) -> str | None:
 
     The ``metadata`` key holds a raw JSON string (e.g.
     ``'{"author":"blockscout.com","version":"0.5.0",...}'``).  Returns the
-    version string on success, or ``None`` for every off-nominal input —
-    missing key, malformed JSON, absent ``version``, or non-string value.
-    Never raises.
+    trimmed version string on success, or ``None`` for every off-nominal
+    input — missing key, malformed JSON, absent ``version``, non-string
+    value, or an empty/whitespace-only value (which would otherwise render
+    a degenerate ``"(version )"`` in the pointer text). Never raises.
     """
     raw = frontmatter.get("metadata")
     if not raw:
@@ -157,9 +158,9 @@ def _extract_skill_version(frontmatter: dict[str, str]) -> str | None:
     except json.JSONDecodeError:
         return None
     version = obj.get("version") if isinstance(obj, dict) else None
-    if not isinstance(version, str):
+    if not isinstance(version, str) or not version.strip():
         return None
-    return version
+    return version.strip()
 
 
 def _build_resources() -> tuple[

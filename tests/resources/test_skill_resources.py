@@ -136,6 +136,11 @@ def test_extract_skill_version_happy_path():
     assert skill_resources._extract_skill_version(frontmatter) == "0.5.0"
 
 
+def test_extract_skill_version_trims_surrounding_whitespace():
+    frontmatter = {"metadata": '{"version": "  0.5.0  "}'}
+    assert skill_resources._extract_skill_version(frontmatter) == "0.5.0"
+
+
 # ---------------------------------------------------------------------------
 # _extract_skill_version — graceful None (never raises)
 # ---------------------------------------------------------------------------
@@ -148,8 +153,17 @@ def test_extract_skill_version_happy_path():
         {"metadata": "not json {{{"},  # malformed JSON
         {"metadata": '{"author": "blockscout.com"}'},  # valid JSON, no "version" key
         {"metadata": '{"version": 5}'},  # "version" present but not a string
+        {"metadata": '{"version": ""}'},  # "version" present but empty
+        {"metadata": '{"version": "   "}'},  # "version" present but whitespace-only
     ],
-    ids=["metadata_absent", "malformed_json", "no_version_key", "version_not_string"],
+    ids=[
+        "metadata_absent",
+        "malformed_json",
+        "no_version_key",
+        "version_not_string",
+        "version_empty_string",
+        "version_whitespace_only",
+    ],
 )
 def test_extract_skill_version_returns_none_and_never_raises(frontmatter):
     result = skill_resources._extract_skill_version(frontmatter)
