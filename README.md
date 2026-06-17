@@ -95,7 +95,11 @@ To use the official Blockscout MCP server with your own PRO API key in Claude De
             "--transport",
             "streamablehttp",
             "--headers",
-            "Blockscout-MCP-Pro-Api-Key: proapi_your_key_here",
+            "Blockscout-MCP-Pro-Api-Key",
+            "proapi_your_key_here",
+            "--headers",
+            "Blockscout-MCP-Intermediary",
+            "ClaudeDesktop",
             "https://mcp.blockscout.com/mcp"
           ]
         }
