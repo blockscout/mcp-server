@@ -196,8 +196,9 @@ mcp-server/
 │       └── test_credit_tracking_end_to_end.py  # End-to-end MCP-mode low-credits advisory note tests
 ├── mcpb/                       # MCP Bundle package for Claude Desktop
 │   ├── README.md               # MCPB documentation and build instructions
-│   ├── manifest.json           # Bundle manifest for development builds
-│   ├── build.sh                # Build script for creating the development bundle
+│   ├── manifest.json           # Bundle manifest for production builds
+│   ├── manifest-dev.json       # Bundle manifest for development builds
+│   ├── build.sh                # Build script for creating the MCP Bundle
 │   └── blockscout.png          # Bundle icon file
 ├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
 │   ├── README.md               # GPT-specific documentation and configuration instructions

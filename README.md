@@ -39,7 +39,7 @@ To obtain a key, register on the [Blockscout Developer Portal](https://dev.block
 
 ### Using Claude Connectors Directory - Recommended
 
-The easiest way to use the Blockscout MCP server with Claude ( Claude Web, Claude Desktop and Claude Code) is through the official [Anthropic Connectors Directory](https://claude.com/connectors). This provides a native, managed installation experience with automatic updates.
+The easiest way to use the Blockscout MCP server with Claude (Web, Desktop, and Code) is through the official [Anthropic Connectors Directory](https://claude.com/connectors). This provides a native, managed installation experience with automatic updates.
 
 #### Installation
 
@@ -55,6 +55,55 @@ Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscou
 4. Click "Connect" to install
 
 > **Note:** Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).
+
+> **Limitations:** Due to the use of a shared access key, there may be restrictions on connector access and capabilities.
+
+### Claude Desktop Setup
+
+To use the official Blockscout MCP server with your own PRO API key in Claude Desktop, choose one of the following options:
+
+#### Option 1: MCP Bundle (MCPB) — Recommended
+
+**Best for:** Easy installation and automatic updates.
+
+1. Download the latest `blockscout-mcp.mcpb` from [GitHub releases](https://github.com/blockscout/mcp-server/releases).
+2. Double-click the `.mcpb` file to install it in Claude Desktop.
+3. Configure your Blockscout PRO API key when prompted.
+4. The extension automatically connects to the hosted Blockscout MCP service.
+
+#### Option 2: Docker Proxy
+
+> **Note:** Docker is required for this setup.
+
+**Best for:** Users comfortable with command-line tools and custom configurations.
+
+1. Open Claude Desktop and click on Settings
+2. Navigate to the "Developer" section
+3. Click "Edit Config"
+4. Open the file `claude_desktop_config.json` and configure the server:
+  
+    ```json
+    {
+      "mcpServers": {
+        "blockscout": {
+          "command": "docker",
+          "args": [
+            "run",
+            "--rm",
+            "-i",
+            "sparfenyuk/mcp-proxy:latest",
+            "--transport",
+            "streamablehttp",
+            "--headers",
+            "Blockscout-MCP-Pro-Api-Key: proapi_your_key_here",
+            "https://mcp.blockscout.com/mcp"
+          ]
+        }
+      }
+    }
+    ```
+
+5. Save the file and restart Claude Desktop
 
 ### Claude Code Setup
 

@@ -49,43 +49,132 @@
     </p>
 
     <h2>Configuration</h2>
+
+    <h3>Authorization</h3>
+    <p>
+        Tools reach Blockscout data through <a href="https://docs.blockscout.com/devs/pro-api" target="_blank" rel="noopener noreferrer">the Blockscout PRO API</a>. Therefore you must supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header.
+    </p>
+    <ol>
+        <li>
+            <strong>Obtain an API key:</strong> Register for a Blockscout PRO account at <a href="https://dev.blockscout.com/" target="_blank" rel="noopener noreferrer">Blockscout Developer Portal</a>, then generate an API key from your dashboard.
+        </li>
+        <li>
+            <strong>Add your API key via HTTP headers:</strong><br>
+            When making requests (either directly or via an AI agent), include your Blockscout PRO API key in the <code>Blockscout-MCP-Pro-Api-Key</code> header.<br>
+        </li>
+        <li>
+            <strong>Using with MCP clients:</strong><br>
+            Some AI tools and MCP clients allow you to specify custom headers when adding a server connection. Paste your API key as described above.
+        </li>
+        <li>
+            <strong>If no API key is configured:</strong> The server will default to a shared gateway key, which enforces stricter rate limits and may restrict access to certain chains or datasets.
+        </li>
+    </ol>
     
     <h3>Claude Setup</h3>
-    <p>Install the Blockscout connector from the <a href="https://claude.com/connectors">Anthropic Connectors Directory</a>:</p>
+    <h4>Common</h4>
+    <p>
+        Install the Blockscout connector from the <a href="https://claude.com/connectors" target="_blank" rel="noopener noreferrer">Anthropic Connectors Directory</a>:
+    </p>
     <ol>
-        <li><strong>Direct link:</strong> Visit <a href="https://claude.com/connectors/blockscout">claude.com/connectors/blockscout</a> and click "Connect"</li>
-        <li><strong>Or via Settings:</strong> Go to Settings &gt; Connectors &gt; Browse connectors, search for "Blockscout", and click the corresponding link in "Used in" section</li>
+        <li><strong>Direct link:</strong> Visit <a href="https://claude.com/connectors/blockscout" target="_blank" rel="noopener noreferrer">claude.com/connectors/blockscout</a> and click <kbd>Connect</kbd>.</li>
+        <li><strong>Or via Settings:</strong> Go to <strong>Settings</strong> &gt; <strong>Connectors</strong> &gt; <strong>Browse connectors</strong>, search for "Blockscout", then click the connector in the "Used in" section and select <kbd>Connect</kbd>.</li>
     </ol>
     <p><strong>Note:</strong> Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).</p>
+    <p>
+        <strong>Limitations:</strong> Due to the use of a shared access key, there may be restrictions on connector access and capabilities. 
+    </p>
+    
+    <h4>Claude Desktop</h4>
+    <p>You have two options to use the official Blockscout MCP server with a PRO API key with Claude Desktop:</p>
 
-    <h3>ChatGPT Apps Setup</h3>
-    <p>Install the <a href="https://chatgpt.com/apps/blockscout-blockchain-data/asdk_app_69a880b0d024819182db60f36cb48420" target="_blank" rel="noopener noreferrer">Blockscout app</a> from the ChatGPT Apps marketplace (or search for "Blockscout" in the <a href="https://chatgpt.com/apps?q=Blockscout" target="_blank" rel="noopener noreferrer">Apps directory</a>), then click "Connect" to enable it for your ChatGPT account.</p>
-
-    <p><strong>Suggested First Prompt:</strong> For optimal results, start your Claude conversation with:</p>
-    <div class="prompt-box">
-        <p>You are a senior analyst specializing in Ethereum-blockchain activities with almost ten years of experience. You have deep knowledge of Web3 applications and protocols.</p>
-        <p>Before responding to the user's request, prepare a short plan of the actions you will take to provide a complete response.</p>
-        <p>After executing each planned MCP-tool call, analyze the tool's output and write a concise summary explaining **how that output advances you toward the final result**.  
-        If the new information requires revising your original plan, state the revision explicitly and briefly explain why.</p>
-    </div>
-    <p class="copy-hint">You can copy this prompt and paste it into your Claude Desktop conversation.</p>
-
-    <h3>Cursor Setup</h3>
-    <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=blockscout&config=eyJ1cmwiOiJodHRwczovL21jcC5ibG9ja3Njb3V0LmNvbS9tY3AiLCJ0aW1lb3V0IjoxODAwMDB9"><img src="https://cursor.com/deeplink/mcp-install-dark.svg" alt="Add Blockscout MCP server to Cursor" height="32" /></a>
-
-    <h3>Gemini CLI Setup</h3>
-    <p>To configure the Blockscout MCP server with Gemini CLI, add the following to your <code>~/.gemini/settings.json</code> file:</p>
+    <h5>Option 1: MCP Bundle (MCPB) - Recommended</h5>
+    <p><strong>Best for:</strong> Easy installation and automatic updates</p>
+    <p>Download and install the pre-built MCP Bundle (.mcpb file):</p>
+    <ol>
+        <li>Download the latest <code>blockscout-mcp.mcpb</code> from the <a href="https://github.com/blockscout/mcp-server/releases">GitHub releases</a></li>
+        <li>Double-click the .mcpb file to install it in Claude Desktop</li>
+        <li>Configure the Blockscout PRO API Key when prompted</li>
+        <li>The extension will automatically connect to the hosted Blockscout MCP service</li>
+    </ol>
+    
+    <h5>Option 2: Docker Proxy</h5>
+    <p><strong>Best for:</strong> Users comfortable with command-line tools and custom configurations</p>
+    <p>Add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
     <pre><code>{
   "mcpServers": {
     "blockscout": {
-      "httpUrl": "https://mcp.blockscout.com/mcp",
-      "timeout": 180000
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "sparfenyuk/mcp-proxy:latest",
+        "--transport",
+        "streamablehttp",
+        "--headers",
+        "Blockscout-MCP-Pro-Api-Key: &lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;",
+        "https://mcp.blockscout.com/mcp"
+      ]
     }
   }
 }</code></pre>
     
-    <p>For detailed Gemini CLI MCP server configuration instructions, see the <a href="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md">official documentation</a>.</p>
-    <p><strong>Note:</strong> Consider adding system prompts from <code>GEMINI.md</code> for enhanced blockchain analysis capabilities.</p>
+    <h4>Claude Code</h4>
+    <pre><code>
+    claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp \
+        --header "Blockscout-MCP-Pro-Api-Key: &lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;"
+    </code></pre>
+
+    <h3>ChatGPT Apps Setup</h3>
+    <p>Install the <a href="https://chatgpt.com/apps/blockscout-blockchain-data/asdk_app_69a880b0d024819182db60f36cb48420" target="_blank" rel="noopener noreferrer">Blockscout app</a> from the ChatGPT Apps marketplace (or search for "Blockscout" in the <a href="https://chatgpt.com/apps?q=Blockscout" target="_blank" rel="noopener noreferrer">Apps directory</a>), then click "Connect" to enable it for your ChatGPT account.</p>
+    <p>
+        <strong>Limitations:</strong> Access may be limited if using a shared PRO API key.
+    </p>
+
+    <h3>Codex Setup</h3>
+
+    <h4>App</h4>
+    <ol>
+        <li>Open Codex and go to <strong>Settings &gt; MCP Servers &gt; Add server</strong>.</li>
+        <li>Set <strong>Name</strong> to <code>Blockscout</code>, select the <strong>Streamable HTTP</strong> tab, and set <strong>URL</strong> to <code>https://mcp.blockscout.com/mcp</code>.</li>
+        <li>Under <strong>Headers</strong>, add a header with key <code>Blockscout-MCP-Pro-Api-Key</code> and value <code>&lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;</code>.</li>
+        <li>Save and restart the Codex app.</li>
+    </ol>
+
+    <h4>CLI</h4>
+    <p>Codex CLI cannot attach a custom header from the command line, so configure it in two steps:</p>
+    <ol>
+        <li>
+            <p>Scaffold the server entry:</p>
+            <pre><code>codex mcp add Blockscout --url https://mcp.blockscout.com/mcp</code></pre>
+        </li>
+        <li>
+            <p>Edit <code>~/.codex/config.toml</code> to add the PRO API key header and enable the streamable-HTTP MCP client (required for remote MCP servers to connect). The resulting configuration should look like this:</p>
+            <pre><code>[features]
+experimental_use_rmcp_client = true
+
+[mcp_servers.Blockscout]
+url = "https://mcp.blockscout.com/mcp"
+http_headers = { "Blockscout-MCP-Pro-Api-Key" = "&lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;" }</code></pre>
+        </li>
+    </ol>
+
+    <h3>Cursor Setup</h3>
+    <p>
+        Add the server to your Cursor MCP configuration — either the project-level <code>.cursor/mcp.json</code> or the global <code>~/.cursor/mcp.json</code> — supplying your PRO API key via the <code>Blockscout-MCP-Pro-Api-Key</code> header:
+    </p>
+    <pre><code>{
+  "mcpServers": {
+    "blockscout": {
+      "url": "https://mcp.blockscout.com/mcp",
+      "timeout": 180000,
+      "headers": {
+        "Blockscout-MCP-Pro-Api-Key": "&lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;"
+      }
+    }
+  }
+}</code></pre>
 
     <h2>Try Blockscout X-Ray GPT</h2>
     <p>
