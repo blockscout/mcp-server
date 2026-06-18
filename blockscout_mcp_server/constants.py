@@ -21,6 +21,10 @@ SKILL_RESOLUTION_RULE_TEXT = (
 COMMUNITY_TELEMETRY_URL = "https://mcp.blockscout.com"
 COMMUNITY_TELEMETRY_ENDPOINT = "/v1/report_tool_usage"
 
+# Sentinel event name for MCP resource reads. UPPERCASE so it can never collide
+# with a tool function name (all tool names are snake_case/lowercase).
+RESOURCE_READ_EVENT = "RESOURCE_READ"
+
 ALLOW_LARGE_RESPONSE_HEADER = "X-Blockscout-Allow-Large-Response"
 
 TOOL_INVOCATION_STATUSES = {

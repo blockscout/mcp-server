@@ -7,6 +7,7 @@ import pytest
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.analytics import ClientMeta
 from blockscout_mcp_server.config import config as server_config
+from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
 
 
@@ -280,3 +281,53 @@ def test_track_community_usage(monkeypatch):
         assert properties["client_version"] == "1.0"
         assert properties["protocol_version"] == "1.1"
         assert kwargs.get("meta") == {"ip": "203.0.113.5"}
+
+
+# ---------------------------------------------------------------------------
+# track_resource_read tests
+# ---------------------------------------------------------------------------
+
+
+def test_track_resource_read_noop_when_not_http_mode(monkeypatch):
+    """No Mixpanel call when HTTP mode is disabled."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        analytics.track_resource_read(DummyCtx(), "blockscout-mcp://skill/SKILL.md")
+        mp_cls.assert_not_called()
+
+
+def test_track_resource_read_noop_when_no_token(monkeypatch):
+    """No Mixpanel call when HTTP mode is on but no token is configured."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "", raising=False)
+    analytics.set_http_mode(True)
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        analytics.track_resource_read(DummyCtx(), "blockscout-mcp://skill/SKILL.md")
+        mp_cls.assert_not_called()
+
+
+def test_track_resource_read_emits_correct_event(monkeypatch):
+    """When enabled, mp.track is called with RESOURCE_READ event and uri in tool_args."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    uri = "blockscout-mcp://skill/SKILL.md"
+    headers = {"x-forwarded-for": "203.0.113.5", "user-agent": "pytest-UA"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_resource_read(
+            ctx,
+            uri,
+            client_meta=ClientMeta(name="clientA", version="1.0.0", protocol="2024-11-05", user_agent="pytest-UA"),
+        )
+        mp_instance.track.assert_called_once()
+        args, kwargs = mp_instance.track.call_args
+        assert args[1] == RESOURCE_READ_EVENT
+        properties = args[2]
+        assert properties["tool_args"] == {"uri": uri}
+        assert properties["client_name"] == "clientA"
+        assert properties["client_version"] == "1.0.0"
+        assert properties["protocol_version"] == "2024-11-05"
+        assert properties["ip"] == "203.0.113.5"
+        assert "source" in properties
