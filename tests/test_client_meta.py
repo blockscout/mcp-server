@@ -10,6 +10,7 @@ from blockscout_mcp_server.client_meta import (
     ClientMeta,
     _parse_intermediary_header,
     extract_client_meta_from_ctx,
+    format_client_meta_suffix,
     get_header_case_insensitive,
     is_summary_content_client,
 )
@@ -253,3 +254,36 @@ def test_is_summary_content_client_false_for_partial_openai_match() -> None:
     meta = ClientMeta(name="n", version="v", protocol="p", user_agent="", meta_dict={"not-openai/foo": "bar"})
 
     assert is_summary_content_client(meta) is False
+
+
+# ---------------------------------------------------------------------------
+# format_client_meta_suffix tests
+# ---------------------------------------------------------------------------
+
+
+def test_format_client_meta_suffix_no_meta_dict() -> None:
+    """Empty meta_dict produces suffix without Meta: clause."""
+    meta = ClientMeta(name="my-client", version="2.0.0", protocol="2024-11-05", user_agent="", meta_dict={})
+    result = format_client_meta_suffix(meta)
+    assert result == "(Client: my-client, Version: 2.0.0, Protocol: 2024-11-05)"
+
+
+def test_format_client_meta_suffix_with_meta_dict() -> None:
+    """Populated meta_dict appends ', Meta: {meta_dict}' before closing paren."""
+    meta_dict = {"openai/userAgent": "ChatGPT/1.0"}
+    meta = ClientMeta(name="my-client", version="2.0.0", protocol="2024-11-05", user_agent="", meta_dict=meta_dict)
+    result = format_client_meta_suffix(meta)
+    assert result == f"(Client: my-client, Version: 2.0.0, Protocol: 2024-11-05, Meta: {meta_dict})"
+
+
+def test_format_client_meta_suffix_sentinel_defaults() -> None:
+    """A ClientMeta at sentinel defaults renders the N/A / Unknown values."""
+    meta = ClientMeta(
+        name=UNDEFINED_CLIENT_NAME,
+        version=UNDEFINED_CLIENT_VERSION,
+        protocol=UNKNOWN_PROTOCOL_VERSION,
+        user_agent="",
+        meta_dict={},
+    )
+    result = format_client_meta_suffix(meta)
+    assert result == "(Client: N/A, Version: N/A, Protocol: Unknown)"
