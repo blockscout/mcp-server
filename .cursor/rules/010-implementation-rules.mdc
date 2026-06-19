@@ -3,9 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-1. The technical details for the project are in [SPEC.md](mdc:SPEC.md).
+1. The technical details for the project are in [SPEC.md](mdc:SPEC.md). Despite its name, SPEC.md is **not** a specification — it describes the architecture and the decisions taken during development (the "why"), not an exhaustive "what". Detailed technical information is meant to be discoverable through the code itself, not duplicated here; keep SPEC.md lean. SPEC.md is not authoritative over the code: if a clearly better code change conflicts with current wording, that is a signal to update SPEC.md. When implementing, do not dump low-level details here; when reviewing, do not propose text that merely restates added/changed functionality.
 
-2. The project structure is reflected in [AGENTS.md](mdc:AGENTS.md).
+2. The project structure is reflected in [AGENTS.md](mdc:AGENTS.md). AGENTS.md is **neither a bare index nor a description of how modules are implemented** — treat any technical info in it as a search hint ("where a symbol lives"), not a guide to "what/how we implemented here". When implementing, do not add implementation specifics or per-module how-it-works prose; when reviewing, do not propose explanatory text about added/changed functionality.
 
 3. Local testing hints are in [TESTING.md](mdc:TESTING.md)
 
