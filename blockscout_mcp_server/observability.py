@@ -78,6 +78,16 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
     # Step 3 — community-telemetry sink (fire-and-forget).  The separate guard
     # means an absent event loop or a scheduling failure can never raise into
     # the caller.
+    #
+    # The task reference is intentionally NOT retained. This is best-effort
+    # telemetry, and we deliberately mirror @log_tool_invocation's idiom
+    # (`asyncio.create_task(...)` inside try/except — tools/decorators.py) so the
+    # tool and resource observability paths never drift in implementation. Both
+    # production call sites — the async MCP `read_resource` override and the async
+    # REST `serve_skill_resource` handler — always run inside a live event loop,
+    # so the orphan-coroutine / no-loop path cannot occur there. Do NOT "fix" this
+    # to store the task or switch to get_running_loop() on this path alone (RUF006):
+    # that would re-introduce exactly the tool-vs-resource drift this feature prevents.
     try:
         asyncio.create_task(
             telemetry.send_community_resource_report(

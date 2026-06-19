@@ -202,6 +202,14 @@ class LoggingFastMCP(FastMCP):
     """FastMCP subclass that logs successful resource reads via the observability helper."""
 
     async def read_resource(self, uri):
+        # Log AFTER a successful super().read_resource(): on an unknown URI the SDK
+        # raises before this line, so misses are skipped automatically and we record
+        # success-only — the resource analog of how an unknown *tool* never logs
+        # (FastMCP rejects it before our code runs). This is why the timing differs
+        # from @log_tool_invocation, which logs the *attempt* before the body; for
+        # static in-memory skill resources the read cannot fail, so before-vs-after
+        # is immaterial. self.get_context() is still valid here — the low-level
+        # request contextvar is reset in _handle_request's finally, not on return.
         result = await super().read_resource(uri)
         observability.log_resource_read(uri, self.get_context())
         return result
