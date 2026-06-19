@@ -23,6 +23,7 @@ mcp-server/
 │   ├── analytics.py            # Centralized Mixpanel analytics for tool invocations (HTTP mode only)
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
+│   ├── observability.py        # Resource-read observability helpers
 │   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
@@ -132,6 +133,7 @@ mcp-server/
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
+│   ├── test_observability.py  # Unit tests for resource-read observability
 │   ├── test_pro_api_key_context.py  # Unit tests for client-supplied PRO API key resolution
 │   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
@@ -385,11 +387,14 @@ mcp-server/
     * **`telemetry.py`**:
         * Sends anonymous usage reports from self-hosted servers when direct analytics are disabled.
         * Designed as fire-and-forget and never disrupts tool execution.
+    * **`observability.py`**:
+        * Provides `log_resource_read()`, the shared entry point for observing successful skill-resource reads (MCP resource channel and the REST `/skill` mirror).
     * **`client_meta.py`**:
         * Shared utilities for extracting client metadata (name, version, protocol, user_agent) from MCP Context.
         * Provides `ClientMeta` dataclass and `extract_client_meta_from_ctx()` function.
         * Falls back to User-Agent header when MCP client name is unavailable.
         * Ensures consistent sentinel defaults ("N/A", "Unknown") across logging and analytics modules.
+        * Also provides `format_client_meta_suffix()`, the shared client-metadata suffix formatter reused by tool-invocation and resource-read logging.
     * **`pro_api_key_context.py`**:
         * Owns request-scoped resolution of a client-supplied Blockscout PRO API key, kept separate from logging/observability.
         * Provides a `ContextVar` of the per-request client-key state, a normalization/validation helper, `extract_client_pro_api_key_from_ctx()`, `resolve_pro_api_key()` (precedence: valid client key → server key → not-configured error; malformed client key → terminal error, no fallback), and the `@pro_api_key_scope` decorator.

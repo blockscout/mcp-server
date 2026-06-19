@@ -90,6 +90,11 @@ async def test_log_tool_invocation_mcp_context(caplog: pytest.LogCaptureFixture,
     assert "Tool invoked: dummy_tool" in log_text
     assert "with args: {'a': 1}" in log_text
     assert "(Client: test-client, Version: 1.2.3, Protocol: 2024-11-05)" in log_text
+    # Exact full-message assertion: ensures byte-identical output (catches double spaces, stray text, etc.)
+    assert (
+        caplog.records[-1].getMessage()
+        == "Tool invoked: dummy_tool with args: {'a': 1} (Client: test-client, Version: 1.2.3, Protocol: 2024-11-05)"
+    )
 
 
 @pytest.mark.asyncio

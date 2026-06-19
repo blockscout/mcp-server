@@ -149,6 +149,21 @@ def extract_client_meta_from_ctx(ctx: Any) -> ClientMeta:
     )
 
 
+def format_client_meta_suffix(meta: ClientMeta) -> str:
+    """Return the parenthetical client-metadata suffix for a log line.
+
+    Produces ``(Client: {name}, Version: {version}, Protocol: {protocol})``
+    and, when ``meta.meta_dict`` is non-empty, appends ``, Meta: {meta_dict}``
+    before the closing parenthesis.  The returned string has **no leading
+    space**; the space before ``(`` belongs to the caller's prefix.
+    """
+    suffix = f"(Client: {meta.name}, Version: {meta.version}, Protocol: {meta.protocol}"
+    if meta.meta_dict:
+        suffix += f", Meta: {meta.meta_dict}"
+    suffix += ")"
+    return suffix
+
+
 def is_summary_content_client(meta: ClientMeta) -> bool:
     """Return True for clients that consume both content and structuredContent.
 

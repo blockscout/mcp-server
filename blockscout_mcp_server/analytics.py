@@ -37,6 +37,7 @@ from blockscout_mcp_server.client_meta import (
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
 
 logger = logging.getLogger(__name__)
@@ -234,6 +235,21 @@ def track_tool_invocation(
             mp.track(distinct_id, tool_name, properties)
     except Exception as exc:  # pragma: no cover - do not break tool flow
         logger.debug("Mixpanel tracking failed for %s: %s", tool_name, exc)
+
+
+def track_resource_read(
+    ctx: Any,
+    uri: str,
+    client_meta: ClientMeta | None = None,
+) -> None:
+    """Track a resource read in Mixpanel, if enabled and in HTTP mode.
+
+    Delegates to :func:`track_tool_invocation` using the ``RESOURCE_READ`` event
+    sentinel so that all gating logic (HTTP-mode, token, IP extraction, etc.) is
+    reused verbatim.  The caller is responsible for providing a fully-normalised
+    URI string — this function does not stringify.
+    """
+    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta)
 
 
 def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:

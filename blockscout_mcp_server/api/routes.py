@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
-from blockscout_mcp_server import analytics
+from blockscout_mcp_server import analytics, observability
 from blockscout_mcp_server.analytics import track_event
 from blockscout_mcp_server.api.dependencies import get_mock_context
 from blockscout_mcp_server.api.helpers import (
@@ -85,6 +85,8 @@ async def serve_skill_resource(request: Request) -> Response:
     if body is None:
         return PlainTextResponse("Not Found", status_code=404)
 
+    # After the 404 guard → success-only, matching the MCP path; attributed to "rest".
+    observability.log_resource_read(uri, get_mock_context(request))
     media_type = mimetypes.guess_type(path)[0] or "text/markdown"
     if path.endswith(".md"):
         media_type = "text/markdown"

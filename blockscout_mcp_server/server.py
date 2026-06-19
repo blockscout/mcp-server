@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import json
 import logging
+from collections.abc import Iterable
 from functools import wraps
 from pathlib import Path
 from typing import Annotated
@@ -8,11 +9,13 @@ from typing import Annotated
 import typer
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from pydantic import AnyUrl
 from starlette.middleware.cors import CORSMiddleware
 
-from blockscout_mcp_server import analytics
+from blockscout_mcp_server import analytics, observability
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_summary_content_client
 from blockscout_mcp_server.config import config
@@ -198,7 +201,27 @@ def _openai_tool_meta(tool_function) -> dict[str, str]:
     }
 
 
-mcp = FastMCP(
+class LoggingFastMCP(FastMCP):
+    """FastMCP subclass that logs successful resource reads via the observability helper."""
+
+    async def read_resource(self, uri: AnyUrl | str) -> Iterable[ReadResourceContents]:
+        # NOTE: this hook fires for EVERY resource read, including any a tool might trigger
+        # internally via Context.read_resource — acknowledged, since there are no internal
+        # resource reads today and none are planned.
+        # Log AFTER a successful super().read_resource(): on an unknown URI the SDK
+        # raises before this line, so misses are skipped automatically and we record
+        # success-only — the resource analog of how an unknown *tool* never logs
+        # (FastMCP rejects it before our code runs). This is why the timing differs
+        # from @log_tool_invocation, which logs the *attempt* before the body; for
+        # static in-memory skill resources the read cannot fail, so before-vs-after
+        # is immaterial. self.get_context() is still valid here — the low-level
+        # request contextvar is reset in _handle_request's finally, not on return.
+        result = await super().read_resource(uri)
+        observability.log_resource_read(uri, self.get_context())
+        return result
+
+
+mcp = LoggingFastMCP(
     name=SERVER_NAME,
     instructions=composed_instructions,
     transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),

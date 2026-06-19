@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from blockscout_mcp_server import analytics, telemetry
-from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx
+from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, format_client_meta_suffix
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,7 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
             # Defensive: tracking must never break tool execution
             pass
 
-        log_message = (
-            f"Tool invoked: {func.__name__} with args: {arg_dict} "
-            f"(Client: {client_name}, Version: {client_version}, Protocol: {protocol_version}"
-        )
-        if meta.meta_dict:
-            log_message += f", Meta: {meta.meta_dict}"
-        log_message += ")"
+        log_message = f"Tool invoked: {func.__name__} with args: {arg_dict} " + format_client_meta_suffix(meta)
         logger.info(log_message)
 
         try:
