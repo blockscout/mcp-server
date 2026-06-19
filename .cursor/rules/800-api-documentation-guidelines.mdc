@@ -7,6 +7,15 @@ alwaysApply: false
 
 Whenever a new MCP tool is added or an existing one is modified, its corresponding REST API endpoint in `API.md` **MUST** be added or updated.
 
+## Documentation Focus
+
+`API.md` primarily documents MCP tools exposed through the versioned REST API. For non-tool or service endpoints
+(static endpoints, health checks, internal reporting endpoints, skill mirrors), document only the minimum needed to
+make their existence, route, and basic request/response shape discoverable.
+
+Do not require exhaustive semantic documentation for service endpoints unless their public response contract changes
+or the user/release plan explicitly asks for it.
+
 ## Endpoint Documentation Format
 
 Each endpoint documentation **MUST** follow this exact Markdown structure for consistency.
@@ -38,4 +47,3 @@ curl "http://127.0.0.1:8000/v1/tool_name?chain_id=1&some_required_param=value&op
 - The heading should be the human-readable tool name, with the function name in backticks.
 - The parameter table must clearly distinguish between required and optional parameters.
 - The `curl` example should demonstrate a realistic use case, including optional parameters where applicable.
-

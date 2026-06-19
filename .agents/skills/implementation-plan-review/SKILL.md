@@ -1,6 +1,7 @@
 ---
 name: implementation-plan-review
 description: Expert review of an implementation plan against a GitHub issue/enhancement description (provided as a local file or a GitHub issue URL) and the current repository codebase. Use when asked to critique a plan for correctness, completeness, codebase alignment, risks, and test/rollout readiness (do not implement).
+disable-model-invocation: true
 ---
 
 # Implementation Plan Review (Expert)
@@ -15,8 +16,12 @@ Review an implementation plan for coverage, correctness, and fit with the curren
 If the user provides a GitHub issue number, prefer fetching it into a local file using the bundled script (requires `gh` auth and network access; otherwise ask for a local issue description file):
 
 ```bash
-bash .codex/skills/implementation-plan-review/scripts/fetch_github_issue.sh <issue-number> --out /tmp/issue.md
+bash scripts/fetch_github_issue.sh <issue-number> --out /tmp/issue.md
 ```
+
+Run this command from the skill directory when that directory is inside the target repository. If it is not, keep the
+command agent-agnostic by resolving the script path relative to this skill directory while running `gh` from the target
+repo so the issue number resolves against the correct repository.
 
 If the script reports that `gh` is not authenticated (exit code `3`), ask the user to run:
 
@@ -30,7 +35,7 @@ gh auth login
    - Before reading or listing any scratchpad files, run from this skill directory:
 
 ```bash
-python scripts/prepare_scratchpads.py <plan-file>
+bash scripts/prepare_scratchpads.sh <plan-file>
 ```
 
    - Use the printed `OK <scratchpad-path>` directory for all scratchpads in this review.
