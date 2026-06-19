@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for server registration of bundled skill resources."""
 
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -63,8 +64,6 @@ async def test_server_read_unknown_resource_raises_not_found():
 @pytest.mark.asyncio
 async def test_successful_read_emits_resource_read_log(caplog):
     """Successful resource read emits an INFO line containing 'Resource read: skill/SKILL.md'."""
-    import logging
-
     with caplog.at_level(logging.INFO, logger="blockscout_mcp_server.observability"):
         await mcp.read_resource("blockscout-mcp://skill/SKILL.md")
 
@@ -74,8 +73,6 @@ async def test_successful_read_emits_resource_read_log(caplog):
 @pytest.mark.asyncio
 async def test_unknown_resource_emits_no_resource_read_log(caplog):
     """Unknown resource read raises and emits no 'Resource read:' log line."""
-    import logging
-
     with caplog.at_level(logging.INFO, logger="blockscout_mcp_server.observability"):
         with pytest.raises(ValueError, match="Unknown resource"):
             await mcp.read_resource("blockscout-mcp://skill/README.md")

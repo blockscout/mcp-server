@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for the bundled skill HTTP mirror."""
 
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -134,8 +135,6 @@ async def test_v1_skill_returns_404(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_skill_md_success_emits_log(client: AsyncClient, caplog):
     """A 200 response emits an INFO log line containing 'Resource read: skill/SKILL.md'."""
-    import logging
-
     with caplog.at_level(logging.INFO, logger="blockscout_mcp_server.observability"):
         response = await client.get("/skill/SKILL.md")
 
@@ -166,8 +165,6 @@ async def test_skill_md_success_transport_attribution(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_404_path_emits_no_log(client: AsyncClient, caplog):
     """A 404 response does not emit any 'Resource read:' log line."""
-    import logging
-
     with caplog.at_level(logging.INFO, logger="blockscout_mcp_server.observability"):
         response = await client.get("/skill/README.md")
 
