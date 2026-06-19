@@ -937,6 +937,10 @@ Intent analytics should favor derived signals over raw text.
 - **Central Processing**: The central server receives this report, uses the sender's IP address for geolocation, and forwards the event to Mixpanel with the client metadata, protocol version, and a `source` property of `"community"`. This allows us to gather valuable aggregate statistics without requiring every user to have a Mixpanel account.
 - **Opt-Out**: This community reporting can be completely disabled by setting the `BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY` environment variable to `true`.
 
+##### Resource-Read Observability
+
+Reads of the bundled `blockscout-analysis` skill — over both the MCP resource channel and the REST `/skill/{path}` mirror — are observed under the same analytics and telemetry model as tool invocations, so the two surfaces never drift apart in how usage is measured. Successful reads flow through the same dual-sink routing (direct analytics when a Mixpanel token is configured, community telemetry otherwise) and the same MCP-vs-REST source attribution as tools, but are recorded as a distinct event so resource reads stay separable from tool invocations. Only resolved reads are counted; an unknown or missing resource produces no signal, mirroring how an unknown tool is treated. Resource identifiers come from the fixed, public set of bundled-skill paths, so the existing privacy posture and the global telemetry opt-out apply unchanged.
+
 ### Smart Contract Interaction Tools
 
 This server exposes a tool for on-chain smart contract read-only state access. It uses the JSON-RPC `eth_call` semantics under the hood and aligns with the standardized `ToolResponse` model.
