@@ -12,7 +12,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from starlette.middleware.cors import CORSMiddleware
 
-from blockscout_mcp_server import analytics
+from blockscout_mcp_server import analytics, observability
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, is_summary_content_client
 from blockscout_mcp_server.config import config
@@ -198,7 +198,16 @@ def _openai_tool_meta(tool_function) -> dict[str, str]:
     }
 
 
-mcp = FastMCP(
+class LoggingFastMCP(FastMCP):
+    """FastMCP subclass that logs successful resource reads via the observability helper."""
+
+    async def read_resource(self, uri):
+        result = await super().read_resource(uri)
+        observability.log_resource_read(uri, self.get_context())
+        return result
+
+
+mcp = LoggingFastMCP(
     name=SERVER_NAME,
     instructions=composed_instructions,
     transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
