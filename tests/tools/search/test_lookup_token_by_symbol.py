@@ -13,6 +13,16 @@ from blockscout_mcp_server.tools.search.lookup_token_by_symbol import (
 )
 
 
+def test_lookup_token_by_symbol_doc_no_placeholder():
+    """Guard: the literal placeholder name must not appear in the tool docstring."""
+    assert "TOKEN_RESULTS_LIMIT" not in (lookup_token_by_symbol.__doc__ or "")
+
+
+def test_lookup_token_by_symbol_doc_contains_limit_number():
+    """Guard: the real limit number must appear in the tool docstring; keeps doc in sync with the constant."""
+    assert str(TOKEN_RESULTS_LIMIT) in (lookup_token_by_symbol.__doc__ or "")
+
+
 @pytest.mark.asyncio
 async def test_lookup_token_by_symbol_success(mock_ctx):
     """

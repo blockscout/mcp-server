@@ -15,6 +15,7 @@ from blockscout_mcp_server.tools.common import (
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 # Maximum number of token results returned by lookup_token_by_symbol
+# NOTE: the docstring for lookup_token_by_symbol also states this number; keep them in sync if this changes.
 TOKEN_RESULTS_LIMIT = 7
 
 
@@ -29,7 +30,7 @@ async def lookup_token_by_symbol(
     """
     Search for token addresses by symbol or name. Returns multiple potential
     matches based on symbol or token name similarity. Only the first
-    ``TOKEN_RESULTS_LIMIT`` matches from the Blockscout API are returned.
+    7 matches from the Blockscout API are returned.
     """
     api_path = "/api/v2/search"
     params = {"q": symbol}
