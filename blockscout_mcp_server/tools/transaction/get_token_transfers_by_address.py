@@ -29,18 +29,29 @@ async def get_token_transfers_by_address(
     ctx: Context,
     age_from: Annotated[
         str,
-        Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z)."),
+        Field(
+            description=(
+                "Start date and time (e.g 2025-05-22T23:00:00.00Z). "
+                "Alone, returns all ERC-20 transfers to/from the address since this date."
+            )
+        ),
     ],
     age_to: Annotated[
         str | None,
         Field(
-            description="End date and time (e.g 2025-05-22T22:30:00.00Z). Can be omitted to get all transfers up to the current time."  # noqa: E501
+            description=(
+                "End date and time (e.g 2025-05-22T22:30:00.00Z). "
+                "Adding this bounds the upper end of the date range started by `age_from`."
+            )
         ),
     ] = None,
     token: Annotated[
         str | None,
         Field(
-            description="An ERC-20 token contract address to filter transfers by a specific token. If omitted, returns transfers of all tokens."  # noqa: E501
+            description=(
+                "An ERC-20 token contract address to restrict results to a single token. "
+                "If omitted, returns transfers of all tokens."
+            )
         ),
     ] = None,
     cursor: Annotated[
@@ -50,10 +61,6 @@ async def get_token_transfers_by_address(
 ) -> ToolResponse[list[AdvancedFilterItem]]:
     """
     Get ERC-20 token transfers for an address within a specific time range.
-    Use cases:
-      - `get_token_transfers_by_address(address, age_from)` - get all transfers of any ERC-20 token to/from the address since the given date up to the current time
-      - `get_token_transfers_by_address(address, age_from, age_to)` - get all transfers of any ERC-20 token to/from the address between the given dates
-      - `get_token_transfers_by_address(address, age_from, age_to, token)` - get all transfers of the given ERC-20 token to/from the address between the given dates
     **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
