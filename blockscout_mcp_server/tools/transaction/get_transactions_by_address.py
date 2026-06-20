@@ -28,11 +28,32 @@ async def get_transactions_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
     address: Annotated[str, Field(description="Address which either sender or receiver of the transaction")],
     ctx: Context,
-    age_from: Annotated[str, Field(description="Start date and time (e.g 2025-05-22T23:00:00.00Z).")],
-    age_to: Annotated[str | None, Field(description="End date and time (e.g 2025-05-22T22:30:00.00Z).")] = None,
+    age_from: Annotated[
+        str,
+        Field(
+            description=(
+                "Start date and time (e.g 2025-05-22T23:00:00.00Z). "
+                "Alone, returns all transactions to/from the address since this date."
+            )
+        ),
+    ],
+    age_to: Annotated[
+        str | None,
+        Field(
+            description=(
+                "End date and time (e.g 2025-05-22T22:30:00.00Z). "
+                "Adding this bounds the upper end of the date range started by `age_from`."
+            )
+        ),
+    ] = None,
     methods: Annotated[
         str | None,
-        Field(description="A method signature to filter transactions by (e.g 0x304e6ade)"),
+        Field(
+            description=(
+                "A method signature to filter transactions by (e.g 0x304e6ade). "
+                "Filters the (optionally date-bounded) results to a specific method signature."
+            )
+        ),
     ] = None,
     cursor: Annotated[
         str | None,
@@ -42,12 +63,8 @@ async def get_transactions_by_address(
     """
     Retrieves native currency transfers and smart contract interactions (calls, internal txs) for an address.
     **EXCLUDES TOKEN TRANSFERS**: Filters out direct token balance changes (ERC-20, etc.). You'll see calls *to* token contracts, but not the `Transfer` events. For token history, use `get_token_transfers_by_address`.
-    A single tx can have multiple records from internal calls; use `internal_transaction_index` for execution order.
+    A single tx can have multiple records from internal calls.
     Requires an `age_from` date to scope results for performance and relevance.
-    Use cases:
-      - `get_transactions_by_address(address, age_from)` - get all txs to/from the address since a given date.
-      - `get_transactions_by_address(address, age_from, age_to)` - get all txs to/from the address between given dates.
-      - `get_transactions_by_address(address, age_from, age_to, methods)` - get all txs to/from the address between given dates, filtered by method.
     **SUPPORTS PAGINATION**: If response includes 'pagination' field, use the provided next_call to get additional pages.
     """  # noqa: E501
     api_path = "/api/v2/advanced-filters"
@@ -123,4 +140,13 @@ async def get_transactions_by_address(
             "More pages available."
         )
 
-    return build_tool_response(data=transformed_items, pagination=pagination, content_text=content_text)
+    execution_order_note = (
+        "A single transaction can produce multiple records (from internal calls). "
+        "When present, the `internal_transaction_index` field gives their execution order within the transaction."
+    )
+    return build_tool_response(
+        data=transformed_items,
+        pagination=pagination,
+        content_text=content_text,
+        notes=[execution_order_note],
+    )
