@@ -15,8 +15,8 @@ from blockscout_mcp_server.tools.common import ChainsListCache
 def test_get_chains_list_description_contains_ethereum_mainnet_chain_id_hint():
     """Guard that the Ethereum Mainnet chain-id hint stays present (regression for #351)."""
     doc = get_chains_list.__doc__ or ""
-    assert re.search(r"Ethereum Mainnet.*chain_id.*1", doc), (
-        "Docstring must bind 'Ethereum Mainnet', 'chain_id', and '1' in a single sentence "
+    assert re.search(r"Ethereum Mainnet.*`chain_id`.*`1`", doc), (
+        "Docstring must bind 'Ethereum Mainnet', '`chain_id`', and '`1`' in a single sentence "
         "(regression guard for #351 where this hint was silently removed)"
     )
 

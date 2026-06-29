@@ -58,10 +58,10 @@ async def test_get_transactions_by_address_parameter_descriptions_carry_usage_cu
     assert "methods" in properties
     assert properties["methods"]["description"]
 
-    # Each parameter description must contain a usage cue (non-empty and informative)
-    assert len(properties["age_from"]["description"]) > 10
-    assert len(properties["age_to"]["description"]) > 10
-    assert len(properties["methods"]["description"]) > 10
+    # Each parameter description must carry its relocated usage cue, not merely be non-empty
+    assert "Alone" in properties["age_from"]["description"]
+    assert "bounds the upper end" in properties["age_to"]["description"]
+    assert "method signature" in properties["methods"]["description"]
 
 
 @pytest.mark.asyncio
@@ -93,10 +93,10 @@ async def test_get_token_transfers_by_address_parameter_descriptions_carry_usage
     assert "token" in properties
     assert properties["token"]["description"]
 
-    # Each parameter description must contain a usage cue (non-empty and informative)
-    assert len(properties["age_from"]["description"]) > 10
-    assert len(properties["age_to"]["description"]) > 10
-    assert len(properties["token"]["description"]) > 10
+    # Each parameter description must carry its relocated usage cue, not merely be non-empty
+    assert "Alone" in properties["age_from"]["description"]
+    assert "bounds the upper end" in properties["age_to"]["description"]
+    assert "single token" in properties["token"]["description"]
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,10 @@ async def test_lookup_token_by_symbol_description_resolves_placeholder():
     tool = tools["lookup_token_by_symbol"]
 
     assert "TOKEN_RESULTS_LIMIT" not in tool.description
-    assert str(TOKEN_RESULTS_LIMIT) in tool.description
+    assert re.search(rf"first\s+{TOKEN_RESULTS_LIMIT}\s+matches", tool.description), (
+        "Description must state the concrete result limit (e.g. 'first 7 matches'), "
+        "not the TOKEN_RESULTS_LIMIT placeholder."
+    )
 
 
 @pytest.mark.asyncio
@@ -120,7 +123,7 @@ async def test_get_chains_list_description_contains_ethereum_mainnet_chain_id_hi
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_chains_list"]
 
-    assert re.search(r"Ethereum Mainnet.*chain_id.*1", tool.description), (
+    assert re.search(r"Ethereum Mainnet.*`chain_id`.*`1`", tool.description), (
         "Description must bind 'Ethereum Mainnet', 'chain_id', and '1' in a single sentence "
         "(regression guard for the chain-id hint restored in Phase 4)."
     )
@@ -135,8 +138,9 @@ async def test_direct_api_call_description_excludes_banned_phrases():
     tool = tools["direct_api_call"]
 
     assert "Returns:" not in tool.description
-    # The standalone query-string sentence was removed in Phase 5
-    assert "Do not include query parameters in endpoint_path" not in tool.description
+    # The standalone query-string sentence was relocated to the endpoint_path parameter
+    # in Phase 5; it must not linger in the tool-level description.
+    assert "query string" not in tool.description.lower()
 
 
 @pytest.mark.asyncio

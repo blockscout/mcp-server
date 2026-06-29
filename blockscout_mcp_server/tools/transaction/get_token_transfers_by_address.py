@@ -41,7 +41,8 @@ async def get_token_transfers_by_address(
         Field(
             description=(
                 "End date and time (e.g 2025-05-22T22:30:00.00Z). "
-                "Adding this bounds the upper end of the date range started by `age_from`."
+                "Adding this bounds the upper end of the date range started by `age_from`; "
+                "if omitted, transfers up to the current time are returned."
             )
         ),
     ] = None,
