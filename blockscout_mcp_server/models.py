@@ -5,6 +5,8 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from blockscout_mcp_server.constants import PRO_API_KEY_FINGERPRINT_MAX_LENGTH, AuthOrigin
+
 # --- Generic Type Variable ---
 T = TypeVar("T")
 
@@ -15,6 +17,24 @@ class ToolUsageReport(BaseModel):
     client_name: str
     client_version: str
     protocol_version: str
+    auth_origin: AuthOrigin | None = Field(
+        default=None,
+        description=(
+            "The origin of the authorization used for the reported call: 'client' for a "
+            "client-supplied PRO API key, 'server' for a server-configured key, or 'none' for "
+            "no usable key. Absent on legacy payloads that predate this field."
+        ),
+    )
+    api_key_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+        max_length=PRO_API_KEY_FINGERPRINT_MAX_LENGTH,
+        description=(
+            "A one-way, non-reversible SHA-256 hex digest fingerprint of the effective PRO API "
+            "key used for the reported call, or null if no key was used. This field is accepted "
+            "over the wire but is not yet consumed (not forwarded to Mixpanel, not persisted)."
+        ),
+    )
 
 
 # --- Models for Pagination ---
