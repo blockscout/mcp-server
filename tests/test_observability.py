@@ -120,6 +120,32 @@ def test_fan_out_both_sinks_called():
     mock_create_task.assert_called_once()
 
 
+def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
+    """send_community_resource_report receives auth_origin/api_key_fingerprint derived from ctx."""
+    monkeypatch.setattr("blockscout_mcp_server.pro_api_key_context.config.pro_api_key", "server-key", raising=False)
+    ctx = _make_ctx()
+
+    # new_callable=MagicMock: send_community_resource_report is an async def, so a bare
+    # patch() would auto-create an AsyncMock whose call yields an (orphaned) coroutine
+    # when create_task is also mocked away. See the module-level idiom note above.
+    with (
+        patch("blockscout_mcp_server.observability.analytics.track_resource_read"),
+        patch(
+            "blockscout_mcp_server.observability.telemetry.send_community_resource_report",
+            new_callable=MagicMock,
+        ) as mock_send_report,
+        patch("blockscout_mcp_server.observability.asyncio.create_task") as mock_create_task,
+    ):
+        log_resource_read(_SKILL_URI, ctx)
+
+    mock_create_task.assert_called_once()
+    # The coroutine handed to create_task is the one produced by calling the mocked sink.
+    mock_send_report.assert_called_once()
+    call_kwargs = mock_send_report.call_args.kwargs
+    assert call_kwargs["auth_origin"] == "server"
+    assert call_kwargs["api_key_fingerprint"] is not None
+
+
 # ---------------------------------------------------------------------------
 # Error swallowing — no exception propagates
 # ---------------------------------------------------------------------------

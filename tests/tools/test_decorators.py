@@ -125,7 +125,9 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
     "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
     new_callable=AsyncMock,
 )
-async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> None:
+async def test_decorator_reports_telemetry(mock_report, monkeypatch, mock_ctx: Context) -> None:
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+
     @log_tool_invocation
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
@@ -140,7 +142,36 @@ async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> No
         UNDEFINED_CLIENT_NAME,
         UNDEFINED_CLIENT_VERSION,
         UNKNOWN_PROTOCOL_VERSION,
+        auth_origin="none",
+        api_key_fingerprint=None,
     )
+
+
+@pytest.mark.asyncio
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
+async def test_decorator_reports_telemetry_with_client_key(mock_report, monkeypatch, mock_ctx: Context) -> None:
+    """A client-supplied PRO API key header is forwarded as a non-reversible fingerprint."""
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+    raw_key = "super-secret-client-key"
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    headers = Headers(headers={server_config.pro_api_key_header.upper(): raw_key})
+    mock_ctx.session = None
+    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
+
+    mock_report.assert_awaited_once()
+    call_kwargs = mock_report.await_args.kwargs
+    assert call_kwargs["auth_origin"] == "client"
+    assert call_kwargs["api_key_fingerprint"] is not None
+    assert call_kwargs["api_key_fingerprint"] != raw_key
 
 
 @pytest.mark.asyncio

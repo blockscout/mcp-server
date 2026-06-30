@@ -8,6 +8,7 @@ from typing import Any
 
 from blockscout_mcp_server import analytics, telemetry
 from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, format_client_meta_suffix
+from blockscout_mcp_server.pro_api_key_context import compute_api_key_fingerprint, compute_auth_origin
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,8 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         finally:
             try:
                 arg_snapshot = arg_dict.copy()
+                auth_origin = compute_auth_origin(ctx)
+                api_key_fingerprint = compute_api_key_fingerprint(ctx)
                 asyncio.create_task(
                     telemetry.send_community_usage_report(
                         func.__name__,
@@ -56,6 +59,8 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
                         client_name,
                         client_version,
                         protocol_version,
+                        auth_origin=auth_origin,
+                        api_key_fingerprint=api_key_fingerprint,
                     )
                 )
             except Exception:
