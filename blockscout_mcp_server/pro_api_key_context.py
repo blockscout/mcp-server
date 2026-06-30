@@ -48,6 +48,7 @@ concurrent requests where completion order is non-deterministic.
 from __future__ import annotations
 
 import functools
+import hashlib
 import inspect
 import logging
 import math
@@ -58,6 +59,7 @@ from typing import Any
 
 from blockscout_mcp_server.client_meta import get_header_case_insensitive
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX, AuthOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +231,82 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
         # discoverable without breaking the request.
         logger.debug("Unexpected error extracting client PRO API key from ctx", exc_info=True)
         return _ABSENT
+
+
+# ---------------------------------------------------------------------------
+# 4b. ctx-derived auth-origin and fingerprint helpers (for analytics/telemetry)
+# ---------------------------------------------------------------------------
+#
+# Analytics and telemetry (e.g. log_tool_invocation / community reporting) run
+# *outside* @pro_api_key_scope, so they cannot read the _client_key_state
+# ContextVar (see the @pro_api_key_scope docstring above). These helpers derive
+# the same client-key → server-key precedence signal directly from ctx headers
+# instead, by reusing extract_client_pro_api_key_from_ctx(). They must NOT call
+# resolve_pro_api_key(): it reads the request-scoped ContextVar (unset on this
+# path) and raises on a malformed key, whereas these helpers must never raise.
+
+
+def _fingerprint_pro_api_key(key: str) -> str:
+    """Return the hex SHA-256 digest of *key*, domain-separated by ``PRO_API_KEY_HASH_PREFIX``.
+
+    ``hashlib.sha256`` takes a bytes-like object, not a ``str``; the
+    prefix+encoding scheme is centralized here so both the client-key and
+    server-key branches of :func:`compute_api_key_fingerprint` share one
+    construction. The raw key is never returned, logged, or placed anywhere
+    but this hash input.
+    """
+    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
+
+
+def compute_auth_origin(ctx: Any) -> AuthOrigin:
+    """Derive the authorization origin for *ctx* directly from request headers.
+
+    Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
+    which never raises) and never calls :func:`resolve_pro_api_key`.
+
+    - Valid client key → ``"client"``.
+    - Malformed client key → ``"none"`` (no fallback to the server key for a
+      malformed submission — the request will fail at the PRO API chokepoint).
+    - No client key (absent) → ``"server"`` when ``config.pro_api_key`` is
+      truthy, otherwise ``"none"``.
+    """
+    state = extract_client_pro_api_key_from_ctx(ctx)
+
+    if isinstance(state, _Valid):
+        return "client"
+
+    if isinstance(state, _Malformed):
+        return "none"
+
+    # _Absent — fall back to whether a server key is configured.
+    return "server" if config.pro_api_key else "none"
+
+
+def compute_api_key_fingerprint(ctx: Any) -> str | None:
+    """Derive a one-way fingerprint of the effective PRO API key for *ctx*.
+
+    Never raises and never calls :func:`resolve_pro_api_key`. Mirrors the
+    precedence in :func:`compute_auth_origin`:
+
+    - Valid client key → hash of the client value.
+    - Malformed client key → ``None`` (consistent with ``auth_origin = "none"``).
+    - Absent → hash of ``config.pro_api_key`` when truthy, otherwise ``None``.
+
+    The raw key is never returned, logged, or used anywhere but as the hash
+    input.
+    """
+    state = extract_client_pro_api_key_from_ctx(ctx)
+
+    if isinstance(state, _Valid):
+        return _fingerprint_pro_api_key(state.value)
+
+    if isinstance(state, _Malformed):
+        return None
+
+    # _Absent — fall back to the configured server key, if any.
+    if config.pro_api_key:
+        return _fingerprint_pro_api_key(config.pro_api_key)
+    return None
 
 
 # ---------------------------------------------------------------------------
