@@ -21,8 +21,15 @@ async def send_community_usage_report(
     client_name: str,
     client_version: str,
     protocol_version: str,
+    auth_origin: str | None = None,
+    api_key_fingerprint: str | None = None,
 ) -> None:
-    """Send a fire-and-forget tool usage report if in community telemetry mode."""
+    """Send a fire-and-forget tool usage report if in community telemetry mode.
+
+    ``auth_origin`` and ``api_key_fingerprint`` are already-computed signals (see
+    :mod:`blockscout_mcp_server.pro_api_key_context`); this function is a dumb conduit
+    and must never receive or handle a raw API key.
+    """
     if config.disable_community_telemetry:
         return
 
@@ -37,6 +44,8 @@ async def send_community_usage_report(
             "client_name": client_name,
             "client_version": client_version,
             "protocol_version": protocol_version,
+            "auth_origin": auth_origin,
+            "api_key_fingerprint": api_key_fingerprint,
         }
         url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
 
@@ -52,10 +61,20 @@ async def send_community_resource_report(
     client_name: str,
     client_version: str,
     protocol_version: str,
+    auth_origin: str | None = None,
+    api_key_fingerprint: str | None = None,
 ) -> None:
     """Send a fire-and-forget resource read report if in community telemetry mode.
 
     Delegates to :func:`send_community_usage_report` using the ``RESOURCE_READ``
     event sentinel so all gating and POST logic is reused verbatim.
     """
-    await send_community_usage_report(RESOURCE_READ_EVENT, {"uri": uri}, client_name, client_version, protocol_version)
+    await send_community_usage_report(
+        RESOURCE_READ_EVENT,
+        {"uri": uri},
+        client_name,
+        client_version,
+        protocol_version,
+        auth_origin=auth_origin,
+        api_key_fingerprint=api_key_fingerprint,
+    )

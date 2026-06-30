@@ -30,6 +30,8 @@ async def test_send_community_usage_report_sent(monkeypatch):
                 "client_name": "client",
                 "client_version": "1.0",
                 "protocol_version": "1.1",
+                "auth_origin": None,
+                "api_key_fingerprint": None,
             },
             headers=ANY,
             timeout=2.0,
@@ -70,6 +72,106 @@ async def test_send_community_usage_report_network_error(monkeypatch):
         mock_client.post.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_send_community_usage_report_includes_auth_origin_and_fingerprint(monkeypatch):
+    """A call passing auth_origin='client' and a fingerprint string includes both verbatim."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(config, "mixpanel_token", "", raising=False)
+    fingerprint = "a" * 64
+    mock_client = AsyncMock()
+    mock_ctx_mgr = AsyncMock()
+    mock_ctx_mgr.__aenter__.return_value = mock_client
+    with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
+        await telemetry.send_community_usage_report(
+            "tool",
+            {"a": 1},
+            "client",
+            "1.0",
+            "1.1",
+            auth_origin="client",
+            api_key_fingerprint=fingerprint,
+        )
+        url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
+        mock_client.post.assert_awaited_once_with(
+            url,
+            json={
+                "tool_name": "tool",
+                "tool_args": {"a": 1},
+                "client_name": "client",
+                "client_version": "1.0",
+                "protocol_version": "1.1",
+                "auth_origin": "client",
+                "api_key_fingerprint": fingerprint,
+            },
+            headers=ANY,
+            timeout=2.0,
+        )
+
+
+@pytest.mark.asyncio
+async def test_send_community_usage_report_none_origin_serializes_null_fingerprint(monkeypatch):
+    """A call passing auth_origin='none' and api_key_fingerprint=None serializes the fingerprint as JSON null."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(config, "mixpanel_token", "", raising=False)
+    mock_client = AsyncMock()
+    mock_ctx_mgr = AsyncMock()
+    mock_ctx_mgr.__aenter__.return_value = mock_client
+    with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
+        await telemetry.send_community_usage_report(
+            "tool",
+            {"a": 1},
+            "client",
+            "1.0",
+            "1.1",
+            auth_origin="none",
+            api_key_fingerprint=None,
+        )
+        url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
+        _, kwargs = mock_client.post.call_args
+        assert "api_key_fingerprint" in kwargs["json"]
+        assert kwargs["json"]["api_key_fingerprint"] is None
+        mock_client.post.assert_awaited_once_with(
+            url,
+            json={
+                "tool_name": "tool",
+                "tool_args": {"a": 1},
+                "client_name": "client",
+                "client_version": "1.0",
+                "protocol_version": "1.1",
+                "auth_origin": "none",
+                "api_key_fingerprint": None,
+            },
+            headers=ANY,
+            timeout=2.0,
+        )
+
+
+@pytest.mark.asyncio
+async def test_send_community_usage_report_raw_key_never_in_payload(monkeypatch):
+    """A representative raw key value never appears anywhere in the posted payload."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(config, "mixpanel_token", "", raising=False)
+    raw_key = "super-secret-raw-pro-api-key-value"
+    fingerprint = "b" * 64
+    mock_client = AsyncMock()
+    mock_ctx_mgr = AsyncMock()
+    mock_ctx_mgr.__aenter__.return_value = mock_client
+    with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
+        await telemetry.send_community_usage_report(
+            "tool",
+            {"a": 1},
+            "client",
+            "1.0",
+            "1.1",
+            auth_origin="client",
+            api_key_fingerprint=fingerprint,
+        )
+        _, kwargs = mock_client.post.call_args
+        posted_payload = kwargs["json"]
+        assert raw_key not in str(posted_payload)
+        assert posted_payload["api_key_fingerprint"] == fingerprint
+
+
 # ---------------------------------------------------------------------------
 # send_community_resource_report tests
 # ---------------------------------------------------------------------------
@@ -95,6 +197,44 @@ async def test_send_community_resource_report_sent(monkeypatch):
                 "client_name": "client",
                 "client_version": "1.0",
                 "protocol_version": "1.1",
+                "auth_origin": None,
+                "api_key_fingerprint": None,
+            },
+            headers=ANY,
+            timeout=2.0,
+        )
+
+
+@pytest.mark.asyncio
+async def test_send_community_resource_report_forwards_auth_origin_and_fingerprint(monkeypatch):
+    """auth_origin and api_key_fingerprint passed in are forwarded verbatim to the delegated call."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(config, "mixpanel_token", "", raising=False)
+    uri = "blockscout-mcp://skill/SKILL.md"
+    fingerprint = "c" * 64
+    mock_client = AsyncMock()
+    mock_ctx_mgr = AsyncMock()
+    mock_ctx_mgr.__aenter__.return_value = mock_client
+    with patch("httpx.AsyncClient", return_value=mock_ctx_mgr):
+        await telemetry.send_community_resource_report(
+            uri,
+            "client",
+            "1.0",
+            "1.1",
+            auth_origin="server",
+            api_key_fingerprint=fingerprint,
+        )
+        url = f"{COMMUNITY_TELEMETRY_URL}{COMMUNITY_TELEMETRY_ENDPOINT}"
+        mock_client.post.assert_awaited_once_with(
+            url,
+            json={
+                "tool_name": RESOURCE_READ_EVENT,
+                "tool_args": {"uri": uri},
+                "client_name": "client",
+                "client_version": "1.0",
+                "protocol_version": "1.1",
+                "auth_origin": "server",
+                "api_key_fingerprint": fingerprint,
             },
             headers=ANY,
             timeout=2.0,
