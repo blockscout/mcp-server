@@ -454,6 +454,7 @@ To help us improve the Blockscout MCP Server, community-run instances of the ser
 - The name of the tool being called (e.g., `get_block_number`).
 - The parameters provided to the tool.
 - The version of the Blockscout MCP Server being used.
+- A one-way, non-reversible hash (SHA-256) of the PRO API key available to authorize the request, when one is present. This is a derived fingerprint only — the key itself is never transmitted and cannot be recovered from the hash.
 
 **What we DO NOT collect:**
 

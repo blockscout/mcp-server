@@ -24,7 +24,7 @@ mcp-server/
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── observability.py        # Resource-read observability helpers
-│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator
+│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator; auth-origin and key-fingerprint helpers for analytics/telemetry
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -398,6 +398,7 @@ mcp-server/
     * **`pro_api_key_context.py`**:
         * Owns request-scoped resolution of a client-supplied Blockscout PRO API key, kept separate from logging/observability.
         * Provides a `ContextVar` of the per-request client-key state, a normalization/validation helper, `extract_client_pro_api_key_from_ctx()`, `resolve_pro_api_key()` (precedence: valid client key → server key → not-configured error; malformed client key → terminal error, no fallback), and the `@pro_api_key_scope` decorator.
+        * Also provides `compute_auth_origin()` and `compute_api_key_fingerprint()`, the `ctx`-derived helpers consumed by the analytics and community-telemetry paths (which run outside `@pro_api_key_scope`).
         * Honored for any HTTP request that carries the configured header (MCP-over-HTTP or REST); the key is never logged or placed in cache keys.
         * Also defines the per-invocation credit-tracking symbols: `CreditSink`, the `_credit_sink` `ContextVar`, and the `@pro_api_credit_scope` decorator (a sibling of `@pro_api_key_scope`).
     * **`cache.py`**:

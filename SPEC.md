@@ -897,6 +897,7 @@ To gain insight into tool usage patterns, the server can optionally report tool 
   - MCP protocol version.
   - Tool arguments (currently sent as-is, without truncation).
   - Call source: whether the tool was invoked by MCP or via the REST API.
+  - Authorization origin: whether the request was backed by a client-supplied PRO API key (`client`), the server-configured key (`server`), or no usable key (`none`). This dimension is orthogonal to the call source — the two compose to describe both how a call arrived and how it was authorized. Community-forwarded events that predate this signal are recorded as `unknown`.
 
 ##### Intent Inference from Tool Sequences
 
@@ -935,6 +936,7 @@ Intent analytics should favor derived signals over raw text.
   - **HTTP mode**: Active only when both `BLOCKSCOUT_MIXPANEL_TOKEN` is not configured AND `BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY` is not set to true
 - **Mechanism**: To understand usage in the open-source community, these instances send an anonymous, "fire-and-forget" report to a central endpoint (`POST /v1/report_tool_usage`) on the official Blockscout MCP server. This report contains the tool name, tool arguments, the MCP client name and version, the model context protocol version, and the server's version.
 - **Central Processing**: The central server receives this report, uses the sender's IP address for geolocation, and forwards the event to Mixpanel with the client metadata, protocol version, and a `source` property of `"community"`. This allows us to gather valuable aggregate statistics without requiring every user to have a Mixpanel account.
+- **Authorization context**: Community reports also carry the request's authorization origin and a one-way, non-reversible fingerprint of the effective PRO API key, so direct and community analytics share the same authorization-context dimension. The raw key never leaves the instance — only the fingerprint, and only when a usable key was available. In this change the fingerprint is accepted by the central endpoint purely as a forward-compatible wire signal: it is neither forwarded to the third-party analytics service nor persisted. Consuming and retaining it for stronger unique-user identity, together with a server-side HMAC pepper, is deferred to a dedicated follow-up. (The exact field names, enum values, and hex-shape constraints are documented in `API.md`.)
 - **Opt-Out**: This community reporting can be completely disabled by setting the `BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY` environment variable to `true`.
 
 ##### Resource-Read Observability
