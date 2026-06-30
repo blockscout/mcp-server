@@ -37,8 +37,9 @@ from blockscout_mcp_server.client_meta import (
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
+from blockscout_mcp_server.constants import AUTH_ORIGIN_UNKNOWN, RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
+from blockscout_mcp_server.pro_api_key_context import compute_auth_origin
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,7 @@ def track_tool_invocation(
             "tool_args": tool_args,
             "protocol_version": protocol_version,
             "source": _determine_call_source(ctx),
+            "auth_origin": compute_auth_origin(ctx),
         }
 
         meta = {"ip": ip} if ip else None
@@ -271,6 +273,7 @@ def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> 
             "tool_args": report.tool_args,
             "protocol_version": report.protocol_version,
             "source": "community",
+            "auth_origin": report.auth_origin if report.auth_origin is not None else AUTH_ORIGIN_UNKNOWN,
         }
 
         meta = {"ip": ip} if ip else None

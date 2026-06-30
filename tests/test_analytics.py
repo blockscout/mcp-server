@@ -145,6 +145,38 @@ def test_tracks_with_intermediary_no_client_or_user_agent(monkeypatch):
         assert args[2]["client_name"] == "N/A/ClaudeDesktop"
 
 
+def test_tracks_auth_origin_server_when_no_client_header_and_server_key(monkeypatch):
+    """No client-supplied key, but a server key is configured -> auth_origin == 'server'."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "server-secret", raising=False)
+    headers = {"x-forwarded-for": "203.0.113.5", "user-agent": "pytest-UA"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["auth_origin"] == "server"
+
+
+def test_tracks_auth_origin_none_when_no_client_header_and_no_server_key(monkeypatch):
+    """Neither a client-supplied key nor a server key -> auth_origin == 'none'."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+    headers = {"x-forwarded-for": "203.0.113.5", "user-agent": "pytest-UA"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "tool_name", {"x": 2})
+        args, _ = mp_instance.track.call_args
+        assert args[2]["auth_origin"] == "none"
+
+
 def test_track_event_tracks_when_enabled(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     req = DummyRequest(headers={"user-agent": "pytest-UA"}, host="203.0.113.5")
@@ -210,6 +242,10 @@ def test_pro_api_key_not_in_analytics_payload(monkeypatch):
         assert client_key not in str(properties)
         assert client_key not in str(kwargs)
 
+        # The client supplied a valid header, so auth_origin must be 'client'.
+        assert properties.get("auth_origin") == "client"
+        assert "api_key_fingerprint" not in properties
+
 
 def test_pro_api_key_not_in_analytics_payload_rest_source(monkeypatch):
     """The client-supplied PRO API key must not appear in the Mixpanel payload on the REST path.
@@ -257,6 +293,10 @@ def test_pro_api_key_not_in_analytics_payload_rest_source(monkeypatch):
         # Confirm the source is correctly reported as 'rest'
         assert properties.get("source") == "rest"
 
+        # The client supplied a valid header, so auth_origin must be 'client'.
+        assert properties.get("auth_origin") == "client"
+        assert "api_key_fingerprint" not in properties
+
 
 def test_track_community_usage(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
@@ -281,6 +321,83 @@ def test_track_community_usage(monkeypatch):
         assert properties["client_version"] == "1.0"
         assert properties["protocol_version"] == "1.1"
         assert kwargs.get("meta") == {"ip": "203.0.113.5"}
+
+
+def test_track_community_usage_auth_origin_from_report(monkeypatch):
+    """auth_origin is forwarded verbatim from the report when present."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        report = ToolUsageReport(
+            tool_name="foo",
+            tool_args={"a": 1},
+            client_name="cli",
+            client_version="1.0",
+            protocol_version="1.1",
+            auth_origin="server",
+        )
+        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
+        args, _ = mp_instance.track.call_args
+        properties = args[2]
+        assert properties["auth_origin"] == "server"
+
+
+def test_track_community_usage_auth_origin_defaults_to_unknown(monkeypatch):
+    """A legacy report with no auth_origin maps to the 'unknown' sentinel."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        report = ToolUsageReport(
+            tool_name="foo",
+            tool_args={"a": 1},
+            client_name="cli",
+            client_version="1.0",
+            protocol_version="1.1",
+            auth_origin=None,
+        )
+        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
+        args, _ = mp_instance.track.call_args
+        properties = args[2]
+        assert properties["auth_origin"] == "unknown"
+
+
+def test_track_community_usage_fingerprint_never_reaches_mixpanel(monkeypatch):
+    """The api_key_fingerprint must not leak anywhere in the Mixpanel call.
+
+    Checks the entire call (distinct_id, event name, properties, meta) for the
+    fingerprint value, not merely the `properties["api_key_fingerprint"]` key
+    -- this also catches a leak via distinct_id or a differently named property.
+    Also asserts distinct_id is unaffected by the fingerprint (still derived
+    only from ip/client_name/client_version), proving identity is not yet
+    strengthened by it.
+    """
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    distinctive_fingerprint = "ab" * 32  # 64-char lowercase hex, easy to spot in a leak
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        report = ToolUsageReport(
+            tool_name="foo",
+            tool_args={"a": 1},
+            client_name="cli",
+            client_version="1.0",
+            protocol_version="1.1",
+            auth_origin="client",
+            api_key_fingerprint=distinctive_fingerprint,
+        )
+        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
+        mp_instance.track.assert_called_once()
+        call_args = mp_instance.track.call_args
+        assert distinctive_fingerprint not in str(call_args)
+
+        args, _ = call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", report.client_name, report.client_version)
+        assert args[0] == expected_distinct_id
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +426,11 @@ def test_track_resource_read_emits_correct_event(monkeypatch):
     """When enabled, mp.track is called with RESOURCE_READ event and uri in tool_args."""
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     uri = "blockscout-mcp://skill/SKILL.md"
-    headers = {"x-forwarded-for": "203.0.113.5", "user-agent": "pytest-UA"}
+    headers = {
+        "x-forwarded-for": "203.0.113.5",
+        "user-agent": "pytest-UA",
+        "Blockscout-MCP-Pro-Api-Key": "client-secret",
+    }
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
     with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
@@ -331,3 +452,6 @@ def test_track_resource_read_emits_correct_event(monkeypatch):
         assert properties["protocol_version"] == "2024-11-05"
         assert properties["ip"] == "203.0.113.5"
         assert "source" in properties
+        # track_resource_read delegates to track_tool_invocation, so a header-present
+        # context yields 'client' for auth_origin, inherited automatically.
+        assert properties["auth_origin"] == "client"
