@@ -734,6 +734,8 @@ async def test_report_tool_usage_success(mock_track, client: AsyncClient):
         "client_name": "cli",
         "client_version": "1.0",
         "protocol_version": "1.1",
+        "auth_origin": "client",
+        "api_key_fingerprint": "a" * 64,
     }
     headers = {"User-Agent": "BlockscoutMCP/0.0"}
     response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
@@ -745,6 +747,8 @@ async def test_report_tool_usage_success(mock_track, client: AsyncClient):
     assert kwargs["report"].client_name == "cli"
     assert kwargs["report"].client_version == "1.0"
     assert kwargs["report"].protocol_version == "1.1"
+    assert kwargs["report"].auth_origin == "client"
+    assert kwargs["report"].api_key_fingerprint == "a" * 64
     assert kwargs["user_agent"] == headers["User-Agent"]
 
 
@@ -765,6 +769,118 @@ async def test_report_tool_usage_missing_header(client: AsyncClient):
     }
     response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_legacy_payload_without_new_fields(mock_track, client: AsyncClient):
+    """A legacy payload that omits auth_origin/api_key_fingerprint is still accepted.
+
+    The analytics layer renders a None auth_origin as 'unknown', so the forwarded report
+    must carry None rather than being rejected outright.
+    """
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
+
+
+@pytest.mark.asyncio
+async def test_report_tool_usage_rejects_bad_auth_origin_enum(client: AsyncClient):
+    """An out-of-enum auth_origin value is rejected with a 422."""
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+        "auth_origin": "bogus",
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_report_tool_usage_rejects_malformed_fingerprint(client: AsyncClient):
+    """A syntactically invalid api_key_fingerprint is rejected with a 422."""
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+        "api_key_fingerprint": "not-a-hash",
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_explicit_none_auth_origin_string_with_null_fingerprint(
+    mock_track, client: AsyncClient
+):
+    """The exact no-key wire shape an updated reporter sends: auth_origin="none" with a null
+    fingerprint, sent explicitly rather than omitted.
+
+    This guards against the endpoint rejecting real no-key reports from updated reporters.
+    """
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+        "auth_origin": "none",
+        "api_key_fingerprint": None,
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin == "none"
+    assert kwargs["report"].api_key_fingerprint is None
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_explicit_null_auth_origin_with_null_fingerprint(mock_track, client: AsyncClient):
+    """A JSON null auth_origin (not the string "none") with a null fingerprint is accepted.
+
+    Phase 4 adds both keys to the outbound payload unconditionally, so any caller that omits
+    the auth_origin keyword causes the sender to serialize a literal `"auth_origin": null` on
+    the wire. This is the HTTP-boundary counterpart of the Phase 1 explicit-auth_origin=None
+    model test, and it is the only route case that catches a `Literal[...]`-without-`| None`
+    typing regression, which would otherwise 422 a real report.
+    """
+    payload = {
+        "tool_name": "dummy",
+        "tool_args": {"a": 1},
+        "client_name": "cli",
+        "client_version": "1.0",
+        "protocol_version": "1.1",
+        "auth_origin": None,
+        "api_key_fingerprint": None,
+    }
+    headers = {"User-Agent": "BlockscoutMCP/0.0"}
+    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
+    assert kwargs["report"].api_key_fingerprint is None
 
 
 @pytest.mark.asyncio
