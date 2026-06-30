@@ -140,7 +140,7 @@ async def get_transactions_by_address(
             "More pages available."
         )
 
-    execution_order_note = (
+    execution_order_description = (
         "A single transaction can produce multiple records (from internal calls). "
         "When present, the `internal_transaction_index` field gives their execution order within the transaction."
     )
@@ -148,5 +148,5 @@ async def get_transactions_by_address(
         data=transformed_items,
         pagination=pagination,
         content_text=content_text,
-        notes=[execution_order_note],
+        data_description=[execution_order_description],
     )
