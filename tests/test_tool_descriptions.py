@@ -16,12 +16,13 @@ import re
 
 import pytest
 
+from blockscout_mcp_server import server
+from blockscout_mcp_server.tools.search.lookup_token_by_symbol import TOKEN_RESULTS_LIMIT
+
 
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_description_excludes_banned_phrases():
     """Description must not contain 'Use cases' or the execution-order instruction."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_transactions_by_address"]
 
@@ -32,8 +33,6 @@ async def test_get_transactions_by_address_description_excludes_banned_phrases()
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_description_length_budget():
     """Client-visible description must stay within the Phase 1 exception budget (≤ 600 chars)."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_transactions_by_address"]
 
@@ -43,8 +42,6 @@ async def test_get_transactions_by_address_description_length_budget():
 @pytest.mark.asyncio
 async def test_get_transactions_by_address_parameter_descriptions_carry_usage_cues():
     """age_from, age_to, and methods parameter descriptions must each carry their relocated usage cue."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_transactions_by_address"]
     properties = tool.inputSchema.get("properties", {})
@@ -67,8 +64,6 @@ async def test_get_transactions_by_address_parameter_descriptions_carry_usage_cu
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_description_excludes_use_cases():
     """Description must not contain 'Use cases'."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_token_transfers_by_address"]
 
@@ -78,8 +73,6 @@ async def test_get_token_transfers_by_address_description_excludes_use_cases():
 @pytest.mark.asyncio
 async def test_get_token_transfers_by_address_parameter_descriptions_carry_usage_cues():
     """age_from, age_to, and token parameter descriptions must each carry their relocated usage cue."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_token_transfers_by_address"]
     properties = tool.inputSchema.get("properties", {})
@@ -102,9 +95,6 @@ async def test_get_token_transfers_by_address_parameter_descriptions_carry_usage
 @pytest.mark.asyncio
 async def test_lookup_token_by_symbol_description_resolves_placeholder():
     """Description must not contain 'TOKEN_RESULTS_LIMIT' and must contain the concrete limit value."""
-    from blockscout_mcp_server import server
-    from blockscout_mcp_server.tools.search.lookup_token_by_symbol import TOKEN_RESULTS_LIMIT
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["lookup_token_by_symbol"]
 
@@ -118,8 +108,6 @@ async def test_lookup_token_by_symbol_description_resolves_placeholder():
 @pytest.mark.asyncio
 async def test_get_chains_list_description_contains_ethereum_mainnet_chain_id_hint():
     """Description must bind 'Ethereum Mainnet', 'chain_id', and '1' in one sentence."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["get_chains_list"]
 
@@ -132,8 +120,6 @@ async def test_get_chains_list_description_contains_ethereum_mainnet_chain_id_hi
 @pytest.mark.asyncio
 async def test_direct_api_call_description_excludes_banned_phrases():
     """Description must not contain 'Returns:' or the standalone query-string sentence."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["direct_api_call"]
 
@@ -146,8 +132,6 @@ async def test_direct_api_call_description_excludes_banned_phrases():
 @pytest.mark.asyncio
 async def test_direct_api_call_endpoint_path_param_mentions_query_params():
     """endpoint_path parameter description must mention passing query parameters via query_params."""
-    from blockscout_mcp_server import server
-
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["direct_api_call"]
     properties = tool.inputSchema.get("properties", {})
