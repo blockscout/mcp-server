@@ -70,9 +70,21 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
     except Exception:
         pass
 
+    # Derive the auth-origin / fingerprint signals once and reuse them for both
+    # sinks below (mirrors @log_tool_invocation). The request headers are
+    # immutable for the call, so a single extraction (and single SHA-256)
+    # suffices. compute_auth_signals never raises, but guard it anyway so this
+    # observability path can never propagate into the request even if that
+    # contract changes; the (None, None) fallback degrades gracefully — the
+    # analytics sink re-derives the origin from ctx, the report omits the hash.
+    try:
+        auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
+    except Exception:
+        auth_origin, api_key_fingerprint = None, None
+
     # Step 2 — direct analytics sink (self-gating, synchronous).
     try:
-        analytics.track_resource_read(ctx, full_uri, client_meta=meta)
+        analytics.track_resource_read(ctx, full_uri, client_meta=meta, auth_origin=auth_origin)
     except Exception:
         pass
 
@@ -90,7 +102,6 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
     # to store the task or switch to get_running_loop() on this path alone (RUF006):
     # that would re-introduce exactly the tool-vs-resource drift this feature prevents.
     try:
-        auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
         asyncio.create_task(
             telemetry.send_community_resource_report(
                 full_uri,

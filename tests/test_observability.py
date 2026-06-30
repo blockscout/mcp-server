@@ -83,7 +83,7 @@ def test_uri_normalisation_anyurl_becomes_str():
     ctx = _make_ctx()
     captured: list[str] = []
 
-    def fake_track(ctx_, uri_, client_meta=None):
+    def fake_track(ctx_, uri_, client_meta=None, auth_origin=None):
         captured.append(uri_)
 
     with (

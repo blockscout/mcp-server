@@ -310,7 +310,12 @@ def compute_auth_origin(ctx: Any) -> AuthOrigin:
 def compute_api_key_fingerprint(ctx: Any) -> str | None:
     """Return only the one-way fingerprint of the effective PRO API key for *ctx*.
 
-    Thin view over :func:`compute_auth_signals`.
+    Thin view over :func:`compute_auth_signals`. Intentionally retained for API
+    symmetry with :func:`compute_auth_origin`: today's sinks read the fingerprint
+    via :func:`compute_auth_signals` directly, so this wrapper has no production
+    caller yet — it is kept on purpose as the ready-made entry point for the
+    deferred fingerprint consumer (the follow-up that forwards/persists the
+    fingerprint for unique-user identity). Do not prune as unused.
     """
     return compute_auth_signals(ctx)[1]
 

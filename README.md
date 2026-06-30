@@ -458,7 +458,7 @@ To help us improve the Blockscout MCP Server, community-run instances of the ser
 
 **What we DO NOT collect:**
 
-- We do not collect any personal data, IP addresses (the central server uses the sender's IP for geolocation via Mixpanel and then discards it), secrets, or private keys.
+- We do not collect any personal data, IP addresses (the central server uses the sender's IP for geolocation via Mixpanel and then discards it), or secrets and private keys themselves. The PRO API key in particular is never transmitted — only its one-way, non-reversible fingerprint described above, from which the key cannot be recovered.
 
 ### How to Opt-Out
 

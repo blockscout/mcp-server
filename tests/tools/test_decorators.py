@@ -28,11 +28,12 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
 
     calls = {}
 
-    def fake_track(ctx, name, args, client_meta=None):  # type: ignore[no-untyped-def]
+    def fake_track(ctx, name, args, client_meta=None, auth_origin=None):  # type: ignore[no-untyped-def]
         calls["ctx"] = ctx
         calls["name"] = name
         calls["args"] = args
         calls["client_meta"] = client_meta
+        calls["auth_origin"] = auth_origin
 
     monkeypatch.setattr("blockscout_mcp_server.tools.decorators.analytics.track_tool_invocation", fake_track)
 
@@ -48,6 +49,9 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
     assert calls["args"] == {"a": 7}
     assert calls["ctx"] is mock_ctx
     assert "client_meta" in calls
+    # The decorator derives the auth signals once and threads the origin into
+    # track_tool_invocation (rather than letting it re-derive from ctx).
+    assert calls["auth_origin"] in ("client", "server", "none")
 
 
 @pytest.mark.asyncio
@@ -172,6 +176,47 @@ async def test_decorator_reports_telemetry_with_client_key(mock_report, monkeypa
     assert call_kwargs["auth_origin"] == "client"
     assert call_kwargs["api_key_fingerprint"] is not None
     assert call_kwargs["api_key_fingerprint"] != raw_key
+
+
+@pytest.mark.asyncio
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
+async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
+    mock_report, monkeypatch, mock_ctx: Context
+) -> None:
+    """The (auth_origin, fingerprint) pair is derived a single time per invocation and the
+    identical values flow to both the Mixpanel sink and the community report — no second
+    ctx extraction / SHA-256 on the hot path (regression guard for the de-dup fix)."""
+    mock_signals = MagicMock(return_value=("client", "f" * 64))
+    monkeypatch.setattr("blockscout_mcp_server.tools.decorators.compute_auth_signals", mock_signals)
+
+    captured = {}
+
+    def fake_track(ctx, name, args, client_meta=None, auth_origin=None):  # type: ignore[no-untyped-def]
+        captured["auth_origin"] = auth_origin
+
+    monkeypatch.setattr("blockscout_mcp_server.tools.decorators.analytics.track_tool_invocation", fake_track)
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    mock_ctx.session = None
+    mock_ctx.request_context = None
+    await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
+
+    # Derived exactly once for the whole invocation.
+    mock_signals.assert_called_once()
+    # The same origin reached the analytics sink...
+    assert captured["auth_origin"] == "client"
+    # ...and the identical pair reached the community report.
+    mock_report.assert_awaited_once()
+    call_kwargs = mock_report.await_args.kwargs
+    assert call_kwargs["auth_origin"] == "client"
+    assert call_kwargs["api_key_fingerprint"] == "f" * 64
 
 
 @pytest.mark.asyncio

@@ -37,7 +37,7 @@ from blockscout_mcp_server.client_meta import (
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import AUTH_ORIGIN_UNKNOWN, RESOURCE_READ_EVENT
+from blockscout_mcp_server.constants import AUTH_ORIGIN_UNKNOWN, RESOURCE_READ_EVENT, AuthOrigin
 from blockscout_mcp_server.models import ToolUsageReport
 from blockscout_mcp_server.pro_api_key_context import compute_auth_origin
 
@@ -192,8 +192,16 @@ def track_tool_invocation(
     tool_name: str,
     tool_args: dict[str, Any],
     client_meta: ClientMeta | None = None,
+    auth_origin: AuthOrigin | None = None,
 ) -> None:
-    """Track a tool invocation in Mixpanel, if enabled and in HTTP mode."""
+    """Track a tool invocation in Mixpanel, if enabled and in HTTP mode.
+
+    ``auth_origin`` may be supplied pre-computed by the caller — the tool
+    decorator already derives the auth signals once per invocation (and reuses
+    them for the community report), so it threads the origin in here to avoid a
+    second ``ctx`` extraction and SHA-256 hash on the hot path. When omitted
+    (e.g. direct callers) it is derived from ``ctx`` here, preserving behavior.
+    """
     if not _is_http_mode_enabled:
         return
     mp = _get_mixpanel_client()
@@ -226,7 +234,7 @@ def track_tool_invocation(
             "tool_args": tool_args,
             "protocol_version": protocol_version,
             "source": _determine_call_source(ctx),
-            "auth_origin": compute_auth_origin(ctx),
+            "auth_origin": auth_origin if auth_origin is not None else compute_auth_origin(ctx),
         }
 
         meta = {"ip": ip} if ip else None
@@ -243,15 +251,18 @@ def track_resource_read(
     ctx: Any,
     uri: str,
     client_meta: ClientMeta | None = None,
+    auth_origin: AuthOrigin | None = None,
 ) -> None:
     """Track a resource read in Mixpanel, if enabled and in HTTP mode.
 
     Delegates to :func:`track_tool_invocation` using the ``RESOURCE_READ`` event
     sentinel so that all gating logic (HTTP-mode, token, IP extraction, etc.) is
     reused verbatim.  The caller is responsible for providing a fully-normalised
-    URI string — this function does not stringify.
+    URI string — this function does not stringify.  ``auth_origin`` is threaded
+    through to :func:`track_tool_invocation` (see its docstring) so the resource
+    observability path also derives the auth signals only once per read.
     """
-    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta)
+    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta, auth_origin=auth_origin)
 
 
 def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
