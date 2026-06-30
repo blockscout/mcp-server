@@ -23,7 +23,7 @@ from blockscout_mcp_server.client_meta import (
     extract_client_meta_from_ctx,
     format_client_meta_suffix,
 )
-from blockscout_mcp_server.pro_api_key_context import compute_api_key_fingerprint, compute_auth_origin
+from blockscout_mcp_server.pro_api_key_context import compute_auth_signals
 from blockscout_mcp_server.resources import skill_resources
 
 logger = logging.getLogger(__name__)
@@ -90,8 +90,7 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
     # to store the task or switch to get_running_loop() on this path alone (RUF006):
     # that would re-introduce exactly the tool-vs-resource drift this feature prevents.
     try:
-        auth_origin = compute_auth_origin(ctx)
-        api_key_fingerprint = compute_api_key_fingerprint(ctx)
+        auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
         asyncio.create_task(
             telemetry.send_community_resource_report(
                 full_uri,

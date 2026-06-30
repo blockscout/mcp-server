@@ -18,6 +18,7 @@ from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.pro_api_key_context import (
     compute_api_key_fingerprint,
     compute_auth_origin,
+    compute_auth_signals,
 )
 
 _HEADER_NAME = "Blockscout-MCP-Pro-Api-Key"
@@ -210,3 +211,56 @@ def test_fingerprint_prefix_actually_participates(monkeypatch):
     fingerprint = compute_api_key_fingerprint(ctx)
     unprefixed_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
     assert fingerprint != unprefixed_hash
+
+
+# ===========================================================================
+# compute_auth_signals — the single source of truth for both signals
+# ===========================================================================
+#
+# compute_auth_origin / compute_api_key_fingerprint are thin views over this
+# function. These cases pin the (origin, fingerprint) pairing per branch so the
+# two signals can never silently diverge, and assert the two thin wrappers stay
+# in lockstep with the combined result on every branch (a server key is
+# configured throughout so a server-fallback regression cannot hide).
+
+
+def test_auth_signals_valid_client_returns_client_and_client_hash(monkeypatch):
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
+    assert compute_auth_signals(ctx) == ("client", _expected_fingerprint("client-key-123"))
+
+
+def test_auth_signals_malformed_returns_none_and_no_fingerprint(monkeypatch):
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    ctx = _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey")
+    assert compute_auth_signals(ctx) == ("none", None)
+
+
+def test_auth_signals_absent_with_server_key_returns_server_and_server_hash(monkeypatch):
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    ctx = _ctx_with_header(_HEADER_NAME, "")
+    assert compute_auth_signals(ctx) == ("server", _expected_fingerprint("server-key"))
+
+
+def test_auth_signals_absent_with_no_server_key_returns_none_and_no_fingerprint(monkeypatch):
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
+    ctx = _ctx_with_header(_HEADER_NAME, "")
+    assert compute_auth_signals(ctx) == ("none", None)
+
+
+def test_thin_wrappers_match_combined_signals_on_every_branch(monkeypatch):
+    """compute_auth_origin / compute_api_key_fingerprint must equal the combined pair."""
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    for ctx in (
+        _ctx_with_header(_HEADER_NAME, "client-key-123"),  # valid client
+        _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey"),  # malformed
+        _ctx_with_header(_HEADER_NAME, ""),  # absent -> server fallback
+    ):
+        origin, fingerprint = compute_auth_signals(ctx)
+        assert compute_auth_origin(ctx) == origin
+        assert compute_api_key_fingerprint(ctx) == fingerprint

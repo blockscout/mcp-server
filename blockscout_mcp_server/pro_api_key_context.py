@@ -251,46 +251,34 @@ def _fingerprint_pro_api_key(key: str) -> str:
 
     ``hashlib.sha256`` takes a bytes-like object, not a ``str``; the
     prefix+encoding scheme is centralized here so both the client-key and
-    server-key branches of :func:`compute_api_key_fingerprint` share one
-    construction. The raw key is never returned, logged, or placed anywhere
-    but this hash input.
+    server-key branches of :func:`compute_auth_signals` share one construction.
+    The raw key is never returned, logged, or placed anywhere but this hash
+    input.
     """
     return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
 
 
-def compute_auth_origin(ctx: Any) -> AuthOrigin:
-    """Derive the authorization origin for *ctx* directly from request headers.
+def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
+    """Derive the ``(auth_origin, api_key_fingerprint)`` pair for *ctx* in one pass.
+
+    Single source of truth for both signals: each precedence branch returns the
+    origin and the matching fingerprint together, so the two can never disagree
+    (``"client"`` ↔ client hash, ``"server"`` ↔ server hash, ``"none"`` ↔
+    ``None``). :func:`compute_auth_origin` and :func:`compute_api_key_fingerprint`
+    are thin views over this function; callers needing both should call this
+    directly to avoid extracting the key state twice.
 
     Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
-    which never raises) and never calls :func:`resolve_pro_api_key`.
+    which never raises) and never calls :func:`resolve_pro_api_key` (it reads the
+    request-scoped ContextVar — unset on this path — and raises on a malformed
+    key). The precedence mirrors :func:`resolve_pro_api_key`:
 
-    - Valid client key → ``"client"``.
-    - Malformed client key → ``"none"`` (no fallback to the server key for a
-      malformed submission — the request will fail at the PRO API chokepoint).
-    - No client key (absent) → ``"server"`` when ``config.pro_api_key`` is
-      truthy, otherwise ``"none"``.
-    """
-    state = extract_client_pro_api_key_from_ctx(ctx)
-
-    if isinstance(state, _Valid):
-        return "client"
-
-    if isinstance(state, _Malformed):
-        return "none"
-
-    # _Absent — fall back to whether a server key is configured.
-    return "server" if config.pro_api_key else "none"
-
-
-def compute_api_key_fingerprint(ctx: Any) -> str | None:
-    """Derive a one-way fingerprint of the effective PRO API key for *ctx*.
-
-    Never raises and never calls :func:`resolve_pro_api_key`. Mirrors the
-    precedence in :func:`compute_auth_origin`:
-
-    - Valid client key → hash of the client value.
-    - Malformed client key → ``None`` (consistent with ``auth_origin = "none"``).
-    - Absent → hash of ``config.pro_api_key`` when truthy, otherwise ``None``.
+    - Valid client key → ``("client", <hash of the client value>)``.
+    - Malformed client key → ``("none", None)`` (no fallback to the server key
+      for a malformed submission — the request will fail at the PRO API
+      chokepoint anyway).
+    - No client key (absent) → ``("server", <hash of config.pro_api_key>)`` when
+      ``config.pro_api_key`` is truthy, otherwise ``("none", None)``.
 
     The raw key is never returned, logged, or used anywhere but as the hash
     input.
@@ -298,15 +286,33 @@ def compute_api_key_fingerprint(ctx: Any) -> str | None:
     state = extract_client_pro_api_key_from_ctx(ctx)
 
     if isinstance(state, _Valid):
-        return _fingerprint_pro_api_key(state.value)
+        return "client", _fingerprint_pro_api_key(state.value)
 
     if isinstance(state, _Malformed):
-        return None
+        return "none", None
 
-    # _Absent — fall back to the configured server key, if any.
+    # _Absent — fall back to whether a server key is configured.
     if config.pro_api_key:
-        return _fingerprint_pro_api_key(config.pro_api_key)
-    return None
+        return "server", _fingerprint_pro_api_key(config.pro_api_key)
+    return "none", None
+
+
+def compute_auth_origin(ctx: Any) -> AuthOrigin:
+    """Return only the authorization origin for *ctx*.
+
+    Thin view over :func:`compute_auth_signals` for call sites that consume the
+    origin alone (e.g. the Mixpanel property bag, where the fingerprint is
+    deliberately not emitted).
+    """
+    return compute_auth_signals(ctx)[0]
+
+
+def compute_api_key_fingerprint(ctx: Any) -> str | None:
+    """Return only the one-way fingerprint of the effective PRO API key for *ctx*.
+
+    Thin view over :func:`compute_auth_signals`.
+    """
+    return compute_auth_signals(ctx)[1]
 
 
 # ---------------------------------------------------------------------------
