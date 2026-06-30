@@ -34,6 +34,7 @@ async def get_chains_list(
 ) -> ToolResponse[list[ChainInfo]]:
     """Get supported blockchain chains with their chain IDs.
 
+    Ethereum Mainnet is `chain_id` `1`; use this tool to resolve any other chain.
     Use this when another tool needs a supported `chain_id` and only the chain name,
     ecosystem, or native currency is known. Prefer a narrow `query` to avoid returning
     the full registry to the agent. Do not rely on partial numeric chain ID queries such

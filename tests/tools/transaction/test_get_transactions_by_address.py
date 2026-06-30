@@ -44,6 +44,9 @@ async def test_get_transactions_by_address_calls_smart_pagination_correctly(mock
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, list)
         assert result.data == []
+        # Field-convention description is present unconditionally, even on empty results
+        assert result.data_description is not None
+        assert any("internal_transaction_index" in desc for desc in result.data_description)
 
         # Assert that the smart pagination function was called once
         mock_smart_pagination.assert_called_once()
@@ -135,6 +138,7 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
             "value": "kept1",
             "token": "should be removed",
             "total": "should be removed",
+            "internal_transaction_index": 2,
         },
         {
             "type": "creation",
@@ -185,6 +189,15 @@ async def test_get_transactions_by_address_transforms_response(mock_ctx):
             # removed fields should not be present after transformation
             assert "token" not in item_dict
             assert "total" not in item_dict
+
+        # Guard: internal_transaction_index from the API must survive transformation —
+        # this pins the premise the execution-order note relies on.
+        first_item_dict = result.data[0].model_dump(by_alias=True)
+        assert first_item_dict.get("internal_transaction_index") == 2
+
+        # The execution-order description is present alongside the data
+        assert result.data_description is not None
+        assert any("internal_transaction_index" in desc for desc in result.data_description)
 
 
 @pytest.mark.asyncio

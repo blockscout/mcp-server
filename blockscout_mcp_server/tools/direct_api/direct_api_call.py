@@ -31,7 +31,7 @@ async def direct_api_call(
     endpoint_path: Annotated[
         str,
         Field(
-            description="The Blockscout API path to call (e.g., '/api/v2/stats'); do not include query strings.",
+            description="The Blockscout API path to call (e.g., '/api/v2/stats'); do not include query strings — pass all query parameters via query_params to avoid double-encoding.",  # noqa: E501
         ),
     ],
     ctx: Context,
@@ -54,18 +54,10 @@ async def direct_api_call(
 ) -> ToolResponse[Any]:
     """Call a raw Blockscout API endpoint for advanced or chain-specific data.
 
-    Do not include query strings in ``endpoint_path``; pass all query parameters via
-    ``query_params`` to avoid double-encoding.
+    Supports POST requests with a JSON body for endpoints like JSON RPC.
 
     **SUPPORTS PAGINATION**: If response includes 'pagination' field,
     use the provided next_call to get additional pages (GET only).
-
-    Supports POST requests with a JSON body for endpoints like JSON RPC.
-
-    Returns:
-        ToolResponse[Any]: Must return ToolResponse[Any] (not ToolResponse[BaseModel])
-        because specialized handlers can return lists or other types that don't inherit
-        from BaseModel. The dispatcher system supports flexible data structures.
     """
     if method not in ("GET", "POST"):
         raise ValueError("method must be 'GET' or 'POST'.")

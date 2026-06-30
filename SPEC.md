@@ -157,7 +157,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 ### Workflow Description
 
 1. **Instructions Retrieval**:
-   - MCP Host calls `__unlock_blockchain_analysis__` to receive server reference data (version, recommended chains) and a pointer to the `blockscout-analysis` skill, which holds the operating rules and analysis framework.
+   - MCP Host calls `__unlock_blockchain_analysis__` to receive server reference data (version) and a pointer to the `blockscout-analysis` skill, which holds the operating rules and analysis framework.
    - MCP Server provides context-specific guidance
 
 2. **ENS Resolution**:
@@ -264,6 +264,7 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
    - Some MCP Hosts (e.g., Cursor) have hard limits on the number of tools (capped at 50)
    - Multiple MCP servers might be configured in a client application, with each server providing its own tool descriptions
    - Tool descriptions are limited to 1024 characters to minimize context consumption
+   - The 1024-character limit applies only to a tool's `description`, not to its parameter descriptions, even though both reach the model through the same tool schema. Parameter-specific guidance — usage combinations, input-encoding rules, value semantics — is therefore placed on the relevant `Field(description=...)`, and response- or field-interpretation guidance is routed to `ToolResponse.data_description`/`notes`. This keeps each tool's `description` scoped to *when and why to call it*; the relocation does not reduce total context but frees the capped description budget for selection cues and co-locates guidance with the surface it governs.
 
 3. **The Standardized `ToolResponse` Model**
 
@@ -738,11 +739,10 @@ Earlier iterations packaged the full operational and strategy ruleset inline: er
 
 The resolution is to move operational and strategy rules out of the server entirely and into the `blockscout-analysis` skill, which is the natural home for agent-side methodology: it is consumed equally by MCP- and REST-mode agents, evolves on its own cadence independent of server releases, and is reviewed alongside the rest of the skill content.
 
-What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` payload is intentionally minimal:
+What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` payload is intentionally minimal — operational guidance, including default-chain resolution (e.g. Ethereum Mainnet = `chain_id` `1`), now lives in the `blockscout-analysis` skill and in the relevant tool descriptions rather than here:
 
 1. The server version.
-2. A list of recommended chain IDs for quick lookup.
-3. A two-paragraph block: a pointer at the `blockscout-analysis` skill (with the verifiable "use the copy already loaded; otherwise fetch from `blockscout-mcp://skill/SKILL.md` over MCP or `GET /skill/SKILL.md` over HTTP" condition) followed by the URI-resolution rule for navigating from the entry point into reference files. The pointer also advertises the bundled skill's version — sourced from `metadata.version` in the bundled `SKILL.md` frontmatter and carried inline within the pointer text rather than as a separate structured field — and this is the surface an agent uses to decide whether an already-loaded copy matches the server's bundled copy before reusing it (when the version cannot be determined the pointer is served without it, otherwise unchanged). The exact same text, including the version annotation, is emitted from both surfaces so clients that consume only one of them are not at a disadvantage. See the `### Bundled blockscout-analysis Skill - Resources and HTTP Mirror` section for the addressable space the pointer refers to.
+2. A two-paragraph block: a pointer at the `blockscout-analysis` skill (with the verifiable "use the copy already loaded; otherwise fetch from `blockscout-mcp://skill/SKILL.md` over MCP or `GET /skill/SKILL.md` over HTTP" condition) followed by the URI-resolution rule for navigating from the entry point into reference files. The pointer also advertises the bundled skill's version — sourced from `metadata.version` in the bundled `SKILL.md` frontmatter and carried inline within the pointer text rather than as a separate structured field — and this is the surface an agent uses to decide whether an already-loaded copy matches the server's bundled copy before reusing it (when the version cannot be determined the pointer is served without it, otherwise unchanged). The exact same text, including the version annotation, is emitted from both surfaces so clients that consume only one of them are not at a disadvantage. See the `### Bundled blockscout-analysis Skill - Resources and HTTP Mirror` section for the addressable space the pointer refers to.
 
 `__unlock_blockchain_analysis__` remains the mandatory first call: its role as the structural-guidance anchor for clients that do not reliably consume the MCP `instructions=` field is unchanged. Functional gating of other tools — refusing to serve them until the unlock tool has been called — is a possible future evolution but is not enforced today; the structural-guidance narrative is the current mechanism.
 
