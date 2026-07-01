@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import logging
+from typing import Any
 
 import httpx
 
@@ -10,9 +11,45 @@ from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_URL,
     RESOURCE_READ_EVENT,
     SERVER_VERSION,
+    AuthOrigin,
 )
+from blockscout_mcp_server.pro_api_key_context import compute_auth_signals
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
+    """Derive the ``(auth_origin, api_key_fingerprint)`` pair for the observability sinks.
+
+    Single entry point shared by both observability paths — ``log_tool_invocation``
+    (the tool decorator) and ``log_resource_read`` — so the one ``ctx`` extraction
+    and SHA-256 (see :func:`blockscout_mcp_server.pro_api_key_context.compute_auth_signals`),
+    the defensive guard, and the short-circuit below are written once instead of
+    duplicated at each site.
+
+    Returns ``(None, None)`` *without touching* ``ctx`` when no sink can consume the
+    signals — analytics is off (not HTTP mode) **and** community telemetry is
+    disabled. In that state both sinks short-circuit on their own gates before
+    reading these values, so skipping derivation changes nothing that is emitted
+    while avoiding a per-call SHA-256 of the configured server key. The guard is
+    deliberately a *superset* of the precise per-sink gates (it may still derive in
+    a rare config where only the suppressed sink would have run); erring toward
+    deriving keeps this cheap check independent of the sinks' internal logic. When
+    HTTP mode is off the analytics sink early-returns before its ``ctx`` re-derivation
+    fallback, so a ``None`` origin from this short-circuit is never observed by it.
+
+    Never raises: :func:`compute_auth_signals` is defensive today, but the guard is
+    kept so this observability concern can never propagate into the tool body even
+    if that contract later changes. The ``(None, None)`` fallback degrades gracefully
+    — the analytics sink re-derives the origin from ``ctx``, the community report
+    omits the hash.
+    """
+    if not analytics.is_http_mode_enabled() and config.disable_community_telemetry:
+        return None, None
+    try:
+        return compute_auth_signals(ctx)
+    except Exception:
+        return None, None
 
 
 async def send_community_usage_report(

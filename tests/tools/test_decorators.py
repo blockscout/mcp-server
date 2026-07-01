@@ -21,10 +21,10 @@ from blockscout_mcp_server.config import config as server_config
 from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.pro_api_key_context import (
     compute_auth_origin,
-    compute_auth_signals,
     pro_api_key_scope,
     resolve_pro_api_key,
 )
+from blockscout_mcp_server.telemetry import resolve_auth_signals
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
@@ -211,13 +211,14 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
     real derivation helpers rather than mocking them away. That is what makes the guard
     meaningful: if the decorator stopped threading ``auth_origin`` into ``track_tool_invocation``,
     the analytics sink's ``compute_auth_origin(ctx)`` fallback would fire — and
-    ``origin_fallback_spy.assert_not_called()`` would catch it. Mocking ``compute_auth_signals``
+    ``origin_fallback_spy.assert_not_called()`` would catch it. Mocking the derivation
     away (the previous approach) made the "derived once" claim structurally true by construction
     instead of observing it.
     """
-    # Spy on the single derivation point (the decorator) while keeping the real implementation.
-    signals_spy = MagicMock(side_effect=compute_auth_signals)
-    monkeypatch.setattr("blockscout_mcp_server.tools.decorators.compute_auth_signals", signals_spy)
+    # Spy on the single derivation point — the shared telemetry.resolve_auth_signals helper the
+    # decorator delegates to — while keeping the real implementation.
+    signals_spy = MagicMock(side_effect=resolve_auth_signals)
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.resolve_auth_signals", signals_spy)
     # Spy on the analytics fallback; it must NEVER run because the origin is threaded in.
     origin_fallback_spy = MagicMock(side_effect=compute_auth_origin)
     monkeypatch.setattr("blockscout_mcp_server.analytics.compute_auth_origin", origin_fallback_spy)

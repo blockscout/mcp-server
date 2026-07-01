@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-from unittest.mock import ANY, AsyncMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -10,6 +10,64 @@ from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_URL,
     RESOURCE_READ_EVENT,
 )
+
+# ---------------------------------------------------------------------------
+# resolve_auth_signals — shared derivation entry point + all-disabled short-circuit
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_auth_signals_short_circuits_when_all_telemetry_disabled(monkeypatch):
+    """With HTTP mode off AND community telemetry disabled, derivation is skipped entirely.
+
+    No sink can consume the signals in that state, so the helper must return
+    (None, None) without extracting ctx or hashing a key.
+    """
+    monkeypatch.setattr(config, "disable_community_telemetry", True, raising=False)
+    analytics.set_http_mode(False)
+    compute_spy = MagicMock()
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.compute_auth_signals", compute_spy)
+
+    assert telemetry.resolve_auth_signals(object()) == (None, None)
+    compute_spy.assert_not_called()
+
+
+def test_resolve_auth_signals_derives_when_community_enabled(monkeypatch):
+    """Community telemetry enabled (HTTP mode off) still needs the signals -> derivation runs."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    analytics.set_http_mode(False)
+    compute_spy = MagicMock(return_value=("server", "d" * 64))
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.compute_auth_signals", compute_spy)
+
+    ctx = object()
+    assert telemetry.resolve_auth_signals(ctx) == ("server", "d" * 64)
+    compute_spy.assert_called_once_with(ctx)
+
+
+def test_resolve_auth_signals_derives_in_http_mode_even_if_community_disabled(monkeypatch):
+    """HTTP mode on feeds the analytics sink, so derivation runs even when community is disabled."""
+    monkeypatch.setattr(config, "disable_community_telemetry", True, raising=False)
+    analytics.set_http_mode(True)
+    try:
+        compute_spy = MagicMock(return_value=("client", "e" * 64))
+        monkeypatch.setattr("blockscout_mcp_server.telemetry.compute_auth_signals", compute_spy)
+
+        ctx = object()
+        assert telemetry.resolve_auth_signals(ctx) == ("client", "e" * 64)
+        compute_spy.assert_called_once_with(ctx)
+    finally:
+        analytics.set_http_mode(False)
+
+
+def test_resolve_auth_signals_never_raises(monkeypatch):
+    """A hypothetical failure in compute_auth_signals degrades to (None, None), never propagates."""
+    monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
+    analytics.set_http_mode(False)
+    monkeypatch.setattr(
+        "blockscout_mcp_server.telemetry.compute_auth_signals",
+        MagicMock(side_effect=RuntimeError("boom")),
+    )
+
+    assert telemetry.resolve_auth_signals(object()) == (None, None)
 
 
 @pytest.mark.asyncio

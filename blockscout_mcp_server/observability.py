@@ -23,7 +23,6 @@ from blockscout_mcp_server.client_meta import (
     extract_client_meta_from_ctx,
     format_client_meta_suffix,
 )
-from blockscout_mcp_server.pro_api_key_context import compute_auth_signals
 from blockscout_mcp_server.resources import skill_resources
 
 logger = logging.getLogger(__name__)
@@ -71,16 +70,12 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
         pass
 
     # Derive the auth-origin / fingerprint signals once and reuse them for both
-    # sinks below (mirrors @log_tool_invocation). The request headers are
-    # immutable for the call, so a single extraction (and single SHA-256)
-    # suffices. compute_auth_signals never raises, but guard it anyway so this
-    # observability path can never propagate into the request even if that
-    # contract changes; the (None, None) fallback degrades gracefully — the
-    # analytics sink re-derives the origin from ctx, the report omits the hash.
-    try:
-        auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
-    except Exception:
-        auth_origin, api_key_fingerprint = None, None
+    # sinks below (mirrors @log_tool_invocation). telemetry.resolve_auth_signals
+    # centralizes the single ctx extraction + SHA-256, the defensive guard, and the
+    # all-telemetry-disabled short-circuit shared verbatim with the tool path. The
+    # (None, None) fallback degrades gracefully — the analytics sink re-derives the
+    # origin from ctx, the report omits the hash.
+    auth_origin, api_key_fingerprint = telemetry.resolve_auth_signals(ctx)
 
     # Step 2 — direct analytics sink (self-gating, synchronous).
     try:
