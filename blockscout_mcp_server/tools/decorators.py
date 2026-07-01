@@ -35,8 +35,16 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         # for the lifetime of the call, so a single extraction (and single
         # SHA-256) suffices — mirroring how `meta` above is computed once and
         # threaded into both the analytics and community-telemetry paths.
-        # compute_auth_signals never raises (see its docstring).
-        auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
+        # compute_auth_signals never raises today (see its docstring), but guard
+        # it anyway so this observability concern can never propagate into the
+        # tool body even if that contract later changes — mirroring the identical
+        # guard on the resource-read path (observability.log_resource_read). The
+        # (None, None) fallback degrades gracefully: the analytics sink re-derives
+        # the origin from ctx, and the community report simply omits the hash.
+        try:
+            auth_origin, api_key_fingerprint = compute_auth_signals(ctx)
+        except Exception:
+            auth_origin, api_key_fingerprint = None, None
 
         # Track analytics (no-op if disabled)
         try:

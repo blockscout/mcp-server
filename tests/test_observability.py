@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,7 @@ from blockscout_mcp_server.client_meta import (
     ClientMeta,
     format_client_meta_suffix,
 )
+from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.observability import log_resource_read
 
 _SKILL_URI = "blockscout-mcp://skill/SKILL.md"
@@ -143,7 +145,12 @@ def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
     mock_send_report.assert_called_once()
     call_kwargs = mock_send_report.call_args.kwargs
     assert call_kwargs["auth_origin"] == "server"
-    assert call_kwargs["api_key_fingerprint"] is not None
+    # Pin the exact server-key fingerprint at this forwarding boundary (not merely "not None"),
+    # so a regression that forwards a different non-None hash here — e.g. an unprefixed digest or
+    # the client-key hash — is caught. The value is otherwise only asserted in the helper's own
+    # unit tests, never at this sink's boundary.
+    expected_fingerprint = hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}server-key".encode()).hexdigest()
+    assert call_kwargs["api_key_fingerprint"] == expected_fingerprint
 
 
 # ---------------------------------------------------------------------------

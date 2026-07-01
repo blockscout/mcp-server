@@ -124,9 +124,3 @@ AuthOrigin = Literal["client", "server", "none"]
 # reports that predate the `auth_origin` field. Deliberately not part of `AuthOrigin`:
 # it is never a valid report value and never returned by the helpers.
 AUTH_ORIGIN_UNKNOWN = "unknown"
-
-# A SHA-256 hex digest is always exactly 64 characters. This is the defensive
-# max_length cap on the inbound community report's `api_key_fingerprint` field
-# (mirroring the rationale documented for `_MAX_KEY_LENGTH` in pro_api_key_context.py);
-# the field's `pattern` enforces the full exact shape.
-PRO_API_KEY_FINGERPRINT_MAX_LENGTH = 64
