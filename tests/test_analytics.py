@@ -34,9 +34,47 @@ def reset_mode_and_client(monkeypatch):
     monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
 
 
+def test_get_mixpanel_client_non_empty_host_uses_custom_consumer(monkeypatch):
+    """A non-empty mixpanel_api_host routes construction through a custom Consumer."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    monkeypatch.setattr(server_config, "mixpanel_api_host", "api-eu.mixpanel.com", raising=False)
+    with (
+        patch("blockscout_mcp_server.analytics.Consumer") as consumer_cls,
+        patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls,
+    ):
+        consumer_instance = MagicMock()
+        consumer_cls.return_value = consumer_instance
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+
+        client = analytics._get_mixpanel_client()
+
+        consumer_cls.assert_called_once_with(api_host="api-eu.mixpanel.com")
+        mp_cls.assert_called_once_with("test-token", consumer=consumer_instance)
+        assert client is mp_instance
+
+
+def test_get_mixpanel_client_empty_host_uses_sdk_default(monkeypatch):
+    """An empty mixpanel_api_host skips the custom Consumer and uses the SDK's built-in host."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    monkeypatch.setattr(server_config, "mixpanel_api_host", "", raising=False)
+    with (
+        patch("blockscout_mcp_server.analytics.Consumer") as consumer_cls,
+        patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls,
+    ):
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+
+        client = analytics._get_mixpanel_client()
+
+        consumer_cls.assert_not_called()
+        mp_cls.assert_called_once_with("test-token")
+        assert client is mp_instance
+
+
 def test_noop_when_not_http_mode(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_tool_invocation(DummyCtx(), "some_tool", {"a": 1})
         mp_cls.assert_not_called()
 
@@ -44,7 +82,7 @@ def test_noop_when_not_http_mode(monkeypatch):
 def test_noop_when_no_token(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "", raising=False)
     analytics.set_http_mode(True)
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_tool_invocation(DummyCtx(), "some_tool", {"a": 1})
         mp_cls.assert_not_called()
 
@@ -54,7 +92,7 @@ def test_tracks_with_headers(monkeypatch):
     headers = {"x-forwarded-for": "203.0.113.5, 70.41.3.18", "user-agent": "pytest-UA"}
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -86,7 +124,7 @@ def test_tracks_with_intermediary_header(monkeypatch):
     }
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="node", client_version="1.0.0")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -104,7 +142,7 @@ def test_tracks_with_invalid_intermediary(monkeypatch):
     }
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="node", client_version="1.0.0")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -122,7 +160,7 @@ def test_tracks_with_intermediary_and_user_agent_fallback(monkeypatch):
     }
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="", client_version="")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -136,7 +174,7 @@ def test_tracks_with_intermediary_no_client_or_user_agent(monkeypatch):
     headers = {"Blockscout-MCP-Intermediary": "ClaudeDesktop"}
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="", client_version="")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -148,7 +186,7 @@ def test_tracks_with_intermediary_no_client_or_user_agent(monkeypatch):
 def test_track_event_tracks_when_enabled(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     req = DummyRequest(headers={"user-agent": "pytest-UA"}, host="203.0.113.5")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -166,7 +204,7 @@ def test_track_event_noop_when_disabled(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "", raising=False)
     analytics.set_http_mode(True)
     req = DummyRequest()
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_event(req, "PageView", {"path": "/"})
         mp_cls.assert_not_called()
 
@@ -189,7 +227,7 @@ def test_pro_api_key_not_in_analytics_payload(monkeypatch):
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="test-client", client_version="1.0.0")
 
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -233,7 +271,7 @@ def test_pro_api_key_not_in_analytics_payload_rest_source(monkeypatch):
     # Explicitly mark this context as coming from the REST path
     ctx.call_source = "rest"
 
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -260,7 +298,7 @@ def test_pro_api_key_not_in_analytics_payload_rest_source(monkeypatch):
 
 def test_track_community_usage(monkeypatch):
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
@@ -291,7 +329,7 @@ def test_track_community_usage(monkeypatch):
 def test_track_resource_read_noop_when_not_http_mode(monkeypatch):
     """No Mixpanel call when HTTP mode is disabled."""
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_resource_read(DummyCtx(), "blockscout-mcp://skill/SKILL.md")
         mp_cls.assert_not_called()
 
@@ -300,7 +338,7 @@ def test_track_resource_read_noop_when_no_token(monkeypatch):
     """No Mixpanel call when HTTP mode is on but no token is configured."""
     monkeypatch.setattr(server_config, "mixpanel_token", "", raising=False)
     analytics.set_http_mode(True)
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         analytics.track_resource_read(DummyCtx(), "blockscout-mcp://skill/SKILL.md")
         mp_cls.assert_not_called()
 
@@ -312,7 +350,7 @@ def test_track_resource_read_emits_correct_event(monkeypatch):
     headers = {"x-forwarded-for": "203.0.113.5", "user-agent": "pytest-UA"}
     req = DummyRequest(headers=headers)
     ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+    with patch("blockscout_mcp_server.analytics.Consumer"), patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
         mp_instance = MagicMock()
         mp_cls.return_value = mp_instance
         analytics.set_http_mode(True)
