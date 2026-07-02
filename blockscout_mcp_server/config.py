@@ -76,7 +76,10 @@ class ServerConfig(BaseSettings):
 
     # Analytics configuration
     mixpanel_token: str = ""
-    mixpanel_api_host: str = ""  # Optional custom API host (e.g., EU region)
+    # Defaults to EU because the central analytics project uses EU data residency.
+    # Deployments whose Mixpanel project is US-resident (or in another region) should
+    # override this via BLOCKSCOUT_MIXPANEL_API_HOST (e.g. "api.mixpanel.com" for US).
+    mixpanel_api_host: str = "api-eu.mixpanel.com"
     disable_community_telemetry: bool = False
 
     # Transport mode for the server ("stdio" or "http").

@@ -45,7 +45,7 @@ ENV BLOCKSCOUT_RPC_REQUEST_TIMEOUT="60.0"
 ENV BLOCKSCOUT_RPC_POOL_PER_HOST="50"
 ENV BLOCKSCOUT_MCP_USER_AGENT="Blockscout MCP"
 # ENV BLOCKSCOUT_MIXPANEL_TOKEN="" # Intentionally commented out: pass at runtime to avoid embedding secrets in image
-ENV BLOCKSCOUT_MIXPANEL_API_HOST=""
+# ENV BLOCKSCOUT_MIXPANEL_API_HOST="" # Intentionally commented out: the ingestion region default (api-eu.mixpanel.com) lives in config.py. Setting a value here — including an empty string — would override that default. Pass at runtime (e.g. -e BLOCKSCOUT_MIXPANEL_API_HOST=api.mixpanel.com) for a US or other-region project.
 ENV BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY="false"
 ENV BLOCKSCOUT_INTERMEDIARY_HEADER="Blockscout-MCP-Intermediary"
 ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin,EvaluationSuite"

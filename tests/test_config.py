@@ -151,3 +151,21 @@ def test_pro_api_low_credits_threshold_negative_rejected(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", "-1")
     with pytest.raises(ValidationError):
         ServerConfig(_env_file=None)
+
+
+def test_mixpanel_api_host_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_MIXPANEL_API_HOST", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.mixpanel_api_host == "api-eu.mixpanel.com"
+
+
+def test_mixpanel_api_host_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_MIXPANEL_API_HOST", "api.mixpanel.com")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.mixpanel_api_host == "api.mixpanel.com"
+
+
+def test_mixpanel_api_host_empty_string_preserved(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_MIXPANEL_API_HOST", "")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.mixpanel_api_host == ""
