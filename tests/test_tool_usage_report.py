@@ -2,7 +2,6 @@
 """Tests for the `ToolUsageReport` Pydantic model's optional auth-signal fields."""
 
 import pytest
-from pydantic import ValidationError
 
 from blockscout_mcp_server.models import ToolUsageReport
 
@@ -37,10 +36,23 @@ def test_auth_origin_round_trips_each_valid_value(origin):
     assert report.auth_origin == origin
 
 
-def test_auth_origin_rejects_out_of_enum_value():
-    """A payload supplying an out-of-enum auth_origin raises a pydantic ValidationError."""
-    with pytest.raises(ValidationError):
-        ToolUsageReport(**_base_payload(auth_origin="bogus"))
+@pytest.mark.parametrize(
+    "unrecognized",
+    ["bogus", "Client", "SERVER", "unknown", 123, ["client"], {"origin": "client"}, 4.5],
+)
+def test_auth_origin_tolerates_unrecognized_value(unrecognized):
+    """An unrecognized auth_origin is coerced to None rather than rejected.
+
+    Covers out-of-enum ("bogus"), wrong case ("Client"/"SERVER"), the "unknown" Mixpanel sentinel
+    (never a valid wire value), and non-string junk. auth_origin is consumed, but reports arrive
+    fire-and-forget from independently-versioned community instances, so a value this receiver does
+    not recognize must not drop the whole otherwise-valid report; None is rendered as the "unknown"
+    bucket downstream. The `mode="before"` validator guards with `isinstance(value, str)`, so
+    non-string input is tolerated too.
+    """
+    report = ToolUsageReport(**_base_payload(auth_origin=unrecognized))
+
+    assert report.auth_origin is None
 
 
 def test_api_key_fingerprint_round_trips_valid_value():

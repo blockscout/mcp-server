@@ -795,8 +795,15 @@ async def test_report_tool_usage_legacy_payload_without_new_fields(mock_track, c
 
 
 @pytest.mark.asyncio
-async def test_report_tool_usage_rejects_bad_auth_origin_enum(client: AsyncClient):
-    """An out-of-enum auth_origin value is rejected with a 422."""
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_tolerates_unrecognized_auth_origin(mock_track, client: AsyncClient):
+    """An unrecognized auth_origin does not drop the otherwise-valid report.
+
+    The value this receiver does not recognize is coerced to None by the model (rendered as
+    "unknown" downstream), so the report is still accepted (202) and forwarded once with
+    `auth_origin is None`. This keeps a version-skewed community reporter reporting instead of
+    silently losing 100% of its telemetry to a 422 that the fire-and-forget sender never sees.
+    """
     payload = {
         "tool_name": "dummy",
         "tool_args": {"a": 1},
@@ -807,7 +814,10 @@ async def test_report_tool_usage_rejects_bad_auth_origin_enum(client: AsyncClien
     }
     headers = {"User-Agent": "BlockscoutMCP/0.0"}
     response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
-    assert response.status_code == 422
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
 
 
 @pytest.mark.asyncio
