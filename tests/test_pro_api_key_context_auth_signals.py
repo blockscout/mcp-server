@@ -27,8 +27,8 @@ _HEADER_NAME = "Blockscout-MCP-Pro-Api-Key"
 
 
 def _expected_fingerprint(key: str) -> str:
-    """Compute the expected fingerprint via the same explicit UTF-8 byte construction."""
-    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
+    """Compute the expected fingerprint via the same UTF-8 byte construction."""
+    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode()).hexdigest()
 
 
 # ===========================================================================

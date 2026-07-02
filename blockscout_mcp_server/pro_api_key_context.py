@@ -323,7 +323,7 @@ def _fingerprint_pro_api_key(key: str) -> str:
     The raw key is never returned, logged, or placed anywhere but this hash
     input.
     """
-    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
+    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode()).hexdigest()
 
 
 @functools.lru_cache(maxsize=1)
