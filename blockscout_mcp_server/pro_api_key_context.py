@@ -9,6 +9,9 @@ per-request remaining-credits observation:
 - A normalization/validation helper.
 - An extractor that reads the key from any HTTP request context (MCP-over-HTTP
   or REST).
+- A single precedence decision (``_apply_key_precedence``) shared by the resolver
+  and the analytics signal derivation, so the enforced key and the reported
+  ``auth_origin`` cannot drift apart.
 - A resolver that applies the client-key → server-key precedence rule.
 - A ``require_pro_api_key()`` helper that wraps the resolver with the standard
   not-configured error so every PRO API entry point raises the same message.
@@ -48,6 +51,7 @@ concurrent requests where completion order is non-deterministic.
 from __future__ import annotations
 
 import functools
+import hashlib
 import inspect
 import logging
 import math
@@ -58,6 +62,7 @@ from typing import Any
 
 from blockscout_mcp_server.client_meta import get_header_case_insensitive
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX, AuthOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +102,69 @@ ClientKeyState = _Absent | _Valid | _Malformed
 
 _ABSENT: ClientKeyState = _Absent()
 _MALFORMED: ClientKeyState = _Malformed()
+
+
+# ---------------------------------------------------------------------------
+# 1b. Precedence decision — the single source of truth over ClientKeyState
+# ---------------------------------------------------------------------------
+#
+# The client-key → server-key precedence is decided in exactly one place,
+# ``_apply_key_precedence``.  Both the enforcement path
+# (``resolve_pro_api_key``) and the telemetry path (``compute_auth_signals``)
+# consume its result and only *format* it — the former with raise/ContextVar
+# semantics, the latter with an ``(origin, fingerprint)`` pair.  Because neither
+# re-decides precedence, the enforced key and the reported ``auth_origin`` can
+# never disagree, and a future precedence change (a new key source, different
+# handling of a malformed key) is a one-line edit here that both paths follow
+# automatically.  This is the consistency issue #423 exists to protect.
+
+
+@dataclass(frozen=True)
+class _UseClientKey:
+    """A valid client key won precedence; ``key`` is the effective PRO API key."""
+
+    key: str
+
+
+@dataclass(frozen=True)
+class _RejectMalformed:
+    """A malformed client key was supplied — reject it with no fallback to the server key."""
+
+
+@dataclass(frozen=True)
+class _UseServerKey:
+    """No client key; the configured server key is effective (``key`` is ``""`` when unset)."""
+
+    key: str
+
+
+# The three mutually exclusive precedence outcomes.
+_AuthDecision = _UseClientKey | _RejectMalformed | _UseServerKey
+
+
+def _apply_key_precedence(state: ClientKeyState) -> _AuthDecision:
+    """Map a client-key *state* to the effective auth decision (single source of truth).
+
+    Precedence — this **is** the definition that both :func:`resolve_pro_api_key`
+    and :func:`compute_auth_signals` consume; it is not mirrored anywhere else:
+
+    1. Valid client key → :class:`_UseClientKey` (use the client value).
+    2. Malformed client key → :class:`_RejectMalformed` (no fallback to the server
+       key — the request must fail rather than silently downgrade to the server).
+    3. No client key (absent) → :class:`_UseServerKey` carrying
+       ``config.pro_api_key`` (which may be ``""`` when no server key is
+       configured).
+
+    Pure and total over :data:`ClientKeyState`: it never raises and never hashes.
+    The raise/ContextVar semantics live in :func:`resolve_pro_api_key`; the
+    origin/hashing semantics live in :func:`compute_auth_signals`.
+    """
+    if isinstance(state, _Valid):
+        return _UseClientKey(key=state.value)
+    if isinstance(state, _Malformed):
+        return _RejectMalformed()
+    # _Absent — fall back to the configured server key (may be "").
+    return _UseServerKey(key=config.pro_api_key)
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +300,95 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
 
 
 # ---------------------------------------------------------------------------
+# 4b. ctx-derived auth-origin and fingerprint helpers (for analytics/telemetry)
+# ---------------------------------------------------------------------------
+#
+# Analytics and telemetry (e.g. log_tool_invocation / community reporting) run
+# *outside* @pro_api_key_scope, so they cannot read the _client_key_state
+# ContextVar (see the @pro_api_key_scope docstring above). These helpers read the
+# key state directly from ctx headers via extract_client_pro_api_key_from_ctx()
+# and then apply the *same* precedence through _apply_key_precedence() — only the
+# state *source* differs (ctx headers here vs the ContextVar on the enforcement
+# path). They must NOT call resolve_pro_api_key(): it reads the request-scoped
+# ContextVar (unset on this path) and raises on a malformed key, whereas these
+# helpers must never raise.
+
+
+def _fingerprint_pro_api_key(key: str) -> str:
+    """Return the hex SHA-256 digest of *key*, domain-separated by ``PRO_API_KEY_HASH_PREFIX``.
+
+    ``hashlib.sha256`` takes a bytes-like object, not a ``str``; the
+    prefix+encoding scheme is centralized here so both the client-key and
+    server-key branches of :func:`compute_auth_signals` share one construction.
+    The raw key is never returned, logged, or placed anywhere but this hash
+    input.
+    """
+    return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode()).hexdigest()
+
+
+@functools.lru_cache(maxsize=1)
+def _server_api_key_fingerprint(key: str) -> str:
+    """Return the fingerprint of the configured server key, memoized per process.
+
+    ``config.pro_api_key`` is fixed for the process lifetime, so its SHA-256 is a
+    hash of a constant. Memoizing it means the observability hot path (every tool
+    call / resource read) reuses the one digest instead of re-hashing the same
+    value each time. ``maxsize=1`` keeps a single entry: production never varies
+    the key, and tests that monkeypatch ``config.pro_api_key`` cache-miss on the
+    new value and evict the stale one.
+
+    Only the *server* key is memoized. Client keys are per-request secrets, so they
+    stay on the un-cached :func:`_fingerprint_pro_api_key` path and are never
+    retained in this cache.
+    """
+    return _fingerprint_pro_api_key(key)
+
+
+def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
+    """Derive the ``(auth_origin, api_key_fingerprint)`` pair for *ctx* in one pass.
+
+    Single source of truth for both signals: each precedence branch returns the
+    origin and the matching fingerprint together, so the two can never disagree
+    (``"client"`` ↔ client hash, ``"server"`` ↔ server hash, ``"none"`` ↔
+    ``None``). Callers that need only the origin can discard the fingerprint
+    (``[1]``).
+
+    Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
+    which never raises) and never calls :func:`resolve_pro_api_key` (it reads the
+    request-scoped ContextVar — unset on this path — and raises on a malformed
+    key). Precedence is not re-decided here: it delegates to
+    :func:`_apply_key_precedence` — the very decision :func:`resolve_pro_api_key`
+    enforces — and only maps the outcome to an origin + fingerprint:
+
+    - :class:`_UseClientKey` → ``("client", <hash of the client value>)``.
+    - :class:`_RejectMalformed` → ``("none", None)`` (a malformed submission has
+      no usable key and will fail at the PRO API chokepoint anyway).
+    - :class:`_UseServerKey` → ``("server", <hash of config.pro_api_key>)`` when a
+      server key is configured, otherwise ``("none", None)``.
+
+    The server-key hash is memoized (see :func:`_server_api_key_fingerprint`) so
+    the observability hot path never re-hashes the fixed server key. The
+    fingerprint's sole consumer is the community usage report; the analytics sink
+    only reads the origin.
+
+    The raw key is never returned, logged, or used anywhere but as the hash
+    input.
+    """
+    decision = _apply_key_precedence(extract_client_pro_api_key_from_ctx(ctx))
+
+    if isinstance(decision, _UseClientKey):
+        return "client", _fingerprint_pro_api_key(decision.key)
+
+    if isinstance(decision, _RejectMalformed):
+        return "none", None
+
+    # _UseServerKey — "server" only when a key is actually configured.
+    if decision.key:
+        return "server", _server_api_key_fingerprint(decision.key)
+    return "none", None
+
+
+# ---------------------------------------------------------------------------
 # 5. Resolver — applies client-key → server-key precedence
 # ---------------------------------------------------------------------------
 
@@ -239,7 +396,11 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
 def resolve_pro_api_key() -> str:
     """Return the effective PRO API key for the current request.
 
-    Precedence:
+    Precedence is decided by :func:`_apply_key_precedence` (shared with
+    :func:`compute_auth_signals`, so the enforced key and the reported
+    ``auth_origin`` can never drift apart). This function only applies the
+    ContextVar/raise semantics to that decision:
+
     1. Client-supplied key (valid) → use it.
     2. Client-supplied key (malformed) → raise ``ValueError`` immediately.
        No fallback to the server key for a malformed submission.
@@ -247,19 +408,19 @@ def resolve_pro_api_key() -> str:
 
     Callers' existing emptiness guards handle the ``""`` case.
     """
-    state = _client_key_state.get()
+    decision = _apply_key_precedence(_client_key_state.get())
 
-    if isinstance(state, _Valid):
-        return state.value
+    if isinstance(decision, _UseClientKey):
+        return decision.key
 
-    if isinstance(state, _Malformed):
+    if isinstance(decision, _RejectMalformed):
         raise ValueError(
             "The supplied PRO API key header value is malformed: it contains control characters "
             "or exceeds the maximum allowed length. Please provide a valid key."
         )
 
-    # _Absent — fall back to the configured server key.
-    return config.pro_api_key
+    # _UseServerKey — the configured server key, possibly "".
+    return decision.key
 
 
 # ---------------------------------------------------------------------------

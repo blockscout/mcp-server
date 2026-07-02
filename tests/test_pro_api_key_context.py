@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from starlette.datastructures import Headers
+from pro_api_key_helpers import ctx_with_header, ctx_with_malformed_header
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.pro_api_key_context import (
@@ -108,23 +108,10 @@ def test_normalize_exactly_max_length_is_valid():
 # ===========================================================================
 
 
-def _mcp_ctx_with_header(header_name: str, header_value: str) -> SimpleNamespace:
-    """Build a minimal MCP-like context carrying *header_value* under *header_name*.
-
-    Uses real ``starlette.datastructures.Headers`` with non-canonical casing to
-    exercise case-insensitive lookup.
-    """
-    # Use non-canonical casing to prove case-insensitive lookup works.
-    # starlette.datastructures.Headers accepts a Mapping (dict) for the headers param.
-    headers = Headers(headers={header_name.upper(): header_value})
-    request = SimpleNamespace(headers=headers)
-    return SimpleNamespace(request_context=SimpleNamespace(request=request))
-
-
 def test_extraction_rest_call_source_reads_header(monkeypatch):
     """A REST-source context that carries the configured header must yield _Valid."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
     ctx.call_source = "rest"  # type: ignore[attr-defined]
     state = extract_client_pro_api_key_from_ctx(ctx)
     assert isinstance(state, _Valid)
@@ -134,7 +121,7 @@ def test_extraction_rest_call_source_reads_header(monkeypatch):
 def test_extraction_rest_call_source_absent_header_is_absent(monkeypatch):
     """A REST-source context with no header value yields _Absent."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "")
     ctx.call_source = "rest"  # type: ignore[attr-defined]
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
 
@@ -142,34 +129,30 @@ def test_extraction_rest_call_source_absent_header_is_absent(monkeypatch):
 def test_extraction_rest_call_source_malformed_header_is_malformed(monkeypatch):
     """A REST-source context with a control-char header value yields _Malformed."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    # Use a plain dict so we can inject a control-character value that starlette
-    # would refuse to encode.
-    headers = {"Blockscout-MCP-Pro-Api-Key": "bad\nkey"}
-    request = SimpleNamespace(headers=headers)
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request), call_source="rest")
+    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", "bad\nkey")
+    ctx.call_source = "rest"
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
 
 
 def test_extraction_rest_call_source_over_length_header_is_malformed(monkeypatch):
     """A REST-source context with an over-length header value yields _Malformed."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    headers = {"Blockscout-MCP-Pro-Api-Key": "a" * 257}
-    request = SimpleNamespace(headers=headers)
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request), call_source="rest")
+    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", "a" * 257)
+    ctx.call_source = "rest"
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
 
 
 def test_extraction_rest_call_source_disabled_feature_is_absent(monkeypatch):
     """Feature disabled (empty header config) → absent even if the header is present."""
     monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
     ctx.call_source = "rest"  # type: ignore[attr-defined]
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
 
 
 def test_extraction_empty_header_config_is_absent(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    ctx = _mcp_ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
 
 
@@ -194,11 +177,8 @@ def test_extraction_stdio_like_no_request_is_absent(monkeypatch):
 def test_extraction_mcp_ctx_with_valid_header(monkeypatch):
     """Real starlette Headers + non-canonical casing → valid state."""
     monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    # Pass the header under ALL-CAPS to prove case-insensitive lookup.
-    # starlette.datastructures.Headers accepts a Mapping (dict) for the headers param.
-    headers = Headers(headers={"BLOCKSCOUT-MCP-PRO-API-KEY": "my-client-key"})
-    request = SimpleNamespace(headers=headers)
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+    # ctx_with_header upper-cases the header name, so this exercises case-insensitive lookup.
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "my-client-key")
 
     state = extract_client_pro_api_key_from_ctx(ctx)
     assert isinstance(state, _Valid)
@@ -271,10 +251,7 @@ async def test_malformed_error_does_not_embed_control_char_value(monkeypatch):
     async def dummy(ctx) -> None:
         resolve_pro_api_key()
 
-    # Plain dict headers: real starlette Headers reject control-char values at
-    # construction time, while the extractor works with any Mapping.
-    request = SimpleNamespace(headers={"Blockscout-MCP-Pro-Api-Key": raw_value})
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", raw_value)
 
     with pytest.raises(ValueError) as exc_info:
         await dummy(ctx=ctx)
@@ -295,8 +272,7 @@ async def test_malformed_error_does_not_embed_over_length_value(monkeypatch):
     async def dummy(ctx) -> None:
         resolve_pro_api_key()
 
-    request = SimpleNamespace(headers={"Blockscout-MCP-Pro-Api-Key": raw_value})
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", raw_value)
 
     with pytest.raises(ValueError) as exc_info:
         await dummy(ctx=ctx)
@@ -306,16 +282,6 @@ async def test_malformed_error_does_not_embed_over_length_value(monkeypatch):
 # ===========================================================================
 # Decorator behaviour
 # ===========================================================================
-
-
-def _ctx_with_starlette_headers(header_name: str, header_value: str) -> SimpleNamespace:
-    """Build an MCP-like context using real starlette.datastructures.Headers (dict form).
-
-    The header name is passed in UPPER CASE so the case-insensitive lookup is exercised.
-    """
-    headers = Headers(headers={header_name.upper(): header_value})
-    request = SimpleNamespace(headers=headers)
-    return SimpleNamespace(request_context=SimpleNamespace(request=request))
 
 
 @pytest.mark.asyncio
@@ -328,7 +294,7 @@ async def test_decorator_sets_valid_state_during_call(monkeypatch):
     async def dummy(ctx) -> None:
         observed_state.append(_client_key_state.get())
 
-    ctx = _ctx_with_starlette_headers("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
 
     await dummy(ctx=ctx)
 
@@ -345,7 +311,7 @@ async def test_decorator_resets_state_after_call(monkeypatch):
     async def dummy(ctx) -> None:
         pass
 
-    ctx = _ctx_with_starlette_headers("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
 
     await dummy(ctx=ctx)
 
@@ -361,7 +327,7 @@ async def test_decorator_resets_state_even_when_wrapped_function_raises(monkeypa
     async def dummy(ctx) -> None:
         raise RuntimeError("boom")
 
-    ctx = _ctx_with_starlette_headers("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
 
     with pytest.raises(RuntimeError, match="boom"):
         await dummy(ctx=ctx)
@@ -381,7 +347,7 @@ async def test_decorator_rest_call_source_sets_valid_state(monkeypatch):
     async def dummy(ctx) -> None:
         observed_state.append(_client_key_state.get())
 
-    ctx = _ctx_with_starlette_headers("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
+    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-xyz")
     ctx.call_source = "rest"  # type: ignore[attr-defined]
 
     await dummy(ctx=ctx)
@@ -407,12 +373,7 @@ async def test_decorator_malformed_does_not_raise_from_decorator(monkeypatch):
     async def dummy(ctx) -> None:
         ran.append(True)
 
-    # Use a plain dict so we can inject a control-character value that starlette
-    # would refuse to encode — the extractor just calls get_header_case_insensitive
-    # which works with any Mapping.
-    headers = {"Blockscout-MCP-Pro-Api-Key": "bad\x00key"}
-    request = SimpleNamespace(headers=headers)
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=request))
+    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", "bad\x00key")
 
     # Must not raise at decoration time or call time (malformed raise is in resolve_pro_api_key)
     await dummy(ctx=ctx)
@@ -449,13 +410,8 @@ async def test_per_task_isolation(monkeypatch):
         await asyncio.sleep(0)
         results[task_name] = resolve_pro_api_key()
 
-    def _ctx_with_key(key: str) -> SimpleNamespace:
-        headers = Headers(headers={"Blockscout-MCP-Pro-Api-Key": key})
-        request = SimpleNamespace(headers=headers)
-        return SimpleNamespace(request_context=SimpleNamespace(request=request))
-
-    ctx_a = _ctx_with_key("key-for-task-a")
-    ctx_b = _ctx_with_key("key-for-task-b")
+    ctx_a = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "key-for-task-a")
+    ctx_b = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "key-for-task-b")
 
     await asyncio.gather(
         dummy(ctx=ctx_a, task_name="a"),

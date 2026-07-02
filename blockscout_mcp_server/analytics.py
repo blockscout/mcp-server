@@ -37,7 +37,7 @@ from blockscout_mcp_server.client_meta import (
     get_header_case_insensitive,
 )
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
+from blockscout_mcp_server.constants import AUTH_ORIGIN_UNKNOWN, RESOURCE_READ_EVENT, AuthOrigin
 from blockscout_mcp_server.models import ToolUsageReport
 
 logger = logging.getLogger(__name__)
@@ -191,8 +191,20 @@ def track_tool_invocation(
     tool_name: str,
     tool_args: dict[str, Any],
     client_meta: ClientMeta | None = None,
+    auth_origin: AuthOrigin | None = None,
 ) -> None:
-    """Track a tool invocation in Mixpanel, if enabled and in HTTP mode."""
+    """Track a tool invocation in Mixpanel, if enabled and in HTTP mode.
+
+    ``auth_origin`` is the pre-computed origin threaded in by the caller — the
+    observability paths derive the auth signals once per invocation (via
+    :func:`blockscout_mcp_server.telemetry.resolve_auth_signals`) and reuse them
+    for both this sink and the community report, so the origin is never
+    re-derived here. A ``None`` value — which ``resolve_auth_signals`` yields
+    when derivation is skipped or degrades — is recorded as
+    ``AUTH_ORIGIN_UNKNOWN``, mirroring :func:`track_community_usage`. Re-deriving
+    from ``ctx`` at this point would re-run the very computation that just failed
+    and lose the whole event, so it is deliberately avoided.
+    """
     if not _is_http_mode_enabled:
         return
     mp = _get_mixpanel_client()
@@ -225,6 +237,7 @@ def track_tool_invocation(
             "tool_args": tool_args,
             "protocol_version": protocol_version,
             "source": _determine_call_source(ctx),
+            "auth_origin": auth_origin if auth_origin is not None else AUTH_ORIGIN_UNKNOWN,
         }
 
         meta = {"ip": ip} if ip else None
@@ -241,15 +254,18 @@ def track_resource_read(
     ctx: Any,
     uri: str,
     client_meta: ClientMeta | None = None,
+    auth_origin: AuthOrigin | None = None,
 ) -> None:
     """Track a resource read in Mixpanel, if enabled and in HTTP mode.
 
     Delegates to :func:`track_tool_invocation` using the ``RESOURCE_READ`` event
     sentinel so that all gating logic (HTTP-mode, token, IP extraction, etc.) is
     reused verbatim.  The caller is responsible for providing a fully-normalised
-    URI string — this function does not stringify.
+    URI string — this function does not stringify.  ``auth_origin`` is threaded
+    through to :func:`track_tool_invocation` (see its docstring) so the resource
+    observability path also derives the auth signals only once per read.
     """
-    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta)
+    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta, auth_origin=auth_origin)
 
 
 def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
@@ -271,6 +287,7 @@ def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> 
             "tool_args": report.tool_args,
             "protocol_version": report.protocol_version,
             "source": "community",
+            "auth_origin": report.auth_origin if report.auth_origin is not None else AUTH_ORIGIN_UNKNOWN,
         }
 
         meta = {"ip": ip} if ip else None

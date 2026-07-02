@@ -725,9 +725,23 @@ async def test_error_handling(mock_tool, client: AsyncClient, side_effect, statu
     mock_tool.assert_called_once_with(chain_id="1", ctx=ANY)
 
 
-@pytest.mark.asyncio
-@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
-async def test_report_tool_usage_success(mock_track, client: AsyncClient):
+# ---------------------------------------------------------------------------
+# /v1/report_tool_usage — shared payload/POST helper
+# ---------------------------------------------------------------------------
+# Every report-endpoint test posts the same base payload and User-Agent, varying
+# only the auth-signal fields under test; ``post_report`` keeps each test to the
+# fields it actually exercises.
+
+_REPORT_USER_AGENT = "BlockscoutMCP/0.0"
+
+
+async def post_report(client: AsyncClient, **overrides):
+    """POST the base /v1/report_tool_usage payload (with *overrides* applied) and the standard User-Agent.
+
+    Keyword *overrides* add or replace top-level payload fields, so a test can set
+    ``auth_origin``/``api_key_fingerprint`` (to a value, ``None``, or omit them) without
+    restating the shared ``tool_name``/``tool_args``/client fields.
+    """
     payload = {
         "tool_name": "dummy",
         "tool_args": {"a": 1},
@@ -735,8 +749,14 @@ async def test_report_tool_usage_success(mock_track, client: AsyncClient):
         "client_version": "1.0",
         "protocol_version": "1.1",
     }
-    headers = {"User-Agent": "BlockscoutMCP/0.0"}
-    response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
+    payload.update(overrides)
+    return await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": _REPORT_USER_AGENT})
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_success(mock_track, client: AsyncClient):
+    response = await post_report(client, auth_origin="client", api_key_fingerprint="a" * 64)
     assert response.status_code == 202
     mock_track.assert_called_once()
     _, kwargs = mock_track.call_args
@@ -745,7 +765,9 @@ async def test_report_tool_usage_success(mock_track, client: AsyncClient):
     assert kwargs["report"].client_name == "cli"
     assert kwargs["report"].client_version == "1.0"
     assert kwargs["report"].protocol_version == "1.1"
-    assert kwargs["user_agent"] == headers["User-Agent"]
+    assert kwargs["report"].auth_origin == "client"
+    assert kwargs["report"].api_key_fingerprint == "a" * 64
+    assert kwargs["user_agent"] == _REPORT_USER_AGENT
 
 
 @pytest.mark.asyncio
@@ -765,6 +787,90 @@ async def test_report_tool_usage_missing_header(client: AsyncClient):
     }
     response = await client.post("/v1/report_tool_usage", json=payload, headers={"User-Agent": ""})
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_legacy_payload_without_new_fields(mock_track, client: AsyncClient):
+    """A legacy payload that omits auth_origin/api_key_fingerprint is still accepted.
+
+    The analytics layer renders a None auth_origin as 'unknown', so the forwarded report
+    must carry None rather than being rejected outright.
+    """
+    response = await post_report(client)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_tolerates_unrecognized_auth_origin(mock_track, client: AsyncClient):
+    """An unrecognized auth_origin does not drop the otherwise-valid report.
+
+    The value this receiver does not recognize is coerced to None by the model (rendered as
+    "unknown" downstream), so the report is still accepted (202) and forwarded once with
+    `auth_origin is None`. This keeps a version-skewed community reporter reporting instead of
+    silently losing 100% of its telemetry to a 422 that the fire-and-forget sender never sees.
+    """
+    response = await post_report(client, auth_origin="bogus")
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_tolerates_malformed_fingerprint(mock_track, client: AsyncClient):
+    """A syntactically invalid api_key_fingerprint does not drop the otherwise-valid report.
+
+    The not-yet-consumed fingerprint is coerced to None by the model, so the report is still
+    accepted (202) and forwarded once with `api_key_fingerprint is None`.
+    """
+    response = await post_report(client, api_key_fingerprint="not-a-hash")
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].api_key_fingerprint is None
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_explicit_none_auth_origin_string_with_null_fingerprint(
+    mock_track, client: AsyncClient
+):
+    """The exact no-key wire shape an updated reporter sends: auth_origin="none" with a null
+    fingerprint, sent explicitly rather than omitted.
+
+    This guards against the endpoint rejecting real no-key reports from updated reporters.
+    """
+    response = await post_report(client, auth_origin="none", api_key_fingerprint=None)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin == "none"
+    assert kwargs["report"].api_key_fingerprint is None
+
+
+@pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_explicit_null_auth_origin_with_null_fingerprint(mock_track, client: AsyncClient):
+    """A JSON null auth_origin (not the string "none") with a null fingerprint is accepted.
+
+    Phase 4 adds both keys to the outbound payload unconditionally, so any caller that omits
+    the auth_origin keyword causes the sender to serialize a literal `"auth_origin": null` on
+    the wire. This is the HTTP-boundary counterpart of the Phase 1 explicit-auth_origin=None
+    model test, and it is the only route case that catches a `Literal[...]`-without-`| None`
+    typing regression, which would otherwise 422 a real report.
+    """
+    response = await post_report(client, auth_origin=None, api_key_fingerprint=None)
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].auth_origin is None
+    assert kwargs["report"].api_key_fingerprint is None
 
 
 @pytest.mark.asyncio

@@ -671,6 +671,8 @@ Receive an anonymous tool usage report from a community-run server.
   | `client_name` | `string` | Yes | Name of the MCP client invoking the tool. |
   | `client_version` | `string` | Yes | Version of the MCP client. |
   | `protocol_version` | `string` | Yes | Model Context Protocol version used. |
+  | `auth_origin` | `string \| null` | No | Resolved authorization origin on the reporting instance: `client`, `server`, or `none`. Explicit `null` (or omitted, as from legacy reporters) is treated as `unknown` downstream. |
+  | `api_key_fingerprint` | `string \| null` | No | One-way, non-reversible SHA-256 fingerprint of the effective PRO API key available to back the request on the reporting instance — the request's authorization context, not whether the invoked tool consumed the key. Non-null values are exactly 64 lowercase hexadecimal characters; never the key itself; explicit `null` (or omitted) when no usable key was available. |
 
 - **Example Request**
 

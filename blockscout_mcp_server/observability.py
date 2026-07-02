@@ -69,9 +69,14 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
     except Exception:
         pass
 
+    # Derive the auth-origin / fingerprint signals once and reuse them for both
+    # sinks below (mirrors @log_tool_invocation); see telemetry.resolve_auth_signals
+    # for the rationale and gating.
+    auth_origin, api_key_fingerprint = telemetry.resolve_auth_signals(ctx)
+
     # Step 2 — direct analytics sink (self-gating, synchronous).
     try:
-        analytics.track_resource_read(ctx, full_uri, client_meta=meta)
+        analytics.track_resource_read(ctx, full_uri, client_meta=meta, auth_origin=auth_origin)
     except Exception:
         pass
 
@@ -95,6 +100,8 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
                 meta.name,
                 meta.version,
                 meta.protocol,
+                auth_origin=auth_origin,
+                api_key_fingerprint=api_key_fingerprint,
             )
         )
     except Exception:

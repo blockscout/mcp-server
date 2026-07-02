@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Constants used throughout the Blockscout MCP Server."""
 
+from typing import Literal
+
 from blockscout_mcp_server import __version__
 
 SERVER_VERSION = __version__
@@ -104,3 +106,21 @@ LOG_DATA_TRUNCATION_LIMIT = 514
 # The maximum length for a transaction's input data field before it's truncated.
 # 514 = '0x' prefix + 512 hex characters (256 bytes).
 INPUT_DATA_TRUNCATION_LIMIT = 514
+
+# Versioned domain-separation prefix for the PRO API key fingerprint hash. The "v1" is
+# deliberate: it lets the hashing scheme be versioned later without silently colliding
+# with old fingerprints. It is not a secret and provides domain separation, not
+# brute-force resistance (PRO API keys are high-entropy, so preimage attacks are
+# infeasible; a server-side HMAC pepper is deferred to a follow-up change).
+PRO_API_KEY_HASH_PREFIX = "bs-pro-key-v1:"
+
+# The three real authorization origins a key can come from, as computed by the
+# ctx-derived helpers. Defined as a single Literal alias (not separate string
+# constants) because a Literal[...] annotation cannot be built from string-constant
+# variables; the model field and the helper return type both import this alias.
+AuthOrigin = Literal["client", "server", "none"]
+
+# Legacy sentinel used only at the Mixpanel layer as the default for community
+# reports that predate the `auth_origin` field. Deliberately not part of `AuthOrigin`:
+# it is never a valid report value and never returned by the helpers.
+AUTH_ORIGIN_UNKNOWN = "unknown"

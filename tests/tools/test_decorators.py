@@ -8,6 +8,7 @@ import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
 from mcp.types import RequestParams
+from pro_api_key_helpers import ctx_with_header
 from starlette.datastructures import Headers
 
 from blockscout_mcp_server.api.dependencies import MockCtx
@@ -17,7 +18,12 @@ from blockscout_mcp_server.client_meta import (
     UNKNOWN_PROTOCOL_VERSION,
 )
 from blockscout_mcp_server.config import config as server_config
-from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope, resolve_pro_api_key
+from blockscout_mcp_server.pro_api_key_context import (
+    _fingerprint_pro_api_key,
+    pro_api_key_scope,
+    resolve_pro_api_key,
+)
+from blockscout_mcp_server.telemetry import resolve_auth_signals
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 
@@ -28,17 +34,31 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
 
     calls = {}
 
-    def fake_track(ctx, name, args, client_meta=None):  # type: ignore[no-untyped-def]
+    def fake_track(ctx, name, args, client_meta=None, auth_origin=None):  # type: ignore[no-untyped-def]
         calls["ctx"] = ctx
         calls["name"] = name
         calls["args"] = args
         calls["client_meta"] = client_meta
+        calls["auth_origin"] = auth_origin
 
     monkeypatch.setattr("blockscout_mcp_server.tools.decorators.analytics.track_tool_invocation", fake_track)
 
     @log_tool_invocation
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
+
+    # Pin community telemetry on so resolve_auth_signals derives instead of short-circuiting to
+    # (None, None): with community disabled (e.g. BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY set in the
+    # env or a local .env) and HTTP mode off, no sink would consume the signals and auth_origin
+    # would be None regardless of the header — making the assertion below untestable.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
+    # A valid client PRO API key header makes the derived origin deterministic ("client").
+    # Pinning the exact value is what gives the assertion teeth: `in ("client","server","none")`
+    # is vacuous because every AuthOrigin member trivially satisfies it, so it would pass even
+    # if the decorator threaded a constant or the wrong field.
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+    mock_ctx.session = None
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, "client-key-123").request_context
 
     # Act
     await dummy_tool(7, ctx=mock_ctx)
@@ -48,6 +68,10 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
     assert calls["args"] == {"a": 7}
     assert calls["ctx"] is mock_ctx
     assert "client_meta" in calls
+    # The decorator derives the auth signals from ctx and threads the origin into
+    # track_tool_invocation. With a valid client-key header present, that origin must be
+    # exactly "client" — proving a real ctx-derived value was threaded, not a constant.
+    assert calls["auth_origin"] == "client"
 
 
 @pytest.mark.asyncio
@@ -125,7 +149,12 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
     "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
     new_callable=AsyncMock,
 )
-async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> None:
+async def test_decorator_reports_telemetry(mock_report, monkeypatch, mock_ctx: Context) -> None:
+    # Keep community telemetry enabled so resolve_auth_signals derives auth_origin instead of
+    # short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+
     @log_tool_invocation
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
@@ -140,7 +169,101 @@ async def test_decorator_reports_telemetry(mock_report, mock_ctx: Context) -> No
         UNDEFINED_CLIENT_NAME,
         UNDEFINED_CLIENT_VERSION,
         UNKNOWN_PROTOCOL_VERSION,
+        auth_origin="none",
+        api_key_fingerprint=None,
     )
+
+
+@pytest.mark.asyncio
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
+async def test_decorator_reports_telemetry_with_client_key(mock_report, monkeypatch, mock_ctx: Context) -> None:
+    """A client-supplied PRO API key header is forwarded as a non-reversible fingerprint."""
+    # Keep community telemetry enabled so resolve_auth_signals derives auth_origin instead of
+    # short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+    raw_key = "super-secret-client-key"
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    mock_ctx.session = None
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, raw_key).request_context
+    await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
+
+    mock_report.assert_awaited_once()
+    call_kwargs = mock_report.await_args.kwargs
+    assert call_kwargs["auth_origin"] == "client"
+    assert call_kwargs["api_key_fingerprint"] is not None
+    assert call_kwargs["api_key_fingerprint"] != raw_key
+
+
+@pytest.mark.asyncio
+@patch(
+    "blockscout_mcp_server.tools.decorators.telemetry.send_community_usage_report",
+    new_callable=AsyncMock,
+)
+async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
+    mock_report, monkeypatch, mock_ctx: Context
+) -> None:
+    """The (auth_origin, fingerprint) pair is derived a single time per invocation and the
+    identical values flow to both the Mixpanel sink and the community report — with no second
+    ctx extraction / SHA-256 on the hot path (regression guard for the de-dup fix).
+
+    This drives the *real* analytics sink (only the Mixpanel client is mocked) and spies on the
+    real derivation helper rather than mocking it away. That is what makes the guard meaningful:
+    the origin is derived exactly once, by the decorator, and the identical value is observed in
+    the Mixpanel property bag — proving it was threaded through rather than recomputed by the sink.
+    Mocking the derivation away (the previous approach) made the "derived once" claim structurally
+    true by construction instead of observing it.
+    """
+    # Spy on the single derivation point — the shared telemetry.resolve_auth_signals helper the
+    # decorator delegates to — while keeping the real implementation.
+    signals_spy = MagicMock(side_effect=resolve_auth_signals)
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.resolve_auth_signals", signals_spy)
+
+    # Drive the real analytics sink with a mocked Mixpanel client so the property bag is
+    # genuinely exercised rather than structurally bypassed.
+    mock_mp = MagicMock()
+    monkeypatch.setattr("blockscout_mcp_server.analytics._is_http_mode_enabled", True, raising=False)
+    monkeypatch.setattr("blockscout_mcp_server.analytics._get_mixpanel_client", lambda: mock_mp)
+
+    # Deterministic valid client-key header -> origin "client", fingerprint = client-key hash.
+    monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
+    raw_key = "client-key-123"
+    mock_ctx.session = None
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, raw_key).request_context
+    mock_ctx.request_context.request.client = SimpleNamespace(host="127.0.0.1")
+
+    @log_tool_invocation
+    async def dummy_tool(a: int, ctx: Context) -> int:
+        return a
+
+    await dummy_tool(5, ctx=mock_ctx)
+    await asyncio.sleep(0)
+
+    # Derived exactly once by the decorator...
+    signals_spy.assert_called_once()
+
+    # ...and the same origin reached the Mixpanel property bag (3rd positional arg of mp.track),
+    # confirming the sink reused the threaded value instead of re-deriving it.
+    mock_mp.track.assert_called_once()
+    props = mock_mp.track.call_args.args[2]
+    assert props["auth_origin"] == "client"
+    # The fingerprint is never emitted to Mixpanel (privacy invariant).
+    assert "api_key_fingerprint" not in props
+
+    # ...and the identical pair reached the community report.
+    expected_fingerprint = _fingerprint_pro_api_key(raw_key)
+    mock_report.assert_awaited_once()
+    call_kwargs = mock_report.await_args.kwargs
+    assert call_kwargs["auth_origin"] == "client"
+    assert call_kwargs["api_key_fingerprint"] == expected_fingerprint
 
 
 @pytest.mark.asyncio
