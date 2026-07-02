@@ -98,6 +98,39 @@ def test_resolve_auth_signals_never_raises(monkeypatch):
     assert telemetry.resolve_auth_signals(object()) == (None, None)
 
 
+def test_resolve_auth_signals_never_raises_when_gate_raises(monkeypatch):
+    """A failure in the gate itself degrades to (None, None): the gate is inside the try.
+
+    Guards the contract that no observability concern — not even evaluating the
+    telemetry-active precondition — can propagate into the tool body.
+    """
+    monkeypatch.setattr(
+        "blockscout_mcp_server.telemetry.is_any_telemetry_active",
+        MagicMock(side_effect=RuntimeError("boom")),
+    )
+
+    assert telemetry.resolve_auth_signals(object()) == (None, None)
+
+
+@pytest.mark.parametrize(
+    ("http_mode", "community_disabled", "expected"),
+    [
+        (True, True, True),  # analytics sink live -> active
+        (True, False, True),  # both sinks live -> active
+        (False, False, True),  # community sink live -> active
+        (False, True, False),  # provably off -> inactive
+    ],
+)
+def test_is_any_telemetry_active_truth_table(monkeypatch, http_mode, community_disabled, expected):
+    """Reports inactive only when telemetry is provably off (not HTTP mode AND community disabled)."""
+    monkeypatch.setattr(config, "disable_community_telemetry", community_disabled, raising=False)
+    analytics.set_http_mode(http_mode)
+    try:
+        assert telemetry.is_any_telemetry_active() is expected
+    finally:
+        analytics.set_http_mode(False)
+
+
 @pytest.mark.asyncio
 async def test_send_community_usage_report_sent(monkeypatch):
     monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)

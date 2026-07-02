@@ -70,11 +70,8 @@ def log_resource_read(uri: Any, ctx: Any) -> None:
         pass
 
     # Derive the auth-origin / fingerprint signals once and reuse them for both
-    # sinks below (mirrors @log_tool_invocation). telemetry.resolve_auth_signals
-    # centralizes the single ctx extraction + SHA-256, the defensive guard, and the
-    # all-telemetry-disabled short-circuit shared verbatim with the tool path. The
-    # (None, None) fallback degrades gracefully — the analytics sink records the
-    # origin as AUTH_ORIGIN_UNKNOWN, the report omits the hash.
+    # sinks below (mirrors @log_tool_invocation); see telemetry.resolve_auth_signals
+    # for the rationale and gating.
     auth_origin, api_key_fingerprint = telemetry.resolve_auth_signals(ctx)
 
     # Step 2 — direct analytics sink (self-gating, synchronous).

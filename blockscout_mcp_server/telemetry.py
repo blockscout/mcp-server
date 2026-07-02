@@ -18,40 +18,49 @@ from blockscout_mcp_server.pro_api_key_context import compute_auth_signals
 logger = logging.getLogger(__name__)
 
 
+def is_any_telemetry_active() -> bool:
+    """Return whether any telemetry sink can still emit under the current config.
+
+    Single source of truth for the "is it worth deriving the request's auth
+    identity at all?" precondition, replacing the inline boolean that used to
+    duplicate the analytics and community sinks' own gates at each derivation site.
+    Kept deliberately coarse and conservative: it is a *superset* of the union of
+    the two sinks' precise send conditions, so it reports *inactive* only when
+    telemetry is provably off (not HTTP mode **and** community telemetry disabled).
+    Erring toward "active" keeps callers independent of each sink's internal logic;
+    the sinks still self-gate before actually sending.
+    """
+    return analytics.is_http_mode_enabled() or not config.disable_community_telemetry
+
+
 def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     """Derive the ``(auth_origin, api_key_fingerprint)`` pair for the observability sinks.
 
     Single entry point shared by both observability paths — ``log_tool_invocation``
     (the tool decorator) and ``log_resource_read`` — so the one ``ctx`` extraction
-    and SHA-256 (see :func:`blockscout_mcp_server.pro_api_key_context.compute_auth_signals`),
-    the defensive guard, and the short-circuit below are written once instead of
-    duplicated at each site.
+    and SHA-256 (in :func:`compute_auth_signals`), the defensive guard, and the
+    all-telemetry-disabled short-circuit are written once instead of duplicated at
+    each site. Returns ``(None, None)`` without touching ``ctx`` when no sink can
+    consume the signals (see :func:`is_any_telemetry_active`); both sinks
+    short-circuit on their own gates in that state anyway, so nothing emitted
+    changes while the ``ctx`` extraction and key hashing are skipped.
 
-    Returns ``(None, None)`` *without touching* ``ctx`` when no sink can consume the
-    signals — analytics is off (not HTTP mode) **and** community telemetry is
-    disabled. In that state both sinks short-circuit on their own gates before
-    reading these values, so skipping derivation changes nothing that is emitted
-    while avoiding the ``ctx`` extraction and key hashing. The guard is
-    deliberately a *superset* of the precise per-sink gates (it may still derive in
-    a rare config where only the suppressed sink would have run); erring toward
-    deriving keeps this cheap check independent of the sinks' internal logic. When
-    HTTP mode is off the analytics sink early-returns anyway, so a ``None`` origin
-    from this short-circuit never reaches its property bag.
+    The fingerprint is forward-provisioned: today only the community usage report
+    consumes it, but it is intended to key Mixpanel ``distinct_id`` per
+    user/instance depending on deployment (see SPEC.md -> Performance Optimizations
+    -> Dual-Mode Analytics). That is why signals are derived whenever *any*
+    telemetry sink is active, not only when community telemetry is enabled.
 
-    The server-key fingerprint (the fingerprint's only consumer is the community
-    usage report) is memoized in :func:`compute_auth_signals`, so it costs at most
-    one SHA-256 per process rather than one per call — there is nothing to gate on
-    the sinks' precise send conditions.
-
-    Never raises: :func:`compute_auth_signals` is defensive today, but the guard is
-    kept so this observability concern can never propagate into the tool body even
-    if that contract later changes. The ``(None, None)`` fallback degrades gracefully
-    — the analytics sink records the origin as ``AUTH_ORIGIN_UNKNOWN`` (it never
-    re-derives from ``ctx``), the community report omits the hash.
+    Never raises: :func:`compute_auth_signals` is defensive today, and the gate is
+    evaluated *inside* the ``try`` so this observability concern can never propagate
+    into the tool body even if either contract later changes. The ``(None, None)``
+    fallback degrades gracefully — the analytics sink records the origin as
+    ``AUTH_ORIGIN_UNKNOWN`` (it never re-derives from ``ctx``), the community report
+    omits the hash.
     """
-    if not analytics.is_http_mode_enabled() and config.disable_community_telemetry:
-        return None, None
     try:
+        if not is_any_telemetry_active():
+            return None, None
         return compute_auth_signals(ctx)
     except Exception:
         return None, None

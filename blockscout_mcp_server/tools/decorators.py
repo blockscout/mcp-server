@@ -29,12 +29,8 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         client_version = meta.version
         protocol_version = meta.protocol
 
-        # Derive the auth-origin / fingerprint signals once for this invocation and
-        # reuse them for both sinks below — mirroring how `meta` above is computed
-        # once and threaded into both the analytics and community-telemetry paths.
-        # telemetry.resolve_auth_signals centralizes the single ctx extraction +
-        # SHA-256, the defensive guard, and the all-telemetry-disabled short-circuit
-        # (shared verbatim with the resource-read path, observability.log_resource_read).
+        # Derive the auth-origin / fingerprint signals once and reuse them for both
+        # sinks below; see telemetry.resolve_auth_signals for the rationale and gating.
         auth_origin, api_key_fingerprint = telemetry.resolve_auth_signals(ctx)
 
         # Track analytics (no-op if disabled)
