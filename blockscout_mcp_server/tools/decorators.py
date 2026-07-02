@@ -29,6 +29,10 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         client_version = meta.version
         protocol_version = meta.protocol
 
+        # Derive the auth-origin / fingerprint signals once and reuse them for both
+        # sinks below; see telemetry.resolve_auth_signals for the rationale and gating.
+        auth_origin, api_key_fingerprint = telemetry.resolve_auth_signals(ctx)
+
         # Track analytics (no-op if disabled)
         try:
             analytics.track_tool_invocation(
@@ -36,6 +40,7 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
                 func.__name__,
                 arg_dict,
                 client_meta=meta,
+                auth_origin=auth_origin,
             )
         except Exception:
             # Defensive: tracking must never break tool execution
@@ -56,6 +61,8 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
                         client_name,
                         client_version,
                         protocol_version,
+                        auth_origin=auth_origin,
+                        api_key_fingerprint=api_key_fingerprint,
                     )
                 )
             except Exception:

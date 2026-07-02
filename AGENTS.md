@@ -24,7 +24,7 @@ mcp-server/
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── observability.py        # Resource-read observability helpers
-│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator
+│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator; auth-origin and key-fingerprint helpers for analytics/telemetry
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -115,6 +115,7 @@ mcp-server/
 │   │   ├── test_routes.py        # Unit tests for API route definitions
 │   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
 │   ├── conftest.py
+│   ├── pro_api_key_helpers.py  # Shared request-context builders for PRO API key / auth-signal tests
 │   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
 │   │   ├── .env.example
 │   │   ├── .gemini/
@@ -135,6 +136,7 @@ mcp-server/
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
 │   ├── test_observability.py  # Unit tests for resource-read observability
 │   ├── test_pro_api_key_context.py  # Unit tests for client-supplied PRO API key resolution
+│   ├── test_pro_api_key_context_auth_signals.py  # Unit tests for ctx-derived auth-origin and PRO API key fingerprint signals
 │   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
@@ -145,6 +147,7 @@ mcp-server/
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
+│   ├── test_tool_usage_report.py  # Unit tests for the ToolUsageReport telemetry payload model
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
 │   ├── resources/              # Unit tests for server-owned resource modules
 │   │   ├── __init__.py
@@ -398,6 +401,7 @@ mcp-server/
     * **`pro_api_key_context.py`**:
         * Owns request-scoped resolution of a client-supplied Blockscout PRO API key, kept separate from logging/observability.
         * Provides a `ContextVar` of the per-request client-key state, a normalization/validation helper, `extract_client_pro_api_key_from_ctx()`, `resolve_pro_api_key()` (precedence: valid client key → server key → not-configured error; malformed client key → terminal error, no fallback), and the `@pro_api_key_scope` decorator.
+        * Also provides the `ctx`-derived helper `compute_auth_signals()`, used by the analytics and community-telemetry paths.
         * Honored for any HTTP request that carries the configured header (MCP-over-HTTP or REST); the key is never logged or placed in cache keys.
         * Also defines the per-invocation credit-tracking symbols: `CreditSink`, the `_credit_sink` `ContextVar`, and the `@pro_api_credit_scope` decorator (a sibling of `@pro_api_key_scope`).
     * **`cache.py`**:

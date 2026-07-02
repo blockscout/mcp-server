@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from pydantic import AnyUrl
 
+from blockscout_mcp_server import pro_api_key_context
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
     UNDEFINED_CLIENT_VERSION,
@@ -83,7 +84,7 @@ def test_uri_normalisation_anyurl_becomes_str():
     ctx = _make_ctx()
     captured: list[str] = []
 
-    def fake_track(ctx_, uri_, client_meta=None):
+    def fake_track(ctx_, uri_, client_meta=None, auth_origin=None):
         captured.append(uri_)
 
     with (
@@ -118,6 +119,40 @@ def test_fan_out_both_sinks_called():
     assert forwarded_uri == _SKILL_URI
     # The community-telemetry sink coroutine was constructed and handed to create_task.
     mock_create_task.assert_called_once()
+
+
+def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
+    """send_community_resource_report receives auth_origin/api_key_fingerprint derived from ctx."""
+    # Keep community telemetry enabled so telemetry.resolve_auth_signals derives the signals instead
+    # of short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.config.disable_community_telemetry", False, raising=False)
+    monkeypatch.setattr("blockscout_mcp_server.pro_api_key_context.config.pro_api_key", "server-key", raising=False)
+    ctx = _make_ctx()
+
+    # new_callable=MagicMock: send_community_resource_report is an async def, so a bare
+    # patch() would auto-create an AsyncMock whose call yields an (orphaned) coroutine
+    # when create_task is also mocked away. See the module-level idiom note above.
+    with (
+        patch("blockscout_mcp_server.observability.analytics.track_resource_read"),
+        patch(
+            "blockscout_mcp_server.observability.telemetry.send_community_resource_report",
+            new_callable=MagicMock,
+        ) as mock_send_report,
+        patch("blockscout_mcp_server.observability.asyncio.create_task") as mock_create_task,
+    ):
+        log_resource_read(_SKILL_URI, ctx)
+
+    mock_create_task.assert_called_once()
+    # The coroutine handed to create_task is the one produced by calling the mocked sink.
+    mock_send_report.assert_called_once()
+    call_kwargs = mock_send_report.call_args.kwargs
+    assert call_kwargs["auth_origin"] == "server"
+    # Pin the forwarded fingerprint against the production helper (not merely "not None"), so a
+    # regression that forwards a different hash here — an unprefixed digest or the client-key hash —
+    # is caught. This boundary asserts wiring; the fingerprint *scheme* is re-derived independently
+    # only in the helper's own unit tests (_expected_fingerprint), so a scheme change touches one place.
+    expected_fingerprint = pro_api_key_context._fingerprint_pro_api_key("server-key")
+    assert call_kwargs["api_key_fingerprint"] == expected_fingerprint
 
 
 # ---------------------------------------------------------------------------
