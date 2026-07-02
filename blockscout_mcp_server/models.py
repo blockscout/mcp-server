@@ -20,14 +20,6 @@ _FINGERPRINT_PATTERN = re.compile(r"[0-9a-f]{64}")
 # rejected — see ``_tolerate_unknown_auth_origin``.
 _VALID_AUTH_ORIGINS = frozenset(get_args(AuthOrigin))
 
-# When an unrecognized `auth_origin` is coerced away, its value is logged verbatim only if it is a
-# short string. Legitimate version-skew values are short enum members (the longest valid origin is
-# 6 chars), so a short value is both safe and diagnostically useful to log; anything longer — a
-# 64-hex fingerprint, a raw key, or other junk swapped into the field by a buggy reporter — is
-# logged by type/length only, mirroring ``_tolerate_malformed_fingerprint``'s no-value-in-logs
-# posture. The cap sits well above any plausible enum member yet far below a 64-char fingerprint.
-_MAX_LOGGABLE_AUTH_ORIGIN_LEN = 16
-
 # --- Generic Type Variable ---
 T = TypeVar("T")
 
@@ -75,22 +67,16 @@ class ToolUsageReport(BaseModel):
         :func:`analytics.track_community_usage` already renders as the ``unknown`` bucket that legacy
         (field-absent) reports land in. This keeps both forward-compat wire signals symmetric with
         ``api_key_fingerprint`` below. The debug log preserves visibility into version skew that a
-        silent 422 (dropped on both ends) would hide, but — because the report is untrusted,
-        independently-versioned wire input — it emits the raw value only when it is a short string
-        (``_MAX_LOGGABLE_AUTH_ORIGIN_LEN``); a longer value (a fingerprint or key swapped into the
-        field by a buggy reporter) is logged by type and length only, never verbatim, matching the
-        no-secret-in-logs posture of :meth:`_tolerate_malformed_fingerprint`.
+        silent 422 (dropped on both ends) would hide; it records only the value's type and length —
+        never the value itself — mirroring :meth:`_tolerate_malformed_fingerprint`.
         """
         if value is None or (isinstance(value, str) and value in _VALID_AUTH_ORIGINS):
             return value
-        if isinstance(value, str) and len(value) <= _MAX_LOGGABLE_AUTH_ORIGIN_LEN:
-            logger.debug("Coercing unrecognized auth_origin to None (value=%r)", value)
-        else:
-            logger.debug(
-                "Coercing unrecognized auth_origin to None (type=%s, len=%s)",
-                type(value).__name__,
-                len(value) if isinstance(value, str) else "n/a",
-            )
+        logger.debug(
+            "Coercing unrecognized auth_origin to None (type=%s, len=%s)",
+            type(value).__name__,
+            len(value) if isinstance(value, str) else "n/a",
+        )
         return None
 
     @field_validator("api_key_fingerprint", mode="before")

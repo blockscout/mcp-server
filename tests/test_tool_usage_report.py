@@ -59,33 +59,22 @@ def test_auth_origin_tolerates_unrecognized_value(unrecognized):
     assert report.auth_origin is None
 
 
-def test_short_unrecognized_auth_origin_logs_value(caplog):
-    """A short unrecognized auth_origin is logged verbatim, preserving version-skew visibility.
+@pytest.mark.parametrize("value", ["proxy", "a" * 64])
+def test_unrecognized_string_auth_origin_logs_type_and_length_never_value(caplog, value):
+    """An unrecognized string auth_origin is logged by type and length only — never the value.
 
-    Legitimate skew values are short enum members (e.g. a future "proxy"), so logging the actual
-    value is both safe and the whole point of the debug line — it lets an operator see *which*
-    unexpected value a newer reporter sent.
+    A short version-skew member (e.g. a future "proxy") and long, secret-shaped junk (a 64-hex
+    fingerprint or raw key a buggy reporter swapped in) follow the identical path: the debug line
+    records that a coercion happened plus the value's type/length for version-skew visibility, but
+    the value itself never reaches the log. Mirrors the no-value-in-logs posture of the
+    api_key_fingerprint validator.
     """
     with caplog.at_level(logging.DEBUG, logger=_MODELS_LOGGER):
-        ToolUsageReport(**_base_payload(auth_origin="proxy"))
+        ToolUsageReport(**_base_payload(auth_origin=value))
 
-    assert "proxy" in caplog.text
-
-
-def test_secret_shaped_auth_origin_is_never_logged_verbatim(caplog):
-    """A long, secret-shaped unrecognized auth_origin is logged by type+len only, never verbatim.
-
-    Guards the credential-safety invariant: if a buggy reporter swaps a 64-hex fingerprint (or a
-    raw key) into auth_origin, the content must not leak into the central server's debug logs. This
-    mirrors the no-value-in-logs posture of the api_key_fingerprint validator.
-    """
-    secret_shaped = "a" * 64
-    with caplog.at_level(logging.DEBUG, logger=_MODELS_LOGGER):
-        ToolUsageReport(**_base_payload(auth_origin=secret_shaped))
-
-    assert secret_shaped not in caplog.text
+    assert value not in caplog.text
     assert "type=str" in caplog.text
-    assert "len=64" in caplog.text
+    assert f"len={len(value)}" in caplog.text
 
 
 def test_non_string_auth_origin_logs_type_without_length(caplog):
