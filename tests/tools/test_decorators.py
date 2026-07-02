@@ -48,6 +48,11 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
 
+    # Pin community telemetry on so resolve_auth_signals derives instead of short-circuiting to
+    # (None, None): with community disabled (e.g. BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY set in the
+    # env or a local .env) and HTTP mode off, no sink would consume the signals and auth_origin
+    # would be None regardless of the header — making the assertion below untestable.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
     # A valid client PRO API key header makes the derived origin deterministic ("client").
     # Pinning the exact value is what gives the assertion teeth: `in ("client","server","none")`
     # is vacuous because every AuthOrigin member trivially satisfies it, so it would pass even
@@ -147,6 +152,9 @@ async def test_log_tool_invocation_with_intermediary(caplog: pytest.LogCaptureFi
     new_callable=AsyncMock,
 )
 async def test_decorator_reports_telemetry(mock_report, monkeypatch, mock_ctx: Context) -> None:
+    # Keep community telemetry enabled so resolve_auth_signals derives auth_origin instead of
+    # short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
     monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
 
     @log_tool_invocation
@@ -175,6 +183,9 @@ async def test_decorator_reports_telemetry(mock_report, monkeypatch, mock_ctx: C
 )
 async def test_decorator_reports_telemetry_with_client_key(mock_report, monkeypatch, mock_ctx: Context) -> None:
     """A client-supplied PRO API key header is forwarded as a non-reversible fingerprint."""
+    # Keep community telemetry enabled so resolve_auth_signals derives auth_origin instead of
+    # short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr(server_config, "disable_community_telemetry", False, raising=False)
     monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
     raw_key = "super-secret-client-key"
 

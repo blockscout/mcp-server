@@ -124,6 +124,9 @@ def test_fan_out_both_sinks_called():
 
 def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
     """send_community_resource_report receives auth_origin/api_key_fingerprint derived from ctx."""
+    # Keep community telemetry enabled so telemetry.resolve_auth_signals derives the signals instead
+    # of short-circuiting to (None, None) when BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY is set ambiently.
+    monkeypatch.setattr("blockscout_mcp_server.telemetry.config.disable_community_telemetry", False, raising=False)
     monkeypatch.setattr("blockscout_mcp_server.pro_api_key_context.config.pro_api_key", "server-key", raising=False)
     ctx = _make_ctx()
 
