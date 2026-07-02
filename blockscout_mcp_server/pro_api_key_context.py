@@ -258,15 +258,15 @@ def _fingerprint_pro_api_key(key: str) -> str:
     return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
 
 
-def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
+def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> tuple[AuthOrigin, str | None]:
     """Derive the ``(auth_origin, api_key_fingerprint)`` pair for *ctx* in one pass.
 
     Single source of truth for both signals: each precedence branch returns the
     origin and the matching fingerprint together, so the two can never disagree
     (``"client"`` ↔ client hash, ``"server"`` ↔ server hash, ``"none"`` ↔
-    ``None``). :func:`compute_auth_origin` and :func:`compute_api_key_fingerprint`
-    are thin views over this function; callers needing both should call this
-    directly to avoid extracting the key state twice.
+    ``None``). :func:`compute_auth_origin` is a thin view over this function;
+    callers needing both should call this directly to avoid extracting the key
+    state twice.
 
     Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
     which never raises) and never calls :func:`resolve_pro_api_key` (it reads the
@@ -279,6 +279,14 @@ def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
       chokepoint anyway).
     - No client key (absent) → ``("server", <hash of config.pro_api_key>)`` when
       ``config.pro_api_key`` is truthy, otherwise ``("none", None)``.
+
+    ``include_server_fingerprint`` gates *only* the server-key hash. Its sole
+    consumer is the community usage report, so callers pass ``False`` when
+    community reporting is disabled to skip an SHA-256 that nothing would read
+    (the server branch then returns ``("server", None)`` — origin unchanged). The
+    client-key fingerprint is *always* derived under any active sink: it is
+    deliberate pre-provisioning for the deferred Mixpanel ``distinct_id`` follow-up
+    that will consume it, so it is never gated here.
 
     The raw key is never returned, logged, or used anywhere but as the hash
     input.
@@ -293,6 +301,10 @@ def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
 
     # _Absent — fall back to whether a server key is configured.
     if config.pro_api_key:
+        # The server-key fingerprint's only consumer is the community usage
+        # report; skip the hash entirely when that sink is disabled.
+        if not include_server_fingerprint:
+            return "server", None
         return "server", _fingerprint_pro_api_key(config.pro_api_key)
     return "none", None
 
@@ -303,21 +315,16 @@ def compute_auth_origin(ctx: Any) -> AuthOrigin:
     Thin view over :func:`compute_auth_signals` for call sites that consume the
     origin alone (e.g. the Mixpanel property bag, where the fingerprint is
     deliberately not emitted).
+
+    Because it discards the fingerprint (``[0]``), it passes
+    ``include_server_fingerprint=False`` to skip the server-key SHA-256 that
+    would otherwise be computed and thrown away — the origin is identical on
+    every branch, so this changes nothing observable. Note this only skips the
+    *server*-key hash: the ``"client"`` branch of :func:`compute_auth_signals`
+    still hashes the client key (that path is not gated), but it is
+    ~unreachable here in production and its cost is out of scope.
     """
-    return compute_auth_signals(ctx)[0]
-
-
-def compute_api_key_fingerprint(ctx: Any) -> str | None:
-    """Return only the one-way fingerprint of the effective PRO API key for *ctx*.
-
-    Thin view over :func:`compute_auth_signals`. Intentionally retained for API
-    symmetry with :func:`compute_auth_origin`: today's sinks read the fingerprint
-    via :func:`compute_auth_signals` directly, so this wrapper has no production
-    caller yet — it is kept on purpose as the ready-made entry point for the
-    deferred fingerprint consumer (the follow-up that forwards/persists the
-    fingerprint for unique-user identity). Do not prune as unused.
-    """
-    return compute_auth_signals(ctx)[1]
+    return compute_auth_signals(ctx, include_server_fingerprint=False)[0]
 
 
 # ---------------------------------------------------------------------------

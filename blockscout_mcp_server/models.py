@@ -1,11 +1,19 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Pydantic models for standardized tool responses."""
 
+import logging
+import re
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from blockscout_mcp_server.constants import AuthOrigin
+
+logger = logging.getLogger(__name__)
+
+# A fingerprint is exactly 64 lowercase hex characters — the shape of a
+# hashlib.sha256(...).hexdigest() digest.
+_FINGERPRINT_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 # --- Generic Type Variable ---
 T = TypeVar("T")
@@ -28,15 +36,32 @@ class ToolUsageReport(BaseModel):
     )
     api_key_fingerprint: str | None = Field(
         default=None,
-        pattern=r"^[0-9a-f]{64}$",
         description=(
             "A one-way, non-reversible SHA-256 hex digest fingerprint of the effective PRO API "
             "key available to back the reported call, or null if no usable key was available. "
-            "The anchored pattern already constrains this to exactly 64 lowercase hex characters. "
-            "This field is accepted over the wire but is not yet consumed (not forwarded to "
-            "Mixpanel, not persisted)."
+            "A valid value is exactly 64 lowercase hex characters. Because this field is accepted "
+            "over the wire but not yet consumed (not forwarded to Mixpanel, not persisted), a "
+            "malformed value is tolerated: it is coerced to null rather than rejecting the "
+            "otherwise-valid report."
         ),
     )
+
+    @field_validator("api_key_fingerprint", mode="before")
+    @classmethod
+    def _tolerate_malformed_fingerprint(cls, value: Any) -> str | None:
+        """Coerce a malformed, not-yet-consumed fingerprint to ``None`` instead of rejecting.
+
+        The fingerprint is a forward-compatible wire signal that no consumer reads yet, so one
+        malformed value must not drop an otherwise-valid community report. Any value that is not
+        ``None`` and not a ``str`` matching the 64-lowercase-hex ``_FINGERPRINT_PATTERN`` (including
+        non-string junk) is coerced to ``None``, preserving the "present ⇒ valid 64-hex" invariant
+        for the deferred identity follow-up. ``auth_origin`` stays strictly validated because it is
+        consumed.
+        """
+        if value is None or (isinstance(value, str) and _FINGERPRINT_PATTERN.fullmatch(value)):
+            return value
+        logger.debug("Coercing malformed api_key_fingerprint to None (type=%s)", type(value).__name__)
+        return None
 
 
 # --- Models for Pagination ---

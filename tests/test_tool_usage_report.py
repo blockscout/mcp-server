@@ -76,29 +76,49 @@ def test_explicit_null_auth_origin_with_null_fingerprint_round_trips():
     assert report.api_key_fingerprint is None
 
 
-def test_api_key_fingerprint_rejects_too_short_value():
-    """A malformed (too short) api_key_fingerprint raises a pydantic ValidationError."""
-    with pytest.raises(ValidationError):
-        ToolUsageReport(**_base_payload(api_key_fingerprint="abc"))
+def test_api_key_fingerprint_tolerates_too_short_value():
+    """A malformed (too short) api_key_fingerprint is tolerated: coerced to None, not rejected.
 
-
-def test_api_key_fingerprint_rejects_non_hex_value():
-    """A 64-character but non-hex api_key_fingerprint raises a pydantic ValidationError."""
-    with pytest.raises(ValidationError):
-        ToolUsageReport(**_base_payload(api_key_fingerprint="z" * 64))
-
-
-def test_api_key_fingerprint_rejects_uppercase_hex_value():
-    """A 64-character uppercase-hex api_key_fingerprint raises a pydantic ValidationError.
-
-    The pattern `^[0-9a-f]{64}$` only accepts lowercase hex, matching the lowercase output of
-    `hashlib.sha256(...).hexdigest()`.
+    The fingerprint is a not-yet-consumed forward-compat field, so a malformed value must not
+    drop the otherwise-valid report.
     """
-    with pytest.raises(ValidationError):
-        ToolUsageReport(**_base_payload(api_key_fingerprint="A" * 64))
+    report = ToolUsageReport(**_base_payload(api_key_fingerprint="abc"))
+
+    assert report.api_key_fingerprint is None
 
 
-def test_api_key_fingerprint_rejects_over_length_value():
-    """An over-length api_key_fingerprint raises a pydantic ValidationError."""
-    with pytest.raises(ValidationError):
-        ToolUsageReport(**_base_payload(api_key_fingerprint="a" * 65))
+def test_api_key_fingerprint_tolerates_non_hex_value():
+    """A 64-character but non-hex api_key_fingerprint is coerced to None rather than rejected."""
+    report = ToolUsageReport(**_base_payload(api_key_fingerprint="z" * 64))
+
+    assert report.api_key_fingerprint is None
+
+
+def test_api_key_fingerprint_tolerates_uppercase_hex_value():
+    """A 64-character uppercase-hex api_key_fingerprint is coerced to None rather than rejected.
+
+    Only lowercase hex is valid (matching the lowercase output of
+    `hashlib.sha256(...).hexdigest()`), so uppercase is treated as malformed and tolerated.
+    """
+    report = ToolUsageReport(**_base_payload(api_key_fingerprint="A" * 64))
+
+    assert report.api_key_fingerprint is None
+
+
+def test_api_key_fingerprint_tolerates_over_length_value():
+    """An over-length api_key_fingerprint is coerced to None rather than rejected."""
+    report = ToolUsageReport(**_base_payload(api_key_fingerprint="a" * 65))
+
+    assert report.api_key_fingerprint is None
+
+
+@pytest.mark.parametrize("junk", [123, ["a" * 64], {"fingerprint": "a" * 64}, 45.6, True])
+def test_api_key_fingerprint_tolerates_non_string_junk(junk):
+    """A non-string junk api_key_fingerprint (int/list/dict/float/bool) is coerced to None.
+
+    The `mode="before"` validator guards with `isinstance(value, str)` before the regex, so
+    non-string input never reaches the pattern and is tolerated as None rather than raising.
+    """
+    report = ToolUsageReport(**_base_payload(api_key_fingerprint=junk))
+
+    assert report.api_key_fingerprint is None

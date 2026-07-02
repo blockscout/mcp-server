@@ -38,6 +38,12 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     HTTP mode is off the analytics sink early-returns before its ``ctx`` re-derivation
     fallback, so a ``None`` origin from this short-circuit is never observed by it.
 
+    The server-key fingerprint is gated on the community sink: its only consumer
+    is the community usage report, so ``include_server_fingerprint`` is passed as
+    ``not config.disable_community_telemetry`` to skip that SHA-256 when community
+    reporting is off. The client-key fingerprint is unaffected — it is still
+    derived for the analytics sink and the deferred identity follow-up.
+
     Never raises: :func:`compute_auth_signals` is defensive today, but the guard is
     kept so this observability concern can never propagate into the tool body even
     if that contract later changes. The ``(None, None)`` fallback degrades gracefully
@@ -47,7 +53,7 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     if not analytics.is_http_mode_enabled() and config.disable_community_telemetry:
         return None, None
     try:
-        return compute_auth_signals(ctx)
+        return compute_auth_signals(ctx, include_server_fingerprint=not config.disable_community_telemetry)
     except Exception:
         return None, None
 

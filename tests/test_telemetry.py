@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+from types import SimpleNamespace
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
+from starlette.datastructures import Headers
 
 from blockscout_mcp_server import analytics, telemetry
 from blockscout_mcp_server.config import config
@@ -32,7 +34,11 @@ def test_resolve_auth_signals_short_circuits_when_all_telemetry_disabled(monkeyp
 
 
 def test_resolve_auth_signals_derives_when_community_enabled(monkeypatch):
-    """Community telemetry enabled (HTTP mode off) still needs the signals -> derivation runs."""
+    """Community telemetry enabled (HTTP mode off) still needs the signals -> derivation runs.
+
+    The community sink consumes the server-key fingerprint, so the server hash is
+    requested (``include_server_fingerprint=True``).
+    """
     monkeypatch.setattr(config, "disable_community_telemetry", False, raising=False)
     analytics.set_http_mode(False)
     compute_spy = MagicMock(return_value=("server", "d" * 64))
@@ -40,11 +46,15 @@ def test_resolve_auth_signals_derives_when_community_enabled(monkeypatch):
 
     ctx = object()
     assert telemetry.resolve_auth_signals(ctx) == ("server", "d" * 64)
-    compute_spy.assert_called_once_with(ctx)
+    compute_spy.assert_called_once_with(ctx, include_server_fingerprint=True)
 
 
 def test_resolve_auth_signals_derives_in_http_mode_even_if_community_disabled(monkeypatch):
-    """HTTP mode on feeds the analytics sink, so derivation runs even when community is disabled."""
+    """HTTP mode on feeds the analytics sink, so derivation runs even when community is disabled.
+
+    Community is off, so the server-key fingerprint has no consumer: the flag is
+    threaded through as ``include_server_fingerprint=False``.
+    """
     monkeypatch.setattr(config, "disable_community_telemetry", True, raising=False)
     analytics.set_http_mode(True)
     try:
@@ -53,7 +63,28 @@ def test_resolve_auth_signals_derives_in_http_mode_even_if_community_disabled(mo
 
         ctx = object()
         assert telemetry.resolve_auth_signals(ctx) == ("client", "e" * 64)
-        compute_spy.assert_called_once_with(ctx)
+        compute_spy.assert_called_once_with(ctx, include_server_fingerprint=False)
+    finally:
+        analytics.set_http_mode(False)
+
+
+def test_resolve_auth_signals_skips_server_fingerprint_when_community_disabled(monkeypatch):
+    """End-to-end gate: absent client key + server key + HTTP on + community off -> ("server", None).
+
+    Uses the real compute_auth_signals (no spy) to prove the flag is threaded
+    through and the server-key SHA-256 is skipped, while auth_origin stays "server".
+    """
+    monkeypatch.setattr(config, "disable_community_telemetry", True, raising=False)
+    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    analytics.set_http_mode(True)
+    try:
+        ctx = SimpleNamespace(
+            request_context=SimpleNamespace(
+                request=SimpleNamespace(headers=Headers(headers={"Blockscout-MCP-Pro-Api-Key": ""}))
+            )
+        )
+        assert telemetry.resolve_auth_signals(ctx) == ("server", None)
     finally:
         analytics.set_http_mode(False)
 

@@ -811,8 +811,13 @@ async def test_report_tool_usage_rejects_bad_auth_origin_enum(client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_report_tool_usage_rejects_malformed_fingerprint(client: AsyncClient):
-    """A syntactically invalid api_key_fingerprint is rejected with a 422."""
+@patch("blockscout_mcp_server.api.routes.analytics.track_community_usage")
+async def test_report_tool_usage_tolerates_malformed_fingerprint(mock_track, client: AsyncClient):
+    """A syntactically invalid api_key_fingerprint does not drop the otherwise-valid report.
+
+    The not-yet-consumed fingerprint is coerced to None by the model, so the report is still
+    accepted (202) and forwarded once with `api_key_fingerprint is None`.
+    """
     payload = {
         "tool_name": "dummy",
         "tool_args": {"a": 1},
@@ -823,7 +828,10 @@ async def test_report_tool_usage_rejects_malformed_fingerprint(client: AsyncClie
     }
     headers = {"User-Agent": "BlockscoutMCP/0.0"}
     response = await client.post("/v1/report_tool_usage", json=payload, headers=headers)
-    assert response.status_code == 422
+    assert response.status_code == 202
+    mock_track.assert_called_once()
+    _, kwargs = mock_track.call_args
+    assert kwargs["report"].api_key_fingerprint is None
 
 
 @pytest.mark.asyncio
