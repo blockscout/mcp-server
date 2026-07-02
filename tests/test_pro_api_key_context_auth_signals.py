@@ -2,8 +2,8 @@
 """Unit tests for the ctx-derived auth-origin and fingerprint helpers.
 
 Kept in a focused sibling module rather than grown into
-``tests/test_pro_api_key_context.py`` (already 466 LOC, close to the rule
-``210`` 500-LOC limit) per the rule ``210`` guidance.
+``tests/test_pro_api_key_context.py`` (already 466 LOC, close to the
+500-LOC test-file limit).
 """
 
 from __future__ import annotations
