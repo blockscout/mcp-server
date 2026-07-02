@@ -136,6 +136,7 @@ mcp-server/
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
 │   ├── test_observability.py  # Unit tests for resource-read observability
 │   ├── test_pro_api_key_context.py  # Unit tests for client-supplied PRO API key resolution
+│   ├── test_pro_api_key_context_auth_signals.py  # Unit tests for ctx-derived auth-origin and PRO API key fingerprint signals
 │   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
@@ -146,6 +147,7 @@ mcp-server/
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
+│   ├── test_tool_usage_report.py  # Unit tests for the ToolUsageReport telemetry payload model
 │   ├── test_web3_pool.py  # Unit tests for web3 pool management
 │   ├── resources/              # Unit tests for server-owned resource modules
 │   │   ├── __init__.py

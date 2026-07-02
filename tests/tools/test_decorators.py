@@ -8,6 +8,7 @@ import mcp.types as types
 import pytest
 from mcp.server.fastmcp import Context
 from mcp.types import RequestParams
+from pro_api_key_helpers import ctx_with_header
 from starlette.datastructures import Headers
 
 from blockscout_mcp_server.api.dependencies import MockCtx
@@ -56,9 +57,8 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
     # is vacuous because every AuthOrigin member trivially satisfies it, so it would pass even
     # if the decorator threaded a constant or the wrong field.
     monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
-    headers = Headers(headers={server_config.pro_api_key_header.upper(): "client-key-123"})
     mock_ctx.session = None
-    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, "client-key-123").request_context
 
     # Act
     await dummy_tool(7, ctx=mock_ctx)
@@ -191,9 +191,8 @@ async def test_decorator_reports_telemetry_with_client_key(mock_report, monkeypa
     async def dummy_tool(a: int, ctx: Context) -> int:
         return a
 
-    headers = Headers(headers={server_config.pro_api_key_header.upper(): raw_key})
     mock_ctx.session = None
-    mock_ctx.request_context = SimpleNamespace(request=SimpleNamespace(headers=headers))
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, raw_key).request_context
     await dummy_tool(5, ctx=mock_ctx)
     await asyncio.sleep(0)
 
@@ -237,10 +236,9 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
     # Deterministic valid client-key header -> origin "client", fingerprint = client-key hash.
     monkeypatch.setattr(server_config, "pro_api_key", "", raising=False)
     raw_key = "client-key-123"
-    headers = Headers(headers={server_config.pro_api_key_header.upper(): raw_key})
-    req = SimpleNamespace(headers=headers, client=SimpleNamespace(host="127.0.0.1"))
     mock_ctx.session = None
-    mock_ctx.request_context = SimpleNamespace(request=req)
+    mock_ctx.request_context = ctx_with_header(server_config.pro_api_key_header, raw_key).request_context
+    mock_ctx.request_context.request.client = SimpleNamespace(host="127.0.0.1")
 
     @log_tool_invocation
     async def dummy_tool(a: int, ctx: Context) -> int:
