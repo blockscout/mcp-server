@@ -1,17 +1,14 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-import hashlib
-from types import SimpleNamespace
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
-from starlette.datastructures import Headers
+from pro_api_key_helpers import ctx_with_header
 
-from blockscout_mcp_server import analytics, telemetry
+from blockscout_mcp_server import analytics, pro_api_key_context, telemetry
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import (
     COMMUNITY_TELEMETRY_ENDPOINT,
     COMMUNITY_TELEMETRY_URL,
-    PRO_API_KEY_HASH_PREFIX,
     RESOURCE_READ_EVENT,
 )
 
@@ -82,12 +79,8 @@ def test_resolve_auth_signals_returns_server_fingerprint_in_http_mode(monkeypatc
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
     analytics.set_http_mode(True)
     try:
-        ctx = SimpleNamespace(
-            request_context=SimpleNamespace(
-                request=SimpleNamespace(headers=Headers(headers={"Blockscout-MCP-Pro-Api-Key": ""}))
-            )
-        )
-        expected = hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}server-key".encode()).hexdigest()
+        ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "")
+        expected = pro_api_key_context._fingerprint_pro_api_key("server-key")
         assert telemetry.resolve_auth_signals(ctx) == ("server", expected)
     finally:
         analytics.set_http_mode(False)

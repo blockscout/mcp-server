@@ -9,11 +9,10 @@ Kept in a focused sibling module rather than grown into
 from __future__ import annotations
 
 import hashlib
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from starlette.datastructures import Headers
+from pro_api_key_helpers import ctx_with_header, ctx_with_malformed_header
 
 from blockscout_mcp_server import pro_api_key_context
 from blockscout_mcp_server.config import config
@@ -25,28 +24,6 @@ from blockscout_mcp_server.pro_api_key_context import (
 )
 
 _HEADER_NAME = "Blockscout-MCP-Pro-Api-Key"
-
-
-def _ctx_with_header(header_name: str, header_value: str) -> SimpleNamespace:
-    """Build a minimal MCP-like context carrying *header_value* under *header_name*.
-
-    Mirrors the helper in ``tests/test_pro_api_key_context.py``.
-    """
-    headers = Headers(headers={header_name.upper(): header_value})
-    request = SimpleNamespace(headers=headers)
-    return SimpleNamespace(request_context=SimpleNamespace(request=request))
-
-
-def _ctx_with_malformed_header(header_name: str, header_value: str) -> SimpleNamespace:
-    """Build a context whose header value contains control characters.
-
-    Uses a plain dict so a value that real ``starlette.datastructures.Headers``
-    would refuse to encode can still be injected (mirrors the equivalent helper
-    usage in ``tests/test_pro_api_key_context.py``).
-    """
-    headers = {header_name: header_value}
-    request = SimpleNamespace(headers=headers)
-    return SimpleNamespace(request_context=SimpleNamespace(request=request))
 
 
 def _expected_fingerprint(key: str) -> str:
@@ -63,7 +40,7 @@ def test_fingerprint_never_equals_or_contains_raw_key(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "", raising=False)
     raw_key = "super-secret-client-key-456"
-    ctx = _ctx_with_header(_HEADER_NAME, raw_key)
+    ctx = ctx_with_header(_HEADER_NAME, raw_key)
     fingerprint = compute_auth_signals(ctx)[1]
     assert fingerprint is not None
     assert fingerprint != raw_key
@@ -75,7 +52,7 @@ def test_fingerprint_prefix_actually_participates(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "", raising=False)
     raw_key = "client-key-789"
-    ctx = _ctx_with_header(_HEADER_NAME, raw_key)
+    ctx = ctx_with_header(_HEADER_NAME, raw_key)
     fingerprint = compute_auth_signals(ctx)[1]
     unprefixed_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
     assert fingerprint != unprefixed_hash
@@ -95,28 +72,28 @@ def test_fingerprint_prefix_actually_participates(monkeypatch):
 def test_auth_signals_valid_client_returns_client_and_client_hash(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
+    ctx = ctx_with_header(_HEADER_NAME, "client-key-123")
     assert compute_auth_signals(ctx) == ("client", _expected_fingerprint("client-key-123"))
 
 
 def test_auth_signals_malformed_returns_none_and_no_fingerprint(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey")
+    ctx = ctx_with_malformed_header(_HEADER_NAME, "bad\nkey")
     assert compute_auth_signals(ctx) == ("none", None)
 
 
 def test_auth_signals_absent_with_server_key_returns_server_and_server_hash(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "")
+    ctx = ctx_with_header(_HEADER_NAME, "")
     assert compute_auth_signals(ctx) == ("server", _expected_fingerprint("server-key"))
 
 
 def test_auth_signals_absent_with_no_server_key_returns_none_and_no_fingerprint(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "")
+    ctx = ctx_with_header(_HEADER_NAME, "")
     assert compute_auth_signals(ctx) == ("none", None)
 
 
@@ -144,7 +121,7 @@ def test_server_fingerprint_is_memoized_across_calls(monkeypatch):
     fingerprint_spy = MagicMock(side_effect=pro_api_key_context._fingerprint_pro_api_key)
     monkeypatch.setattr(pro_api_key_context, "_fingerprint_pro_api_key", fingerprint_spy)
 
-    ctx = _ctx_with_header(_HEADER_NAME, "")  # absent client key -> server fallback
+    ctx = ctx_with_header(_HEADER_NAME, "")  # absent client key -> server fallback
     expected = ("server", _expected_fingerprint("server-key"))
     assert compute_auth_signals(ctx) == expected
     assert compute_auth_signals(ctx) == expected
@@ -165,7 +142,7 @@ def test_client_fingerprint_is_never_memoized(monkeypatch):
     fingerprint_spy = MagicMock(side_effect=pro_api_key_context._fingerprint_pro_api_key)
     monkeypatch.setattr(pro_api_key_context, "_fingerprint_pro_api_key", fingerprint_spy)
 
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
+    ctx = ctx_with_header(_HEADER_NAME, "client-key-123")
     expected = ("client", _expected_fingerprint("client-key-123"))
     assert compute_auth_signals(ctx) == expected
     assert compute_auth_signals(ctx) == expected
@@ -205,28 +182,28 @@ def _resolve_outcome(state: pro_api_key_context.ClientKeyState) -> tuple[str, st
     [
         pytest.param(
             "server-key",
-            lambda: _ctx_with_header(_HEADER_NAME, "client-key-123"),
+            lambda: ctx_with_header(_HEADER_NAME, "client-key-123"),
             "client",
             ("key", "client-key-123"),
             id="valid-client-wins",
         ),
         pytest.param(
             "server-key",
-            lambda: _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey"),
+            lambda: ctx_with_malformed_header(_HEADER_NAME, "bad\nkey"),
             "none",
             ("raised", None),
             id="malformed-rejected-no-fallback",
         ),
         pytest.param(
             "server-key",
-            lambda: _ctx_with_header(_HEADER_NAME, ""),
+            lambda: ctx_with_header(_HEADER_NAME, ""),
             "server",
             ("key", "server-key"),
             id="absent-falls-back-to-server",
         ),
         pytest.param(
             "",
-            lambda: _ctx_with_header(_HEADER_NAME, ""),
+            lambda: ctx_with_header(_HEADER_NAME, ""),
             "none",
             ("key", ""),
             id="absent-no-server-key",

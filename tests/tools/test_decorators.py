@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import asyncio
-import hashlib
 import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -18,8 +17,8 @@ from blockscout_mcp_server.client_meta import (
     UNKNOWN_PROTOCOL_VERSION,
 )
 from blockscout_mcp_server.config import config as server_config
-from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.pro_api_key_context import (
+    _fingerprint_pro_api_key,
     pro_api_key_scope,
     resolve_pro_api_key,
 )
@@ -262,7 +261,7 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
     assert "api_key_fingerprint" not in props
 
     # ...and the identical pair reached the community report.
-    expected_fingerprint = hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{raw_key}".encode()).hexdigest()
+    expected_fingerprint = _fingerprint_pro_api_key(raw_key)
     mock_report.assert_awaited_once()
     call_kwargs = mock_report.await_args.kwargs
     assert call_kwargs["auth_origin"] == "client"
