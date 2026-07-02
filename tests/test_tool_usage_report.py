@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Tests for the `ToolUsageReport` Pydantic model's optional auth-signal fields."""
 
+import logging
+
 import pytest
 
 from blockscout_mcp_server.models import ToolUsageReport
+
+_MODELS_LOGGER = "blockscout_mcp_server.models"
 
 VALID_FINGERPRINT = "a" * 64
 
@@ -53,6 +57,48 @@ def test_auth_origin_tolerates_unrecognized_value(unrecognized):
     report = ToolUsageReport(**_base_payload(auth_origin=unrecognized))
 
     assert report.auth_origin is None
+
+
+def test_short_unrecognized_auth_origin_logs_value(caplog):
+    """A short unrecognized auth_origin is logged verbatim, preserving version-skew visibility.
+
+    Legitimate skew values are short enum members (e.g. a future "proxy"), so logging the actual
+    value is both safe and the whole point of the debug line — it lets an operator see *which*
+    unexpected value a newer reporter sent.
+    """
+    with caplog.at_level(logging.DEBUG, logger=_MODELS_LOGGER):
+        ToolUsageReport(**_base_payload(auth_origin="proxy"))
+
+    assert "proxy" in caplog.text
+
+
+def test_secret_shaped_auth_origin_is_never_logged_verbatim(caplog):
+    """A long, secret-shaped unrecognized auth_origin is logged by type+len only, never verbatim.
+
+    Guards the credential-safety invariant: if a buggy reporter swaps a 64-hex fingerprint (or a
+    raw key) into auth_origin, the content must not leak into the central server's debug logs. This
+    mirrors the no-value-in-logs posture of the api_key_fingerprint validator.
+    """
+    secret_shaped = "a" * 64
+    with caplog.at_level(logging.DEBUG, logger=_MODELS_LOGGER):
+        ToolUsageReport(**_base_payload(auth_origin=secret_shaped))
+
+    assert secret_shaped not in caplog.text
+    assert "type=str" in caplog.text
+    assert "len=64" in caplog.text
+
+
+def test_non_string_auth_origin_logs_type_without_length(caplog):
+    """A non-string unrecognized auth_origin logs its type with ``len=n/a`` and never raises.
+
+    The ``len(...)`` diagnostic is guarded by ``isinstance(value, str)``, so junk types (here a
+    list, which does have ``len``) still report ``n/a`` rather than a misleading element count.
+    """
+    with caplog.at_level(logging.DEBUG, logger=_MODELS_LOGGER):
+        ToolUsageReport(**_base_payload(auth_origin=["client"]))
+
+    assert "type=list" in caplog.text
+    assert "len=n/a" in caplog.text
 
 
 def test_api_key_fingerprint_round_trips_valid_value():
