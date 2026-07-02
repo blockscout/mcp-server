@@ -116,56 +116,52 @@ def test_auth_signals_absent_with_no_server_key_returns_none_and_no_fingerprint(
 
 
 # ===========================================================================
-# include_server_fingerprint gate — server hash only when a consumer exists
+# Server-key fingerprint memoization — the constant server hash is computed once
 # ===========================================================================
 #
-# The server-key fingerprint's only consumer is the community usage report, so
-# resolve_auth_signals passes include_server_fingerprint=False when community
-# reporting is disabled. Only the absent-client / server-key branch is gated;
-# the client-key path is deliberately never gated (pre-provisioning for the
-# deferred distinct_id follow-up).
+# The server key is fixed for the process lifetime, so its SHA-256 is memoized
+# (see _server_api_key_fingerprint) and the observability hot path reuses the one
+# digest instead of re-hashing the same constant on every tool call / resource read.
 
 
-def test_auth_signals_absent_with_server_key_skips_server_hash_when_gated(monkeypatch):
-    """Absent client key + server key + include_server_fingerprint=False -> ("server", None).
+def test_server_fingerprint_is_memoized_across_calls(monkeypatch):
+    """Absent client key + server key -> ("server", <hash>), hashing the server key once.
 
-    Origin stays "server"; only the SHA-256 is skipped because nothing consumes it.
+    Pins the optimization that replaces the old ``include_server_fingerprint``
+    gate: rather than skipping the hash when no consumer exists, the fixed server
+    key is hashed once and reused. The spy below proves a second derivation reuses
+    the memoized digest instead of re-running the SHA-256.
     """
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "")
-    assert compute_auth_signals(ctx, include_server_fingerprint=False) == ("server", None)
-
-
-def test_auth_signals_valid_client_hash_not_gated_by_server_flag(monkeypatch):
-    """A valid client key still yields ("client", <client hash>) even with the flag False.
-
-    include_server_fingerprint gates only the server-key branch; the client-key
-    fingerprint is preserved as pre-provisioning for the deferred identity work.
-    """
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
-    assert compute_auth_signals(ctx, include_server_fingerprint=False) == (
-        "client",
-        _expected_fingerprint("client-key-123"),
-    )
-
-
-def test_compute_auth_signals_skips_server_hash_when_gated_off(monkeypatch):
-    """With ``include_server_fingerprint=False`` the server branch derives the origin
-    WITHOUT computing the server-key SHA-256.
-
-    Pins the optimization: on the absent-client / configured-server-key branch,
-    ``_fingerprint_pro_api_key`` must never be called when the flag is False. If a
-    future change drops the gate, the spy below records a call and this test fails.
-    """
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    pro_api_key_context._server_api_key_fingerprint.cache_clear()
 
     fingerprint_spy = MagicMock(side_effect=pro_api_key_context._fingerprint_pro_api_key)
     monkeypatch.setattr(pro_api_key_context, "_fingerprint_pro_api_key", fingerprint_spy)
 
     ctx = _ctx_with_header(_HEADER_NAME, "")  # absent client key -> server fallback
-    assert compute_auth_signals(ctx, include_server_fingerprint=False) == ("server", None)
-    fingerprint_spy.assert_not_called()
+    expected = ("server", _expected_fingerprint("server-key"))
+    assert compute_auth_signals(ctx) == expected
+    assert compute_auth_signals(ctx) == expected
+    # Two derivations, but the constant server key was hashed exactly once.
+    fingerprint_spy.assert_called_once_with("server-key")
+
+
+def test_client_fingerprint_is_never_memoized(monkeypatch):
+    """A per-request client key is re-hashed each call — only the server key is cached.
+
+    The client-key path must never route through the memoizing helper: caching a
+    per-request secret would both retain it and let a stale digest leak across
+    requests. Two calls with a valid client header therefore hash it twice.
+    """
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
+
+    fingerprint_spy = MagicMock(side_effect=pro_api_key_context._fingerprint_pro_api_key)
+    monkeypatch.setattr(pro_api_key_context, "_fingerprint_pro_api_key", fingerprint_spy)
+
+    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
+    expected = ("client", _expected_fingerprint("client-key-123"))
+    assert compute_auth_signals(ctx) == expected
+    assert compute_auth_signals(ctx) == expected
+    assert fingerprint_spy.call_count == 2

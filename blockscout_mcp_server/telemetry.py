@@ -31,18 +31,17 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     signals — analytics is off (not HTTP mode) **and** community telemetry is
     disabled. In that state both sinks short-circuit on their own gates before
     reading these values, so skipping derivation changes nothing that is emitted
-    while avoiding a per-call SHA-256 of the configured server key. The guard is
+    while avoiding the ``ctx`` extraction and key hashing. The guard is
     deliberately a *superset* of the precise per-sink gates (it may still derive in
     a rare config where only the suppressed sink would have run); erring toward
     deriving keeps this cheap check independent of the sinks' internal logic. When
     HTTP mode is off the analytics sink early-returns anyway, so a ``None`` origin
     from this short-circuit never reaches its property bag.
 
-    The server-key fingerprint is gated on the community sink: its only consumer
-    is the community usage report, so ``include_server_fingerprint`` is passed as
-    ``not config.disable_community_telemetry`` to skip that SHA-256 when community
-    reporting is off. The client-key fingerprint is unaffected — it is still
-    derived for the analytics sink and the deferred identity follow-up.
+    The server-key fingerprint (the fingerprint's only consumer is the community
+    usage report) is memoized in :func:`compute_auth_signals`, so it costs at most
+    one SHA-256 per process rather than one per call — there is nothing to gate on
+    the sinks' precise send conditions.
 
     Never raises: :func:`compute_auth_signals` is defensive today, but the guard is
     kept so this observability concern can never propagate into the tool body even
@@ -53,7 +52,7 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     if not analytics.is_http_mode_enabled() and config.disable_community_telemetry:
         return None, None
     try:
-        return compute_auth_signals(ctx, include_server_fingerprint=not config.disable_community_telemetry)
+        return compute_auth_signals(ctx)
     except Exception:
         return None, None
 

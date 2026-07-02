@@ -258,15 +258,32 @@ def _fingerprint_pro_api_key(key: str) -> str:
     return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
 
 
-def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> tuple[AuthOrigin, str | None]:
+@functools.lru_cache(maxsize=1)
+def _server_api_key_fingerprint(key: str) -> str:
+    """Return the fingerprint of the configured server key, memoized per process.
+
+    ``config.pro_api_key`` is fixed for the process lifetime, so its SHA-256 is a
+    hash of a constant. Memoizing it means the observability hot path (every tool
+    call / resource read) reuses the one digest instead of re-hashing the same
+    value each time. ``maxsize=1`` keeps a single entry: production never varies
+    the key, and tests that monkeypatch ``config.pro_api_key`` cache-miss on the
+    new value and evict the stale one.
+
+    Only the *server* key is memoized. Client keys are per-request secrets, so they
+    stay on the un-cached :func:`_fingerprint_pro_api_key` path and are never
+    retained in this cache.
+    """
+    return _fingerprint_pro_api_key(key)
+
+
+def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
     """Derive the ``(auth_origin, api_key_fingerprint)`` pair for *ctx* in one pass.
 
     Single source of truth for both signals: each precedence branch returns the
     origin and the matching fingerprint together, so the two can never disagree
     (``"client"`` ↔ client hash, ``"server"`` ↔ server hash, ``"none"`` ↔
     ``None``). Callers that need only the origin can discard the fingerprint
-    (``[0]``) and pass ``include_server_fingerprint=False`` to skip the
-    server-key SHA-256 that nothing would then read.
+    (``[1]``).
 
     Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
     which never raises) and never calls :func:`resolve_pro_api_key` (it reads the
@@ -280,13 +297,10 @@ def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> t
     - No client key (absent) → ``("server", <hash of config.pro_api_key>)`` when
       ``config.pro_api_key`` is truthy, otherwise ``("none", None)``.
 
-    ``include_server_fingerprint`` gates *only* the server-key hash. Its sole
-    consumer is the community usage report, so callers pass ``False`` when
-    community reporting is disabled to skip an SHA-256 that nothing would read
-    (the server branch then returns ``("server", None)`` — origin unchanged). The
-    client-key fingerprint is *always* derived under any active sink: it is
-    deliberate pre-provisioning for the deferred Mixpanel ``distinct_id`` follow-up
-    that will consume it, so it is never gated here.
+    The server-key hash is memoized (see :func:`_server_api_key_fingerprint`) so
+    the observability hot path never re-hashes the fixed server key. The
+    fingerprint's sole consumer is the community usage report; the analytics sink
+    only reads the origin.
 
     The raw key is never returned, logged, or used anywhere but as the hash
     input.
@@ -301,11 +315,7 @@ def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> t
 
     # _Absent — fall back to whether a server key is configured.
     if config.pro_api_key:
-        # The server-key fingerprint's only consumer is the community usage
-        # report; skip the hash entirely when that sink is disabled.
-        if not include_server_fingerprint:
-            return "server", None
-        return "server", _fingerprint_pro_api_key(config.pro_api_key)
+        return "server", _server_api_key_fingerprint(config.pro_api_key)
     return "none", None
 
 
