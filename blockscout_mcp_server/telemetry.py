@@ -35,8 +35,8 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     deliberately a *superset* of the precise per-sink gates (it may still derive in
     a rare config where only the suppressed sink would have run); erring toward
     deriving keeps this cheap check independent of the sinks' internal logic. When
-    HTTP mode is off the analytics sink early-returns before its ``ctx`` re-derivation
-    fallback, so a ``None`` origin from this short-circuit is never observed by it.
+    HTTP mode is off the analytics sink early-returns anyway, so a ``None`` origin
+    from this short-circuit never reaches its property bag.
 
     The server-key fingerprint is gated on the community sink: its only consumer
     is the community usage report, so ``include_server_fingerprint`` is passed as
@@ -47,8 +47,8 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     Never raises: :func:`compute_auth_signals` is defensive today, but the guard is
     kept so this observability concern can never propagate into the tool body even
     if that contract later changes. The ``(None, None)`` fallback degrades gracefully
-    — the analytics sink re-derives the origin from ``ctx``, the community report
-    omits the hash.
+    — the analytics sink records the origin as ``AUTH_ORIGIN_UNKNOWN`` (it never
+    re-derives from ``ctx``), the community report omits the hash.
     """
     if not analytics.is_http_mode_enabled() and config.disable_community_telemetry:
         return None, None

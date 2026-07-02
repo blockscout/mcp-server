@@ -20,7 +20,6 @@ from blockscout_mcp_server.client_meta import (
 from blockscout_mcp_server.config import config as server_config
 from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.pro_api_key_context import (
-    compute_auth_origin,
     pro_api_key_scope,
     resolve_pro_api_key,
 )
@@ -219,23 +218,19 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
     ctx extraction / SHA-256 on the hot path (regression guard for the de-dup fix).
 
     This drives the *real* analytics sink (only the Mixpanel client is mocked) and spies on the
-    real derivation helpers rather than mocking them away. That is what makes the guard
-    meaningful: if the decorator stopped threading ``auth_origin`` into ``track_tool_invocation``,
-    the analytics sink's ``compute_auth_origin(ctx)`` fallback would fire — and
-    ``origin_fallback_spy.assert_not_called()`` would catch it. Mocking the derivation
-    away (the previous approach) made the "derived once" claim structurally true by construction
-    instead of observing it.
+    real derivation helper rather than mocking it away. That is what makes the guard meaningful:
+    the origin is derived exactly once, by the decorator, and the identical value is observed in
+    the Mixpanel property bag — proving it was threaded through rather than recomputed by the sink.
+    Mocking the derivation away (the previous approach) made the "derived once" claim structurally
+    true by construction instead of observing it.
     """
     # Spy on the single derivation point — the shared telemetry.resolve_auth_signals helper the
     # decorator delegates to — while keeping the real implementation.
     signals_spy = MagicMock(side_effect=resolve_auth_signals)
     monkeypatch.setattr("blockscout_mcp_server.telemetry.resolve_auth_signals", signals_spy)
-    # Spy on the analytics fallback; it must NEVER run because the origin is threaded in.
-    origin_fallback_spy = MagicMock(side_effect=compute_auth_origin)
-    monkeypatch.setattr("blockscout_mcp_server.analytics.compute_auth_origin", origin_fallback_spy)
 
-    # Drive the real analytics sink with a mocked Mixpanel client so the property bag (and thus
-    # the fallback branch) is genuinely exercised rather than structurally bypassed.
+    # Drive the real analytics sink with a mocked Mixpanel client so the property bag is
+    # genuinely exercised rather than structurally bypassed.
     mock_mp = MagicMock()
     monkeypatch.setattr("blockscout_mcp_server.analytics._is_http_mode_enabled", True, raising=False)
     monkeypatch.setattr("blockscout_mcp_server.analytics._get_mixpanel_client", lambda: mock_mp)
@@ -257,10 +252,9 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
 
     # Derived exactly once by the decorator...
     signals_spy.assert_called_once()
-    # ...and the analytics sink reused the threaded origin instead of re-deriving it.
-    origin_fallback_spy.assert_not_called()
 
-    # The same origin reached the Mixpanel property bag (3rd positional arg of mp.track).
+    # ...and the same origin reached the Mixpanel property bag (3rd positional arg of mp.track),
+    # confirming the sink reused the threaded value instead of re-deriving it.
     mock_mp.track.assert_called_once()
     props = mock_mp.track.call_args.args[2]
     assert props["auth_origin"] == "client"

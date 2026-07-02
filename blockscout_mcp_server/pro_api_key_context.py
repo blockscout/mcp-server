@@ -264,9 +264,9 @@ def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> t
     Single source of truth for both signals: each precedence branch returns the
     origin and the matching fingerprint together, so the two can never disagree
     (``"client"`` ↔ client hash, ``"server"`` ↔ server hash, ``"none"`` ↔
-    ``None``). :func:`compute_auth_origin` is a thin view over this function;
-    callers needing both should call this directly to avoid extracting the key
-    state twice.
+    ``None``). Callers that need only the origin can discard the fingerprint
+    (``[0]``) and pass ``include_server_fingerprint=False`` to skip the
+    server-key SHA-256 that nothing would then read.
 
     Never raises (delegates to :func:`extract_client_pro_api_key_from_ctx`,
     which never raises) and never calls :func:`resolve_pro_api_key` (it reads the
@@ -307,24 +307,6 @@ def compute_auth_signals(ctx: Any, include_server_fingerprint: bool = True) -> t
             return "server", None
         return "server", _fingerprint_pro_api_key(config.pro_api_key)
     return "none", None
-
-
-def compute_auth_origin(ctx: Any) -> AuthOrigin:
-    """Return only the authorization origin for *ctx*.
-
-    Thin view over :func:`compute_auth_signals` for call sites that consume the
-    origin alone (e.g. the Mixpanel property bag, where the fingerprint is
-    deliberately not emitted).
-
-    Because it discards the fingerprint (``[0]``), it passes
-    ``include_server_fingerprint=False`` to skip the server-key SHA-256 that
-    would otherwise be computed and thrown away — the origin is identical on
-    every branch, so this changes nothing observable. Note this only skips the
-    *server*-key hash: the ``"client"`` branch of :func:`compute_auth_signals`
-    still hashes the client key (that path is not gated), but it is
-    ~unreachable here in production and its cost is out of scope.
-    """
-    return compute_auth_signals(ctx, include_server_fingerprint=False)[0]
 
 
 # ---------------------------------------------------------------------------

@@ -39,7 +39,6 @@ from blockscout_mcp_server.client_meta import (
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import AUTH_ORIGIN_UNKNOWN, RESOURCE_READ_EVENT, AuthOrigin
 from blockscout_mcp_server.models import ToolUsageReport
-from blockscout_mcp_server.pro_api_key_context import compute_auth_origin
 
 logger = logging.getLogger(__name__)
 
@@ -196,11 +195,15 @@ def track_tool_invocation(
 ) -> None:
     """Track a tool invocation in Mixpanel, if enabled and in HTTP mode.
 
-    ``auth_origin`` may be supplied pre-computed by the caller — the tool
-    decorator already derives the auth signals once per invocation (and reuses
-    them for the community report), so it threads the origin in here to avoid a
-    second ``ctx`` extraction and SHA-256 hash on the hot path. When omitted
-    (e.g. direct callers) it is derived from ``ctx`` here, preserving behavior.
+    ``auth_origin`` is the pre-computed origin threaded in by the caller — the
+    observability paths derive the auth signals once per invocation (via
+    :func:`blockscout_mcp_server.telemetry.resolve_auth_signals`) and reuse them
+    for both this sink and the community report, so the origin is never
+    re-derived here. A ``None`` value — which ``resolve_auth_signals`` yields
+    when derivation is skipped or degrades — is recorded as
+    ``AUTH_ORIGIN_UNKNOWN``, mirroring :func:`track_community_usage`. Re-deriving
+    from ``ctx`` at this point would re-run the very computation that just failed
+    and lose the whole event, so it is deliberately avoided.
     """
     if not _is_http_mode_enabled:
         return
@@ -234,7 +237,7 @@ def track_tool_invocation(
             "tool_args": tool_args,
             "protocol_version": protocol_version,
             "source": _determine_call_source(ctx),
-            "auth_origin": auth_origin if auth_origin is not None else compute_auth_origin(ctx),
+            "auth_origin": auth_origin if auth_origin is not None else AUTH_ORIGIN_UNKNOWN,
         }
 
         meta = {"ip": ip} if ip else None

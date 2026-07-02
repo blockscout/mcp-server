@@ -17,10 +17,7 @@ from starlette.datastructures import Headers
 from blockscout_mcp_server import pro_api_key_context
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
-from blockscout_mcp_server.pro_api_key_context import (
-    compute_auth_origin,
-    compute_auth_signals,
-)
+from blockscout_mcp_server.pro_api_key_context import compute_auth_signals
 
 _HEADER_NAME = "Blockscout-MCP-Pro-Api-Key"
 
@@ -50,92 +47,6 @@ def _ctx_with_malformed_header(header_name: str, header_value: str) -> SimpleNam
 def _expected_fingerprint(key: str) -> str:
     """Compute the expected fingerprint via the same explicit UTF-8 byte construction."""
     return hashlib.sha256(f"{PRO_API_KEY_HASH_PREFIX}{key}".encode("utf-8")).hexdigest()  # noqa: UP012
-
-
-# ===========================================================================
-# compute_auth_origin
-# ===========================================================================
-
-
-def test_auth_origin_valid_client_header_is_client(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
-    assert compute_auth_origin(ctx) == "client"
-
-
-def test_auth_origin_malformed_header_is_none(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey")
-    assert compute_auth_origin(ctx) == "none"
-
-
-def test_auth_origin_malformed_over_length_header_is_none(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_malformed_header(_HEADER_NAME, "a" * 257)
-    assert compute_auth_origin(ctx) == "none"
-
-
-def test_auth_origin_absent_header_with_server_key_is_server(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "")
-    assert compute_auth_origin(ctx) == "server"
-
-
-def test_auth_origin_absent_header_with_no_server_key_is_none(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "")
-    assert compute_auth_origin(ctx) == "none"
-
-
-def test_auth_origin_feature_disabled_with_server_key_is_server(monkeypatch):
-    """Header feature disabled (empty header config) + server key configured -> server.
-
-    "Feature disabled" alone does not force "none" -- a disabled header feature
-    makes the extractor return _Absent, which falls through to the server-key
-    branch just like a genuinely absent header.
-    """
-    monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
-    assert compute_auth_origin(ctx) == "server"
-
-
-def test_auth_origin_feature_disabled_with_no_server_key_is_none(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
-    assert compute_auth_origin(ctx) == "none"
-
-
-# ===========================================================================
-# No-fallback precedence (competing server key configured)
-# ===========================================================================
-#
-# These cases set config.pro_api_key = "server-key" so a server-fallback
-# regression cannot hide: a valid client header must still win, and a
-# malformed client header must still yield no usable key (no silent fallback
-# to the configured server key). Mirrors the precedence already enforced by
-# resolve_pro_api_key(). Kept distinct from the absent-header cases above,
-# which deliberately exercise the server branch.
-
-
-def test_auth_origin_valid_client_header_wins_over_configured_server_key(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_header(_HEADER_NAME, "client-key-123")
-    assert compute_auth_origin(ctx) == "client"
-
-
-def test_auth_origin_malformed_client_header_does_not_fall_back_to_server_key(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    ctx = _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey")
-    assert compute_auth_origin(ctx) == "none"
 
 
 # ===========================================================================
@@ -169,11 +80,11 @@ def test_fingerprint_prefix_actually_participates(monkeypatch):
 # compute_auth_signals — the single source of truth for both signals
 # ===========================================================================
 #
-# compute_auth_origin is a thin view over this function. These cases pin the
-# (origin, fingerprint) pairing per branch so the two signals can never silently
-# diverge, and assert the thin wrapper stays in lockstep with the combined
-# result on every branch (a server key is configured throughout so a
-# server-fallback regression cannot hide).
+# These cases pin the (origin, fingerprint) pairing per branch so the two signals
+# can never silently diverge. A server key is configured throughout so a
+# server-fallback regression cannot hide: a valid client header must still win and
+# a malformed one must still yield no usable key (no silent fallback to the server
+# key), mirroring the precedence enforced by resolve_pro_api_key().
 
 
 def test_auth_signals_valid_client_returns_client_and_client_hash(monkeypatch):
@@ -202,19 +113,6 @@ def test_auth_signals_absent_with_no_server_key_returns_none_and_no_fingerprint(
     monkeypatch.setattr(config, "pro_api_key", "", raising=False)
     ctx = _ctx_with_header(_HEADER_NAME, "")
     assert compute_auth_signals(ctx) == ("none", None)
-
-
-def test_thin_wrappers_match_combined_signals_on_every_branch(monkeypatch):
-    """compute_auth_origin must equal the origin of the combined pair."""
-    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
-    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
-    for ctx in (
-        _ctx_with_header(_HEADER_NAME, "client-key-123"),  # valid client
-        _ctx_with_malformed_header(_HEADER_NAME, "bad\nkey"),  # malformed
-        _ctx_with_header(_HEADER_NAME, ""),  # absent -> server fallback
-    ):
-        origin, _fingerprint = compute_auth_signals(ctx)
-        assert compute_auth_origin(ctx) == origin
 
 
 # ===========================================================================
@@ -254,14 +152,13 @@ def test_auth_signals_valid_client_hash_not_gated_by_server_flag(monkeypatch):
     )
 
 
-def test_compute_auth_origin_skips_server_hash_on_server_branch(monkeypatch):
-    """compute_auth_origin returns "server" WITHOUT computing the server-key SHA-256.
+def test_compute_auth_signals_skips_server_hash_when_gated_off(monkeypatch):
+    """With ``include_server_fingerprint=False`` the server branch derives the origin
+    WITHOUT computing the server-key SHA-256.
 
-    Pins the optimization: because ``compute_auth_origin`` discards the
-    fingerprint, it passes ``include_server_fingerprint=False``, so on the
-    absent-client / configured-server-key branch it must derive the origin
-    without ever calling ``_fingerprint_pro_api_key``. If a future change drops
-    the ``False`` argument, the spy below records a call and this test fails.
+    Pins the optimization: on the absent-client / configured-server-key branch,
+    ``_fingerprint_pro_api_key`` must never be called when the flag is False. If a
+    future change drops the gate, the spy below records a call and this test fails.
     """
     monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
@@ -270,5 +167,5 @@ def test_compute_auth_origin_skips_server_hash_on_server_branch(monkeypatch):
     monkeypatch.setattr(pro_api_key_context, "_fingerprint_pro_api_key", fingerprint_spy)
 
     ctx = _ctx_with_header(_HEADER_NAME, "")  # absent client key -> server fallback
-    assert compute_auth_origin(ctx) == "server"
+    assert compute_auth_signals(ctx, include_server_fingerprint=False) == ("server", None)
     fingerprint_spy.assert_not_called()
