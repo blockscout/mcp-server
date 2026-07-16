@@ -967,7 +967,7 @@ This server exposes a tool for on-chain smart contract read-only state access. I
 
 #### Tested coverage and examples
 
-- Complex input and output handling for nested ABIv2 types is validated against the contract `tests/integration/Web3PyTestContract.sol` deployed on Sepolia at `0xD9a3039cfC70aF84AC9E566A2526fD3b683B995B`.
+- Complex input and output handling for nested ABIv2 types is validated against the contract `tests/integration/contract/Web3PyTestContract.sol` deployed on Sepolia at `0x992dc06e716438F537653AA317AA45dE3417b218`.
 
 #### LLM guidance
 

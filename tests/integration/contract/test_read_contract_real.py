@@ -17,7 +17,7 @@ from tests.integration.helpers import retry_on_network_error
 CHAIN_ID_MAINNET = "1"
 CHAIN_ID_SEPOLIA = "11155111"
 
-CONTRACT_ADDRESS = "0xD9a3039cfC70aF84AC9E566A2526fD3b683B995B"
+CONTRACT_ADDRESS = "0x992dc06e716438F537653AA317AA45dE3417b218"
 ABI_PATH = Path(__file__).with_name("web3py_test_contract_abi.json")
 TEST_CONTRACT_ABI = json.loads(ABI_PATH.read_text())
 ABI_BY_NAME = {entry["name"]: entry for entry in TEST_CONTRACT_ABI}
