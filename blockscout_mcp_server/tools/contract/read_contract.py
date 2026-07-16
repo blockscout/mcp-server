@@ -174,6 +174,8 @@ async def read_contract(
     def _for_check(a: Any) -> Any:
         if isinstance(a, list):
             return [_for_check(i) for i in a]
+        if isinstance(a, dict):
+            return {k: _for_check(v) for k, v in a.items()}
         if isinstance(a, str) and a.startswith(("0x", "0X")) and len(a) != 42:
             return decode_hex(a)
         return a

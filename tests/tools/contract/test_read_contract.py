@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -51,6 +52,71 @@ async def test_read_contract_success(mock_ctx):
     fn_mock.assert_called_once_with(1)
     fn_result.call.assert_awaited_once_with(block_identifier="latest")
     assert result.data.result == expected
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx):
+    """Regression test for the `_for_check` dict-recursion bug.
+
+    Before the `dict` branch was added to `_for_check`, a struct argument supplied
+    in dict form kept its `bytes` field as an undecoded hex string during the
+    argument-encodability preflight, so `check_if_arguments_can_be_encoded` returned
+    `False` and the tool raised a false-negative `ValueError`. `check_if_arguments_can_be_encoded`
+    is a real web3 util here (not mocked), so this genuinely exercises the preflight.
+    """
+    chain_id = "1"
+    address = "0x0000000000000000000000000000000000000abc"
+    function_name = "echoBytesStruct"
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [
+            {
+                "name": "_value",
+                "type": "tuple",
+                "components": [
+                    {"name": "id", "type": "uint256"},
+                    {"name": "data", "type": "bytes"},
+                ],
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "tuple",
+                "components": [
+                    {"name": "id", "type": "uint256"},
+                    {"name": "data", "type": "bytes"},
+                ],
+            }
+        ],
+    }
+
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=(7, b"\xde\xad\xbe\xef"))
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        result = await read_contract(
+            chain_id=chain_id,
+            address=address,
+            abi=abi,
+            function_name=function_name,
+            args=json.dumps([{"id": 7, "data": "0xdeadbeef"}]),
+            ctx=mock_ctx,
+        )
+
+    assert result.data.result == (7, "0xdeadbeef")
     assert mock_ctx.report_progress.await_count == 3
     assert mock_ctx.info.await_count == 3
 
