@@ -3,7 +3,7 @@ import importlib
 import json
 import re
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from starlette.testclient import TestClient
@@ -526,8 +526,6 @@ async def test_wrap_tool_for_structured_output_normalizes_bytes_from_read_contra
     dummy/mocked tool that already returns a normalized `0x`-hex string would pass on the buggy
     code too, so such a test could never serve as regression evidence for this fix.
     """
-    from unittest.mock import AsyncMock
-
     from blockscout_mcp_server.server import _wrap_tool_for_structured_output
     from blockscout_mcp_server.tools.contract.read_contract import read_contract
 
