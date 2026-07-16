@@ -10,7 +10,7 @@ Review a follow-up feedback file after plan-review findings were addressed. Do n
 
 ## Inputs And Assumptions
 
-- The user provides the feedback file path, usually `.ai/impl_plans/<plan-id>-findings-feedback/feedback.md`.
+- The user provides the feedback file path, usually `.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/feedback.md`.
 - The implementation plan path and the original review findings are expected to already be present in the conversation context because this skill is run in the same session as `implementation-plan-review`.
 - Do not require the user to pass the plan path or original findings again. Infer the plan id from the current session first, then from the feedback path if needed.
 - If the plan id or original findings cannot be recovered with confidence, stop and ask for the missing context rather than guessing.
@@ -24,20 +24,20 @@ Infer exactly one `plan-id`, such as `issue-418`.
 Priority:
 
 1. The most recent implementation plan path in session context: `.ai/impl_plans/<plan-id>.md`.
-2. The feedback file path: `.ai/impl_plans/<plan-id>-findings-feedback/feedback.md`.
-3. Scratchpad paths from the prior review: `.ai/impl_plans/<plan-id>-scratchpads/...`.
+2. The feedback file path: `.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/feedback.md` — the plan-id is the first path segment after `impl_plans/`.
+3. Scratchpad paths from the prior review: `.ai/impl_plans/<plan-id>/scratchpads/<timestamp>/...` — same rule: the plan-id is the first segment after `impl_plans/`, not a suffix to strip.
 
 Confirm `.ai/impl_plans/<plan-id>.md` exists before proceeding.
 
-### 2. Reset The New-Findings Directory First
+### 2. Create This Run's Findings Directory First
 
-Before reading or listing any files under `.ai/impl_plans/<plan-id>-findings/`, run:
+Before reading or listing any files under `.ai/impl_plans/<plan-id>/findings/`, run:
 
 ```bash
-bash .agents/skills/review-plan-findings-feedback/scripts/reset_findings_dir.sh <plan-id>
+bash .agents/skills/review-plan-findings-feedback/scripts/new_findings_dir.sh <plan-id>
 ```
 
-Use the printed absolute directory path for this run's output. If the script exits non-zero, fix the cause and rerun it before doing review work.
+This creates a fresh timestamped directory `.ai/impl_plans/<plan-id>/findings/<timestamp>/` (nothing existing is touched or deleted) and prints its absolute path on stdout. Use exactly that printed path for this run's output — never glob or guess a path under `.../findings/` yourself, and never reuse a directory from an earlier run. (If the printed path is ever lost from context, the lexicographically-last timestamp subdirectory is the most recent, since the timestamp format sorts chronologically — but prefer the printed path.) If the script exits non-zero, it prints `error: <message>` on stderr; fix the cause and rerun it before doing review work.
 
 ### 3. Read Required Inputs
 
@@ -74,10 +74,10 @@ Do not report:
 
 ### 5. Write Output Only If New Findings Exist
 
-If new findings exist, create exactly one Markdown file:
+If new findings exist, create exactly one Markdown file inside the directory printed in step 2:
 
 ```text
-.ai/impl_plans/<plan-id>-findings/findings.md
+.ai/impl_plans/<plan-id>/findings/<timestamp>/findings.md
 ```
 
 The file must contain only a list of new findings. Do not add an introduction, summary, "no findings" line, or review sections.
@@ -99,7 +99,7 @@ If there are no new findings, do not create any file in the findings directory.
 If a findings file was created, reply with only a clickable link to it:
 
 ```markdown
-[.ai/impl_plans/<plan-id>-findings/findings.md](.ai/impl_plans/<plan-id>-findings/findings.md)
+[.ai/impl_plans/<plan-id>/findings/<timestamp>/findings.md](.ai/impl_plans/<plan-id>/findings/<timestamp>/findings.md)
 ```
 
 If no new findings were found and every original finding was closed by plan edits, reply exactly:
