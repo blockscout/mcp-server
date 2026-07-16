@@ -25,26 +25,26 @@ Two things make this skill what it is, and you must hold both:
 
 You need the `plan-id` so you can find the plan file (`.ai/impl_plans/<plan-id>.md`) and its feedback directory. This skill is normally run in the same session that just produced the plan (e.g. right after `/plan-export`), so you won't be handed the path — **infer it.** If a plan-id was passed explicitly as `$1`, that wins; otherwise:
 
-1. **From the findings themselves.** Their *Location* and *Scratchpad* references almost always contain a path like `.ai/impl_plans/issue-418.md` or `.ai/impl_plans/issue-418-scratchpads/…` — the `issue-418` segment is the plan-id. This is the strongest signal and it's right there in the invocation.
+1. **From the findings themselves.** Their *Location* and *Scratchpad* references almost always contain a path like `.ai/impl_plans/issue-418.md` or `.ai/impl_plans/issue-418/scratchpads/260714-1022/…` — the plan-id is the first path segment after `impl_plans/` (`issue-418`), not a suffix to strip. This is the strongest signal and it's right there in the invocation.
 2. **From the session history.** If the findings carry no such path, look back a few messages for the plan file most recently created or discussed (the `.ai/impl_plans/<id>.md` that `/plan-export` wrote) and take the id from its filename.
 3. If you still can't pin it down, or the signals point at more than one plan, ask — don't guess. Operating on the wrong plan is worse than pausing.
 
 Confirm the plan file exists before going further.
 
-### 1. Reset the feedback directory (before any work)
+### 1. Create this run's feedback directory (before any work)
 
-Run the bundled reset script with the resolved plan-id:
+Run the bundled script with the resolved plan-id:
 
 ```bash
-bash .agents/skills/address-plan-findings/scripts/reset_findings_feedback.sh <plan-id>
+bash .agents/skills/address-plan-findings/scripts/new_feedback_dir.sh <plan-id>
 ```
 
-It wipes and recreates `<repo>/.ai/impl_plans/<plan-id>-findings-feedback/` so this run's feedback file can never be confused with a stale one from a previous round, and prints the absolute path of the now-empty directory — that's where your feedback file goes in step 6. The script resolves the project root itself (`git rev-parse --show-toplevel`), so it targets the correct `.ai/impl_plans` whether you're in the principal checkout or a `git worktree`, regardless of your current directory. If it exits non-zero (bad plan-id, plan file missing, or not inside a git repo) it tells you why; fix the cause and re-run rather than working around it.
+It creates a fresh timestamped directory `<repo>/.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/` (nothing existing is touched or deleted) and prints its absolute path on stdout — that's where your feedback file goes in step 6. Always use exactly that printed path; never glob or guess a path under `.../findings-feedback/` yourself, and never reuse a directory from an earlier run. (If the printed path is ever lost from context, the lexicographically-last timestamp subdirectory is the most recent, since the timestamp format sorts chronologically — but prefer the printed path.) The script resolves the project root itself (`git rev-parse --show-toplevel`), so it targets the correct `.ai/impl_plans` whether you're in the principal checkout or a `git worktree`, regardless of your current directory. If it exits non-zero (bad plan-id, plan file missing, target path blocked, or not inside a git repo) it prints `error: <message>` on stderr telling you why; fix the cause and re-run rather than working around it.
 
 ### 2. Read the plan and the evidence
 
 - Read the **whole plan file** so you understand the structure your edits must stay consistent with (section order, slice markers, the conventions `/plan-export` baked in).
-- If a finding cites a **scratchpad** (e.g. `…-scratchpads/finding-NN-*.md`), read it — it usually carries the reviewer's grounded analysis (the variants weighed, the evidence, the recommendation) and is the fastest way to see what they actually checked.
+- If a finding cites a **scratchpad** (e.g. `…/scratchpads/<timestamp>/finding-NN-*.md`), read it — it usually carries the reviewer's grounded analysis (the variants weighed, the evidence, the recommendation) and is the fastest way to see what they actually checked.
 - Do **not** open other plans under `.ai/impl_plans/`. They're irrelevant to this one and only burn context and bias your judgment toward another feature's choices.
 
 ### 3. Validate each finding independently
@@ -72,7 +72,7 @@ Plans produced by `/plan-export` wrap every section in `<!-- impl-plan:begin slu
 
 ### 6. Write the feedback file
 
-Write one Markdown file into the directory from step 1: `.ai/impl_plans/<plan-id>-findings-feedback/feedback.md`. It has exactly two sections, and the asymmetry between them is deliberate:
+Write one Markdown file into the directory from step 1: `.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/feedback.md`. It has exactly two sections, and the asymmetry between them is deliberate:
 
 - **What was changed** — one *brief* bullet per finding you closed. Brevity is right here because the plan diff already carries the detail; this list just maps each closed finding to the edit that closed it.
 - **Not closed** — one *detailed, plain-language* bullet per finding you did **not** action (invalid, or the rejected part of a partial), explaining **why**. This list must stand on its own: a rejected finding leaves no trace in the plan, so the person who raised it (or the user) needs your full reasoning — grounded in what the code/rule/plan actually says — to either accept the rejection or push back. Write it so someone who never saw your tool calls can follow it.
@@ -99,13 +99,13 @@ Use this structure:
 Your entire chat reply is the path to the feedback file, as a clickable link:
 
 ```
-[.ai/impl_plans/<plan-id>-findings-feedback/feedback.md](.ai/impl_plans/<plan-id>-findings-feedback/feedback.md)
+[.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/feedback.md](.ai/impl_plans/<plan-id>/findings-feedback/<timestamp>/feedback.md)
 ```
 
 Do **not** restate what you changed or why you rejected anything in chat — all of that lives in the file, and repeating it defeats the point of writing the file. The path is the whole message.
 
 ## Notes
 
-- **Plan document only.** The sole files you create or modify are the plan `.md` and the feedback file (plus the directory reset in step 1). No source/test/doc edits — that's implementation, not this skill.
+- **Plan document only.** The sole files you create or modify are the plan `.md` and the feedback file (plus creating this run's directory in step 1). No source/test/doc edits — that's implementation, not this skill.
 - **Plan findings, not code-review findings.** If the input is review of a code diff/PR rather than a plan document, this skill doesn't apply.
 - **Don't pad the verdict.** Closing zero findings (all invalid) or all of them is a perfectly valid outcome; report it honestly. Validity is decided by the code and the rules, not by how many findings "should" be real.

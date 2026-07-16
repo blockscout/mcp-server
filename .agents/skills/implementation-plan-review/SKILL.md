@@ -35,12 +35,12 @@ gh auth login
    - Before reading or listing any scratchpad files, run from this skill directory:
 
 ```bash
-bash scripts/prepare_scratchpads.sh <plan-file>
+bash scripts/new_scratchpads_dir.sh <plan-file>
 ```
 
-   - Use the printed `OK <scratchpad-path>` directory for all scratchpads in this review.
-   - Existing scratchpads are stale working artifacts; never read or preserve them for a new review.
-   - If the script reports `ERROR`, stop and report the failure.
+   - Use exactly the absolute path the script printed on stdout for this run's scratchpads; never glob or guess a path under `scratchpads/` yourself.
+   - Each run creates a fresh timestamped directory (`scratchpads/<YYMMDD-HHMM>/`); nothing is deleted. Directories from earlier reviews belong to a different run — never read or reuse them for this review. (If the printed path is ever lost from context, the lexicographically-last timestamp subdirectory is the most recent, since the format sorts chronologically — but prefer the printed path.)
+   - If the script fails (non-zero exit; `error: <message>` on stderr), stop and report the failure.
 
 2) Read the two inputs in full:
    - Plan file
