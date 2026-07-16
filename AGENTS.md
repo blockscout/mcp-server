@@ -167,7 +167,8 @@ mcp-server/
 │       │   ├── test_fetch_and_process_contract.py  # Unit tests for fetch_and_process_contract
 │       │   ├── test_get_contract_abi.py        # Unit tests for get_contract_abi
 │       │   ├── test_inspect_contract_code.py   # Unit tests for inspect_contract_code
-│       │   └── test_read_contract.py           # Unit tests for read_contract
+│       │   ├── test_read_contract.py           # Unit tests for read_contract
+│       │   └── test_read_contract_normalization.py  # Unit tests for read_contract result normalization
 │       ├── transaction/        # Tests for transaction-related MCP tools
 │       │   ├── test_get_token_transfers_by_address.py      # Unit tests for get_token_transfers_by_address
 │       │   ├── test_get_transaction_info.py        # Unit tests for get_transaction_info

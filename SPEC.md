@@ -962,6 +962,7 @@ This server exposes a tool for on-chain smart contract read-only state access. I
   - Numeric strings are coerced to integers.
   - Bytes values should be provided as 0x-hex strings; nested hex strings are handled.
   - Deep recursion is applied for lists and dicts to normalize all nested values.
+- **Return values**: ABI return values are normalized in the shared tool layer before the response is constructed: binary (`bytes`/`bytesN`) values — including ones nested inside arrays and structs — are converted to canonical `0x`-prefixed hex strings before serialization, keeping the in-memory and wire representations consistent across MCP and REST.
 - **Block parameter**: Optional `block` (default: `latest`). Accepts a block number (integer or decimal string) or a tag such as `latest`.
 - **Other eth_call params**: Not supported/passed. No `from`, `gas`, `gasPrice`, `value`, etc., are set by this tool.
 
