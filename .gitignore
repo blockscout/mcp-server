@@ -33,6 +33,10 @@ mcpb/_build/
 # private key
 key.pem
 
+# Foundry related artifacts
+out/
+cache/
+
 # Claude settings for local development
 .claude/settings.local.json
 .mcp.json
