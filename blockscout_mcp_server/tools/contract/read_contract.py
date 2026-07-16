@@ -2,7 +2,7 @@
 import json
 from typing import Annotated, Any
 
-from eth_utils import decode_hex, to_checksum_address
+from eth_utils import decode_hex, to_checksum_address, to_hex
 from mcp.server.fastmcp import Context
 from pydantic import Field
 from web3.exceptions import ContractLogicError
@@ -41,6 +41,27 @@ def _convert_json_args(obj: Any) -> Any:
             return int(obj, 10)
         except ValueError:
             return obj
+    return obj
+
+
+def _normalize_result(obj: Any) -> Any:
+    """
+    Recursively normalize a decoded contract call result for safe JSON serialization.
+
+    - `bytes` and `bytearray` values (including `HexBytes`, a `bytes` subclass) become
+      canonical `0x`-prefixed hex strings via `eth_utils.to_hex`.
+    - `list` values are recursed into and returned as lists (web3 represents ABI arrays
+      and multiple-output results as lists).
+    - `tuple` values are recursed into and returned as tuples (web3 represents ABI
+      structs, including nested ones, as tuples).
+    - Every other value (`int`, `bool`, `str`, `Decimal`, ...) passes through unchanged.
+    """
+    if isinstance(obj, (bytes, bytearray)):
+        return to_hex(obj)
+    if isinstance(obj, list):
+        return [_normalize_result(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_normalize_result(item) for item in obj)
     return obj
 
 
@@ -179,6 +200,7 @@ async def read_contract(
     except Exception as e:  # noqa: BLE001
         # Surface unexpected errors with context to the caller
         raise RuntimeError(f"Contract call errored: {type(e).__name__}: {e}") from e
+    result = _normalize_result(result)
     await report_and_log_progress(
         ctx,
         progress=2.0,

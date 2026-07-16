@@ -516,6 +516,53 @@ async def test_wrap_tool_for_structured_output_structured_content_same_for_all_c
 
 
 @pytest.mark.asyncio
+async def test_wrap_tool_for_structured_output_normalizes_bytes_from_read_contract(mock_ctx):
+    """Cross-layer regression test for issue #428 at the MCP transport boundary.
+
+    Wraps the *real* `read_contract` tool (not a dummy) with `_wrap_tool_for_structured_output`
+    and drives a mocked Web3 call that returns a raw, non-UTF-8 `bytes32` value — the exact shape
+    that crashed before the fix. Before the fix, this test failed with a `UnicodeDecodeError` at
+    the wrapper's `model_dump(mode="json")` call (`server.py:170`); after the fix it passes. A
+    dummy/mocked tool that already returns a normalized `0x`-hex string would pass on the buggy
+    code too, so such a test could never serve as regression evidence for this fix.
+    """
+    from unittest.mock import AsyncMock
+
+    from blockscout_mcp_server.server import _wrap_tool_for_structured_output
+    from blockscout_mcp_server.tools.contract.read_contract import read_contract
+
+    non_utf8_bytes32 = bytes([0x8E]) + bytes(31)
+    expected_hex = "0x8e" + "00" * 31
+
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=non_utf8_bytes32)
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    abi = {"name": "foo", "type": "function", "inputs": [], "outputs": []}
+    wrapped = _wrap_tool_for_structured_output(read_contract)
+
+    with patch(
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        result = await wrapped(
+            chain_id="1",
+            address="0x0000000000000000000000000000000000000abc",
+            abi=abi,
+            function_name="foo",
+            ctx=mock_ctx,
+        )
+
+    assert result.structuredContent["data"]["result"] == expected_hex
+    assert json.loads(result.content[0].text)["data"]["result"] == expected_hex
+
+
+@pytest.mark.asyncio
 async def test_all_registered_tools_have_output_schema():
     from blockscout_mcp_server import server
 
