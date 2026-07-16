@@ -129,6 +129,19 @@ async def test_read_contract_normalizes_array_of_bytes32(mock_ctx):
 
 
 @pytest.mark.asyncio
+async def test_read_contract_normalizes_dict_values(mock_ctx):
+    """A dict return (defensive; not produced by web3 today) has its bytes values normalized to hex."""
+    call_return_value = {"id": 1, "hash": NON_UTF8_BYTES32}
+
+    result = await _call_read_contract(mock_ctx, call_return_value)
+
+    assert result.data.result == {"id": 1, "hash": NON_UTF8_BYTES32_HEX}
+    assert isinstance(result.data.result, dict)
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
+
+
+@pytest.mark.asyncio
 async def test_read_contract_passthrough_for_plain_str(mock_ctx):
     """A plain str return (e.g. a checksummed address) passes through byte-for-byte unchanged."""
     checksummed_address = "0xF977814e90dA44bFA03b6295A0616a897441aceC"

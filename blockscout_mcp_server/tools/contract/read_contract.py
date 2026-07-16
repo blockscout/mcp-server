@@ -54,6 +54,9 @@ def _normalize_result(obj: Any) -> Any:
       and multiple-output results as lists).
     - `tuple` values are recursed into and returned as tuples (web3 represents ABI
       structs, including nested ones, as tuples).
+    - `dict` values are recursed into and returned as dicts (defensive: the contract is
+      built without `decode_tuples=True`, so web3 returns structs as tuples today, but
+      this keeps the normalizer safe if that default ever decodes a struct into a mapping).
     - Every other value (`int`, `bool`, `str`, `Decimal`, ...) passes through unchanged.
     """
     if isinstance(obj, (bytes, bytearray)):
@@ -62,6 +65,8 @@ def _normalize_result(obj: Any) -> Any:
         return [_normalize_result(item) for item in obj]
     if isinstance(obj, tuple):
         return tuple(_normalize_result(item) for item in obj)
+    if isinstance(obj, dict):
+        return {k: _normalize_result(v) for k, v in obj.items()}
     return obj
 
 
