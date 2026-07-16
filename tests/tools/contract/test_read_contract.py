@@ -121,6 +121,75 @@ async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx)
     assert mock_ctx.info.await_count == 3
 
 
+@pytest.mark.parametrize("name_value", ["0xdeadbeef", "0xData!"])
+@pytest.mark.asyncio
+async def test_read_contract_accepts_dict_form_struct_with_hexlike_string_field(mock_ctx, name_value):
+    """Regression test for the type-blind `_for_check` heuristic on `string` fields.
+
+    `_for_check` decodes every hex-like string to bytes, which is right for `bytes`
+    fields but wrong for a `string` field whose value merely starts with "0x". Two
+    ways it used to break a dict-form struct: a valid hex-text value (``0xdeadbeef``)
+    became bytes and failed the encodability preflight (false-negative `ValueError`),
+    and a non-hex value (``0xData!``) raised a raw `binascii.Error` from `decode_hex`,
+    bypassing the tool's error contract. The preflight now accepts either the decoded
+    or the raw form, and `decode_hex` failures fall back to the raw string.
+    `check_if_arguments_can_be_encoded` is a real web3 util here (not mocked).
+    """
+    chain_id = "1"
+    address = "0x0000000000000000000000000000000000000abc"
+    function_name = "echoNamedStruct"
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [
+            {
+                "name": "_value",
+                "type": "tuple",
+                "components": [
+                    {"name": "id", "type": "uint256"},
+                    {"name": "name", "type": "string"},
+                ],
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "tuple",
+                "components": [
+                    {"name": "id", "type": "uint256"},
+                    {"name": "name", "type": "string"},
+                ],
+            }
+        ],
+    }
+
+    fn_result = MagicMock()
+    fn_result.call = AsyncMock(return_value=(7, name_value))
+    fn_mock = MagicMock(return_value=fn_result)
+    contract_mock = MagicMock()
+    contract_mock.get_function_by_name.return_value = fn_mock
+    w3_mock = MagicMock()
+    w3_mock.eth.contract.return_value = contract_mock
+
+    with patch(
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        result = await read_contract(
+            chain_id=chain_id,
+            address=address,
+            abi=abi,
+            function_name=function_name,
+            args=json.dumps([{"id": 7, "name": name_value}]),
+            ctx=mock_ctx,
+        )
+
+    assert result.data.result == (7, name_value)
+    assert mock_ctx.report_progress.await_count == 3
+    assert mock_ctx.info.await_count == 3
+
+
 @pytest.mark.asyncio
 async def test_read_contract_chain_not_found(mock_ctx):
     chain_id = "999"

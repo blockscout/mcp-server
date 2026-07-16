@@ -177,11 +177,21 @@ async def read_contract(
         if isinstance(a, dict):
             return {k: _for_check(v) for k, v in a.items()}
         if isinstance(a, str) and a.startswith(("0x", "0X")) and len(a) != 42:
-            return decode_hex(a)
+            try:
+                return decode_hex(a)
+            except Exception:
+                # Not valid hex (e.g. a `string` field that merely starts with "0x");
+                # leave it untouched so the raw form can pass the preflight below.
+                return a
         return a
 
     check_args = [_for_check(a) for a in py_args]
-    if not check_if_arguments_can_be_encoded(abi, *check_args):
+    # `_for_check` is a type-blind heuristic: it decodes every hex-like string to bytes,
+    # which is needed for `bytes`/`bytesN` fields but wrong for `string` fields holding
+    # 0x-like text. Accept the preflight if either form encodes — the bytes case passes
+    # via the decoded `check_args`, the string case via the raw `py_args` (which is also
+    # what the actual call is made with).
+    if not (check_if_arguments_can_be_encoded(abi, *check_args) or check_if_arguments_can_be_encoded(abi, *py_args)):
         raise ValueError(f"Arguments {py_args} cannot be encoded for function '{function_name}'")
     w3 = await WEB3_POOL.get(chain_id)
     await report_and_log_progress(
