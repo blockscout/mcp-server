@@ -144,6 +144,7 @@ mcp-server/
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
+│   ├── test_server_structured_output.py  # Unit tests for the _wrap_tool_for_structured_output wrapper
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting

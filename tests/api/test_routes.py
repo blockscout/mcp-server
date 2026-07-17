@@ -419,6 +419,13 @@ async def test_read_contract_bytes_result_as_hex_string(mock_tool, client: Async
     response = await client.get(url)
     assert response.status_code == 200
     assert response.json()["data"]["result"] == expected_hex
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        address="0xabc",
+        abi={},
+        function_name="foo",
+        ctx=ANY,
+    )
 
 
 @pytest.mark.asyncio
