@@ -315,6 +315,23 @@ async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
 @pytest.mark.integration
 @pytest.mark.asyncio
 @pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
+async def test_read_contract_sepolia_testMultipleParams_hexlike_string(mock_ctx):
+    # @see Web3PyTestContract.sol -> testMultipleParams()
+    # Mixed-args preflight regression: a `bytes` argument alongside a `string` struct
+    # field holding "0x"-prefixed text used to be falsely rejected before the call.
+    addr = "0x8ba1f109551bd432803012645ff1c26ad3dbebf9"
+    res = await _invoke(
+        mock_ctx,
+        "testMultipleParams",
+        json.dumps([-100, 200, addr, True, "0x64617461", {"id": 1, "name": "0xdeadbeef", "active": False}]),
+    )
+    assert res[4] == "0x64617461"
+    assert res[5][1] == "0xdeadbeef"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testFixedArray(mock_ctx):
     # @see Web3PyTestContract.sol -> testFixedArray()
     res = await _invoke(mock_ctx, "testFixedArray", json.dumps([[10, 20, 30]]))

@@ -522,7 +522,7 @@ async def test_wrap_tool_for_structured_output_normalizes_bytes_from_read_contra
     Wraps the *real* `read_contract` tool (not a dummy) with `_wrap_tool_for_structured_output`
     and drives a mocked Web3 call that returns a raw, non-UTF-8 `bytes32` value — the exact shape
     that crashed before the fix. Before the fix, this test failed with a `UnicodeDecodeError` at
-    the wrapper's `model_dump(mode="json")` call (`server.py:170`); after the fix it passes. A
+    the `model_dump(mode="json")` call inside the wrapper; after the fix it passes. A
     dummy/mocked tool that already returns a normalized `0x`-hex string would pass on the buggy
     code too, so such a test could never serve as regression evidence for this fix.
     """
