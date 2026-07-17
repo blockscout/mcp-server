@@ -17,7 +17,7 @@ from tests.integration.helpers import retry_on_network_error
 CHAIN_ID_MAINNET = "1"
 CHAIN_ID_SEPOLIA = "11155111"
 
-CONTRACT_ADDRESS = "0xD9a3039cfC70aF84AC9E566A2526fD3b683B995B"
+CONTRACT_ADDRESS = "0x992dc06e716438F537653AA317AA45dE3417b218"
 ABI_PATH = Path(__file__).with_name("web3py_test_contract_abi.json")
 TEST_CONTRACT_ABI = json.loads(ABI_PATH.read_text())
 ABI_BY_NAME = {entry["name"]: entry for entry in TEST_CONTRACT_ABI}
@@ -183,12 +183,8 @@ async def test_read_contract_sepolia_testBytes(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes()
     data = "0x64617461"
     res = await _invoke(mock_ctx, "testBytes", json.dumps([data]))
-    # Some RPCs return raw bytes; others echo hex string
-    if isinstance(res, bytes | bytearray):
-        assert bytes(res) == b"data"
-    else:
-        assert isinstance(res, str)
-        assert res.lower() in {data, data.lower()}
+    assert isinstance(res, str)
+    assert res == "0x64617461"
 
 
 @pytest.mark.integration
@@ -313,6 +309,24 @@ async def test_read_contract_sepolia_testMultipleParams(mock_ctx):
         json.dumps([-100, 200, addr, True, "0x64617461", {"id": 1, "name": "struct", "active": False}]),
     )
     assert res[0] == -100 and res[1] == 200 and res[2] == to_checksum_address(addr)
+    assert res[4] == "0x64617461"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
+async def test_read_contract_sepolia_testMultipleParams_hexlike_string(mock_ctx):
+    # @see Web3PyTestContract.sol -> testMultipleParams()
+    # Mixed-args preflight regression: a `bytes` argument alongside a `string` struct
+    # field holding "0x"-prefixed text used to be falsely rejected before the call.
+    addr = "0x8ba1f109551bd432803012645ff1c26ad3dbebf9"
+    res = await _invoke(
+        mock_ctx,
+        "testMultipleParams",
+        json.dumps([-100, 200, addr, True, "0x64617461", {"id": 1, "name": "0xdeadbeef", "active": False}]),
+    )
+    assert res[4] == "0x64617461"
+    assert res[5][1] == "0xdeadbeef"
 
 
 @pytest.mark.integration
@@ -331,13 +345,31 @@ async def test_read_contract_sepolia_testFixedArray(mock_ctx):
 @pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
 async def test_read_contract_sepolia_testBytes32(mock_ctx):
     # @see Web3PyTestContract.sol -> testBytes32()
+    # testBytes32() does NOT echo its argument; it returns keccak256(abi.encodePacked(_hash)).
     value = "0x" + "1234567890abcdef" * 4
+    expected = "0xcae36a6a44328f3fb063df12b0cf3fa225a3c6dbdd6acef0f6e619d33890cf24"
     res = await _invoke(mock_ctx, "testBytes32", json.dumps([value]))
-    if isinstance(res, bytes | bytearray):
-        assert len(bytes(res)) == 32
-    else:
-        assert isinstance(res, str)
-        assert res.startswith("0x") and len(res) == 66
+    assert isinstance(res, str)
+    assert res.startswith("0x") and len(res) == 66
+    assert res == expected
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
+async def test_read_contract_sepolia_testBytesArrayEcho(mock_ctx):
+    # @see Web3PyTestContract.sol -> testBytesArrayEcho()
+    res = await _invoke(mock_ctx, "testBytesArrayEcho", json.dumps([["0x64617461", "0xdeadbeef"]]))
+    assert res == ["0x64617461", "0xdeadbeef"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(not config.pro_api_key, reason="BLOCKSCOUT_PRO_API_KEY not configured")
+async def test_read_contract_sepolia_testBytesStruct(mock_ctx):
+    # @see Web3PyTestContract.sol -> testBytesStruct()
+    res = await _invoke(mock_ctx, "testBytesStruct", json.dumps([{"id": 7, "data": "0xdeadbeef"}]))
+    assert res == (7, "0xdeadbeef")
 
 
 @pytest.mark.integration

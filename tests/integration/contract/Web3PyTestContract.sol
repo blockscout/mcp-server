@@ -21,7 +21,12 @@ contract Web3PyTestContract {
         uint256[] numbers;
         address[] addresses;
     }
-    
+
+    struct BytesStruct {
+        uint256 id;
+        bytes data;
+    }
+
     // Test basic types
     // Python: contract.functions.testInt(-42).call()
     // Remix: -42
@@ -75,7 +80,19 @@ contract Web3PyTestContract {
     function testBytesArray(bytes[] memory _data) public pure returns (uint256) {
         return _data.length;
     }
-    
+
+    // Python: contract.functions.testBytesArrayEcho([b'data', b'\xde\xad\xbe\xef']).call()
+    // Remix: ["0x64617461","0xdeadbeef"]
+    function testBytesArrayEcho(bytes[] memory _data) public pure returns (bytes[] memory) {
+        return _data;
+    }
+
+    // Python: contract.functions.testBytesStruct((7, b'\xde\xad\xbe\xef')).call()
+    // Remix: [7,"0xdeadbeef"]
+    function testBytesStruct(BytesStruct memory _value) public pure returns (BytesStruct memory) {
+        return _value;
+    }
+
     // Test structure
     // Python: contract.functions.testSimpleStruct((123, "test", True)).call()
     // Python: contract.functions.testSimpleStruct({'id': 123, 'name': 'test', 'active': True}).call()

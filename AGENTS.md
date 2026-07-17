@@ -144,6 +144,7 @@ mcp-server/
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
+│   ├── test_server_structured_output.py  # Unit tests for the _wrap_tool_for_structured_output wrapper
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
@@ -164,10 +165,12 @@ mcp-server/
 │       ├── chains/             # Tests for chain-related MCP tools
 │       │   └── test_get_chains_list.py         # Unit tests for get_chains_list
 │       ├── contract/           # Tests for contract-related MCP tools
+│       │   ├── conftest.py     # Shared w3 mock-chain factory for read_contract tests
 │       │   ├── test_fetch_and_process_contract.py  # Unit tests for fetch_and_process_contract
 │       │   ├── test_get_contract_abi.py        # Unit tests for get_contract_abi
 │       │   ├── test_inspect_contract_code.py   # Unit tests for inspect_contract_code
-│       │   └── test_read_contract.py           # Unit tests for read_contract
+│       │   ├── test_read_contract.py           # Unit tests for read_contract
+│       │   └── test_read_contract_normalization.py  # Unit tests for read_contract result normalization
 │       ├── transaction/        # Tests for transaction-related MCP tools
 │       │   ├── test_get_token_transfers_by_address.py      # Unit tests for get_token_transfers_by_address
 │       │   ├── test_get_transaction_info.py        # Unit tests for get_transaction_info

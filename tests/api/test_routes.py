@@ -404,6 +404,31 @@ async def test_read_contract_with_optional(mock_tool, client: AsyncClient):
 
 
 @pytest.mark.asyncio
+@patch("blockscout_mcp_server.api.routes.read_contract", new_callable=AsyncMock)
+async def test_read_contract_bytes_result_as_hex_string(mock_tool, client: AsyncClient):
+    """Pass-through contract test at the route boundary (issue #428).
+
+    The tool is mocked per the route-test guidelines, so this cannot exercise the
+    normalization logic itself — it only pins that a `ToolResponse` whose `result`
+    is already a canonical `0x`-hex string survives the route unchanged. The REST
+    regression proof is Phase 3's live end-to-end HTTP call.
+    """
+    expected_hex = "0x8e" + "00" * 31
+    mock_tool.return_value = ToolResponse(data={"result": expected_hex})
+    url = "/v1/read_contract?chain_id=1&address=0xabc&abi=%7B%7D&function_name=foo"
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json()["data"]["result"] == expected_hex
+    mock_tool.assert_called_once_with(
+        chain_id="1",
+        address="0xabc",
+        abi={},
+        function_name="foo",
+        ctx=ANY,
+    )
+
+
+@pytest.mark.asyncio
 async def test_read_contract_missing_param(client: AsyncClient):
     response = await client.get("/v1/read_contract?chain_id=1&address=0xabc&function_name=foo")
     assert response.status_code == 400

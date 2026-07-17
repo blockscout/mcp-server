@@ -2,7 +2,7 @@
 import json
 from typing import Annotated, Any
 
-from eth_utils import decode_hex, to_checksum_address
+from eth_utils import to_checksum_address, to_hex
 from mcp.server.fastmcp import Context
 from pydantic import Field
 from web3.exceptions import ContractLogicError
@@ -41,6 +41,32 @@ def _convert_json_args(obj: Any) -> Any:
             return int(obj, 10)
         except ValueError:
             return obj
+    return obj
+
+
+def _normalize_result(obj: Any) -> Any:
+    """
+    Recursively normalize a decoded contract call result for safe JSON serialization.
+
+    - `bytes` and `bytearray` values (including `HexBytes`, a `bytes` subclass) become
+      canonical `0x`-prefixed hex strings via `eth_utils.to_hex`.
+    - `list` values are recursed into and returned as lists (web3 represents ABI arrays
+      and multiple-output results as lists).
+    - `tuple` values are recursed into and returned as tuples (web3 represents ABI
+      structs, including nested ones, as tuples).
+    - `dict` values are recursed into and returned as dicts (defensive: the contract is
+      built without `decode_tuples=True`, so web3 returns structs as tuples today, but
+      this keeps the normalizer safe if that default ever decodes a struct into a mapping).
+    - Every other value (`int`, `bool`, `str`, `Decimal`, ...) passes through unchanged.
+    """
+    if isinstance(obj, (bytes, bytearray)):
+        return to_hex(obj)
+    if isinstance(obj, list):
+        return [_normalize_result(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple(_normalize_result(item) for item in obj)
+    if isinstance(obj, dict):
+        return {k: _normalize_result(v) for k, v in obj.items()}
     return obj
 
 
@@ -150,17 +176,22 @@ async def read_contract(
     if isinstance(block, str) and block.isdigit():
         block = int(block)
 
-    def _for_check(a: Any) -> Any:
-        if isinstance(a, list):
-            return [_for_check(i) for i in a]
-        if isinstance(a, str) and a.startswith(("0x", "0X")) and len(a) != 42:
-            return decode_hex(a)
-        return a
-
-    check_args = [_for_check(a) for a in py_args]
-    if not check_if_arguments_can_be_encoded(abi, *check_args):
-        raise ValueError(f"Arguments {py_args} cannot be encoded for function '{function_name}'")
     w3 = await WEB3_POOL.get(chain_id)
+    # Preflight with the same codec the actual `fn(*py_args)` call uses, so the check
+    # accepts exactly what the call would encode — 0x-hex strings for `bytes`/`bytesN`
+    # fields, "0x"-prefixed text for `string` fields, dict-form structs — and rejects
+    # only what the call would reject. The default codec of
+    # `check_if_arguments_can_be_encoded` is stricter than the call's (it refuses hex
+    # strings for `bytes`), which would falsely reject valid arguments.
+    try:
+        encodable = check_if_arguments_can_be_encoded(abi, *py_args, abi_codec=w3.codec)
+    except (TypeError, KeyError):
+        # web3 returns False for most bad argument shapes, but a dict-form struct
+        # with a missing/misspelled component key escapes as a raw KeyError from
+        # its input alignment; fold that into the same rejection.
+        encodable = False
+    if not encodable:
+        raise ValueError(f"Arguments {py_args} cannot be encoded for function '{function_name}'")
     await report_and_log_progress(
         ctx,
         progress=1.0,
@@ -179,6 +210,7 @@ async def read_contract(
     except Exception as e:  # noqa: BLE001
         # Surface unexpected errors with context to the caller
         raise RuntimeError(f"Contract call errored: {type(e).__name__}: {e}") from e
+    result = _normalize_result(result)
     await report_and_log_progress(
         ctx,
         progress=2.0,
