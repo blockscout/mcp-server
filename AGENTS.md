@@ -164,6 +164,7 @@ mcp-server/
 │       ├── chains/             # Tests for chain-related MCP tools
 │       │   └── test_get_chains_list.py         # Unit tests for get_chains_list
 │       ├── contract/           # Tests for contract-related MCP tools
+│       │   ├── conftest.py     # Shared w3 mock-chain factory for read_contract tests
 │       │   ├── test_fetch_and_process_contract.py  # Unit tests for fetch_and_process_contract
 │       │   ├── test_get_contract_abi.py        # Unit tests for get_contract_abi
 │       │   ├── test_inspect_contract_code.py   # Unit tests for inspect_contract_code

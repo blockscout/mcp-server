@@ -63,7 +63,7 @@ async def test_read_contract_success(mock_ctx):
 
 
 @pytest.mark.asyncio
-async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx):
+async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx, build_w3_mock):
     """A dict-form struct with a `bytes` field must pass the encodability preflight.
 
     Regression test: an earlier preflight pre-decoded hex-like strings with a
@@ -101,14 +101,7 @@ async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx)
         ],
     }
 
-    fn_result = MagicMock()
-    fn_result.call = AsyncMock(return_value=(7, b"\xde\xad\xbe\xef"))
-    fn_mock = MagicMock(return_value=fn_result)
-    contract_mock = MagicMock()
-    contract_mock.get_function_by_name.return_value = fn_mock
-    w3_mock = MagicMock()
-    w3_mock.codec = REAL_W3_CODEC
-    w3_mock.eth.contract.return_value = contract_mock
+    w3_mock = build_w3_mock((7, b"\xde\xad\xbe\xef"), codec=REAL_W3_CODEC)
 
     with patch(
         "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
@@ -131,7 +124,7 @@ async def test_read_contract_accepts_dict_form_struct_with_bytes_field(mock_ctx)
 
 @pytest.mark.parametrize("name_value", ["0xdeadbeef", "0xData!"])
 @pytest.mark.asyncio
-async def test_read_contract_accepts_dict_form_struct_with_hexlike_string_field(mock_ctx, name_value):
+async def test_read_contract_accepts_dict_form_struct_with_hexlike_string_field(mock_ctx, build_w3_mock, name_value):
     """A `string` struct field holding "0x"-prefixed text must pass the preflight.
 
     Regression test: an earlier preflight pre-decoded every hex-like string to
@@ -172,14 +165,7 @@ async def test_read_contract_accepts_dict_form_struct_with_hexlike_string_field(
         ],
     }
 
-    fn_result = MagicMock()
-    fn_result.call = AsyncMock(return_value=(7, name_value))
-    fn_mock = MagicMock(return_value=fn_result)
-    contract_mock = MagicMock()
-    contract_mock.get_function_by_name.return_value = fn_mock
-    w3_mock = MagicMock()
-    w3_mock.codec = REAL_W3_CODEC
-    w3_mock.eth.contract.return_value = contract_mock
+    w3_mock = build_w3_mock((7, name_value), codec=REAL_W3_CODEC)
 
     with patch(
         "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
@@ -201,7 +187,7 @@ async def test_read_contract_accepts_dict_form_struct_with_hexlike_string_field(
 
 
 @pytest.mark.asyncio
-async def test_read_contract_accepts_mixed_bytes_and_hexlike_string_args(mock_ctx):
+async def test_read_contract_accepts_mixed_bytes_and_hexlike_string_args(mock_ctx, build_w3_mock):
     """A `bytes` arg alongside a `string` arg holding "0x" text must pass the preflight.
 
     Regression test for the all-or-nothing preflight heuristic: the earlier
@@ -229,14 +215,8 @@ async def test_read_contract_accepts_mixed_bytes_and_hexlike_string_args(mock_ct
         ],
     }
 
-    fn_result = MagicMock()
-    fn_result.call = AsyncMock(return_value=(b"\xde\xad\xbe\xef", "0x1234"))
-    fn_mock = MagicMock(return_value=fn_result)
-    contract_mock = MagicMock()
-    contract_mock.get_function_by_name.return_value = fn_mock
-    w3_mock = MagicMock()
-    w3_mock.codec = REAL_W3_CODEC
-    w3_mock.eth.contract.return_value = contract_mock
+    w3_mock = build_w3_mock((b"\xde\xad\xbe\xef", "0x1234"), codec=REAL_W3_CODEC)
+    fn_mock = w3_mock.eth.contract.return_value.get_function_by_name.return_value
 
     with patch(
         "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
@@ -259,7 +239,7 @@ async def test_read_contract_accepts_mixed_bytes_and_hexlike_string_args(mock_ct
 
 
 @pytest.mark.asyncio
-async def test_read_contract_rejects_unencodable_args(mock_ctx):
+async def test_read_contract_rejects_unencodable_args(mock_ctx, build_w3_mock):
     """Arguments the call codec cannot encode fail the preflight with a `ValueError`.
 
     Pins the negative path of the codec-based preflight: a plain non-numeric string
@@ -274,8 +254,7 @@ async def test_read_contract_rejects_unencodable_args(mock_ctx):
         "outputs": [],
     }
 
-    w3_mock = MagicMock()
-    w3_mock.codec = REAL_W3_CODEC
+    w3_mock = build_w3_mock(None, codec=REAL_W3_CODEC)
 
     with patch(
         "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
@@ -289,6 +268,53 @@ async def test_read_contract_rejects_unencodable_args(mock_ctx):
                 abi=abi,
                 function_name="foo",
                 args='["notanumber"]',
+                ctx=mock_ctx,
+            )
+
+    w3_mock.eth.contract.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_read_contract_rejects_dict_form_struct_with_missing_field(mock_ctx, build_w3_mock):
+    """A dict-form struct missing an ABI component key fails the preflight with a `ValueError`.
+
+    web3's `check_if_arguments_can_be_encoded` does not return False for this shape:
+    its input alignment raises a raw `KeyError` for the absent component name. The
+    tool must fold that into its normal rejection contract instead of leaking the
+    bare `KeyError` to the caller. The mocked w3 carries a real codec, so the
+    preflight is genuinely exercised, and the contract object is never constructed.
+    """
+    function_name = "echoBytesStruct"
+    abi: dict[str, Any] = {
+        "name": function_name,
+        "type": "function",
+        "inputs": [
+            {
+                "name": "_value",
+                "type": "tuple",
+                "components": [
+                    {"name": "id", "type": "uint256"},
+                    {"name": "data", "type": "bytes"},
+                ],
+            }
+        ],
+        "outputs": [],
+    }
+
+    w3_mock = build_w3_mock(None, codec=REAL_W3_CODEC)
+
+    with patch(
+        "blockscout_mcp_server.tools.contract.read_contract.WEB3_POOL.get",
+        new_callable=AsyncMock,
+        return_value=w3_mock,
+    ):
+        with pytest.raises(ValueError, match=f"cannot be encoded for function '{function_name}'"):
+            await read_contract(
+                chain_id="1",
+                address="0x0000000000000000000000000000000000000abc",
+                abi=abi,
+                function_name=function_name,
+                args=json.dumps([{"id": 7, "datta": "0xdeadbeef"}]),
                 ctx=mock_ctx,
             )
 

@@ -183,7 +183,14 @@ async def read_contract(
     # only what the call would reject. The default codec of
     # `check_if_arguments_can_be_encoded` is stricter than the call's (it refuses hex
     # strings for `bytes`), which would falsely reject valid arguments.
-    if not check_if_arguments_can_be_encoded(abi, *py_args, abi_codec=w3.codec):
+    try:
+        encodable = check_if_arguments_can_be_encoded(abi, *py_args, abi_codec=w3.codec)
+    except (TypeError, KeyError):
+        # web3 returns False for most bad argument shapes, but a dict-form struct
+        # with a missing/misspelled component key escapes as a raw KeyError from
+        # its input alignment; fold that into the same rejection.
+        encodable = False
+    if not encodable:
         raise ValueError(f"Arguments {py_args} cannot be encoded for function '{function_name}'")
     await report_and_log_progress(
         ctx,
