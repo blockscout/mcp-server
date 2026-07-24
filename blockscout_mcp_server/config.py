@@ -23,6 +23,10 @@ class ServerConfig(BaseSettings):
     pro_api_config_refresh_retry_seconds: int = 30
     pro_api_key: str = ""
     pro_api_key_header: str = "Blockscout-MCP-Pro-Api-Key"
+    # Operator-configurable notice appended to tool responses when the request was not
+    # backed by a well-formed client-supplied PRO API key. There is no default text in
+    # code: an empty value (the default) disables the feature entirely.
+    pro_api_key_required_notice: str = ""
     # Advisory low-credits threshold expressed in PRO API credits (same unit as
     # `endpoint_pricing` in /api/json/config).  A value of 0 disables the note
     # entirely (Phase 4 gates on threshold > 0).  The default of 5000 provides
@@ -46,6 +50,11 @@ class ServerConfig(BaseSettings):
     @field_validator("pro_api_key_header")
     @classmethod
     def normalize_pro_api_key_header(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("pro_api_key_required_notice")
+    @classmethod
+    def normalize_pro_api_key_required_notice(cls, value: str) -> str:
         return value.strip()
 
     # Metadata configuration (PRO API metadata endpoint)
