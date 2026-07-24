@@ -129,6 +129,36 @@ def test_pro_api_key_header_empty_string_preserved(monkeypatch):
     assert cfg.pro_api_key_header == ""
 
 
+def test_pro_api_key_required_notice_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_required_notice == ""
+
+
+def test_pro_api_key_required_notice_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE", "Please authenticate with your own PRO API key.")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_required_notice == "Please authenticate with your own PRO API key."
+
+
+def test_pro_api_key_required_notice_strips_surrounding_whitespace(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE", "  Please authenticate.  \n")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_required_notice == "Please authenticate."
+
+
+def test_pro_api_key_required_notice_whitespace_only_becomes_empty(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE", "   ")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_required_notice == ""
+
+
+def test_pro_api_key_required_notice_empty_string_preserved(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE", "")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.pro_api_key_required_notice == ""
+
+
 def test_pro_api_low_credits_threshold_default(monkeypatch):
     monkeypatch.delenv("BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD", raising=False)
     cfg = ServerConfig(_env_file=None)

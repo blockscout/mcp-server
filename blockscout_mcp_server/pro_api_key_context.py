@@ -424,6 +424,37 @@ def resolve_pro_api_key() -> str:
 
 
 # ---------------------------------------------------------------------------
+# 5b. Notice-eligibility helper — reports whether the client key won precedence
+# ---------------------------------------------------------------------------
+
+
+def client_supplied_valid_key() -> bool:
+    """Return whether the current request's effective credential is a client-supplied key.
+
+    Meaningful only inside :func:`pro_api_key_scope` — applied to every MCP tool
+    (see the "Blanket decorator application" section of this module's docstring)
+    — because that decorator is what populates ``_client_key_state`` for the
+    request. Outside any scope the ContextVar reads its ``_ABSENT`` default and
+    this returns ``False``.
+
+    Delegates to :func:`_apply_key_precedence` (see the section-1b comment) — the
+    same single-source-of-truth decision that :func:`resolve_pro_api_key` enforces
+    and :func:`compute_auth_signals` reports — so this helper can never disagree
+    with the credential that actually backed the request:
+
+    - :class:`_UseClientKey` → ``True``.
+    - :class:`_RejectMalformed` (a malformed client key, no fallback) → ``False``.
+    - :class:`_UseServerKey` (no client key; whether or not a server key is
+      configured) → ``False``.
+
+    "Valid" means *locally well-formed only* (see :func:`_normalize_key`'s
+    semantics) — never an upstream-verified key. Never raises.
+    """
+    decision = _apply_key_precedence(_client_key_state.get())
+    return isinstance(decision, _UseClientKey)
+
+
+# ---------------------------------------------------------------------------
 # 6. require_pro_api_key — single chokepoint for the "not configured" error
 # ---------------------------------------------------------------------------
 

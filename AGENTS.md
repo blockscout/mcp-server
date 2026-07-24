@@ -24,7 +24,7 @@ mcp-server/
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── observability.py        # Resource-read observability helpers
-│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator; auth-origin and key-fingerprint helpers for analytics/telemetry
+│   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator; auth-origin and key-fingerprint helpers for analytics/telemetry; client-key presence helper for response assembly
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -278,6 +278,7 @@ mcp-server/
             * `BLOCKSCOUT_BENS_TIMEOUT`: Timeout for BENS API requests.
             * `BLOCKSCOUT_METADATA_TIMEOUT`: Timeout for PRO API metadata requests.
             * `BLOCKSCOUT_PRO_API_KEY`: Server-configured Blockscout PRO API key used as the default/fallback credential for data requests.
+            * `BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE`: Operator-configured notice appended to tool responses when the request lacked a client-supplied PRO API key (empty disables the feature).
             * `BLOCKSCOUT_CHAINSCOUT_URL`: URL for the Chainscout API (for chain resolution).
             * `BLOCKSCOUT_CHAINSCOUT_TIMEOUT`: Timeout for Chainscout API requests.
             * `BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS`: Time-to-live for the Chains List cache.

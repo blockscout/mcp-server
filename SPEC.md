@@ -207,6 +207,10 @@ The key's purpose is to ensure every request the server makes to the Blockscout 
 - The credential is resolved per request and scoped to a single tool invocation (see `blockscout_mcp_server/pro_api_key_context.py`). The client key is read for any HTTP request that carries the configured header — both MCP-over-HTTP tool calls and the REST API — and is never written to logs, analytics, or cache keys.
 - Because the key authorizes upstream requests rather than gating MCP functionality, a response served entirely from cache (e.g. contract metadata/source) requires only that some effective key be present, not that the client-supplied key was validated upstream. A well-formed but invalid, expired, or out-of-credit client key may therefore receive cached PRO-gated data — no protected upstream request is made on its behalf. This is a deliberate consequence of the principle above, not a validation gap.
 
+**Operator-configurable key-requirement notice**
+
+- `BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE` (`config.pro_api_key_required_notice`, empty by default) lets a deployment announce the migration to mandatory client-supplied keys: when set, tool responses whose requests were not backed by a well-formed client-supplied key carry the configured text as the **last** entry of the existing `notes` advisory channel, so it never displaces data-specific notes or the low-credits advisory. An empty value disables the feature entirely. The official-vs-community distinction is purely deployment configuration — only the official public deployment sets the variable — which keeps official-server migration policy out of the shared, transport-neutral code; community, self-hosted, and stdio deployments leave it empty and stay silent.
+
 **Two transports, one scheme**
 
 The server reaches the PRO API over two transports, each with its own header builder, but both follow the same `Bearer` scheme:
@@ -276,7 +280,7 @@ Credit-exhaustion responses on the PRO API *data path* are special-cased: the sh
 
    - `data`: The main data payload of the tool's response. The schema of this field can be specific to each tool.
    - `data_description`: An optional list of strings that explain the structure, fields, or conventions of the `data` payload (e.g., "The `method_call` field is actually the event signature...").
-   - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues, or a low-credits advisory when the Blockscout PRO API credit balance falls below the configured threshold. This field includes guidance on how to retrieve full data if it has been truncated.
+   - `notes`: An optional list of important contextual notes, such as warnings about data truncation or data quality issues, a low-credits advisory when the Blockscout PRO API credit balance falls below the configured threshold, or the operator-configured key-requirement notice when the request was not backed by a client-supplied PRO API key. This field includes guidance on how to retrieve full data if it has been truncated.
    - `instructions`: An optional list of suggested follow-up actions for the LLM to plan its next steps. When pagination is available, the server automatically appends pagination instructions to motivate LLMs to fetch additional pages.
    - `pagination`: An optional object that provides structured information for retrieving the next page of results.
 
