@@ -21,6 +21,7 @@ from blockscout_mcp_server.constants import (
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.pro_api_key_context import (
     _credit_sink,
+    client_supplied_valid_key,
     require_pro_api_key,
     resolve_pro_api_key,
 )
@@ -771,6 +772,18 @@ def build_tool_response(
         # Build a new list — never mutate the caller-supplied list in place.
         final_notes = list(notes) if notes is not None else []
         final_notes.append(advisory)
+
+    # Append the operator-configured PRO-API-key-required migration notice.  Both
+    # conditions must hold: the notice is configured (non-empty; Phase 1's validator
+    # already stripped it) and the request was not backed by a well-formed
+    # client-supplied PRO API key.  Appended last so it never displaces caller-supplied
+    # or low-credits notes above.
+    if config.pro_api_key_required_notice and not client_supplied_valid_key():
+        if final_notes is notes:
+            # The low-credits branch above did not fire — build a new list here too,
+            # never mutating the caller-supplied list in place.
+            final_notes = list(notes) if notes is not None else []
+        final_notes.append(config.pro_api_key_required_notice)
 
     # Automatically add pagination instructions when pagination is present
     final_instructions = list(instructions) if instructions is not None else []

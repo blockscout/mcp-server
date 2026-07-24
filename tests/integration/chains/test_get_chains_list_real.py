@@ -122,6 +122,35 @@ async def test_get_chains_list_query_optimism(mock_ctx):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_get_chains_list_notice_composes_with_real_response(mock_ctx, monkeypatch):
+    """The PRO-API-key-required notice (issue #425) composes with a real tool's
+    real response without displacing its existing notes.
+
+    ``mock_ctx.request_context`` is set to ``None`` explicitly to model a
+    stdio-like/no-request context — the same absent-key state the
+    decorator-seam unit test uses. This must not rely on the unrestricted
+    ``MagicMock`` merely happening to fall through the extractor's defensive
+    non-string branch (it would, but for the wrong reason): setting it
+    explicitly pins down *why* the state is absent.
+    """
+    marker = "TEST-MARKER: PRO API key will soon be required for every request."
+    monkeypatch.setattr(config, "pro_api_key_required_notice", marker)
+    mock_ctx.request_context = None
+
+    result = await retry_on_network_error(
+        lambda: get_chains_list(ctx=mock_ctx),
+        action_description="get_chains_list request",
+    )
+
+    assert isinstance(result, ToolResponse)
+    assert isinstance(result.data, list)
+    assert len(result.data) > 0
+    assert result.notes is not None
+    assert result.notes[-1] == marker
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_chains_list_query_xdai(mock_ctx):
     full = await retry_on_network_error(
         lambda: get_chains_list(ctx=mock_ctx), action_description="get_chains_list request"

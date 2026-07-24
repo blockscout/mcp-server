@@ -226,3 +226,52 @@ async def test_rest_empty_header_name_config_ignores_client_header(monkeypatch, 
     assert response.status_code == 200
     # Feature disabled: should fall back to server key
     assert fake_client.get_headers.get("Authorization") == f"Bearer {_SERVER_KEY}"
+
+
+# ---------------------------------------------------------------------------
+# PRO-API-key-required notice (issue #425, Phase 3) — REST transport-level
+# ---------------------------------------------------------------------------
+
+_NOTICE_TEXT = "PRO API keys will soon be required for every request; see https://dev.blockscout.com."
+
+
+@pytest.mark.asyncio
+async def test_rest_notice_present_without_key_header(monkeypatch, rest_client):
+    """Notice configured, request without the key header → HTTP 200 and the
+    JSON payload's `notes` array has the notice as its last entry."""
+    monkeypatch.setattr(config, "pro_api_key_required_notice", _NOTICE_TEXT)
+
+    fake_client = CapturingClient(_ok_response())
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        response = await rest_client.get(_TEST_URL)
+
+    assert response.status_code == 200
+    payload = response.json()
+    notes = payload.get("notes")
+    assert notes is not None, f"Expected 'notes' in response payload but got None: {payload}"
+    assert notes[-1] == _NOTICE_TEXT
+
+
+@pytest.mark.asyncio
+async def test_rest_notice_absent_with_well_formed_key_header(monkeypatch, rest_client):
+    """Notice configured, request with a well-formed key header → the JSON
+    payload carries no notice."""
+    monkeypatch.setattr(config, "pro_api_key_required_notice", _NOTICE_TEXT)
+
+    fake_client = CapturingClient(_ok_response())
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        response = await rest_client.get(
+            _TEST_URL,
+            headers={"Blockscout-MCP-Pro-Api-Key": _CLIENT_KEY},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    notes = payload.get("notes")
+    assert notes is None or _NOTICE_TEXT not in notes
