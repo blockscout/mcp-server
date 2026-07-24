@@ -18,6 +18,7 @@ from blockscout_mcp_server import pro_api_key_context
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import PRO_API_KEY_HASH_PREFIX
 from blockscout_mcp_server.pro_api_key_context import (
+    client_supplied_valid_key,
     compute_auth_signals,
     extract_client_pro_api_key_from_ctx,
     resolve_pro_api_key,
@@ -162,17 +163,22 @@ def test_client_fingerprint_is_never_memoized(monkeypatch):
 # *same* state extracted from that ctx, so both see one logical input.
 
 
-def _resolve_outcome(state: pro_api_key_context.ClientKeyState) -> tuple[str, str | None]:
-    """Run ``resolve_pro_api_key`` with the ContextVar set to *state*; report its outcome.
+def _resolve_outcome(state: pro_api_key_context.ClientKeyState) -> tuple[tuple[str, str | None], bool]:
+    """Run ``resolve_pro_api_key`` and ``client_supplied_valid_key`` with the ContextVar set to *state*.
 
-    Returns ``("key", <value>)`` for a returned key (possibly ``""``) or
-    ``("raised", None)`` when the malformed-key ``ValueError`` is raised.
+    Both calls run inside the *same* state scope so the notice-eligibility flag
+    is pinned to the same precedence decision ``resolve_pro_api_key`` enforces.
+    Returns a pair: the resolve outcome (``("key", <value>)`` for a returned key,
+    possibly ``""``, or ``("raised", None)`` when the malformed-key ``ValueError``
+    is raised) and the ``client_supplied_valid_key()`` result.
     """
     token = pro_api_key_context._client_key_state.set(state)
     try:
-        return "key", resolve_pro_api_key()
-    except ValueError:
-        return "raised", None
+        try:
+            resolution: tuple[str, str | None] = ("key", resolve_pro_api_key())
+        except ValueError:
+            resolution = ("raised", None)
+        return resolution, client_supplied_valid_key()
     finally:
         pro_api_key_context._client_key_state.reset(token)
 
@@ -223,7 +229,7 @@ def test_auth_origin_stays_consistent_with_resolve_pro_api_key(
 
     # resolve sees the SAME state the telemetry path derived from ctx.
     state = extract_client_pro_api_key_from_ctx(ctx)
-    resolution = _resolve_outcome(state)
+    resolution, client_eligible = _resolve_outcome(state)
     assert resolution == expected_resolution
 
     # The invariant tying the two together: a "usable key" origin iff resolve
@@ -232,3 +238,7 @@ def test_auth_origin_stays_consistent_with_resolve_pro_api_key(
         assert resolution[0] == "key" and resolution[1]
     else:
         assert resolution == ("raised", None) or resolution == ("key", "")
+
+    # Notice eligibility (Phase 2, issue #425) must agree with the same
+    # precedence decision: True exactly when the client key won precedence.
+    assert client_eligible == (expected_origin == "client")
