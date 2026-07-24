@@ -300,6 +300,8 @@ export BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here
 
 **Low-credit warning.** Access to the PRO API is metered in credits. When the remaining balance reported by the API drops below a configurable threshold, every data tool appends an advisory note to its response, prompting operators to top up so PRO API access stays ready for continued high-volume usage. The threshold is set via `BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD` (default `5000` credits; set to `0` to disable the note). The note fires for any balance below the threshold, including zero and negative balances.
 
+**PRO API key requirement notice.** `BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE` holds an operator-configured notice that the server appends as the last entry of the `notes` field of tool responses whose requests did not carry the client's own (well-formed) PRO API key. It exists to announce the official public server's migration to mandatory client-supplied keys, so only the official deployment is expected to set it. When the variable is unset or empty (the default), the feature is completely off. Community and self-hosted operators should leave it empty — in particular in stdio mode, where you configure `BLOCKSCOUT_PRO_API_KEY` yourself and no request header can carry a client key, the notice would only repeat a migration message that does not apply to your deployment.
+
 ### Running the Server
 
 The server runs in `stdio` mode by default:
