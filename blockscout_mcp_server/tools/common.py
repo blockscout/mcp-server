@@ -747,12 +747,19 @@ def build_tool_response(
     Returns:
         A ToolResponse instance.
     """
-    # Check for a low-credits advisory note.  All three conditions must hold:
+    # Auto-appended notes (low-credits advisory, then the PRO-API-key migration
+    # notice) accumulate in a local list and are folded onto the caller's notes
+    # once at the end.  Keeping them here — rather than threading a running
+    # ``final_notes`` through each branch — means neither branch depends on whether
+    # the other fired (no aliasing to reason about), and the caller-supplied list is
+    # never mutated in place.
+    extra_notes: list[str] = []
+
+    # Low-credits advisory note.  All three conditions must hold:
     # 1. A CreditSink was established for this invocation (sink is not None).
     # 2. A PRO API call actually happened (sink.remaining is not None).
     # 3. The threshold gate is enabled (> 0) and the remaining balance is below it.
     # Silence is the default; emit nothing when any condition is unmet.
-    final_notes: list[str] | None = notes
     sink = _credit_sink.get()
     if (
         sink is not None
@@ -769,21 +776,24 @@ def build_tool_response(
             f"(warning threshold: {threshold}). Top up your account to keep Blockscout PRO API access ready "
             f"for continued high-volume usage — see https://dev.blockscout.com."
         )
-        # Build a new list — never mutate the caller-supplied list in place.
-        final_notes = list(notes) if notes is not None else []
-        final_notes.append(advisory)
+        extra_notes.append(advisory)
 
-    # Append the operator-configured PRO-API-key-required migration notice.  Both
-    # conditions must hold: the notice is configured (non-empty; Phase 1's validator
-    # already stripped it) and the request was not backed by a well-formed
-    # client-supplied PRO API key.  Appended last so it never displaces caller-supplied
-    # or low-credits notes above.
+    # Operator-configured PRO-API-key-required migration notice.  Both conditions
+    # must hold: the notice is configured (non-empty; Phase 1's validator already
+    # stripped it) and the request was not backed by a well-formed client-supplied
+    # PRO API key.  Appended last so it never displaces caller-supplied or
+    # low-credits notes above.
     if config.pro_api_key_required_notice and not client_supplied_valid_key():
-        if final_notes is notes:
-            # The low-credits branch above did not fire — build a new list here too,
-            # never mutating the caller-supplied list in place.
-            final_notes = list(notes) if notes is not None else []
-        final_notes.append(config.pro_api_key_required_notice)
+        extra_notes.append(config.pro_api_key_required_notice)
+
+    # Fold the auto-appended notes onto the caller's notes.  When nothing was added,
+    # pass the caller's ``notes`` through unchanged (preserving ``None``); otherwise
+    # build a fresh list so the caller-supplied list is never mutated in place.
+    final_notes: list[str] | None
+    if extra_notes:
+        final_notes = [*notes, *extra_notes] if notes is not None else extra_notes
+    else:
+        final_notes = notes
 
     # Automatically add pagination instructions when pagination is present
     final_instructions = list(instructions) if instructions is not None else []

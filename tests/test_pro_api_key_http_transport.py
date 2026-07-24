@@ -29,6 +29,27 @@ def _build_tools_call_body(tool_name: str, arguments: dict | None = None) -> dic
     }
 
 
+@pytest.fixture(autouse=True)
+def disable_telemetry(monkeypatch):
+    """Disable community telemetry for every test in this module.
+
+    Declared at the top and ``autouse=True``, so it deliberately covers *all*
+    tests in the module — the pre-existing key-resolution tests
+    (``test_client_key_header_reaches_tool_body`` and
+    ``test_missing_client_header_falls_back_to_server_key``) as well as the
+    notice tests below. Disabling telemetry is inert for the former and a
+    flakiness guard for the latter, so uniform coverage is intentional.
+
+    The real @log_tool_invocation decorator schedules
+    telemetry.send_community_usage_report(...) via asyncio.create_task in its
+    finally block — even when the tool body raises. Setting
+    config.disable_community_telemetry = True triggers the real gate in the
+    production code and avoids flaky real network calls, mirroring the
+    ``disable_telemetry`` fixture in tests/api/test_routes_pro_api_key.py.
+    """
+    monkeypatch.setattr(server_config, "disable_community_telemetry", True, raising=False)
+
+
 @pytest.fixture()
 def mcp_app(monkeypatch):
     """A throwaway FastMCP instance with a single key-echo tool and streamable-HTTP app."""
@@ -86,25 +107,12 @@ def test_missing_client_header_falls_back_to_server_key(mcp_app):
     assert _extract_text_result(response.text) == "server-key"
 
 
-@pytest.fixture(autouse=True)
-def disable_telemetry(monkeypatch):
-    """Disable community telemetry for all tests in this module.
-
-    The real @log_tool_invocation decorator schedules
-    telemetry.send_community_usage_report(...) via asyncio.create_task in its
-    finally block — even when the tool body raises. Setting
-    config.disable_community_telemetry = True triggers the real gate in the
-    production code and avoids flaky real network calls, following the
-    established fixture in tests/api/test_routes_pro_api_key.py:88-100.
-    """
-    monkeypatch.setattr(server_config, "disable_community_telemetry", True, raising=False)
-
-
 @pytest.fixture()
 def unlock_app(monkeypatch):
     """A throwaway FastMCP instance carrying the real, fully local, keyless
     ``__unlock_blockchain_analysis__`` tool, registered exactly the way
-    production registers it (blockscout_mcp_server/server.py:235-240):
+    production registers it (see the ``mcp.tool(...)`` registration block in
+    blockscout_mcp_server/server.py):
     ``mcp.tool(structured_output=True, ...)`` wrapping
     ``_wrap_tool_for_structured_output``. Registering the raw function would
     fall back to the SDK's auto-serialization instead of the wrapper that

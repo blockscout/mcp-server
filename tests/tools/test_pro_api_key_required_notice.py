@@ -119,9 +119,14 @@ def test_notice_absent_when_state_valid(monkeypatch):
 
 
 @pytest.mark.parametrize("state", [_Absent(), _Malformed(), _Valid(value="client-key-123")])
-def test_no_notice_for_any_state_when_notice_empty(state):
-    """Notice empty (default config) -> no notice for any state, notes stays None."""
-    assert config.pro_api_key_required_notice == ""
+def test_no_notice_for_any_state_when_notice_empty(state, monkeypatch):
+    """Notice empty -> no notice for any state, notes stays None.
+
+    Set the empty notice explicitly rather than asserting the global default, so
+    the test stays hermetic even when a developer's environment/.env defines
+    ``BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE``.
+    """
+    monkeypatch.setattr(config, "pro_api_key_required_notice", "")
 
     with _set_client_key_state(state):
         response = build_tool_response(data={"ok": True})
