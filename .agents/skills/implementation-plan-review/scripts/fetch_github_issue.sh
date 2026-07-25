@@ -9,14 +9,17 @@
 #   OK <path>
 #
 # Output on failure:
-#   ERROR <message>
+#   ERROR <classification>
+#   ACTION <what the caller should do next>
+#   DETAIL <first line from gh, when useful>
 #
 # Exit codes:
 #   0 - Success
 #   1 - Missing/invalid arguments
-#   3 - GitHub CLI not authenticated
-#   4 - Failed to fetch issue
+#   3 - GitHub credentials unavailable to this process
+#   4 - GitHub fetch failed for a non-network reason
 #   5 - Failed to write output file
+#   6 - GitHub API network access unavailable
 
 set -euo pipefail
 
@@ -53,11 +56,6 @@ if [[ ! "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-if ! gh auth status &>/dev/null; then
-    echo "ERROR GitHub CLI not authenticated. Run: gh auth login"
-    exit 3
-fi
-
 CMD=(gh issue view "$ISSUE_NUMBER")
 
 set +e
@@ -78,7 +76,50 @@ set -e
 
 if [[ $STATUS -ne 0 ]]; then
     FIRST_LINE="$(printf "%s" "$MD" | head -n 1)"
-    echo "ERROR Failed to fetch issue via gh: ${FIRST_LINE}"
+    LOWER_ERROR="$(printf "%s" "$MD" | tr '[:upper:]' '[:lower:]')"
+
+    case "$LOWER_ERROR" in
+        *"error connecting to"*|\
+        *"check your internet connection"*|\
+        *"could not resolve host"*|\
+        *"temporary failure in name resolution"*|\
+        *"network is unreachable"*|\
+        *"connection refused"*|\
+        *"connection timed out"*|\
+        *"failed to connect"*|\
+        *"tls handshake timeout"*|\
+        *"i/o timeout"*|\
+        *"context deadline exceeded"*)
+            echo "ERROR GitHub API network access is unavailable to this process."
+            echo "ACTION Agent: rerun this exact fetch command outside the network sandbox (require_escalated). Do not ask the user to re-authenticate for this error."
+            echo "DETAIL ${FIRST_LINE}"
+            exit 6
+            ;;
+    esac
+
+    case "$LOWER_ERROR" in
+        *"gh auth login"*|\
+        *"bad credentials"*|\
+        *"http 401"*|\
+        *"authentication required"*|\
+        *"not logged into any github hosts"*)
+            echo "ERROR GitHub credentials are unavailable to this process."
+            echo "ACTION Run 'gh auth status'. If it is not logged in, run 'gh auth login'. If an interactive terminal is already logged in, rerun this fetch outside the sandbox so it can access the keyring."
+            echo "DETAIL ${FIRST_LINE}"
+            exit 3
+            ;;
+    esac
+
+    if ! gh auth token -h github.com &>/dev/null; then
+        echo "ERROR GitHub credentials are unavailable to this process."
+        echo "ACTION Run 'gh auth status'. If it is not logged in, run 'gh auth login'. If an interactive terminal is already logged in, rerun this fetch outside the sandbox so it can access the keyring."
+        echo "DETAIL ${FIRST_LINE}"
+        exit 3
+    fi
+
+    echo "ERROR GitHub CLI could not fetch issue ${ISSUE_NUMBER} although credentials are available."
+    echo "ACTION Check the issue number and repository access, then inspect the gh error below."
+    echo "DETAIL ${FIRST_LINE}"
     exit 4
 fi
 
