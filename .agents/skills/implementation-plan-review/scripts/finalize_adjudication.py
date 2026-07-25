@@ -43,8 +43,7 @@ def main() -> int:
             except KeyError:
                 available = ", ".join(section.slug for section in report.sections)
                 print(
-                    f"ERROR unknown section slug {args.extract!r}; "
-                    f"available: {available}",
+                    f"ERROR unknown section slug {args.extract!r}; available: {available}",
                     file=sys.stderr,
                 )
                 return 2

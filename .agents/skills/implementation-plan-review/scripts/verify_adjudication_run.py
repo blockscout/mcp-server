@@ -31,22 +31,12 @@ def main() -> int:
         print(f"ERROR run directory does not exist: {run_dir}", file=sys.stderr)
         return 2
 
-    candidate_dirs = sorted(
-        path
-        for path in run_dir.iterdir()
-        if path.is_dir() and path.name.startswith("finding-")
-    )
+    candidate_dirs = sorted(path for path in run_dir.iterdir() if path.is_dir() and path.name.startswith("finding-"))
     errors: list[str] = []
     if not candidate_dirs:
         errors.append(f"no finding-* candidate directories found below {run_dir}")
-    if (
-        args.expected_count is not None
-        and len(candidate_dirs) != args.expected_count
-    ):
-        errors.append(
-            f"expected {args.expected_count} candidate directories, "
-            f"found {len(candidate_dirs)}"
-        )
+    if args.expected_count is not None and len(candidate_dirs) != args.expected_count:
+        errors.append(f"expected {args.expected_count} candidate directories, found {len(candidate_dirs)}")
 
     summaries: list[str] = []
     completed_reports = 0
@@ -87,10 +77,7 @@ def main() -> int:
                 errors.append(f"{relative}: cannot read {BRIEF_NAME}: {exc}")
             else:
                 if actual_brief != expected_brief:
-                    errors.append(
-                        f"{relative}: {BRIEF_NAME} is stale or was edited; "
-                        "rerun finalize_adjudication.py"
-                    )
+                    errors.append(f"{relative}: {BRIEF_NAME} is stale or was edited; rerun finalize_adjudication.py")
 
         summaries.append(
             f"{relative}: disposition={report.result['disposition']} "

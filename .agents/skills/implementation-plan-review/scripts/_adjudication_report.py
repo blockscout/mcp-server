@@ -18,7 +18,7 @@ INPUT_NAME: Final = "input.md"
 MAX_CORE_WORDS: Final = 1_000
 
 _MARKER_RE = re.compile(
-    rf'^<!-- {NAMESPACE}:(?P<kind>begin|end)'
+    rf"^<!-- {NAMESPACE}:(?P<kind>begin|end)"
     r'(?P<attrs>(?:\s+[a-z][a-z0-9_-]*="[^"]*")*)\s*-->$'
 )
 _ATTRIBUTE_RE = re.compile(r'([a-z][a-z0-9_-]*)="([^"]*)"')
@@ -121,19 +121,14 @@ def _parse_attributes(raw: str, line_number: int) -> tuple[dict[str, str], list[
     for match in _ATTRIBUTE_RE.finditer(raw):
         gap = raw[cursor : match.start()]
         if gap.strip():
-            errors.append(
-                f"line {line_number}: malformed tag attributes near {gap.strip()!r}"
-            )
+            errors.append(f"line {line_number}: malformed tag attributes near {gap.strip()!r}")
         cursor = match.end()
         key, value = match.groups()
         if key in attributes:
             errors.append(f"line {line_number}: duplicate attribute {key!r}")
         attributes[key] = value
     if raw[cursor:].strip():
-        errors.append(
-            f"line {line_number}: malformed tag attributes near "
-            f"{raw[cursor:].strip()!r}"
-        )
+        errors.append(f"line {line_number}: malformed tag attributes near {raw[cursor:].strip()!r}")
     return attributes, errors
 
 
@@ -154,10 +149,7 @@ def _load_json_comment(
 ) -> dict[str, object] | None:
     matches = list(regex.finditer(content))
     if len(matches) != 1:
-        errors.append(
-            f"section {slug!r}: expected exactly one {label} JSON comment, "
-            f"found {len(matches)}"
-        )
+        errors.append(f"section {slug!r}: expected exactly one {label} JSON comment, found {len(matches)}")
         return None
     try:
         value = json.loads(matches[0].group("json"))
@@ -175,42 +167,23 @@ def _validate_result(value: dict[str, object] | None, errors: list[str]) -> None
         return
     expected_keys = {"disposition", "confidence", "severity"}
     if set(value) != expected_keys:
-        errors.append(
-            "adjudication-result: keys must be exactly "
-            "'disposition', 'confidence', and 'severity'"
-        )
+        errors.append("adjudication-result: keys must be exactly 'disposition', 'confidence', and 'severity'")
     disposition = value.get("disposition")
     if disposition not in DISPOSITIONS:
-        errors.append(
-            f"adjudication-result: disposition must be one of "
-            f"{sorted(DISPOSITIONS)}, got {disposition!r}"
-        )
+        errors.append(f"adjudication-result: disposition must be one of {sorted(DISPOSITIONS)}, got {disposition!r}")
     severity = value.get("severity")
     if severity not in SEVERITIES:
-        errors.append(
-            f"adjudication-result: severity must be one of "
-            f"{sorted(SEVERITIES)}, got {severity!r}"
-        )
+        errors.append(f"adjudication-result: severity must be one of {sorted(SEVERITIES)}, got {severity!r}")
     confidence = value.get("confidence")
-    if (
-        isinstance(confidence, bool)
-        or not isinstance(confidence, (int, float))
-        or not 0 <= confidence <= 1
-    ):
-        errors.append(
-            "adjudication-result: confidence must be a number from 0 through 1"
-        )
+    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+        errors.append("adjudication-result: confidence must be a number from 0 through 1")
     if disposition == "Closed" and severity != "None":
         errors.append("adjudication-result: Closed disposition requires severity None")
     if disposition == "Question" and severity != "Question":
-        errors.append(
-            "adjudication-result: Question disposition requires severity Question"
-        )
+        errors.append("adjudication-result: Question disposition requires severity Question")
 
 
-def _validate_weights(
-    value: dict[str, object] | None, errors: list[str]
-) -> dict[str, float]:
+def _validate_weights(value: dict[str, object] | None, errors: list[str]) -> dict[str, float]:
     if value is None:
         return {}
     if not 2 <= len(value) <= 8:
@@ -218,25 +191,14 @@ def _validate_weights(
     normalized: dict[str, float] = {}
     for key, weight in value.items():
         if not isinstance(key, str) or not _SLUG_RE.fullmatch(key):
-            errors.append(
-                f"rubric-weights: criterion key must be a kebab-case slug, got {key!r}"
-            )
+            errors.append(f"rubric-weights: criterion key must be a kebab-case slug, got {key!r}")
             continue
-        if (
-            isinstance(weight, bool)
-            or not isinstance(weight, (int, float))
-            or weight <= 0
-        ):
-            errors.append(
-                f"rubric-weights: weight for {key!r} must be a positive number"
-            )
+        if isinstance(weight, bool) or not isinstance(weight, (int, float)) or weight <= 0:
+            errors.append(f"rubric-weights: weight for {key!r} must be a positive number")
             continue
         normalized[key] = float(weight)
     if normalized and abs(sum(normalized.values()) - 100) > 1e-9:
-        errors.append(
-            f"rubric-weights: weights must total 100, got "
-            f"{sum(normalized.values()):g}"
-        )
+        errors.append(f"rubric-weights: weights must total 100, got {sum(normalized.values()):g}")
     return normalized
 
 
@@ -271,29 +233,20 @@ def parse_and_validate_report(path: Path | str) -> AdjudicationReport:
                 errors.append(f"line {line_number}: malformed {NAMESPACE} marker")
             if current_slug is None:
                 if line.strip():
-                    errors.append(
-                        f"line {line_number}: nonblank content outside tagged sections"
-                    )
+                    errors.append(f"line {line_number}: nonblank content outside tagged sections")
             else:
                 current_lines.append(line)
             continue
 
-        attributes, attribute_errors = _parse_attributes(
-            marker.group("attrs"), line_number
-        )
+        attributes, attribute_errors = _parse_attributes(marker.group("attrs"), line_number)
         errors.extend(attribute_errors)
         kind = marker.group("kind")
 
         if kind == "begin":
             if set(attributes) != {"disclosure", "slug"}:
-                errors.append(
-                    f"line {line_number}: begin marker attributes must be exactly "
-                    "'disclosure' and 'slug'"
-                )
+                errors.append(f"line {line_number}: begin marker attributes must be exactly 'disclosure' and 'slug'")
             if current_slug is not None:
-                errors.append(
-                    f"line {line_number}: nested section inside {current_slug!r}"
-                )
+                errors.append(f"line {line_number}: nested section inside {current_slug!r}")
                 continue
             current_slug = attributes.get("slug", "")
             current_disclosure = attributes.get("disclosure", "")
@@ -302,18 +255,13 @@ def parse_and_validate_report(path: Path | str) -> AdjudicationReport:
             continue
 
         if set(attributes) != {"slug"}:
-            errors.append(
-                f"line {line_number}: end marker attribute must be exactly 'slug'"
-            )
+            errors.append(f"line {line_number}: end marker attribute must be exactly 'slug'")
         if current_slug is None:
             errors.append(f"line {line_number}: end marker without an open section")
             continue
         end_slug = attributes.get("slug", "")
         if end_slug != current_slug:
-            errors.append(
-                f"line {line_number}: end slug {end_slug!r} does not match "
-                f"open slug {current_slug!r}"
-            )
+            errors.append(f"line {line_number}: end slug {end_slug!r} does not match open slug {current_slug!r}")
         sections.append(
             ReportSection(
                 slug=current_slug,
@@ -328,17 +276,12 @@ def parse_and_validate_report(path: Path | str) -> AdjudicationReport:
         current_lines = []
 
     if current_slug is not None:
-        errors.append(
-            f"section {current_slug!r} opened on line {current_begin_line} is not closed"
-        )
+        errors.append(f"section {current_slug!r} opened on line {current_begin_line} is not closed")
 
     actual_slugs = [section.slug for section in sections]
     expected_slugs = [spec.slug for spec in SECTION_SPECS]
     if actual_slugs != expected_slugs:
-        errors.append(
-            "section slugs/order mismatch: expected "
-            f"{expected_slugs!r}, got {actual_slugs!r}"
-        )
+        errors.append(f"section slugs/order mismatch: expected {expected_slugs!r}, got {actual_slugs!r}")
     if len(set(actual_slugs)) != len(actual_slugs):
         errors.append("section slugs must be unique")
 
@@ -348,15 +291,11 @@ def parse_and_validate_report(path: Path | str) -> AdjudicationReport:
             continue
         if section.disclosure != spec.disclosure:
             errors.append(
-                f"section {section.slug!r}: disclosure must be "
-                f"{spec.disclosure!r}, got {section.disclosure!r}"
+                f"section {section.slug!r}: disclosure must be {spec.disclosure!r}, got {section.disclosure!r}"
             )
         first_line = _first_nonblank_line(section.content)
         if first_line != spec.heading:
-            errors.append(
-                f"section {section.slug!r}: first nonblank line must be "
-                f"{spec.heading!r}, got {first_line!r}"
-            )
+            errors.append(f"section {section.slug!r}: first nonblank line must be {spec.heading!r}, got {first_line!r}")
         if "REPLACE_ME" in section.content:
             errors.append(f"section {section.slug!r}: unresolved REPLACE_ME placeholder")
 
@@ -390,15 +329,10 @@ def parse_and_validate_report(path: Path | str) -> AdjudicationReport:
     normalized_weights = _validate_weights(weights_value, errors)
 
     core_word_count = sum(
-        len(_WORD_RE.findall(section.content))
-        for section in sections
-        if section.disclosure == "core"
+        len(_WORD_RE.findall(section.content)) for section in sections if section.disclosure == "core"
     )
     if core_word_count > MAX_CORE_WORDS:
-        errors.append(
-            f"core sections contain {core_word_count} words; maximum is "
-            f"{MAX_CORE_WORDS}"
-        )
+        errors.append(f"core sections contain {core_word_count} words; maximum is {MAX_CORE_WORDS}")
 
     if errors:
         raise ReportValidationError(errors)
@@ -421,11 +355,7 @@ def render_brief(report: AdjudicationReport) -> str:
         f"<!-- source-sha256: {report.sha256} -->",
         f"Source: [{report.path.name}]({source_link})",
     ]
-    blocks.extend(
-        section.content.rstrip()
-        for section in report.sections
-        if section.disclosure == "core"
-    )
+    blocks.extend(section.content.rstrip() for section in report.sections if section.disclosure == "core")
     return "\n\n".join(blocks) + "\n"
 
 
