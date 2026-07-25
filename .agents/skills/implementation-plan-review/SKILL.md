@@ -13,7 +13,7 @@ Review an implementation plan for coverage, correctness, and fit with the curren
 - Implementation plan: a local file path.
 - Issue/requirements: either (a) a local file path, or (b) a GitHub issue number (run from the target repo so `gh` resolves it).
 
-If the user provides a GitHub issue number, prefer fetching it into a local file using the bundled script (requires `gh` auth and network access; otherwise ask for a local issue description file):
+If the user provides a GitHub issue number, prefer fetching it into a local file using the bundled script:
 
 ```bash
 bash scripts/fetch_github_issue.sh <issue-number> --out /tmp/issue.md
@@ -23,22 +23,23 @@ Run this command from the skill directory when that directory is inside the targ
 command agent-agnostic by resolving the script path relative to this skill directory while running `gh` from the target
 repo so the issue number resolves against the correct repository.
 
-If the script reports that `gh` is not authenticated (exit code `3`), ask the user to run:
-
-```bash
-gh auth login
-```
+Fetching is a network operation. When command execution is sandboxed, request
+network escalation (`require_escalated`) for this exact fetch command rather
+than granting a reusable broad `bash` permission. On failure, follow the
+script's self-contained `ACTION` line. It distinguishes unavailable network
+(exit `6`), credentials unavailable to the process (exit `3`), other GitHub
+fetch failures (exit `4`), and local output failures (exit `5`).
 
 ## Workflow
 
-1) Prepare clean scratchpads:
+1) Prepare a clean review run:
    - Before reading or listing any scratchpad files, run from this skill directory:
 
 ```bash
 bash scripts/new_scratchpads_dir.sh <plan-file>
 ```
 
-   - Use exactly the absolute path the script printed on stdout for this run's scratchpads; never glob or guess a path under `scratchpads/` yourself.
+   - Use exactly the absolute path the script printed on stdout as this review's run directory; never glob or guess a path under `scratchpads/` yourself.
    - Each run creates a fresh timestamped directory (`scratchpads/<YYMMDD-HHMM>/`); nothing is deleted. Directories from earlier reviews belong to a different run — never read or reuse them for this review. (If the printed path is ever lost from context, the lexicographically-last timestamp subdirectory is the most recent, since the format sorts chronologically — but prefer the printed path.)
    - If the script fails (non-zero exit; `error: <message>` on stderr), stop and report the failure.
 
@@ -73,26 +74,95 @@ rg -n "ServerConfig\\(|BaseSettings\\(|BLOCKSCOUT_" blockscout_mcp_server/config
 rg -n "pytest\\.mark\\.integration|tests/integration|tests/tools" tests -S
 ```
 
-6) Ground findings with scratchpads:
-   - Use only the clean scratchpad directory prepared in step 1.
-   - For each actionable candidate finding, create one deterministic scratchpad file in final report order:
-     - `finding-01-short-slug.md`
-     - `finding-02-short-slug.md`
-     - Continue numbering in the same order used in §4.
-   - Each scratchpad must include these sections:
-     - `Grounded context`: exact code, docs, tests, configs, or rules inspected, with paths/functions/classes where relevant.
-     - `Variants`: at least 2 meaningful solution options; use 3-4 for non-trivial findings.
-     - `Rubric`: criteria for choosing between variants.
-     - `Evaluation`: a score table or concise comparison of variants against the rubric.
-     - `Best recommendation`: the concrete change to make to the implementation plan.
-     - `Plain-language rationale`: why the chosen recommendation is best.
-   - Use the scratchpad result to rewrite the final §4 recommendation. If scratchpad investigation disproves or weakens a finding, remove it or downgrade it before final output.
-   - Findings that cannot be grounded in a scratchpad should normally be omitted. Keep them only when they are genuinely product/intent questions and mark them as `Question`.
+6) Independently adjudicate candidate findings:
 
-Scratchpad discipline:
-- Scratchpads are working artifacts created by this review skill to make final recommendations grounded.
-- Do not create scratchpads for pure summary text, obvious nits, or questions that require user/product input rather than code investigation.
-- Do not use scratchpads to pad the report; use them only to make actionable recommendations more accurate.
+   Read these two skill resources completely before creating candidate inputs or
+   launching adjudicators:
+
+   - `references/finding-adjudication-protocol.md`
+   - `assets/finding-adjudication-report.md`
+
+   Treat every initially suspected problem as a **candidate**, not a final
+   finding. Do not create candidates for pure summary text or obvious nits.
+
+   For each candidate, create a directory in the clean run:
+
+```text
+finding-01-short-slug/
+├── input.md
+├── full-report.md  # written by the adjudicator
+└── brief.md        # generated by the finalizer
+```
+
+   Create `input.md` with:
+
+   - candidate ID;
+   - absolute plan, issue snapshot, template, protocol, and output paths;
+   - one neutral, falsifiable candidate hypothesis;
+   - focused research questions;
+   - candidate-specific scope or edge cases;
+   - an explicit statement that `Confirmed`, `Downgraded`, `Question`, and
+     `Closed` are all successful outcomes.
+
+   Do not include prior scratchpad conclusions, a preferred solution, expected
+   disposition, or another adjudicator's work.
+
+   Launch one independent subagent per candidate, batching when concurrency is
+   limited. Use `fork_turns="none"` so the adjudicator receives only the
+   candidate input and stable protocol. Prefer a strong reasoning model
+   (`gpt-5.6-sol` with `xhigh` reasoning when available) unless the user
+   requests otherwise. The launcher prompt should contain only:
+
+   - the absolute protocol path and instruction to read it completely;
+   - the absolute `input.md` path;
+   - the exact writable candidate directory;
+   - the absolute template path;
+   - the requirement to run the protocol's finalization loop before returning.
+
+   Each adjudicator must write `full-report.md`, run
+   `scripts/finalize_adjudication.py`, fix every validation error, and return
+   only the protocol's short completion record. The script deterministically
+   generates `brief.md`; the adjudicator must not edit the brief.
+
+   After all adjudicators finish, independently verify the complete run:
+
+```bash
+python3 scripts/verify_adjudication_run.py \
+  --run <absolute-run-directory> \
+  --expected-count <candidate-count>
+```
+
+   If verification fails, send the exact errors back to the responsible
+   adjudicator and require it to correct and re-finalize its report. Do not use
+   an invalid or stale brief.
+
+   Read all valid `brief.md` files first. Open the full report or extract a
+   tagged section only when progressive disclosure is warranted, for example:
+
+   - unexpected `Closed` or `Downgraded` disposition;
+   - low confidence or a close variant result;
+   - a decision that depends on an unresolved product assumption;
+   - overlap or conflict between candidates;
+   - a recommendation that materially expands plan scope;
+   - a challenged finding.
+
+   Extract one validated section without loading the full report:
+
+```bash
+python3 scripts/finalize_adjudication.py \
+  --report <candidate-directory>/full-report.md \
+  --extract <section-slug>
+```
+
+   The main agent owns cross-finding work: deduplicate overlapping candidates,
+   resolve conflicts, apply one common severity scale, and assess cumulative
+   scope. Case-specific rubric totals are not comparable across candidates.
+
+   Only `Confirmed`, actionable `Downgraded`, and unresolved `Question`
+   candidates may reach final §4. Omit `Closed` candidates. Point the final
+   comment's `Scratchpad` field to the candidate's generated `brief.md`, never
+   directly to `full-report.md`. The brief's generated `Source` link is the
+   progressive-disclosure path to the full report.
 
 7) Produce the review in the required format (next section).
 
@@ -125,7 +195,7 @@ Provide comments as a list. Each comment must include:
 - Problem: what’s wrong / missing
 - Recommendation: concrete change to the plan
 - Rationale: why it matters (bug risk / security / perf / maintainability)
-- Scratchpad: path to the backing scratchpad file, when the comment is actionable and not a pure `Question`
+- Scratchpad: path to the candidate's generated `brief.md`, when the comment is actionable and not a pure `Question`; never link `full-report.md` directly from the final review
 
 **Testing gaps rule:**
 
