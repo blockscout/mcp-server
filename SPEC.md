@@ -750,7 +750,7 @@ What the server now sends through both `composed_instructions` (the MCP `instruc
 
 `__unlock_blockchain_analysis__` remains the mandatory first call: its role as the structural-guidance anchor for clients that do not reliably consume the MCP `instructions=` field is unchanged. Functional gating of other tools — refusing to serve them until the unlock tool has been called — is a possible future evolution but is not enforced today; the structural-guidance narrative is the current mechanism.
 
-Two artifacts intentionally package the operational rules inline for their own delivery models rather than through the skill pointer: `gpt/instructions.md` (packaged into the Blockscout X-Ray custom GPT) and `tests/evals/GEMINI-evals.md` (consumed by the Gemini evaluation harness as a standalone evaluation fixture). Their maintenance-sync target is the `blockscout-analysis` skill content.
+One artifact intentionally packages the operational rules inline for its own delivery model rather than through the skill pointer: `tests/evals/GEMINI-evals.md`, consumed by the Gemini evaluation harness as a standalone evaluation fixture. Its maintenance-sync target is the `blockscout-analysis` skill content.
 
 ### Bundled `blockscout-analysis` Skill - Resources and HTTP Mirror
 

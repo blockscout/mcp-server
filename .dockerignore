@@ -82,9 +82,6 @@ temp/
 # MCP bundle build
 mcpb/_build/
 
-# Custom GPT
-gpt/
-
 # MacOS
 .DS_Store
 

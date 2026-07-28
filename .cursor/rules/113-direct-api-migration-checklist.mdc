@@ -223,14 +223,7 @@ This endpoint is deprecated and always returns a static notice.
 }
 ```
 
-### 11. Update GPT Integration Files
-
-**Files to Update:**
-
-- [ ] `gpt/action_tool_descriptions.md` - Remove tool description section
-- [ ] `gpt/openapi.yaml` - Remove endpoint definition
-
-### 12. Update MCP Bundle Manifest
+### 11. Update MCP Bundle Manifest
 
 **File:** `mcpb/manifest.json`
 
@@ -240,7 +233,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] Bump the `version` field following semver (e.g., `0.6.0` → `0.7.0`)
 - [ ] See `.cursor/rules/135-mcpb-manifest-version.mdc` for versioning rules
 
-### 13. Bump Version Numbers
+### 12. Bump Version Numbers
 
 **Files to Update:**
 
@@ -248,7 +241,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] `pyproject.toml` - Increment `version` field
 - [ ] `server.json` - Increment `version` field
 
-### 14. Run Tests and Linting
+### 13. Run Tests and Linting
 
 **Actions:**
 
@@ -259,7 +252,7 @@ This endpoint is deprecated and always returns a static notice.
 - [ ] Run `pytest` (all unit tests)
 - [ ] Run integration tests via the timeout-protected runner — `python scripts/run_integration_tests.py` (do not run `pytest -m integration` directly; see [220-integration-testing-guidelines.mdc](mdc:.cursor/rules/220-integration-testing-guidelines.mdc))
 
-### 15. Verify Handler Registration
+### 14. Verify Handler Registration
 
 **Actions:**
 
