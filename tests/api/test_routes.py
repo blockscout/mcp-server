@@ -27,6 +27,7 @@ async def test_static_routes_work_correctly(mock_track_event, client: AsyncClien
     assert "<h1>Blockscout MCP Server</h1>" in response_main.text
     assert "text/html" in response_main.headers["content-type"]
     assert "X-Ray" not in response_main.text
+    assert "chatgpt.com/g/" not in response_main.text
     mock_track_event.assert_called_once_with(ANY, "PageView", {"path": "/"})
 
     response_llms = await client.get("/llms.txt")
@@ -34,6 +35,7 @@ async def test_static_routes_work_correctly(mock_track_event, client: AsyncClien
     assert "# Blockscout MCP Server" in response_llms.text
     assert "text/plain" in response_llms.headers["content-type"]
     assert "X-Ray" not in response_llms.text
+    assert "chatgpt.com/g/" not in response_llms.text
 
 
 @pytest.mark.asyncio
