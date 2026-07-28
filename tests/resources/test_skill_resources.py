@@ -127,6 +127,78 @@ def test_missing_skill_entrypoint_raises_runtime_error(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# REQUIRED_SKILL_FILES — membership and validation
+# ---------------------------------------------------------------------------
+
+
+def test_required_skill_files_membership():
+    # Spelled out as literals (not derived from the constant) so this test notices a
+    # member silently removed from REQUIRED_SKILL_FILES, including the deliberately
+    # redundant "SKILL.md" entry. Order is deliberately not asserted.
+    assert set(skill_resources.REQUIRED_SKILL_FILES) == {
+        "SKILL.md",
+        "references/blockscout-api-index.md",
+    }
+    assert len(skill_resources.REQUIRED_SKILL_FILES) == 2
+
+
+def test_required_skill_files_present_in_real_bundle():
+    collected_paths = {rel for rel, _ in skill_resources._iter_whitelisted_files()}
+    for required_path in skill_resources.REQUIRED_SKILL_FILES:
+        assert required_path in collected_paths
+
+
+def _stage_bundled_skill_root(monkeypatch, tmp_path: Path) -> Path:
+    """Create a fake package root with a `_bundled_skill/` directory and monkeypatch
+    `skill_resources.files`/`__file__` so `_iter_whitelisted_files()` resolves
+    `skill_root` via the packaged-root branch (mirrors
+    `test_missing_skill_entrypoint_raises_runtime_error`, which instead exercises the
+    development-fallback branch). Returns the `_bundled_skill/` directory to populate.
+    """
+    package_root = tmp_path / "package"
+    bundled_skill_dir = package_root / "_bundled_skill"
+    bundled_skill_dir.mkdir(parents=True)
+
+    fake_module = tmp_path / "blockscout_mcp_server" / "resources" / "skill_resources.py"
+    fake_module.parent.mkdir(parents=True)
+    fake_module.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(skill_resources, "files", lambda _: package_root)
+    monkeypatch.setattr(skill_resources, "__file__", str(fake_module))
+
+    return bundled_skill_dir
+
+
+def test_missing_references_directory_raises_runtime_error(monkeypatch, tmp_path):
+    bundled_skill_dir = _stage_bundled_skill_root(monkeypatch, tmp_path)
+    (bundled_skill_dir / "SKILL.md").write_text("---\n---\nbody\n", encoding="utf-8")
+    # No references/ directory at all.
+
+    try:
+        skill_resources._iter_whitelisted_files()
+    except RuntimeError as exc:
+        assert "references/blockscout-api-index.md" in str(exc)
+    else:
+        raise AssertionError("Expected missing references directory to raise RuntimeError")
+
+
+def test_missing_required_reference_file_raises_runtime_error(monkeypatch, tmp_path):
+    bundled_skill_dir = _stage_bundled_skill_root(monkeypatch, tmp_path)
+    (bundled_skill_dir / "SKILL.md").write_text("---\n---\nbody\n", encoding="utf-8")
+    references_dir = bundled_skill_dir / "references"
+    references_dir.mkdir()
+    (references_dir / "other.md").write_text("other content\n", encoding="utf-8")
+    # references/blockscout-api-index.md deliberately absent.
+
+    try:
+        skill_resources._iter_whitelisted_files()
+    except RuntimeError as exc:
+        assert "references/blockscout-api-index.md" in str(exc)
+    else:
+        raise AssertionError("Expected missing required reference file to raise RuntimeError")
+
+
+# ---------------------------------------------------------------------------
 # _extract_skill_version — happy path
 # ---------------------------------------------------------------------------
 

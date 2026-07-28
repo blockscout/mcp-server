@@ -23,6 +23,11 @@ from blockscout_mcp_server.tools.direct_api import dispatcher
 from blockscout_mcp_server.tools.direct_api import handlers as _handlers  # noqa: F401  # Ensure handler registration
 
 
+# Every `blockscout-mcp://skill/...` path named verbatim in the docstring below must
+# appear in REQUIRED_SKILL_FILES in blockscout_mcp_server/resources/skill_resources.py,
+# which fails the server at import time if a named file is not servable from the
+# bundled skill (see the tuple's comment for the details). Anyone adding or renaming
+# a skill path in this docstring must update that tuple in the same change.
 @log_tool_invocation
 @pro_api_key_scope
 @pro_api_credit_scope
@@ -53,6 +58,14 @@ async def direct_api_call(
     ] = None,
 ) -> ToolResponse[Any]:
     """Call a raw Blockscout API endpoint for advanced or chain-specific data.
+
+    Before the first call to this tool in a session, read
+    `blockscout-mcp://skill/SKILL.md` (the operating rules), then
+    `blockscout-mcp://skill/references/blockscout-api-index.md` (the authoritative
+    index of callable endpoints); skip both reads only if this skill content is
+    already in context. Recalled Blockscout API knowledge is not a substitute:
+    endpoint paths, parameters, and response shapes vary across Blockscout
+    versions and per-chain deployments.
 
     Supports POST requests with a JSON body for endpoints like JSON RPC.
 
