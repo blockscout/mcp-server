@@ -130,6 +130,96 @@ async def test_direct_api_call_description_excludes_banned_phrases():
 
 
 @pytest.mark.asyncio
+async def test_direct_api_call_description_contains_skill_entrypoint_uri():
+    """Description must contain the literal SKILL.md skill resource URI."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert "blockscout-mcp://skill/SKILL.md" in tool.description
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_contains_api_index_uri():
+    """Description must contain the literal blockscout-api-index.md skill resource URI."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert "blockscout-mcp://skill/references/blockscout-api-index.md" in tool.description
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_orders_skill_entrypoint_before_api_index():
+    """SKILL.md must be read before the endpoint index: its URI occurs earlier in the text."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    skill_index = tool.description.find("blockscout-mcp://skill/SKILL.md")
+    api_index_index = tool.description.find("blockscout-mcp://skill/references/blockscout-api-index.md")
+
+    assert skill_index != -1
+    assert api_index_index != -1
+    assert skill_index < api_index_index
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_binds_first_call_to_session_scope():
+    """'Before the first ... call ... session' must appear as a single bound clause."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert re.search(r"before the first\b.{0,30}call\b.{0,40}\bsession", tool.description, re.IGNORECASE | re.DOTALL)
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_binds_skip_to_already_in_context():
+    """'Skip ... already in context' must appear as a single bound clause (preload exemption)."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert re.search(r"skip\b.{0,60}\balready in context", tool.description, re.IGNORECASE | re.DOTALL)
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_warns_recalled_knowledge_not_a_substitute():
+    """The recalled-knowledge warning and its rationale must both be present and bound."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+    description = tool.description
+
+    assert "not a substitute" in description.lower()
+    assert re.search(
+        r"(?:paths|parameters|response shapes).{0,80}vary across.{0,40}(?:version|chain)",
+        description,
+        re.IGNORECASE | re.DOTALL,
+    )
+    # The relation regex above is satisfied by a single member of each alternation group;
+    # these literal checks guard against dropping any of the other varying things or
+    # deployment dimensions while the regex stays green.
+    for literal in ("paths", "parameters", "response shapes", "version", "chain"):
+        assert literal in description.lower()
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_binds_authoritative_to_index():
+    """The endpoint index must be described as authoritative, bound in one clause."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert re.search(
+        r"authoritative.{0,60}index|index.{0,60}authoritative", tool.description, re.IGNORECASE | re.DOTALL
+    )
+
+
+@pytest.mark.asyncio
+async def test_direct_api_call_description_length_budget():
+    """Client-visible description must stay within the Phase 2 exception budget (<= 900 chars)."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["direct_api_call"]
+
+    assert len(tool.description.strip()) <= 900
+
+
+@pytest.mark.asyncio
 async def test_direct_api_call_endpoint_path_param_mentions_query_params():
     """endpoint_path parameter description must mention passing query parameters via query_params."""
     tools = {t.name: t for t in await server.mcp.list_tools()}
