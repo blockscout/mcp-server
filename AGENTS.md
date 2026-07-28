@@ -208,12 +208,6 @@ mcp-server/
 │   ├── manifest-dev.json       # Bundle manifest for development builds
 │   ├── build.sh                # Build script for creating the MCP Bundle
 │   └── blockscout.png          # Bundle icon file
-├── gpt/                        # ChatGPT GPT integration package for "Blockscout X-Ray"
-│   ├── README.md               # GPT-specific documentation and configuration instructions
-│   ├── instructions.md         # Core GPT instructions; embeds operational rules inline (synced from `blockscout-analysis` skill)
-│   ├── action_tool_descriptions.md # Detailed descriptions of all MCP tools (due to GPT 8k char limit)
-│   ├── direct_call_endpoint_list.md  # Reference list of GPT direct-call endpoints
-│   └── openapi.yaml            # OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions
 ├── agent-skills/               # Git submodule: AI agent skills for blockchain analysis (https://github.com/blockscout/agent-skills). Its `blockscout-analysis/` subtree is bundled into the wheel at `blockscout_mcp_server/_bundled_skill/` at build time and served through the MCP resources channel and the `/skill/` HTTP mirror.
 ├── hatch_build.py              # Hatch custom build hook: emits `_bundled_skill_manifest.json` into the wheel.
 ├── scripts/
@@ -301,32 +295,12 @@ mcp-server/
         * Automated build script for creating the development bundle.
         * Handles dependency installation and bundle packaging.
 
-3. **`gpt/` (ChatGPT GPT Integration Package)**
-    * This directory contains files required to create the "Blockscout X-Ray" GPT in ChatGPT that integrates with the Blockscout MCP server via REST API.
-    * **`README.md`**:
-        * Provides comprehensive documentation for GPT creation and configuration.
-        * Includes maintenance instructions and known issues with GPT behavior.
-        * Specifies recommended GPT configuration (GPT-5 model, web search, code interpreter).
-    * **`instructions.md`**:
-        * Contains the core instructions for the GPT built following OpenAI GPT-5 prompting guide recommendations.
-        * Embeds the operational and strategy rules inline for the GPT packaging model.
-        * Must be kept in sync with the rules in the `blockscout-analysis` skill (`agent-skills` submodule).
-    * **`action_tool_descriptions.md`**:
-        * Contains detailed descriptions of all MCP tools available to the GPT.
-        * Required due to GPT's 8,000 character limit for instructions.
-        * Must be maintained and updated whenever MCP tools are modified or new ones are created.
-    * **`openapi.yaml`**:
-        * OpenAPI 3.1.0 specification for REST API endpoints used by GPT actions.
-        * Contains modified tool descriptions to comply with OpenAPI standards (under 300 characters).
-        * Excludes the `__unlock_blockchain_analysis__` endpoint since the GPT embeds the operational rules inline (synced from the `blockscout-analysis` skill) and does not need to call it at runtime.
-        * Includes parameter modifications for OpenAPI compliance, particularly for `read_contract` tool.
-
-4. **`agent-skills/` (Git Submodule)**
+3. **`agent-skills/` (Git Submodule)**
     * Git submodule: [agent-skills repository](https://github.com/blockscout/agent-skills)
     * Contains AI agent skills that provide structured guidance for enhanced blockchain data analysis using the Blockscout MCP Server.
     * Build-time bundling: a Hatch build hook (`hatch_build.py`) writes `blockscout_mcp_server/_bundled_skill_manifest.json` containing the submodule's commit hash and ISO 8601 commit timestamp. The MCP server reads this manifest at startup and uses the timestamp as the `lastModified` annotation on every bundled skill resource. The commit metadata is baked outside Docker by `scripts/bake_skill_metadata.py`, which CI invokes before `docker build`.
 
-5. **`tests/` (Test Suite)**
+4. **`tests/` (Test Suite)**
     * This directory contains the complete test suite for the project, divided into two categories:
     * **`tests/tools/`**: Contains the comprehensive **unit test** suite. All external API calls are mocked, allowing these tests to run quickly and offline. Tool-specific tests live in dedicated modules under category folders (for example, `tests/tools/address/test_get_address_info.py`), and shared utilities are covered by modules like `test_common.py`.
         * Each test file corresponds to a single MCP tool and provides comprehensive test coverage:
@@ -343,7 +317,7 @@ mcp-server/
           module exercises exactly one MCP tool to keep test contexts focused for coding agents.
       All integration tests are marked with `@pytest.mark.integration` and are excluded from the default test run.
 
-6. **`blockscout_mcp_server/` (Main Python Package)**
+5. **`blockscout_mcp_server/` (Main Python Package)**
     * **`__init__.py`**: Standard file to mark the directory as a Python package.
     * **`llms.txt`**: Machine-readable guidance file for AI crawlers.
     * **`__main__.py`**:
