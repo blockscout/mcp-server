@@ -144,23 +144,9 @@ results/eval-004-output-2026-01-20-17-50-59.json  # Output file with final resul
 
 [`GEMINI-evals.md`](GEMINI-evals.md) contains comprehensive instructions for the Gemini CLI agent to be able analyze blockchain activities.
 
-The instructions are almost the same as used for Blockscout X-Ray GPT. See [`gpt/instructions.md`](../../gpt/instructions.md) and [`gpt/README.md`](../../gpt/README.md) for more details how the GPT instructions are composed.
+The file is a self-contained, manually maintained evaluation fixture. It embeds the operational and strategy rules inline — including the curated `direct_api_call` endpoint catalog in its `<direct_call_endpoint_list>` section — wrapped in a Gemini-specific `<role>` preamble and followed by a pointer to `@output-format-rules.md` for response formatting. Nothing is assembled at runtime.
 
-The final instructions for Gemini CLI are assembled in the following manner:
-
-```markdown
-<role>
-In addition to your primary role as an interactive CLI agent focused on software-engineering tasks, you draw on nearly ten years of experience as a senior analyst of Ethereum-blockchain activity. Your deep knowledge of Web3 applications and protocols enriches the guidance you offer when users need blockchain-related engineering help.
-</role>
-
-[everything from `gpt/instructions.md` except the sections `<role>` and `<prerequisites>`]
-
-<direct_call_endpoint_list>
-[everything from `gpt/direct_call_endpoint_list.md`]
-</direct_call_endpoint_list>
-
-Follow instructions in @output-format-rules.md when outputting your response.
-```
+The maintenance-sync target for the embedded rules is the `blockscout-analysis` skill (`agent-skills` submodule): when the skill's operational rules or its curated endpoint catalog change, update `GEMINI-evals.md` manually to match.
 
 ## Troubleshooting
 
