@@ -786,6 +786,7 @@ Resource annotations are used purposefully:
 - **`README.md` deliberately not enumerated.** It is human-onboarding content for the standalone skill distribution and has no value as an agent-facing resource.
 - **Map-based lookup is the security mechanism.** Both surfaces look up requests in precomputed dicts keyed by URI or relative path. Filesystem paths are never constructed from request input.
 - **One `lastModified` per skill, baked at build time.** The timestamp source is the commit of the `agent-skills` submodule when the wheel or image is built.
+- **Skill paths named in tool descriptions are required bundle artifacts.** The `direct_api_call` description names `SKILL.md` and `references/blockscout-api-index.md` verbatim as a read-before-first-call precondition, so their absence from the bundle is a startup-fatal packaging error, not a warning — a broken build fails at deploy time instead of handing agents a dangling pointer. The required set is kept as an explicit list bound to the description by cross-references; deriving it by parsing description text was rejected as automation that would itself need testing.
 
 ### Performance Optimizations and User Experience
 
