@@ -20,12 +20,16 @@ _MANIFEST_FILE = "_bundled_skill_manifest.json"
 # Skill-root-relative paths that some tool description names verbatim (today only
 # `direct_api_call` in blockscout_mcp_server/tools/direct_api/direct_api_call.py, whose
 # docstring points back at this tuple). This list is deliberately explicit, never derived
-# by parsing description text — the issue that introduced this validation rules that out.
-# The rule is exception-free: *every* skill path named verbatim in a tool docstring must
-# appear here. "SKILL.md" is included even though the entrypoint check in
-# `_iter_whitelisted_files()` already guarantees its presence — this entry is a
-# declarative statement of the invariant, not the check that actually fires (the earlier
-# raise wins because it carries the more helpful submodule-initialization message).
+# by parsing description text. The rule is exception-free: *every* skill path named
+# verbatim in a tool docstring must appear here. Entries are checked against the
+# servable whitelist collected by `_iter_whitelisted_files()`, which only ever contains
+# `SKILL.md` and `references/**/*.md` — a path outside those patterns fails startup even
+# if the file exists on disk ("missing" means "not servable as a resource", which is
+# exactly what a docstring pointer requires). "SKILL.md" is included even though the
+# entrypoint check in `_iter_whitelisted_files()` already guarantees its presence — this
+# entry is a declarative statement of the invariant, not the check that actually fires
+# (the earlier raise wins because it carries the more helpful submodule-initialization
+# message).
 REQUIRED_SKILL_FILES: tuple[str, ...] = (
     "SKILL.md",
     "references/blockscout-api-index.md",

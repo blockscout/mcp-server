@@ -25,11 +25,9 @@ from blockscout_mcp_server.tools.direct_api import handlers as _handlers  # noqa
 
 # Every `blockscout-mcp://skill/...` path named verbatim in the docstring below must
 # appear in REQUIRED_SKILL_FILES in blockscout_mcp_server/resources/skill_resources.py,
-# which fails the server at import time if a named file is missing from the bundled
-# skill (for SKILL.md specifically, the entrypoint check in _iter_whitelisted_files()
-# raises first with a more helpful message; the tuple states the same invariant for
-# every other skill path named here). Anyone adding or renaming a skill path in this
-# docstring must update that tuple in the same change.
+# which fails the server at import time if a named file is not servable from the
+# bundled skill (see the tuple's comment for the details). Anyone adding or renaming
+# a skill path in this docstring must update that tuple in the same change.
 @log_tool_invocation
 @pro_api_key_scope
 @pro_api_credit_scope

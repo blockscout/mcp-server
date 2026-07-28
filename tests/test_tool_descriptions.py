@@ -212,7 +212,12 @@ async def test_direct_api_call_description_binds_authoritative_to_index():
 
 @pytest.mark.asyncio
 async def test_direct_api_call_description_length_budget():
-    """Client-visible description must stay within the Phase 2 exception budget (<= 900 chars)."""
+    """Client-visible description must stay compact (<= 900 chars).
+
+    Tool descriptions are re-sent to clients in every tool listing, so the skill
+    precondition paragraph must not balloon the schema; raise the budget only with
+    a deliberate size/benefit call, not as a side effect of wording edits.
+    """
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["direct_api_call"]
 
