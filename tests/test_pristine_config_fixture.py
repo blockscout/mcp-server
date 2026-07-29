@@ -24,9 +24,14 @@ def test_pro_api_key_is_pinned_to_default():
 
 
 def test_no_blockscout_env_vars_or_port_present_in_environment():
-    """Proves the env-var channel is closed for code that builds a fresh ServerConfig."""
-    assert not any(name.startswith("BLOCKSCOUT_") for name in os.environ)
-    assert "PORT" not in os.environ
+    """Proves the env-var channel is closed for code that builds a fresh ServerConfig.
+
+    The check is case-insensitive because pydantic-settings matches environment
+    variables case-insensitively by default, so a lowercase `blockscout_...` (or
+    `port`) variable leaks just as well as an uppercase one.
+    """
+    assert not any(name.upper().startswith("BLOCKSCOUT_") for name in os.environ)
+    assert not any(name.upper() == "PORT" for name in os.environ)
 
 
 def test_local_override_on_top_of_fixture_is_honored(monkeypatch):

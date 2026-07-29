@@ -79,5 +79,9 @@ jobs:
         if: matrix.ambient == 'adverse'
         env:
           BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE: "CI adverse notice"
+          # Lowercase on purpose: pydantic-settings matches environment variables
+          # case-insensitively, so the pristine_config fixture must neutralize
+          # non-uppercase spellings too.
+          blockscout_bs_timeout: "7.5"
         run: |
           pytest --cov=blockscout_mcp_server --cov-report=xml

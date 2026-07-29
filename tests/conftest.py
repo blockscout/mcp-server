@@ -40,11 +40,14 @@ def pristine_config(request, monkeypatch):
 
     # Close the env-var channel: any code that constructs a fresh ServerConfig during
     # the test must not see ambient BLOCKSCOUT_* variables or the unprefixed PORT
-    # variable (the `port` field is aliased to read PORT directly).
+    # variable (the `port` field is aliased to read PORT directly). The comparison is
+    # case-insensitive because pydantic-settings matches environment variables
+    # case-insensitively by default, so e.g. a lowercase `blockscout_bs_timeout` would
+    # otherwise leak into the pristine instance built below.
     for name in list(os.environ):
-        if name.startswith("BLOCKSCOUT_"):
+        upper_name = name.upper()
+        if upper_name.startswith("BLOCKSCOUT_") or upper_name == "PORT":
             monkeypatch.delenv(name, raising=False)
-    monkeypatch.delenv("PORT", raising=False)
 
     # Pin the singleton: build a pristine instance (bypassing the local .env file)
     # and copy every declared field onto the module-level singleton so production

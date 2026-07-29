@@ -26,8 +26,8 @@ def _restore_canonical_config(canonical: ServerConfig) -> None:
     this leaves the module attribute pointing at an unpinned replacement for the rest of the
     session — silently escaping `pristine_config` for any code that resolves `config` through
     the module attribute at runtime. Restoring the canonical object on teardown keeps the
-    "one pinned singleton" contract (see the identity contract test in `tests/conftest.py`
-    / Phase 1) intact across the whole session.
+    "one pinned singleton" contract (see `test_config_singleton_identity_is_preserved`
+    in `tests/test_pristine_config_fixture.py` / Phase 1) intact across the whole session.
     """
     blockscout_mcp_server.config.config = canonical
     server_module = sys.modules.get("blockscout_mcp_server.server")
