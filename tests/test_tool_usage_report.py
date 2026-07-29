@@ -126,8 +126,9 @@ def test_explicit_null_auth_origin_with_null_fingerprint_round_trips():
 def test_api_key_fingerprint_tolerates_too_short_value():
     """A malformed (too short) api_key_fingerprint is tolerated: coerced to None, not rejected.
 
-    The fingerprint is a not-yet-consumed forward-compat field, so a malformed value must not
-    drop the otherwise-valid report.
+    The fingerprint feeds distinct_id derivation, so a malformed value is tolerated (coerced to
+    None) rather than dropping the otherwise-valid report; that event simply degrades to the
+    heuristic distinct_id basis.
     """
     report = ToolUsageReport(**_base_payload(api_key_fingerprint="abc"))
 

@@ -367,9 +367,10 @@ def compute_auth_signals(ctx: Any) -> tuple[AuthOrigin, str | None]:
       server key is configured, otherwise ``("none", None)``.
 
     The server-key hash is memoized (see :func:`_server_api_key_fingerprint`) so
-    the observability hot path never re-hashes the fixed server key. The
-    fingerprint's sole consumer is the community usage report; the analytics sink
-    only reads the origin.
+    the observability hot path never re-hashes the fixed server key. Both
+    observability sinks consume the ``(origin, fingerprint)`` pair: the community
+    usage report persists it, and the analytics sink uses it to derive the
+    Mixpanel ``distinct_id``.
 
     The raw key is never returned, logged, or used anywhere but as the hash
     input.

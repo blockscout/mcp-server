@@ -11,6 +11,7 @@ from mcp.types import RequestParams
 from pro_api_key_helpers import ctx_with_header
 from starlette.datastructures import Headers
 
+from blockscout_mcp_server.analytics import _build_fingerprint_distinct_id
 from blockscout_mcp_server.api.dependencies import MockCtx
 from blockscout_mcp_server.client_meta import (
     UNDEFINED_CLIENT_NAME,
@@ -34,12 +35,13 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
 
     calls = {}
 
-    def fake_track(ctx, name, args, client_meta=None, auth_origin=None):  # type: ignore[no-untyped-def]
+    def fake_track(ctx, name, args, client_meta=None, auth_origin=None, api_key_fingerprint=None):  # type: ignore[no-untyped-def]
         calls["ctx"] = ctx
         calls["name"] = name
         calls["args"] = args
         calls["client_meta"] = client_meta
         calls["auth_origin"] = auth_origin
+        calls["api_key_fingerprint"] = api_key_fingerprint
 
     monkeypatch.setattr("blockscout_mcp_server.tools.decorators.analytics.track_tool_invocation", fake_track)
 
@@ -72,6 +74,9 @@ async def test_decorator_calls_analytics(monkeypatch, caplog: pytest.LogCaptureF
     # track_tool_invocation. With a valid client-key header present, that origin must be
     # exactly "client" — proving a real ctx-derived value was threaded, not a constant.
     assert calls["auth_origin"] == "client"
+    # The decorator must thread the fingerprint of the resolved PRO API key into
+    # track_tool_invocation, not a constant or omitted value.
+    assert calls["api_key_fingerprint"] == _fingerprint_pro_api_key("client-key-123")
 
 
 @pytest.mark.asyncio
@@ -253,10 +258,14 @@ async def test_decorator_derives_auth_signals_once_and_threads_to_both_sinks(
     # ...and the same origin reached the Mixpanel property bag (3rd positional arg of mp.track),
     # confirming the sink reused the threaded value instead of re-deriving it.
     mock_mp.track.assert_called_once()
+    distinct_id = mock_mp.track.call_args.args[0]
     props = mock_mp.track.call_args.args[2]
     assert props["auth_origin"] == "client"
     # The fingerprint is never emitted to Mixpanel (privacy invariant).
     assert "api_key_fingerprint" not in props
+    # The fingerprint reached the sink and keyed the identity, rather than being recomputed
+    # or dropped: distinct_id is derived from the same fingerprint basis threaded in.
+    assert distinct_id == _build_fingerprint_distinct_id(_fingerprint_pro_api_key(raw_key))
 
     # ...and the identical pair reached the community report.
     expected_fingerprint = _fingerprint_pro_api_key(raw_key)
