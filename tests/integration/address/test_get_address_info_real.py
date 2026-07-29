@@ -45,10 +45,14 @@ async def test_get_address_info_integration(mock_ctx):
     assert result.data.basic_info["hash"].lower() == address.lower()
     assert result.data.basic_info["is_contract"] is True
 
-    if result.notes:
-        if any("Could not retrieve first transaction details" in note for note in result.notes):
-            pytest.skip("First-transaction endpoint unavailable; skipping first-tx assertions.")
-        assert "Could not retrieve address metadata" in result.notes[0]
+    # `result.notes` may also carry an ambient, unrelated operator notice (e.g. the
+    # PRO-API-key requirement banner from BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE), so
+    # a merely non-empty notes list does not by itself mean metadata retrieval failed.
+    # Check for each specific failure note instead of gating on `if result.notes:`.
+    if any("Could not retrieve first transaction details" in note for note in result.notes):
+        pytest.skip("First-transaction endpoint unavailable; skipping first-tx assertions.")
+
+    if any("Could not retrieve address metadata" in note for note in result.notes):
         assert result.data.metadata is None
         pytest.skip("PRO API metadata endpoint was unavailable, but the tool handled it gracefully as expected.")
 
