@@ -131,6 +131,7 @@ mcp-server/
 │   │   └── run.sh  # Script to execute eval runs
 │   ├── test_analytics.py  # Unit tests for analytics event tracking
 │   ├── test_analytics_helpers.py  # Unit tests for analytics helper utilities
+│   ├── test_analytics_identity.py  # Unit tests for distinct_id identity-basis selection
 │   ├── test_analytics_source.py  # Unit tests for analytics source detection
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
@@ -362,7 +363,7 @@ mcp-server/
     * **`analytics.py`**:
         * Centralized Mixpanel analytics for MCP tool invocations.
         * Enabled only in HTTP mode when `BLOCKSCOUT_MIXPANEL_TOKEN` is set.
-        * Generates deterministic `distinct_id` based on client IP, name, and version fingerprint.
+        * Generates a deterministic anonymous `distinct_id` — key-fingerprint-based where a key distinguishes the caller, otherwise an IP/name/version composite.
         * Tracks tool invocations with client metadata, protocol version, and call source (MCP vs REST).
         * Includes IP geolocation metadata for Mixpanel and graceful error handling to avoid breaking tool execution.
     * **`telemetry.py`**:
