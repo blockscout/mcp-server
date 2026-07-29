@@ -1,7 +1,12 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
+import uuid
 from types import SimpleNamespace
 
-from blockscout_mcp_server.analytics import _build_distinct_id, _extract_request_ip
+from blockscout_mcp_server.analytics import (
+    _build_distinct_id,
+    _build_fingerprint_distinct_id,
+    _extract_request_ip,
+)
 
 
 def test_extract_request_ip_headers_prefer_xff():
@@ -58,3 +63,48 @@ def test_build_distinct_id_stable():
     assert d != a
     e = _build_distinct_id("1.2.3.4", "clientZ", "1.0")
     assert e != a
+
+
+def test_build_fingerprint_distinct_id_golden_vector():
+    # Hard-coded literal, independent of the implementation under test: pins the exact
+    # derivation recipe (UUIDv5, NAMESPACE_URL, namespace URL string, "key:" tag).
+    fingerprint = "ab" * 32
+    assert _build_fingerprint_distinct_id(fingerprint) == "4013a9cf-f61d-58d9-8ef7-63557e02c5e0"
+
+
+def test_build_fingerprint_distinct_id_stable():
+    fingerprint = "cd" * 32
+    a = _build_fingerprint_distinct_id(fingerprint)
+    b = _build_fingerprint_distinct_id(fingerprint)
+    assert a == b
+
+
+def test_build_fingerprint_distinct_id_distinctness():
+    a = _build_fingerprint_distinct_id("ab" * 32)
+    b = _build_fingerprint_distinct_id("cd" * 32)
+    assert a != b
+
+
+def test_build_fingerprint_distinct_id_output_shape():
+    result = _build_fingerprint_distinct_id("ab" * 32)
+    # Must be parseable as a valid UUID string, like the legacy helper's output.
+    assert str(uuid.UUID(result)) == result
+
+
+def test_build_fingerprint_distinct_id_domain_separation_from_legacy():
+    fingerprint = "ab" * 32
+    fp_id = _build_fingerprint_distinct_id(fingerprint)
+
+    # A client name or IP that happens to equal the digest must not collide with the
+    # fingerprint identity.
+    legacy_as_client_name = _build_distinct_id("", fingerprint, "")
+    legacy_as_ip = _build_distinct_id(fingerprint, "", "")
+    assert fp_id != legacy_as_client_name
+    assert fp_id != legacy_as_ip
+
+
+def test_build_fingerprint_distinct_id_cross_basis_distinctness():
+    fingerprint = "ab" * 32
+    fp_id = _build_fingerprint_distinct_id(fingerprint)
+    legacy_id = _build_distinct_id("1.2.3.4", "some-client", "1.0")
+    assert fp_id != legacy_id

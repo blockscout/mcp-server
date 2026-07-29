@@ -126,6 +126,14 @@ def _build_distinct_id(ip: str, client_name: str, client_version: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://mcp.blockscout.com/mcp" + composite))
 
 
+def _build_fingerprint_distinct_id(fingerprint: str) -> str:
+    # The legacy composite above always contains exactly two "|" separators (three fields
+    # joined), while a fingerprint contains none, so the two input spaces are disjoint only
+    # by accident. The "key:" domain tag makes that non-collision structural: no legacy
+    # composite can ever start with "key:", so the two derivation bases can never collide.
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://mcp.blockscout.com/mcp" + "key:" + fingerprint))
+
+
 def _determine_call_source(ctx: Any) -> str:
     """Return 'mcp' for MCP calls, 'rest' for REST API, else 'unknown'.
 
