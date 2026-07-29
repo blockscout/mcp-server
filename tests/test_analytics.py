@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-import types
 from unittest.mock import MagicMock, patch
 
 import pytest
+from analytics_ctx_helpers import DummyCtx, DummyRequest
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.analytics import ClientMeta
@@ -10,28 +10,7 @@ from blockscout_mcp_server.config import config as server_config
 from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
 
-
-class DummyRequest:
-    def __init__(self, headers=None, host="127.0.0.1"):
-        self.headers = headers or {}
-        self.client = types.SimpleNamespace(host=host)
-
-
-class DummyCtx:
-    def __init__(self, request=None, client_name="", client_version=""):
-        self.request_context = types.SimpleNamespace(request=request) if request else None
-        clientInfo = types.SimpleNamespace(name=client_name, version=client_version)
-        self.session = types.SimpleNamespace(client_params=types.SimpleNamespace(clientInfo=clientInfo))
-
-
-@pytest.fixture(autouse=True)
-def reset_mode_and_client(monkeypatch):
-    analytics.set_http_mode(False)
-    # Ensure private module state is reset between tests
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
-    yield
-    analytics.set_http_mode(False)
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
+pytestmark = pytest.mark.usefixtures("reset_analytics_state")
 
 
 def test_get_mixpanel_client_non_empty_host_uses_custom_consumer(monkeypatch):
@@ -405,41 +384,6 @@ def test_track_community_usage_auth_origin_defaults_to_unknown(monkeypatch):
         args, _ = mp_instance.track.call_args
         properties = args[2]
         assert properties["auth_origin"] == "unknown"
-
-
-def test_track_community_usage_fingerprint_never_reaches_mixpanel(monkeypatch):
-    """The api_key_fingerprint must not leak anywhere in the Mixpanel call.
-
-    Checks the entire call (distinct_id, event name, properties, meta) for the
-    fingerprint value, not merely the `properties["api_key_fingerprint"]` key
-    -- this also catches a leak via distinct_id or a differently named property.
-    Also asserts distinct_id is unaffected by the fingerprint (still derived
-    only from ip/client_name/client_version), proving identity is not yet
-    strengthened by it.
-    """
-    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    distinctive_fingerprint = "ab" * 32  # 64-char lowercase hex, easy to spot in a leak
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
-        mp_instance = MagicMock()
-        mp_cls.return_value = mp_instance
-        analytics.set_http_mode(True)
-        report = ToolUsageReport(
-            tool_name="foo",
-            tool_args={"a": 1},
-            client_name="cli",
-            client_version="1.0",
-            protocol_version="1.1",
-            auth_origin="client",
-            api_key_fingerprint=distinctive_fingerprint,
-        )
-        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
-        mp_instance.track.assert_called_once()
-        call_args = mp_instance.track.call_args
-        assert distinctive_fingerprint not in str(call_args)
-
-        args, _ = call_args
-        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", report.client_name, report.client_version)
-        assert args[0] == expected_distinct_id
 
 
 # ---------------------------------------------------------------------------

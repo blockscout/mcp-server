@@ -84,7 +84,7 @@ def test_uri_normalisation_anyurl_becomes_str():
     ctx = _make_ctx()
     captured: list[str] = []
 
-    def fake_track(ctx_, uri_, client_meta=None, auth_origin=None):
+    def fake_track(ctx_, uri_, client_meta=None, auth_origin=None, api_key_fingerprint=None):
         captured.append(uri_)
 
     with (
@@ -133,7 +133,7 @@ def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
     # patch() would auto-create an AsyncMock whose call yields an (orphaned) coroutine
     # when create_task is also mocked away. See the module-level idiom note above.
     with (
-        patch("blockscout_mcp_server.observability.analytics.track_resource_read"),
+        patch("blockscout_mcp_server.observability.analytics.track_resource_read") as mock_track,
         patch(
             "blockscout_mcp_server.observability.telemetry.send_community_resource_report",
             new_callable=MagicMock,
@@ -153,6 +153,12 @@ def test_community_sink_forwards_auth_origin_and_fingerprint(monkeypatch):
     # only in the helper's own unit tests (_expected_fingerprint), so a scheme change touches one place.
     expected_fingerprint = pro_api_key_context._fingerprint_pro_api_key("server-key")
     assert call_kwargs["api_key_fingerprint"] == expected_fingerprint
+
+    # The analytics leg (Phase 4) also receives the threaded fingerprint. This test's origin is
+    # "server", so track_resource_read would still choose the legacy basis internally — basis
+    # selection is pinned in Phase 3's tests; this only asserts that threading occurred.
+    mock_track.assert_called_once()
+    assert mock_track.call_args.kwargs["api_key_fingerprint"] == expected_fingerprint
 
 
 # ---------------------------------------------------------------------------

@@ -41,6 +41,7 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
                 arg_dict,
                 client_meta=meta,
                 auth_origin=auth_origin,
+                api_key_fingerprint=api_key_fingerprint,
             )
         except Exception:
             # Defensive: tracking must never break tool execution

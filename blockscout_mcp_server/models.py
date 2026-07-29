@@ -47,10 +47,10 @@ class ToolUsageReport(BaseModel):
         description=(
             "A one-way, non-reversible SHA-256 hex digest fingerprint of the effective PRO API "
             "key available to back the reported call, or null if no usable key was available. "
-            "A valid value is exactly 64 lowercase hex characters. Because this field is accepted "
-            "over the wire but not yet consumed (not forwarded to Mixpanel, not persisted), a "
-            "malformed value is tolerated: it is coerced to null rather than rejecting the "
-            "otherwise-valid report."
+            "A valid value is exactly 64 lowercase hex characters. The digest is never forwarded "
+            "verbatim to Mixpanel. A malformed value is tolerated: it is coerced to null rather "
+            "than rejecting the otherwise-valid report, and that event simply degrades to the "
+            "heuristic distinct_id basis."
         ),
     )
 
@@ -82,14 +82,15 @@ class ToolUsageReport(BaseModel):
     @field_validator("api_key_fingerprint", mode="before")
     @classmethod
     def _tolerate_malformed_fingerprint(cls, value: Any) -> str | None:
-        """Coerce a malformed, not-yet-consumed fingerprint to ``None`` instead of rejecting.
+        """Coerce a malformed fingerprint to ``None`` instead of rejecting.
 
-        The fingerprint is a forward-compatible wire signal that no consumer reads yet, so one
-        malformed value must not drop an otherwise-valid community report. Any value that is not
-        ``None`` and not a ``str`` matching the 64-lowercase-hex ``_FINGERPRINT_PATTERN`` (including
-        non-string junk) is coerced to ``None``, preserving the "present ⇒ valid 64-hex" invariant
-        for the deferred identity follow-up. ``auth_origin`` is coerced the same way (to ``None`` →
-        ``unknown``) by :meth:`_tolerate_unknown_auth_origin` above.
+        The fingerprint feeds Mixpanel ``distinct_id`` derivation, so one malformed value must not
+        drop an otherwise-valid community report. Any value that is not ``None`` and not a ``str``
+        matching the 64-lowercase-hex ``_FINGERPRINT_PATTERN`` (including non-string junk) is
+        coerced to ``None``, preserving the "present ⇒ valid 64-hex" invariant that identity
+        derivation relies on — a malformed value degrades that event to the heuristic
+        ``distinct_id`` basis rather than being dropped. ``auth_origin`` is coerced the same way
+        (to ``None`` → ``unknown``) by :meth:`_tolerate_unknown_auth_origin` above.
         """
         if value is None or (isinstance(value, str) and _FINGERPRINT_PATTERN.fullmatch(value)):
             return value

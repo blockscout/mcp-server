@@ -853,8 +853,9 @@ async def test_report_tool_usage_tolerates_unrecognized_auth_origin(mock_track, 
 async def test_report_tool_usage_tolerates_malformed_fingerprint(mock_track, client: AsyncClient):
     """A syntactically invalid api_key_fingerprint does not drop the otherwise-valid report.
 
-    The not-yet-consumed fingerprint is coerced to None by the model, so the report is still
-    accepted (202) and forwarded once with `api_key_fingerprint is None`.
+    The malformed fingerprint is coerced to None by the model, so the report is still accepted
+    (202) and forwarded once with `api_key_fingerprint is None`; that event simply falls back to
+    the heuristic distinct_id basis.
     """
     response = await post_report(client, api_key_fingerprint="not-a-hash")
     assert response.status_code == 202
