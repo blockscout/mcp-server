@@ -45,11 +45,11 @@ def resolve_auth_signals(ctx: Any) -> tuple[AuthOrigin | None, str | None]:
     short-circuit on their own gates in that state anyway, so nothing emitted
     changes while the ``ctx`` extraction and key hashing are skipped.
 
-    The fingerprint is forward-provisioned: today only the community usage report
-    consumes it, but it is intended to key Mixpanel ``distinct_id`` per
-    user/instance depending on deployment (see SPEC.md -> Performance Optimizations
-    -> Dual-Mode Analytics). That is why signals are derived whenever *any*
-    telemetry sink is active, not only when community telemetry is enabled.
+    Both observability sinks consume this pair: the community usage report persists it,
+    and the analytics sink uses it to key Mixpanel ``distinct_id`` per user/instance
+    depending on deployment (see SPEC.md -> Performance Optimizations -> Dual-Mode
+    Analytics). That is why signals are derived whenever *any* telemetry sink is
+    active, not only when community telemetry is enabled.
 
     Never raises: :func:`compute_auth_signals` is defensive today, and the gate is
     evaluated *inside* the ``try`` so this observability concern can never propagate
