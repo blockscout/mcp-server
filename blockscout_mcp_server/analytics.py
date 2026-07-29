@@ -130,10 +130,12 @@ def _build_distinct_id(ip: str, client_name: str, client_version: str) -> str:
 
 
 def _build_fingerprint_distinct_id(fingerprint: str) -> str:
-    # The legacy composite above always contains exactly two "|" separators (three fields
-    # joined), while a fingerprint contains none, so the two input spaces are disjoint only
-    # by accident. The "key:" domain tag makes that non-collision structural: no legacy
-    # composite can ever start with "key:", so the two derivation bases can never collide.
+    # The two bases' input spaces are structurally disjoint: every input here is "key:" plus
+    # 64 hex characters (a sha256 hexdigest on the direct path, validator-enforced shape on
+    # the community path) and so contains no "|", while every legacy composite above contains
+    # exactly two "|" separators. The "key:" tag is not what prevents the collision — a
+    # composite CAN start with "key:", since its ip field is free text from a spoofable
+    # header — it future-proofs the separation should the composite format ever change.
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://mcp.blockscout.com/mcp" + "key:" + fingerprint))
 
 

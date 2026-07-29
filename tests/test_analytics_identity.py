@@ -251,6 +251,30 @@ def test_track_tool_invocation_legacy_basis_with_no_client_origin(monkeypatch, o
         assert args[0] == expected_distinct_id
 
 
+@pytest.mark.parametrize("origin", ["none", None])
+def test_track_tool_invocation_legacy_basis_with_no_client_origin_and_fingerprint(monkeypatch, origin):
+    """auth_origin='none' or None WITH a fingerprint -> legacy basis (defensive row).
+
+    resolve_auth_signals never emits these combinations (each branch pairs origin and
+    fingerprint atomically), but track_tool_invocation's docstring promises degradation to
+    the legacy basis without relying on that caller contract, so it is pinned here.
+    """
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    fingerprint = "ab" * 32
+    headers = {"x-forwarded-for": "203.0.113.5"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "some_tool", {"x": 1}, auth_origin=origin, api_key_fingerprint=fingerprint)
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", "clientA", "1.0.0")
+        assert args[0] == expected_distinct_id
+        assert fingerprint not in str(mp_instance.track.call_args)
+
+
 def test_track_resource_read_forwards_fingerprint_unchanged(monkeypatch):
     """track_resource_read forwards api_key_fingerprint to track_tool_invocation unchanged."""
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)

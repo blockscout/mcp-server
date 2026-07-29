@@ -102,6 +102,12 @@ def test_build_fingerprint_distinct_id_domain_separation_from_legacy():
     assert fp_id != legacy_as_client_name
     assert fp_id != legacy_as_ip
 
+    # The most adversarial composite: an ip spoofed (via x-forwarded-for) to "key:<digest>",
+    # making the composite start with "key:". The "|" separators, not the "key:" tag, are
+    # what keep the bases disjoint.
+    legacy_as_spoofed_key_prefix = _build_distinct_id("key:" + fingerprint, "", "")
+    assert fp_id != legacy_as_spoofed_key_prefix
+
 
 def test_build_fingerprint_distinct_id_cross_basis_distinctness():
     fingerprint = "ab" * 32
