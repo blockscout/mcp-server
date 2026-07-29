@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-import types
 from unittest.mock import MagicMock, patch
 
 import pytest
+from analytics_ctx_helpers import DummyCtx, DummyRequest
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.analytics import ClientMeta
@@ -11,19 +11,6 @@ from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
 
 pytestmark = pytest.mark.usefixtures("reset_analytics_state")
-
-
-class DummyRequest:
-    def __init__(self, headers=None, host="127.0.0.1"):
-        self.headers = headers or {}
-        self.client = types.SimpleNamespace(host=host)
-
-
-class DummyCtx:
-    def __init__(self, request=None, client_name="", client_version=""):
-        self.request_context = types.SimpleNamespace(request=request) if request else None
-        clientInfo = types.SimpleNamespace(name=client_name, version=client_version)
-        self.session = types.SimpleNamespace(client_params=types.SimpleNamespace(clientInfo=clientInfo))
 
 
 def test_get_mixpanel_client_non_empty_host_uses_custom_consumer(monkeypatch):

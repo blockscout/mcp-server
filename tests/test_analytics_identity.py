@@ -1,14 +1,18 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
-"""Identity-basis tests for the community-reporting analytics path.
+"""Identity-basis selection tests for the analytics paths.
 
-Kept in a dedicated module rather than tests/test_analytics.py because that file
-sits close to the 500-LOC cap from rule 210.
+Covers the full basis-selection matrix on both the community-reporting path
+(:func:`track_community_usage`) and the direct path (:func:`track_tool_invocation`
+/ :func:`track_resource_read`), plus a pin that the PageView path
+(:func:`track_event`) deliberately keeps its IP/User-Agent identity. Kept in a
+dedicated module rather than tests/test_analytics.py because that file sits
+close to the 500-LOC cap from rule 210.
 """
 
-import types
 from unittest.mock import MagicMock, patch
 
 import pytest
+from analytics_ctx_helpers import DummyCtx, DummyRequest
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config as server_config
@@ -17,26 +21,15 @@ from blockscout_mcp_server.models import ToolUsageReport
 pytestmark = pytest.mark.usefixtures("reset_analytics_state")
 
 
-class DummyRequest:
-    def __init__(self, headers=None, host="127.0.0.1"):
-        self.headers = headers or {}
-        self.client = types.SimpleNamespace(host=host)
-
-
-class DummyCtx:
-    def __init__(self, request=None, client_name="", client_version=""):
-        self.request_context = types.SimpleNamespace(request=request) if request else None
-        clientInfo = types.SimpleNamespace(name=client_name, version=client_version)
-        self.session = types.SimpleNamespace(client_params=types.SimpleNamespace(clientInfo=clientInfo))
-
-
-@pytest.mark.parametrize("origin", ["client", "server", None])
+@pytest.mark.parametrize("origin", ["client", "server", "none", None])
 def test_track_community_usage_fingerprint_basis_regardless_of_origin(monkeypatch, origin):
     """Report with a fingerprint -> fingerprint basis for any auth_origin.
 
     'client' pins the individual-user identity, 'server' the installation
-    identity, and None pins the "regardless of origin" rule for reports whose
-    origin was coerced away or omitted by a version-skewed reporter.
+    identity, and 'none'/None pin the "regardless of origin" rule for degenerate
+    reports: well-behaved reporters pair 'none' with a null fingerprint, but the
+    wire accepts the combination, and None covers an origin coerced away or
+    omitted by a version-skewed reporter.
     """
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     fingerprint = "ab" * 32

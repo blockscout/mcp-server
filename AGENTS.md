@@ -114,6 +114,7 @@ mcp-server/
 │   │   ├── test_resource_routes.py  # Unit tests for resource discovery routes (/v1/resources)
 │   │   ├── test_routes.py        # Unit tests for API route definitions
 │   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
+│   ├── analytics_ctx_helpers.py  # Shared request/context test doubles for the analytics test modules
 │   ├── conftest.py
 │   ├── pro_api_key_helpers.py  # Shared request-context builders for PRO API key / auth-signal tests
 │   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
