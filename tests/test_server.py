@@ -1,15 +1,64 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 import importlib
 import re
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 from starlette.testclient import TestClient
 from typer.testing import CliRunner
 
+import blockscout_mcp_server.config
+from blockscout_mcp_server.config import ServerConfig
 from blockscout_mcp_server.constants import DEFAULT_HTTP_PORT
 
 runner = CliRunner()
+
+
+def _restore_canonical_config(canonical: ServerConfig) -> None:
+    """Reassign the `config` module attribute (and `server.config`, if loaded) to `canonical`.
+
+    Each `importlib.reload(cfg)` in this module rebuilds `blockscout_mcp_server.config`,
+    re-executing `config = ServerConfig()` and publishing a brand-new object as the module
+    attribute; a subsequent `importlib.reload(server)` then re-binds `server.config` to that
+    new object too. Phase 1's `pristine_config` fixture only pins the *original* singleton
+    that every tool module bound at import time, so a reload-based test that doesn't repair
+    this leaves the module attribute pointing at an unpinned replacement for the rest of the
+    session — silently escaping `pristine_config` for any code that resolves `config` through
+    the module attribute at runtime. Restoring the canonical object on teardown keeps the
+    "one pinned singleton" contract (see the identity contract test in `tests/conftest.py`
+    / Phase 1) intact across the whole session.
+    """
+    blockscout_mcp_server.config.config = canonical
+    server_module = sys.modules.get("blockscout_mcp_server.server")
+    if server_module is not None:
+        server_module.config = canonical
+
+
+@pytest.fixture(autouse=True)
+def _isolate_dotenv_and_singleton(monkeypatch, tmp_path):
+    """Isolate `.env` reads and repair the `config` singleton identity for every test here.
+
+    Several tests in this module rebuild the config via `importlib.reload(cfg)`, which
+    re-executes `config = ServerConfig()` — a fresh object built from the environment
+    **and** from `env_file=".env"`, which pydantic-settings resolves relative to the
+    current working directory. Phase 1's `pristine_config` fixture closes the env-var
+    channel for these reloads, but nothing stops the file read: a developer whose `.env`
+    sets, say, `BLOCKSCOUT_DEV_JSON_RESPONSE=true` would still see
+    `test_dev_json_response_default_false` fail. `monkeypatch.chdir(tmp_path)` points the
+    relative `".env"` lookup at an empty directory, so every reload builds the config from
+    code defaults plus whatever the test itself `setenv`-ed.
+
+    Separately, each reload publishes a *new* `ServerConfig` object as the `config` module
+    attribute, replacing the canonical singleton that `pristine_config` pins. Left alone,
+    that replacement outlives the test and is never repinned. Capture the canonical object
+    up front and restore it via `_restore_canonical_config` on teardown so later tests keep
+    seeing the one pinned singleton.
+    """
+    canonical = blockscout_mcp_server.config.config
+    monkeypatch.chdir(tmp_path)
+    yield
+    _restore_canonical_config(canonical)
 
 
 def test_rest_flag_without_http_fails():
@@ -215,6 +264,23 @@ def test_default_port_used_when_no_flag_or_env(mock_uvicorn_run, monkeypatch):
 
     importlib.reload(cfg)
     importlib.reload(server)
+
+
+def test_restore_canonical_config_repairs_singleton_identity():
+    """Prove the reload hazard is real, and that `_restore_canonical_config` repairs it."""
+    from blockscout_mcp_server import config as cfg
+    from blockscout_mcp_server import server
+
+    canonical = blockscout_mcp_server.config.config
+
+    importlib.reload(cfg)
+    importlib.reload(server)
+    assert blockscout_mcp_server.config.config is not canonical
+
+    _restore_canonical_config(canonical)
+
+    assert blockscout_mcp_server.config.config is canonical
+    assert blockscout_mcp_server.server.config is canonical
 
 
 def test_split_env_list_none():
