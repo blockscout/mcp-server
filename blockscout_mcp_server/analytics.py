@@ -277,7 +277,18 @@ def track_resource_read(
 
 
 def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
-    """Track a tool invocation from a community (self-hosted) server."""
+    """Track a tool invocation from a community (self-hosted) server.
+
+    ``distinct_id`` is keyed on the report's ``api_key_fingerprint`` whenever one is
+    present, regardless of ``auth_origin`` — unlike the direct path (see
+    :func:`track_tool_invocation`), a community report's server-key fingerprint
+    identifies a self-hosted installation and a client-key fingerprint identifies
+    that installation's individual users, so either is a meaningful identity here.
+    The ``ToolUsageReport`` validator (``_tolerate_malformed_fingerprint``) already
+    guarantees present ⇒ valid 64-hex, so no shape-checking is needed at this call
+    site. Reports without a fingerprint keep using the legacy ip/client composite so
+    legacy reporters are still counted.
+    """
     if not _is_http_mode_enabled:
         return
     mp = _get_mixpanel_client()
@@ -285,7 +296,10 @@ def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> 
         return
 
     try:
-        distinct_id = _build_distinct_id(ip, report.client_name, report.client_version)
+        if report.api_key_fingerprint:
+            distinct_id = _build_fingerprint_distinct_id(report.api_key_fingerprint)
+        else:
+            distinct_id = _build_distinct_id(ip, report.client_name, report.client_version)
 
         properties: dict[str, Any] = {
             "ip": ip,

@@ -407,41 +407,6 @@ def test_track_community_usage_auth_origin_defaults_to_unknown(monkeypatch):
         assert properties["auth_origin"] == "unknown"
 
 
-def test_track_community_usage_fingerprint_never_reaches_mixpanel(monkeypatch):
-    """The api_key_fingerprint must not leak anywhere in the Mixpanel call.
-
-    Checks the entire call (distinct_id, event name, properties, meta) for the
-    fingerprint value, not merely the `properties["api_key_fingerprint"]` key
-    -- this also catches a leak via distinct_id or a differently named property.
-    Also asserts distinct_id is unaffected by the fingerprint (still derived
-    only from ip/client_name/client_version), proving identity is not yet
-    strengthened by it.
-    """
-    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    distinctive_fingerprint = "ab" * 32  # 64-char lowercase hex, easy to spot in a leak
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
-        mp_instance = MagicMock()
-        mp_cls.return_value = mp_instance
-        analytics.set_http_mode(True)
-        report = ToolUsageReport(
-            tool_name="foo",
-            tool_args={"a": 1},
-            client_name="cli",
-            client_version="1.0",
-            protocol_version="1.1",
-            auth_origin="client",
-            api_key_fingerprint=distinctive_fingerprint,
-        )
-        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
-        mp_instance.track.assert_called_once()
-        call_args = mp_instance.track.call_args
-        assert distinctive_fingerprint not in str(call_args)
-
-        args, _ = call_args
-        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", report.client_name, report.client_version)
-        assert args[0] == expected_distinct_id
-
-
 # ---------------------------------------------------------------------------
 # track_resource_read tests
 # ---------------------------------------------------------------------------
