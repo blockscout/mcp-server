@@ -62,10 +62,52 @@ jobs:
           pip install -e ".[test]"
 
       # Deliberately hostile ambient configuration (issue #436): the unit suite
-      # must give the same verdict regardless of local .env contents.
+      # must give the same verdict regardless of local .env contents. Every
+      # ServerConfig field is set to a valid non-default value so that any test
+      # asserting on any operator-configurable setting would catch a leak;
+      # extend this list when adding new fields to ServerConfig.
       - name: Write adverse .env
         if: matrix.ambient == 'adverse'
-        run: printf 'BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE=CI adverse notice\nBLOCKSCOUT_DEV_JSON_RESPONSE=true\n' > .env
+        run: |
+          cat > .env <<'EOF'
+          BLOCKSCOUT_BS_TIMEOUT=0.123
+          BLOCKSCOUT_BS_LIGHT_TIMEOUT=0.456
+          BLOCKSCOUT_BS_REQUEST_MAX_RETRIES=9
+          BLOCKSCOUT_BENS_URL=https://adverse-bens.example.com
+          BLOCKSCOUT_BENS_TIMEOUT=1.5
+          BLOCKSCOUT_CHAINSCOUT_URL=https://adverse-chains.example.com
+          BLOCKSCOUT_CHAINSCOUT_TIMEOUT=1.5
+          BLOCKSCOUT_PRO_API_BASE_URL=https://adverse-pro.example.com/
+          BLOCKSCOUT_PRO_API_CONFIG_TIMEOUT=1.5
+          BLOCKSCOUT_PRO_API_CONFIG_TTL_SECONDS=11
+          BLOCKSCOUT_PRO_API_CONFIG_REFRESH_RETRY_SECONDS=2
+          BLOCKSCOUT_PRO_API_KEY=adverse-pro-api-key
+          BLOCKSCOUT_PRO_API_KEY_HEADER=X-Adverse-Pro-Key
+          BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE=CI adverse notice
+          BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD=1
+          BLOCKSCOUT_METADATA_TIMEOUT=1.5
+          BLOCKSCOUT_CHAINS_LIST_TTL_SECONDS=11
+          BLOCKSCOUT_PROGRESS_INTERVAL_SECONDS=0.5
+          BLOCKSCOUT_CONTRACTS_CACHE_MAX_NUMBER=1
+          BLOCKSCOUT_CONTRACTS_CACHE_TTL_SECONDS=11
+          BLOCKSCOUT_NFT_PAGE_SIZE=3
+          BLOCKSCOUT_LOGS_PAGE_SIZE=3
+          BLOCKSCOUT_ADVANCED_FILTERS_PAGE_SIZE=3
+          BLOCKSCOUT_DIRECT_API_RESPONSE_SIZE_LIMIT=1234
+          BLOCKSCOUT_RPC_REQUEST_TIMEOUT=1.5
+          BLOCKSCOUT_RPC_POOL_PER_HOST=1
+          BLOCKSCOUT_MCP_USER_AGENT=Adverse Agent
+          BLOCKSCOUT_MCP_ALLOWED_HOSTS=adverse.example.com
+          BLOCKSCOUT_MCP_ALLOWED_ORIGINS=https://adverse.example.com
+          BLOCKSCOUT_MIXPANEL_TOKEN=adverse-token
+          BLOCKSCOUT_MIXPANEL_API_HOST=api.mixpanel.com
+          BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY=true
+          BLOCKSCOUT_MCP_TRANSPORT=http
+          BLOCKSCOUT_DEV_JSON_RESPONSE=true
+          BLOCKSCOUT_INTERMEDIARY_HEADER=X-Adverse-Intermediary
+          BLOCKSCOUT_INTERMEDIARY_ALLOWLIST=AdverseClient
+          PORT=4242
+          EOF
 
       # Step 5: Run the unit tests with code coverage.
       # Pytest will automatically run all tests that are NOT marked with @pytest.mark.integration.
@@ -83,5 +125,8 @@ jobs:
           # case-insensitively, so the pristine_config fixture must neutralize
           # non-uppercase spellings too.
           blockscout_bs_timeout: "7.5"
+          # The `port` field reads the unprefixed PORT variable via its alias;
+          # exercise that channel through the exported environment as well.
+          PORT: "4242"
         run: |
           pytest --cov=blockscout_mcp_server --cov-report=xml

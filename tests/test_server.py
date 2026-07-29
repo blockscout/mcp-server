@@ -21,13 +21,14 @@ def _restore_canonical_config(canonical: ServerConfig) -> None:
     Each `importlib.reload(cfg)` in this module rebuilds `blockscout_mcp_server.config`,
     re-executing `config = ServerConfig()` and publishing a brand-new object as the module
     attribute; a subsequent `importlib.reload(server)` then re-binds `server.config` to that
-    new object too. Phase 1's `pristine_config` fixture only pins the *original* singleton
-    that every tool module bound at import time, so a reload-based test that doesn't repair
-    this leaves the module attribute pointing at an unpinned replacement for the rest of the
-    session — silently escaping `pristine_config` for any code that resolves `config` through
-    the module attribute at runtime. Restoring the canonical object on teardown keeps the
-    "one pinned singleton" contract (see `test_config_singleton_identity_is_preserved`
-    in `tests/test_pristine_config_fixture.py` / Phase 1) intact across the whole session.
+    new object too. The autouse `pristine_config` fixture (`tests/conftest.py`) only pins the
+    *original* singleton that every tool module bound at import time, so a reload-based test
+    that doesn't repair this leaves the module attribute pointing at an unpinned replacement
+    for the rest of the session — silently escaping `pristine_config` for any code that
+    resolves `config` through the module attribute at runtime. Restoring the canonical object
+    on teardown keeps the "one pinned singleton" contract (see
+    `test_config_singleton_identity_is_preserved` in `tests/test_pristine_config_fixture.py`)
+    intact across the whole session.
     """
     blockscout_mcp_server.config.config = canonical
     server_module = sys.modules.get("blockscout_mcp_server.server")
@@ -42,9 +43,9 @@ def _isolate_dotenv_and_singleton(monkeypatch, tmp_path):
     Several tests in this module rebuild the config via `importlib.reload(cfg)`, which
     re-executes `config = ServerConfig()` — a fresh object built from the environment
     **and** from `env_file=".env"`, which pydantic-settings resolves relative to the
-    current working directory. Phase 1's `pristine_config` fixture closes the env-var
-    channel for these reloads, but nothing stops the file read: a developer whose `.env`
-    sets, say, `BLOCKSCOUT_DEV_JSON_RESPONSE=true` would still see
+    current working directory. The autouse `pristine_config` fixture (`tests/conftest.py`)
+    closes the env-var channel for these reloads, but nothing stops the file read: a
+    developer whose `.env` sets, say, `BLOCKSCOUT_DEV_JSON_RESPONSE=true` would still see
     `test_dev_json_response_default_false` fail. `monkeypatch.chdir(tmp_path)` points the
     relative `".env"` lookup at an empty directory, so every reload builds the config from
     code defaults plus whatever the test itself `setenv`-ed.

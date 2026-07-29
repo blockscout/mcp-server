@@ -30,10 +30,10 @@ def pristine_config(request, monkeypatch):
     Known limitation: tests in `tests/test_server.py` that rebuild the config module
     via `importlib.reload` re-execute `config = ServerConfig()`, rebinding the module
     attribute to a brand-new object this fixture never touched. That reload path is
-    handled separately (see Phase 2 of the issue #436 implementation plan), which is
-    why `tests/test_server.py` carries its own additional isolation fixture.
+    handled separately by the `_isolate_dotenv_and_singleton` fixture that
+    `tests/test_server.py` carries for its own additional isolation.
     """
-    if "integration" in request.keywords:
+    if request.node.get_closest_marker("integration") is not None:
         # Integration tests deliberately rely on ambient configuration (e.g. a real
         # BLOCKSCOUT_PRO_API_KEY), so leave the environment and singleton untouched.
         return
