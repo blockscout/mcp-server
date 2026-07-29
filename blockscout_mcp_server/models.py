@@ -48,9 +48,9 @@ class ToolUsageReport(BaseModel):
             "A one-way, non-reversible SHA-256 hex digest fingerprint of the effective PRO API "
             "key available to back the reported call, or null if no usable key was available. "
             "A valid value is exactly 64 lowercase hex characters. The digest is never forwarded "
-            "verbatim to Mixpanel — it feeds a UUIDv5 distinct_id derivation instead. A malformed "
-            "value is tolerated: it is coerced to null rather than rejecting the otherwise-valid "
-            "report, and that event simply degrades to the heuristic distinct_id basis."
+            "verbatim to Mixpanel. A malformed value is tolerated: it is coerced to null rather "
+            "than rejecting the otherwise-valid report, and that event simply degrades to the "
+            "heuristic distinct_id basis."
         ),
     )
 

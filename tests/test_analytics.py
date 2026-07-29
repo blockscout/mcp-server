@@ -10,6 +10,8 @@ from blockscout_mcp_server.config import config as server_config
 from blockscout_mcp_server.constants import RESOURCE_READ_EVENT
 from blockscout_mcp_server.models import ToolUsageReport
 
+pytestmark = pytest.mark.usefixtures("reset_analytics_state")
+
 
 class DummyRequest:
     def __init__(self, headers=None, host="127.0.0.1"):
@@ -22,16 +24,6 @@ class DummyCtx:
         self.request_context = types.SimpleNamespace(request=request) if request else None
         clientInfo = types.SimpleNamespace(name=client_name, version=client_version)
         self.session = types.SimpleNamespace(client_params=types.SimpleNamespace(clientInfo=clientInfo))
-
-
-@pytest.fixture(autouse=True)
-def reset_mode_and_client(monkeypatch):
-    analytics.set_http_mode(False)
-    # Ensure private module state is reset between tests
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
-    yield
-    analytics.set_http_mode(False)
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
 
 
 def test_get_mixpanel_client_non_empty_host_uses_custom_consumer(monkeypatch):

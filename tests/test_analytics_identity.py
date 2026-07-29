@@ -2,7 +2,7 @@
 """Identity-basis tests for the community-reporting analytics path.
 
 Kept in a dedicated module rather than tests/test_analytics.py because that file
-sits exactly at the 500-LOC cap from rule 210.
+sits close to the 500-LOC cap from rule 210.
 """
 
 import types
@@ -13,6 +13,8 @@ import pytest
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config as server_config
 from blockscout_mcp_server.models import ToolUsageReport
+
+pytestmark = pytest.mark.usefixtures("reset_analytics_state")
 
 
 class DummyRequest:
@@ -28,18 +30,14 @@ class DummyCtx:
         self.session = types.SimpleNamespace(client_params=types.SimpleNamespace(clientInfo=clientInfo))
 
 
-@pytest.fixture(autouse=True)
-def reset_mode_and_client(monkeypatch):
-    analytics.set_http_mode(False)
-    # Ensure private module state is reset between tests
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
-    yield
-    analytics.set_http_mode(False)
-    monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
+@pytest.mark.parametrize("origin", ["client", "server", None])
+def test_track_community_usage_fingerprint_basis_regardless_of_origin(monkeypatch, origin):
+    """Report with a fingerprint -> fingerprint basis for any auth_origin.
 
-
-def test_track_community_usage_fingerprint_basis_with_client_origin(monkeypatch):
-    """Report with fingerprint, auth_origin='client' -> distinct_id is the fingerprint basis."""
+    'client' pins the individual-user identity, 'server' the installation
+    identity, and None pins the "regardless of origin" rule for reports whose
+    origin was coerced away or omitted by a version-skewed reporter.
+    """
     monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
     fingerprint = "ab" * 32
     with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
@@ -52,53 +50,7 @@ def test_track_community_usage_fingerprint_basis_with_client_origin(monkeypatch)
             client_name="cli",
             client_version="1.0",
             protocol_version="1.1",
-            auth_origin="client",
-            api_key_fingerprint=fingerprint,
-        )
-        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
-        args, _ = mp_instance.track.call_args
-        expected_distinct_id = analytics._build_fingerprint_distinct_id(fingerprint)
-        assert args[0] == expected_distinct_id
-
-
-def test_track_community_usage_fingerprint_basis_with_server_origin(monkeypatch):
-    """Report with fingerprint, auth_origin='server' -> fingerprint basis (installation identity)."""
-    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    fingerprint = "cd" * 32
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
-        mp_instance = MagicMock()
-        mp_cls.return_value = mp_instance
-        analytics.set_http_mode(True)
-        report = ToolUsageReport(
-            tool_name="foo",
-            tool_args={"a": 1},
-            client_name="cli",
-            client_version="1.0",
-            protocol_version="1.1",
-            auth_origin="server",
-            api_key_fingerprint=fingerprint,
-        )
-        analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
-        args, _ = mp_instance.track.call_args
-        expected_distinct_id = analytics._build_fingerprint_distinct_id(fingerprint)
-        assert args[0] == expected_distinct_id
-
-
-def test_track_community_usage_fingerprint_basis_with_unknown_origin(monkeypatch):
-    """Report with fingerprint, auth_origin=None -> fingerprint basis (pins "regardless of origin")."""
-    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
-    fingerprint = "ef" * 32
-    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
-        mp_instance = MagicMock()
-        mp_cls.return_value = mp_instance
-        analytics.set_http_mode(True)
-        report = ToolUsageReport(
-            tool_name="foo",
-            tool_args={"a": 1},
-            client_name="cli",
-            client_version="1.0",
-            protocol_version="1.1",
-            auth_origin=None,
+            auth_origin=origin,
             api_key_fingerprint=fingerprint,
         )
         analytics.track_community_usage(report, ip="203.0.113.5", user_agent="ua")
