@@ -162,3 +162,124 @@ def test_track_community_usage_fingerprint_never_reaches_mixpanel(monkeypatch):
         args, _ = call_args
         expected_distinct_id = analytics._build_fingerprint_distinct_id(distinctive_fingerprint)
         assert args[0] == expected_distinct_id
+
+
+# --- Direct-path (track_tool_invocation / track_resource_read) basis matrix ---
+
+
+def test_track_tool_invocation_fingerprint_basis_with_client_origin(monkeypatch):
+    """auth_origin='client' with a fingerprint -> distinct_id is the fingerprint basis.
+
+    The fingerprint must not leak into `properties` under any key, nor appear
+    anywhere in the raw call args.
+    """
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    fingerprint = "ab" * 32
+    ctx = DummyCtx(client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(
+            ctx, "some_tool", {"x": 1}, auth_origin="client", api_key_fingerprint=fingerprint
+        )
+        mp_instance.track.assert_called_once()
+        call_args = mp_instance.track.call_args
+        args, _ = call_args
+        expected_distinct_id = analytics._build_fingerprint_distinct_id(fingerprint)
+        assert args[0] == expected_distinct_id
+
+        properties = args[2]
+        assert "api_key_fingerprint" not in properties
+        assert fingerprint not in str(call_args)
+
+
+def test_track_tool_invocation_legacy_basis_when_client_origin_missing_fingerprint(monkeypatch):
+    """auth_origin='client' with api_key_fingerprint=None -> legacy composite basis.
+
+    This is the graceful-degradation row: the leak tests in test_analytics.py
+    assert only non-leakage, not which basis is chosen, so it is pinned here.
+    """
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {"x-forwarded-for": "203.0.113.5"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "some_tool", {"x": 1}, auth_origin="client", api_key_fingerprint=None)
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", "clientA", "1.0.0")
+        assert args[0] == expected_distinct_id
+
+
+def test_track_tool_invocation_legacy_basis_with_server_origin_and_fingerprint(monkeypatch):
+    """auth_origin='server' with a fingerprint -> legacy basis (shared-key collapse prevention)."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    fingerprint = "cd" * 32
+    headers = {"x-forwarded-for": "203.0.113.5"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(
+            ctx, "some_tool", {"x": 1}, auth_origin="server", api_key_fingerprint=fingerprint
+        )
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", "clientA", "1.0.0")
+        assert args[0] == expected_distinct_id
+        assert fingerprint not in str(mp_instance.track.call_args)
+
+
+@pytest.mark.parametrize("origin", ["none", None])
+def test_track_tool_invocation_legacy_basis_with_no_client_origin(monkeypatch, origin):
+    """auth_origin='none' or None, no fingerprint -> legacy basis."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    headers = {"x-forwarded-for": "203.0.113.5"}
+    req = DummyRequest(headers=headers)
+    ctx = DummyCtx(request=req, client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_tool_invocation(ctx, "some_tool", {"x": 1}, auth_origin=origin, api_key_fingerprint=None)
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", "clientA", "1.0.0")
+        assert args[0] == expected_distinct_id
+
+
+def test_track_resource_read_forwards_fingerprint_unchanged(monkeypatch):
+    """track_resource_read forwards api_key_fingerprint to track_tool_invocation unchanged."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    fingerprint = "ef" * 32
+    ctx = DummyCtx(client_name="clientA", client_version="1.0.0")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_resource_read(
+            ctx,
+            "blockscout-mcp://skill/SKILL.md",
+            auth_origin="client",
+            api_key_fingerprint=fingerprint,
+        )
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_fingerprint_distinct_id(fingerprint)
+        assert args[0] == expected_distinct_id
+
+
+def test_track_event_unchanged_ip_user_agent_basis(monkeypatch):
+    """track_event (PageView path) still derives identity from ip/user-agent only."""
+    monkeypatch.setattr(server_config, "mixpanel_token", "test-token", raising=False)
+    req = DummyRequest(headers={"user-agent": "pytest-UA"}, host="203.0.113.5")
+    with patch("blockscout_mcp_server.analytics.Mixpanel") as mp_cls:
+        mp_instance = MagicMock()
+        mp_cls.return_value = mp_instance
+        analytics.set_http_mode(True)
+        analytics.track_event(req, "PageView", {"path": "/"})
+        args, _ = mp_instance.track.call_args
+        expected_distinct_id = analytics._build_distinct_id("203.0.113.5", "pytest-UA", "N/A")
+        assert args[0] == expected_distinct_id

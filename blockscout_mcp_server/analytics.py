@@ -5,8 +5,11 @@ Tracking is enabled only when:
 - BLOCKSCOUT_MIXPANEL_TOKEN is set, and
 - server runs in HTTP mode (set via set_http_mode(True)).
 
-Events are emitted via Mixpanel with a deterministic distinct_id based on a
-connection fingerprint composed of client IP, client name, and client version.
+Events are emitted via Mixpanel with a deterministic distinct_id derived from one
+of two bases, selected per-path: the legacy composite of client IP, client name,
+and client version, or the caller's PRO API key fingerprint. Which basis applies
+depends on how the event reached analytics -- see `track_tool_invocation` and
+`track_community_usage` for the exact selection rule on each path.
 """
 
 from __future__ import annotations
@@ -200,6 +203,7 @@ def track_tool_invocation(
     tool_args: dict[str, Any],
     client_meta: ClientMeta | None = None,
     auth_origin: AuthOrigin | None = None,
+    api_key_fingerprint: str | None = None,
 ) -> None:
     """Track a tool invocation in Mixpanel, if enabled and in HTTP mode.
 
@@ -212,6 +216,23 @@ def track_tool_invocation(
     ``AUTH_ORIGIN_UNKNOWN``, mirroring :func:`track_community_usage`. Re-deriving
     from ``ctx`` at this point would re-run the very computation that just failed
     and lose the whole event, so it is deliberately avoided.
+
+    ``api_key_fingerprint`` is likewise threaded, pre-computed, and never
+    re-derived here — same contract as ``auth_origin``. On this direct path it
+    selects the fingerprint identity basis if and only if ``auth_origin ==
+    "client"`` **and** a fingerprint was actually provided; every other
+    combination (``"server"``, ``"none"``, an unknown/``None`` origin, or a
+    ``client`` origin with a missing fingerprint) keeps the legacy IP/name/version
+    composite. This is deliberately narrower than the community path
+    (:func:`track_community_usage`), which uses any present fingerprint
+    regardless of origin: on the direct path the server's own configured key is
+    shared by every anonymous caller, so using its fingerprint here would
+    collapse them all into a single Mixpanel identity. Only a caller-supplied key
+    genuinely distinguishes anyone on this path. A ``client`` origin paired with
+    ``None`` fingerprint cannot happen when signals come from
+    :func:`blockscout_mcp_server.telemetry.resolve_auth_signals` (its branches
+    pair origin and fingerprint atomically), but this sink does not rely on that
+    caller contract and degrades to the legacy basis instead of raising.
     """
     if not _is_http_mode_enabled:
         return
@@ -235,7 +256,13 @@ def track_tool_invocation(
             protocol_version = meta.protocol
             user_agent = meta.user_agent
 
-        distinct_id = _build_distinct_id(ip, client_name, client_version)
+        # Fingerprint basis only when the caller-supplied key is what produced it (auth_origin
+        # == "client"); the shared server key must never collapse all anonymous callers into one
+        # identity (see the docstring above for the full rationale).
+        if auth_origin == "client" and api_key_fingerprint:
+            distinct_id = _build_fingerprint_distinct_id(api_key_fingerprint)
+        else:
+            distinct_id = _build_distinct_id(ip, client_name, client_version)
 
         properties: dict[str, Any] = {
             "ip": ip,
@@ -263,17 +290,26 @@ def track_resource_read(
     uri: str,
     client_meta: ClientMeta | None = None,
     auth_origin: AuthOrigin | None = None,
+    api_key_fingerprint: str | None = None,
 ) -> None:
     """Track a resource read in Mixpanel, if enabled and in HTTP mode.
 
     Delegates to :func:`track_tool_invocation` using the ``RESOURCE_READ`` event
     sentinel so that all gating logic (HTTP-mode, token, IP extraction, etc.) is
     reused verbatim.  The caller is responsible for providing a fully-normalised
-    URI string — this function does not stringify.  ``auth_origin`` is threaded
-    through to :func:`track_tool_invocation` (see its docstring) so the resource
-    observability path also derives the auth signals only once per read.
+    URI string — this function does not stringify.  ``auth_origin`` and
+    ``api_key_fingerprint`` are threaded through to :func:`track_tool_invocation`
+    unchanged (see its docstring for the identity-basis selection rule) so the
+    resource observability path also derives the auth signals only once per read.
     """
-    track_tool_invocation(ctx, RESOURCE_READ_EVENT, {"uri": uri}, client_meta=client_meta, auth_origin=auth_origin)
+    track_tool_invocation(
+        ctx,
+        RESOURCE_READ_EVENT,
+        {"uri": uri},
+        client_meta=client_meta,
+        auth_origin=auth_origin,
+        api_key_fingerprint=api_key_fingerprint,
+    )
 
 
 def track_community_usage(report: ToolUsageReport, ip: str, user_agent: str) -> None:
