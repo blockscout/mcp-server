@@ -114,7 +114,7 @@ mcp-server/
 │   │   ├── test_resource_routes.py  # Unit tests for resource discovery routes (/v1/resources)
 │   │   ├── test_routes.py        # Unit tests for API route definitions
 │   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
-│   ├── conftest.py
+│   ├── conftest.py  # Shared test fixtures: mock_ctx and pristine_config
 │   ├── pro_api_key_helpers.py  # Shared request-context builders for PRO API key / auth-signal tests
 │   ├── evals/  # Evaluation artifacts and runner configs for tool output checks
 │   │   ├── .env.example
@@ -135,6 +135,7 @@ mcp-server/
 │   ├── test_cache.py  # Unit tests for cache behavior
 │   ├── test_client_meta.py  # Unit tests for client metadata extraction
 │   ├── test_observability.py  # Unit tests for resource-read observability
+│   ├── test_pristine_config_fixture.py  # Unit tests for the autouse pristine_config fixture contract
 │   ├── test_pro_api_key_context.py  # Unit tests for client-supplied PRO API key resolution
 │   ├── test_pro_api_key_context_auth_signals.py  # Unit tests for ctx-derived auth-origin and PRO API key fingerprint signals
 │   ├── test_hatch_build.py  # Unit tests for custom Hatch build hook helpers

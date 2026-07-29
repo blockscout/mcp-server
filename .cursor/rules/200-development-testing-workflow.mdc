@@ -31,9 +31,18 @@ When adding new functionality or modifying existing code:
 - **Common utilities**: `tests/test_common.py`
 - **Other modules**: `tests/test_{module_name}.py`
 
-Follow the guidelines in [210-unit-testing-guidelines.mdc](mdc:.cursor/rules/210-unit-testing-guidelines.mdc)
+When adding or editing MCP tool tests under `tests/tools/`, follow the guidelines in [210-unit-testing-guidelines.mdc](mdc:.cursor/rules/210-unit-testing-guidelines.mdc).
 
 When editing REST API tests, follow the guidelines in [230-api-route-tests.mdc](mdc:.cursor/rules/230-api-route-tests.mdc).
+
+#### Ambient Configuration Is Pinned — Opt In Explicitly
+
+An autouse fixture `pristine_config` in `tests/conftest.py` resets every field of the `config` singleton (`blockscout_mcp_server.config.config`) to its code default before each unit test, so unit-test verdicts never depend on the developer's exported environment variables or local `.env` file. Integration tests (marked `integration`) are excluded and keep the ambient configuration.
+
+- A test that exercises an operator-configurable setting must opt in explicitly with `monkeypatch.setattr(config, "<field>", <value>)`; never rely on a value leaking in from the environment.
+- Do not add per-module fixtures that re-implement ambient-config neutralization — only override the specific fields your test needs.
+- Construct throwaway config instances in tests as `ServerConfig(_env_file=None)` so the local `.env` file is never read.
+- Tests that rebuild the config module via `importlib.reload` bypass the pinned singleton in two ways: the reload re-reads `.env` from the current working directory (clearing environment variables alone does not stop pydantic-settings from reading it), and it publishes a **new** singleton object as the module attribute. Such tests must both isolate the `.env` file and restore the canonical singleton on teardown — reassign it to `blockscout_mcp_server.config.config` and, when the server module is loaded, to `server.config`. See the autouse fixture and its `_restore_canonical_config` helper in `tests/test_server.py`.
 
 ### Integration Tests (When Applicable)
 
