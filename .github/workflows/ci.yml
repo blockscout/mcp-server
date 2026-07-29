@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    name: Run Unit Tests
+    name: Run Unit Tests (${{ matrix.ambient }})
     # The job will run on the latest version of Ubuntu
     runs-on: ubuntu-latest
     # Backstop: if pytest-timeout fails to kill a hung test, don't let the
@@ -19,10 +19,14 @@ jobs:
     timeout-minutes: 5
 
     # This creates a build matrix to test against multiple Python versions,
-    # ensuring broad compatibility.
+    # ensuring broad compatibility. The `ambient` dimension (issue #436) runs
+    # the suite once from a clean checkout and once under a deliberately
+    # hostile ambient configuration, so the unit suite's determinism is
+    # continuously enforced.
     strategy:
       matrix:
         python-version: ["3.12"]
+        ambient: ["clean", "adverse"]
 
     steps:
       # Step 1: Check out the repository code so the workflow can access it.
@@ -57,9 +61,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[test]"
 
+      # Deliberately hostile ambient configuration (issue #436): the unit suite
+      # must give the same verdict regardless of local .env contents.
+      - name: Write adverse .env
+        if: matrix.ambient == 'adverse'
+        run: printf 'BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE=CI adverse notice\nBLOCKSCOUT_DEV_JSON_RESPONSE=true\n' > .env
+
       # Step 5: Run the unit tests with code coverage.
       # Pytest will automatically run all tests that are NOT marked with @pytest.mark.integration.
       # This is the core of our "fast feedback" strategy.
-      - name: Run unit tests with coverage
+      - name: Run unit tests with coverage (clean)
+        if: matrix.ambient == 'clean'
+        run: |
+          pytest --cov=blockscout_mcp_server --cov-report=xml
+
+      - name: Run unit tests with coverage (adverse)
+        if: matrix.ambient == 'adverse'
+        env:
+          BLOCKSCOUT_PRO_API_KEY_REQUIRED_NOTICE: "CI adverse notice"
         run: |
           pytest --cov=blockscout_mcp_server --cov-report=xml
