@@ -10,6 +10,13 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from blockscout_mcp_server.models import ToolResponse
+from blockscout_mcp_server.session_gate import (
+    SessionBudgetExhaustedError,
+    SessionExpiredError,
+    SessionIdInvalidError,
+    SessionIdMissingError,
+    SessionStoreUnavailableError,
+)
 from blockscout_mcp_server.tools.common import CreditsExhaustedError, ResponseTooLargeError
 
 
@@ -70,6 +77,12 @@ def handle_rest_errors(
             return JSONResponse({"error": str(e)}, status_code=413)
         except CreditsExhaustedError as e:
             return JSONResponse({"error": str(e)}, status_code=402)
+        except (SessionIdMissingError, SessionIdInvalidError) as e:
+            return JSONResponse({"error": str(e)}, status_code=401)
+        except (SessionExpiredError, SessionBudgetExhaustedError) as e:
+            return JSONResponse({"error": str(e)}, status_code=429)
+        except SessionStoreUnavailableError as e:
+            return JSONResponse({"error": str(e)}, status_code=503)
         except ValueError as e:
             return JSONResponse({"error": str(e)}, status_code=400)
         except httpx.HTTPStatusError as e:
