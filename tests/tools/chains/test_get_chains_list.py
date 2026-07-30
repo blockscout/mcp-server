@@ -8,6 +8,8 @@ import pytest
 
 import blockscout_mcp_server.tools.common as common_tools
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.session_gate import SessionIdMissingError, mint_token, verify_token
+from blockscout_mcp_server.session_store import get_store
 from blockscout_mcp_server.tools.chains.get_chains_list import get_chains_list
 from blockscout_mcp_server.tools.common import ChainsListCache
 
@@ -191,3 +193,64 @@ async def test_get_chains_list_rebuilds_after_pro_api_refresh_invalidates_cache(
         res = await get_chains_list(ctx=mock_ctx)
     assert [c.chain_id for c in res.data] == ["2"]
     assert cs.await_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Session-gated behavior (issue #442, Phase 7): get_chains_list is gated but
+# not metered — a valid identifier navigates without incrementing its counter.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_gated_valid_token_succeeds_without_metering(mock_ctx, enabled_session_gate):
+    token = mint_token()
+    random_part, _issued_at = verify_token(token)
+
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            return_value={"1": {"name": "Ethereum"}},
+        ),
+    ):
+        res = await get_chains_list(ctx=mock_ctx, session_id=token)
+
+    assert [c.chain_id for c in res.data] == ["1"]
+    assert res.notes is not None
+    assert f"{config.session_max_calls} of {config.session_max_calls}" in res.notes[-1]
+    # Read-only: no row created for a fresh identifier, so the counter stays at 0.
+    assert get_store().get_calls(random_part) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_gated_missing_session_id_raises(mock_ctx, enabled_session_gate):
+    with pytest.raises(SessionIdMissingError):
+        await get_chains_list(ctx=mock_ctx)
+
+
+@pytest.mark.asyncio
+async def test_get_chains_list_ungated_behaves_as_today(mock_ctx):
+    """Without the `enabled_session_gate` fixture, the gate is disabled by default
+    (`pristine_config`) and the tool behaves exactly as before: no session_id
+    required, no budget note appended."""
+    with (
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.ensure_pro_api_config",
+            new_callable=AsyncMock,
+            return_value={"1": "https://eth"},
+        ),
+        patch(
+            "blockscout_mcp_server.tools.chains.get_chains_list.make_chainscout_request",
+            new_callable=AsyncMock,
+            return_value={"1": {"name": "Ethereum"}},
+        ),
+    ):
+        res = await get_chains_list(ctx=mock_ctx)
+
+    assert [c.chain_id for c in res.data] == ["1"]
+    assert res.notes is None

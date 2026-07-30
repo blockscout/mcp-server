@@ -6,8 +6,10 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import SESSION_ID_PARAM_DESCRIPTION
 from blockscout_mcp_server.models import ToolResponse, TransactionInfoData
 from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
+from blockscout_mcp_server.session_gate import session_gate
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     make_blockscout_request,
@@ -23,6 +25,7 @@ from blockscout_mcp_server.tools.transaction._shared import (
 
 @log_tool_invocation
 @pro_api_key_scope
+@session_gate
 @pro_api_credit_scope
 async def get_transaction_info(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -31,6 +34,7 @@ async def get_transaction_info(
     include_raw_input: Annotated[
         bool | None, Field(description="If true, includes the raw transaction input data.")
     ] = False,
+    session_id: Annotated[str | None, Field(description=SESSION_ID_PARAM_DESCRIPTION)] = None,
 ) -> ToolResponse[TransactionInfoData]:
     """
     Get comprehensive transaction information.

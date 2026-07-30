@@ -5,6 +5,7 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 
 from blockscout_mcp_server.config import config
+from blockscout_mcp_server.constants import SESSION_ID_PARAM_DESCRIPTION
 from blockscout_mcp_server.models import (
     NftCollectionHolding,
     NftCollectionInfo,
@@ -12,6 +13,7 @@ from blockscout_mcp_server.models import (
     ToolResponse,
 )
 from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
+from blockscout_mcp_server.session_gate import session_gate
 from blockscout_mcp_server.tools.common import (
     apply_cursor_to_params,
     build_tool_response,
@@ -39,6 +41,7 @@ def extract_nft_cursor_params(item: dict) -> dict:
 
 @log_tool_invocation
 @pro_api_key_scope
+@session_gate
 @pro_api_credit_scope
 async def nft_tokens_by_address(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -48,6 +51,7 @@ async def nft_tokens_by_address(
         str | None,
         Field(description="The pagination cursor from a previous response to get the next page of results."),
     ] = None,
+    session_id: Annotated[str | None, Field(description=SESSION_ID_PARAM_DESCRIPTION)] = None,
 ) -> ToolResponse[list[NftCollectionHolding]]:
     """
     Retrieve NFT tokens (ERC-721, ERC-404, ERC-1155) owned by an address, grouped by collection.

@@ -4,8 +4,10 @@ from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server.constants import SESSION_ID_PARAM_DESCRIPTION
 from blockscout_mcp_server.models import ChainInfo, ToolResponse
 from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
+from blockscout_mcp_server.session_gate import session_gate_unmetered
 from blockscout_mcp_server.tools.common import (
     build_tool_response,
     chains_list_cache,
@@ -18,6 +20,7 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 
 @log_tool_invocation
 @pro_api_key_scope
+@session_gate_unmetered
 @pro_api_credit_scope
 async def get_chains_list(
     ctx: Context,
@@ -31,6 +34,7 @@ async def get_chains_list(
             )
         ),
     ] = None,
+    session_id: Annotated[str | None, Field(description=SESSION_ID_PARAM_DESCRIPTION)] = None,
 ) -> ToolResponse[list[ChainInfo]]:
     """Get supported blockchain chains with their chain IDs.
 

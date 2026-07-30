@@ -266,3 +266,26 @@ async def test_unlock_blockchain_analysis_description_length_budget():
     tool = tools["__unlock_blockchain_analysis__"]
 
     assert len(tool.description.strip()) <= 500
+
+
+@pytest.mark.asyncio
+async def test_session_id_parameter_present_on_every_tool_except_unlock():
+    """Every MCP tool except `__unlock_blockchain_analysis__` must carry the optional
+    `session_id` parameter with the exact shared description (Phase 7, issue #442);
+    the unlock tool — the sole issuer of the identifier — must not carry it at all."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+
+    assert "__unlock_blockchain_analysis__" in tools
+    unlock_tool = tools["__unlock_blockchain_analysis__"]
+    unlock_properties = unlock_tool.inputSchema.get("properties", {})
+    assert "session_id" not in unlock_properties
+
+    gated_tools = {name: tool for name, tool in tools.items() if name != "__unlock_blockchain_analysis__"}
+    assert len(gated_tools) > 0, "No non-unlock tools found — tool discovery is broken"
+
+    for name, tool in gated_tools.items():
+        properties = tool.inputSchema.get("properties", {})
+        assert "session_id" in properties, f"{name}: missing session_id parameter"
+        assert properties["session_id"].get("description") == "Opaque session identifier.", (
+            f"{name}: session_id description mismatch: {properties['session_id'].get('description')!r}"
+        )
