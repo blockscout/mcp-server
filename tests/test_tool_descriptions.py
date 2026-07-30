@@ -237,3 +237,32 @@ async def test_direct_api_call_endpoint_path_param_mentions_query_params():
         "endpoint_path parameter description must mention 'query_params' "
         "to guide users away from double-encoding (Phase 5 relocation)."
     )
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_excludes_mandatory_framing():
+    """The rewritten docstring (Phase 6, issue #442) drops the old 'MANDATORY FOR AI AGENTS'
+    framing — the gate now enforces structurally what that wording tried to achieve."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    assert "MANDATORY" not in tool.description
+    assert "in every session" not in tool.description
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_states_once_per_session_rule():
+    """The rewritten docstring must instruct the agent to call the tool exactly once per session."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    assert "exactly once per session" in tool.description
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_length_budget():
+    """Client-visible description must stay within rule 140's <= 500 char target."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    assert len(tool.description.strip()) <= 500

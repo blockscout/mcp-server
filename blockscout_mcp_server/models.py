@@ -5,7 +5,7 @@ import logging
 import re
 from typing import Any, Generic, TypeVar, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 
 from blockscout_mcp_server.constants import AuthOrigin
 
@@ -165,6 +165,27 @@ class InstructionsData(BaseModel):
             "identical to the matching paragraph inside the server's `composed_instructions`."
         )
     )
+    session_id: str | None = Field(
+        default=None,
+        description=(
+            "Opaque session identifier to pass with every subsequent tool call in this session. "
+            "Present only on deployments with session gating enabled."
+        ),
+    )
+
+    @model_serializer(mode="wrap")
+    def _serialize_omitting_unset_session_id(self, handler: Any) -> dict[str, Any]:
+        """Omit the `session_id` key entirely when unset.
+
+        Both the REST path (`model_dump(mode="json", by_alias=True)`) and the MCP
+        structured-output path include `None` fields by default, so on ungated
+        deployments (`session_id is None`) this keeps today's exact payload shape —
+        no `session_id` key at all, never `"session_id": null`.
+        """
+        data = handler(self)
+        if data.get("session_id") is None:
+            data.pop("session_id", None)
+        return data
 
 
 # --- Model for inspect_contract_code Metadata Payload ---

@@ -20,6 +20,7 @@ Minting and verifying tokens is store-I/O-free (it only reads the in-memory
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 from mcp.server.fastmcp import Context, FastMCP
@@ -213,6 +214,78 @@ def test_valid_token_over_transport_carries_budget_note(gated_app):
         remaining=server_config.session_max_calls - 1, max_calls=server_config.session_max_calls
     )
     assert result["structuredContent"]["notes"] == [expected_note]
+
+
+def _build_unlock_app(*, gated: bool) -> Any:
+    """Construct a throwaway FastMCP instance carrying the real, fully local
+    `__unlock_blockchain_analysis__` tool, registered exactly the way production
+    registers it (mirrors the `unlock_app` fixture in
+    `tests/test_pro_api_key_http_transport.py`): `mcp.tool(structured_output=True)`
+    wrapping `_wrap_tool_for_structured_output`. Registering the raw function would
+    fall back to the SDK's auto-serialization instead of the wrapper that actually
+    builds `structuredContent` in production, bypassing the very serialization
+    boundary these tests exist to cover."""
+    from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import (
+        __unlock_blockchain_analysis__,
+    )
+
+    mcp = FastMCP(
+        name="test-unlock-serialization-transport",
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
+    mcp.settings.stateless_http = True
+    mcp.settings.json_response = True
+    mcp.tool(structured_output=True)(_wrap_tool_for_structured_output(__unlock_blockchain_analysis__))
+    analytics.set_http_mode(gated)
+
+    return mcp.streamable_http_app()
+
+
+def test_unlock_serialization_gated_includes_verifiable_session_id(tmp_path, monkeypatch):
+    """Gated deployment: structuredContent.data carries a session_id that verify_token accepts."""
+    db_path = tmp_path / "unlock-sessions.db"
+    monkeypatch.setattr(server_config, "session_secret", "test-session-secret")
+    monkeypatch.setattr(server_config, "session_db_path", str(db_path))
+
+    app = _build_unlock_app(gated=True)
+    with TestClient(app) as client:
+        client.portal.call(initialize_store, str(db_path))
+        try:
+            response = client.post(
+                "/mcp",
+                json=_build_tools_call_body("__unlock_blockchain_analysis__"),
+                headers=_MCP_HEADERS,
+            )
+
+            assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+            result = _extract_result(response.text)
+            assert result.get("isError") is not True
+            session_id = result["structuredContent"]["data"]["session_id"]
+            assert session_id
+            # verify_token is store-I/O-free (only reads the in-memory `generation` attribute set
+            # by `initialize_store` above), so it is safe to call on the pytest thread — but it
+            # must run before `close_store` tears down the module-level singleton it reads from.
+            from blockscout_mcp_server.session_gate import verify_token
+
+            verify_token(session_id)
+        finally:
+            client.portal.call(close_store)
+
+
+def test_unlock_serialization_ungated_has_no_session_id_key():
+    """Ungated deployment: structuredContent.data has no session_id key at all."""
+    app = _build_unlock_app(gated=False)
+    with TestClient(app) as client:
+        response = client.post(
+            "/mcp",
+            json=_build_tools_call_body("__unlock_blockchain_analysis__"),
+            headers=_MCP_HEADERS,
+        )
+
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    result = _extract_result(response.text)
+    assert result.get("isError") is not True
+    assert "session_id" not in result["structuredContent"]["data"]
 
 
 def test_exempt_call_carries_no_budget_note(gated_app):
