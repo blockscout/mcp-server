@@ -28,6 +28,12 @@ from blockscout_mcp_server.constants import (
 )
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.resources import skill_resources
+from blockscout_mcp_server.session_lifecycle import (
+    initialize_gated_store,
+    log_session_gating_status,
+    validate_gated_startup,
+    wire_lifespan,
+)
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
@@ -50,7 +56,6 @@ from blockscout_mcp_server.tools.transaction.get_transaction_info import get_tra
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import (
     get_transactions_by_address,
 )
-from blockscout_mcp_server.web3_pool import WEB3_POOL
 
 logger = logging.getLogger(__name__)
 
@@ -393,6 +398,7 @@ def main_command(
     # bundled skill version, now that logging is fully configured.
     _log_pro_api_key_status()
     _log_bundled_skill_version_status()
+    log_session_gating_status(run_in_http)
 
     if run_in_http:
         if rest:
@@ -409,6 +415,15 @@ def main_command(
         mcp.settings.json_response = config.dev_json_response
         # Enable analytics in HTTP mode
         analytics.set_http_mode(True)
+
+        gate_enabled = bool(config.session_secret)
+        if gate_enabled:
+            # Fail-fast: validate all gated-startup preconditions and initialize the
+            # store before Uvicorn ever binds a socket. A rejected startup must not
+            # create a database file, so validation runs strictly before initialization.
+            validate_gated_startup()
+            initialize_gated_store()
+
         asgi_app = mcp.streamable_http_app()
 
         # Wrap ASGI application with CORS middleware to expose Mcp-Session-Id header
@@ -423,7 +438,7 @@ def main_command(
             max_age=86400,
         )
 
-        asgi_app.add_event_handler("shutdown", WEB3_POOL.close)
+        wire_lifespan(asgi_app, gate_enabled=gate_enabled)
         uvicorn.run(asgi_app, host=final_http_host, port=final_http_port)
     else:
         # This is the original behavior: run in stdio mode
