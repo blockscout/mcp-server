@@ -17,6 +17,7 @@ from blockscout_mcp_server.constants import (
     INPUT_DATA_TRUNCATION_LIMIT,
     LOG_DATA_TRUNCATION_LIMIT,
     SERVER_VERSION,
+    SESSION_BUDGET_NOTE_TEMPLATE,
 )
 from blockscout_mcp_server.models import NextCallInfo, PaginationInfo, ToolResponse
 from blockscout_mcp_server.pro_api_key_context import (
@@ -25,6 +26,7 @@ from blockscout_mcp_server.pro_api_key_context import (
     require_pro_api_key,
     resolve_pro_api_key,
 )
+from blockscout_mcp_server.session_gate import get_remaining_budget
 
 logger = logging.getLogger(__name__)
 
@@ -777,6 +779,16 @@ def build_tool_response(
             f"for continued high-volume usage — see https://dev.blockscout.com."
         )
         extra_notes.append(advisory)
+
+    # Session-budget note (issue #442).  Set only by the session-gate decorators
+    # (`session_gate` / `session_gate_unmetered`) for a metered, non-exempt call;
+    # `None` means the gate is disabled, the caller is exempt, or no gate decorator
+    # ran, so nothing is appended in those cases.
+    remaining_budget = get_remaining_budget()
+    if remaining_budget is not None:
+        extra_notes.append(
+            SESSION_BUDGET_NOTE_TEMPLATE.format(remaining=remaining_budget, max_calls=config.session_max_calls)
+        )
 
     # Operator-configured PRO-API-key-required migration notice.  Both conditions
     # must hold: the notice is configured (non-empty; Phase 1's validator already

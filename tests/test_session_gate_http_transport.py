@@ -28,12 +28,13 @@ from starlette.testclient import TestClient
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config as server_config
-from blockscout_mcp_server.constants import SESSION_ID_REQUIRED_MESSAGE
+from blockscout_mcp_server.constants import SESSION_BUDGET_NOTE_TEMPLATE, SESSION_ID_REQUIRED_MESSAGE
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.server import _wrap_tool_for_structured_output
 from blockscout_mcp_server.session_gate import mint_token, session_gate
 from blockscout_mcp_server.session_store import close_store, initialize_store
+from blockscout_mcp_server.tools.common import build_tool_response
 
 _MCP_HEADERS = {
     "Accept": "application/json, text/event-stream",
@@ -95,8 +96,13 @@ def gated_app(tmp_path, monkeypatch):
     @pro_api_key_scope
     @session_gate
     async def session_gated_dummy_tool(ctx: Context, session_id: str | None = None) -> ToolResponse:
-        """Dummy tool used only to exercise the session gate over the real transport."""
-        return ToolResponse(data={"ok": True})
+        """Dummy tool used only to exercise the session gate over the real transport.
+
+        Goes through `build_tool_response` (not a bare `ToolResponse(...)` construction)
+        so the Phase 5 budget-note branch — which reads the session-gate ContextVar —
+        actually has a chance to fire, exactly as every real gated tool does.
+        """
+        return build_tool_response(data={"ok": True})
 
     mcp.tool(structured_output=True)(_wrap_tool_for_structured_output(session_gated_dummy_tool))
 
@@ -181,3 +187,50 @@ def test_malformed_client_key_without_session_id_is_error(gated_app):
     assert result["isError"] is True
     expected_text = f"Error executing tool {_TOOL_NAME}: {SESSION_ID_REQUIRED_MESSAGE}"
     assert result["content"][0]["text"] == expected_text
+
+
+def test_valid_token_over_transport_carries_budget_note(gated_app):
+    """Gated `tools/call` with a valid token -> `structuredContent.notes` contains
+    the exact formatted budget note (Phase 5), proving the note survives the
+    production MCP serialization path through `_wrap_tool_for_structured_output`."""
+    app, db_path = gated_app
+    with TestClient(app) as client:
+        client.portal.call(initialize_store, db_path)
+        try:
+            token = mint_token()
+            response = client.post(
+                "/mcp",
+                json=_build_tools_call_body(_TOOL_NAME, {"session_id": token}),
+                headers=_MCP_HEADERS,
+            )
+        finally:
+            client.portal.call(close_store)
+
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    result = _extract_result(response.text)
+    assert result.get("isError") is not True
+    expected_note = SESSION_BUDGET_NOTE_TEMPLATE.format(
+        remaining=server_config.session_max_calls - 1, max_calls=server_config.session_max_calls
+    )
+    assert result["structuredContent"]["notes"] == [expected_note]
+
+
+def test_exempt_call_carries_no_budget_note(gated_app):
+    """A client-supplied PRO API key exempts the call from the gate entirely, so no
+    budget ContextVar is ever set and `structuredContent.notes` carries no budget note."""
+    app, db_path = gated_app
+    with TestClient(app) as client:
+        client.portal.call(initialize_store, db_path)
+        try:
+            response = client.post(
+                "/mcp",
+                json=_build_tools_call_body(_TOOL_NAME),
+                headers={**_MCP_HEADERS, "Blockscout-MCP-Pro-Api-Key": "a-well-formed-client-key"},
+            )
+        finally:
+            client.portal.call(close_store)
+
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    result = _extract_result(response.text)
+    assert result.get("isError") is not True
+    assert result["structuredContent"].get("notes") is None
