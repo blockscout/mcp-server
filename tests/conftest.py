@@ -7,6 +7,7 @@ import pytest
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import ServerConfig, config
+from blockscout_mcp_server.session_store import close_store, initialize_store
 
 
 @pytest.fixture
@@ -72,4 +73,34 @@ def reset_analytics_state(monkeypatch):
     analytics.set_http_mode(False)
     monkeypatch.setattr(analytics, "_mp_client", None, raising=False)  # type: ignore[attr-defined]
     yield
+    analytics.set_http_mode(False)
+
+
+@pytest.fixture
+def enabled_session_gate(tmp_path, monkeypatch):
+    """Turn the session gate on against a temporary SQLite store.
+
+    Not autouse: tests opt in explicitly (Phases 4-9 reuse this fixture). Sets
+    `config.session_secret` and `config.session_db_path` via `monkeypatch`, flips
+    HTTP mode on, and initializes the store singleton — mirroring the discipline of
+    `reset_analytics_state` above. Everything else keeps running ungated
+    automatically thanks to `pristine_config`.
+
+    Safe for direct decorator tests and for the Phase 8 REST tests because both run
+    the store's SQL on the pytest thread's own event loop
+    (`httpx.AsyncClient(ASGITransport)` involves no second thread). Do **not** use
+    this fixture in the `TestClient`-driven transport and lifespan tests
+    (`tests/test_session_gate_http_transport.py`, `tests/test_server_session_gate.py`):
+    Starlette's `TestClient` runs the ASGI app in an AnyIO portal thread, and the
+    store keeps `check_same_thread=True`, so a store initialized here on the pytest
+    thread would make every SQL-touching scenario there die with a cross-thread
+    `ProgrammingError`. Those files own the store on the portal thread instead.
+    """
+    db_path = tmp_path / "sessions.db"
+    monkeypatch.setattr(config, "session_secret", "test-session-secret")
+    monkeypatch.setattr(config, "session_db_path", str(db_path))
+    analytics.set_http_mode(True)
+    initialize_store(str(db_path))
+    yield
+    close_store()
     analytics.set_http_mode(False)
