@@ -199,3 +199,99 @@ def test_mixpanel_api_host_empty_string_preserved(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_MIXPANEL_API_HOST", "")
     cfg = ServerConfig(_env_file=None)
     assert cfg.mixpanel_api_host == ""
+
+
+def test_session_secret_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_SECRET", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_secret == ""
+
+
+def test_session_secret_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SECRET", "top-secret")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_secret == "top-secret"
+
+
+def test_session_secret_strips_surrounding_whitespace(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SECRET", "  top-secret \n")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_secret == "top-secret"
+
+
+def test_session_secret_whitespace_only_becomes_empty(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SECRET", "   ")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_secret == ""
+
+
+def test_session_db_path_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_DB_PATH", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_db_path == ""
+
+
+def test_session_db_path_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_DB_PATH", "/var/data/sessions.db")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_db_path == "/var/data/sessions.db"
+
+
+def test_session_db_path_strips_surrounding_whitespace(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_DB_PATH", "  /var/data/sessions.db \n")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_db_path == "/var/data/sessions.db"
+
+
+def test_session_db_path_whitespace_only_becomes_empty(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_DB_PATH", "   ")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_db_path == ""
+
+
+def test_session_max_calls_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_MAX_CALLS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_max_calls == 5
+
+
+def test_session_max_calls_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "10")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_max_calls == 10
+
+
+def test_session_max_calls_zero_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "0")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
+
+
+def test_session_max_calls_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "-1")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
+
+
+def test_session_ttl_seconds_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_TTL_SECONDS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_ttl_seconds == 900
+
+
+def test_session_ttl_seconds_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_TTL_SECONDS", "60")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_ttl_seconds == 60
+
+
+def test_session_ttl_seconds_zero_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_TTL_SECONDS", "0")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
+
+
+def test_session_ttl_seconds_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_TTL_SECONDS", "-1")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
