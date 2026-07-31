@@ -153,7 +153,8 @@ mcp-server/
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
-│   ├── test_server_session_gate.py  # Unit tests for gated-startup validation and lifespan session-store wiring
+│   ├── test_server_session_gate.py  # Unit tests for gated-startup config validation
+│   ├── test_server_session_gate_lifespan.py  # Unit tests for real-lifespan session-store wiring and periodic sweep-task fault tolerance
 │   ├── test_server_structured_output.py  # Unit tests for the _wrap_tool_for_structured_output wrapper
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_session_store.py  # Unit tests for the SQLite session store
