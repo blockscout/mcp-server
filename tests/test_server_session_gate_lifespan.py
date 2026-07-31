@@ -33,7 +33,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sqlite3
 import time
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -152,6 +154,39 @@ def test_ungated_lifespan_runs_cleanly_without_sweep(monkeypatch):
     # close_store() must have run as the Phase 2 no-op guarantee (never initialized).
     with pytest.raises(RuntimeError):
         session_store.get_store()
+
+
+def test_store_close_fault_still_closes_the_web3_pool(monkeypatch, caplog):
+    """A failing `close_store()` must not skip `WEB3_POOL.close()`.
+
+    `SessionStore.close()` calls `sqlite3.Connection.close()`, which can raise; on the
+    shutdown path every cleanup step must run regardless of the previous one. Driven
+    through `build_lifespan` directly — no server/app wiring is involved in the
+    ordering guarantee.
+    """
+
+    def _exploding_close_store() -> None:
+        raise sqlite3.ProgrammingError("cannot close the connection")
+
+    monkeypatch.setattr(session_lifecycle, "close_store", _exploding_close_store)
+    web3_close_mock = AsyncMock()
+    monkeypatch.setattr(WEB3_POOL, "close", web3_close_mock)
+
+    @asynccontextmanager
+    async def _original_lifespan(app):
+        yield
+
+    lifespan = session_lifecycle.build_lifespan(_original_lifespan, gate_enabled=False)
+
+    async def _run():
+        async with lifespan(None):
+            pass
+
+    with caplog.at_level(logging.ERROR, logger="blockscout_mcp_server.session_lifecycle"):
+        asyncio.run(_run())
+
+    web3_close_mock.assert_awaited_once()
+    assert "Closing the session store failed during shutdown." in caplog.text
 
 
 def test_sweep_pass_fault_is_logged_and_does_not_raise(monkeypatch, caplog):

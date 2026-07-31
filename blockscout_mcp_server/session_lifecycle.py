@@ -206,7 +206,9 @@ def build_lifespan(
     one immediate sweep pass and spawns the periodic sweep task. On exit
     (always inside the original lifespan's context), cancels and awaits the
     sweep task (suppressing its ``CancelledError``), closes the session store
-    (a no-op if it was never initialized), and awaits ``WEB3_POOL.close()``.
+    (a no-op if it was never initialized, and its failure is logged rather than
+    propagated so it cannot skip the next step), and awaits
+    ``WEB3_POOL.close()``.
     """
 
     @asynccontextmanager
@@ -225,7 +227,13 @@ def build_lifespan(
                         await sweep_task
                     except asyncio.CancelledError:
                         pass
-                close_store()
+                try:
+                    close_store()
+                except Exception:
+                    # `sqlite3.Connection.close()` can raise; the pool must still
+                    # be released, so no shutdown step may depend on the previous
+                    # one succeeding.
+                    logger.exception("Closing the session store failed during shutdown.")
                 await WEB3_POOL.close()
 
     return _composed_lifespan

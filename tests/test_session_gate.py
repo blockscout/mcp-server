@@ -174,6 +174,27 @@ def test_mac_longer_than_sha256_hex_is_invalid(store):
         verify_token(f"{random_part}.{issued_at}.{mac}0")
 
 
+def test_non_ascii_mac_is_invalid_not_typeerror(store):
+    token = mint_token()
+    random_part, issued_at, _mac = token.split(".")
+
+    # A 64-character non-ASCII `mac` passes both length checks, but
+    # `hmac.compare_digest` refuses non-ASCII `str` arguments with a bare
+    # TypeError that would escape the typed error hierarchy as a generic 500.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.{issued_at}.{'é' * 64}")
+
+
+def test_uppercase_hex_mac_is_invalid(store):
+    token = mint_token()
+    random_part, issued_at, _mac = token.split(".")
+
+    # `hexdigest()` only ever emits lowercase hex, so an uppercase rendering can
+    # never verify; reject it on the alphabet check rather than at comparison.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.{issued_at}.{'F' * 64}")
+
+
 def test_token_minted_under_one_secret_does_not_verify_under_another(store, monkeypatch):
     token = mint_token()
     monkeypatch.setattr(config, "session_secret", "a-different-secret")

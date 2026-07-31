@@ -74,6 +74,7 @@ logger = logging.getLogger(__name__)
 
 _SEPARATOR = "."
 _MAC_HEX_LEN = 64  # Exact hex length of an HMAC-SHA256 digest; any other length can never verify.
+_MAC_HEX_ALPHABET = frozenset("0123456789abcdef")  # The only characters `hexdigest()` emits.
 _MAX_ISSUED_AT_DIGITS = 20  # Far above any real unix timestamp, far below int()'s conversion limit.
 # Hard cap on a presented token's length, checked before any parsing or MAC work.
 # A genuine token is ~100 characters (22 + 1 + 10 + 1 + 64); the cap rejects
@@ -244,7 +245,12 @@ def verify_token(token: str) -> tuple[str, int]:
         raise SessionIdInvalidError()
     issued_at = int(issued_at_str)
 
-    if len(mac) != _MAC_HEX_LEN:
+    # The length check alone is not enough: `hmac.compare_digest` refuses two
+    # `str` arguments unless both are ASCII, raising a bare `TypeError` that
+    # would escape the typed error hierarchy as a generic 500. Requiring the
+    # canonical lowercase-hex rendering — the only thing `hexdigest()` ever
+    # produces — rules that out and rejects every non-verifiable `mac` earlier.
+    if len(mac) != _MAC_HEX_LEN or not set(mac) <= _MAC_HEX_ALPHABET:
         raise SessionIdInvalidError()
 
     generation = _current_generation()
