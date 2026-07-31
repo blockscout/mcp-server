@@ -80,7 +80,9 @@ def handle_rest_errors(
         except (SessionIdMissingError, SessionIdInvalidError) as e:
             return JSONResponse({"error": str(e)}, status_code=401)
         except (SessionExpiredError, SessionBudgetExhaustedError) as e:
-            return JSONResponse({"error": str(e)}, status_code=429)
+            # 403, not 429: this refusal is terminal, and 429 sits in the default
+            # retry lists of common HTTP clients and LLM SDKs (see SPEC.md).
+            return JSONResponse({"error": str(e)}, status_code=403)
         except SessionStoreUnavailableError as e:
             return JSONResponse({"error": str(e)}, status_code=503)
         except ValueError as e:

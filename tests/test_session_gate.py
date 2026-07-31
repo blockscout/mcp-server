@@ -141,6 +141,17 @@ def test_non_ascii_encoding_of_valid_issued_at_is_invalid(store):
         verify_token(f"{random_part}.{arabic_indic}.{mac}")
 
 
+def test_oversized_issued_at_is_invalid_not_valueerror(store):
+    token = mint_token()
+    random_part, _issued_at, mac = token.split(".")
+
+    # 5000 ASCII digits pass the isascii/isdigit guard, but int() on CPython
+    # 3.11+ raises a bare ValueError past its str-to-int conversion limit
+    # (4300 digits); it must surface as the typed invalid-token refusal.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.{'9' * 5000}.{mac}")
+
+
 def test_token_minted_under_one_secret_does_not_verify_under_another(store, monkeypatch):
     token = mint_token()
     monkeypatch.setattr(config, "session_secret", "a-different-secret")

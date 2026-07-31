@@ -74,6 +74,7 @@ logger = logging.getLogger(__name__)
 
 _SEPARATOR = "."
 _MIN_MAC_HEX_LEN = 24  # ~96 bits; hmac.compare_digest still compares full hex strings.
+_MAX_ISSUED_AT_DIGITS = 20  # Far above any real unix timestamp, far below int()'s conversion limit.
 
 __all__ = [
     "SessionGateError",
@@ -224,6 +225,12 @@ def verify_token(token: str) -> tuple[str, int]:
     # (e.g. Arabic-Indic digits). Only the canonical ASCII rendering — the one
     # the MAC is computed over — may verify.
     if not (issued_at_str.isascii() and issued_at_str.isdigit()):
+        raise SessionIdInvalidError()
+    # int() itself is another bare-ValueError source: CPython 3.11+ refuses
+    # str-to-int conversion past a digit limit (default 4300), which a
+    # 5000-digit all-ASCII `issued_at` would trip after passing the guard
+    # above. Bound the length first; no genuine timestamp comes close.
+    if len(issued_at_str) > _MAX_ISSUED_AT_DIGITS:
         raise SessionIdInvalidError()
     issued_at = int(issued_at_str)
 

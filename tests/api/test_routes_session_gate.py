@@ -54,32 +54,32 @@ async def test_session_id_invalid_maps_to_401(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_session_expired_maps_to_429(client: AsyncClient):
+async def test_session_expired_maps_to_403(client: AsyncClient):
     with patch(
         "blockscout_mcp_server.api.routes.get_block_number",
         new_callable=AsyncMock,
         side_effect=SessionExpiredError(),
     ):
         response = await client.get(_URL)
-    assert response.status_code == 429
+    assert response.status_code == 403
     assert response.json() == {"error": SESSION_OVER_MESSAGE}
 
 
 @pytest.mark.asyncio
-async def test_session_budget_exhausted_maps_to_429(client: AsyncClient):
+async def test_session_budget_exhausted_maps_to_403(client: AsyncClient):
     with patch(
         "blockscout_mcp_server.api.routes.get_block_number",
         new_callable=AsyncMock,
         side_effect=SessionBudgetExhaustedError(),
     ):
         response = await client.get(_URL)
-    assert response.status_code == 429
+    assert response.status_code == 403
     assert response.json() == {"error": SESSION_OVER_MESSAGE}
 
 
 @pytest.mark.asyncio
 async def test_expired_and_exhausted_bodies_are_identical(client: AsyncClient):
-    """Both 429 causes must be textually indistinguishable to the agent."""
+    """Both 403 causes must be textually indistinguishable to the agent."""
     with patch(
         "blockscout_mcp_server.api.routes.get_block_number",
         new_callable=AsyncMock,

@@ -98,7 +98,7 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
   - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
   - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the API key supplied with the request has been exhausted. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects that key's quota state, not a problem with the request itself: the caller should stop and top up credits (or wait for the daily reset) rather than retry.
   - **Session Required (`401 Unauthorized`)**: The deployment enforces session gating and the request carried no valid `session_id`. Obtain one from `/v1/unlock_blockchain_analysis` (once per session) and resend the request with it.
-  - **Session Ended (`429 Too Many Requests`)**: The session's free budget is over and the identifier cannot be topped up. Obtain a Blockscout PRO API key at https://mcp.blockscout.com and supply it with future requests.
+  - **Session Ended (`403 Forbidden`)**: The session's free budget is over and the identifier cannot be topped up. This refusal is terminal — do not retry the request as-is. Obtain a Blockscout PRO API key at https://mcp.blockscout.com and supply it with future requests.
 
 - **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
   - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.
