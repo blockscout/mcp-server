@@ -50,6 +50,10 @@ ENV BLOCKSCOUT_DISABLE_COMMUNITY_TELEMETRY="false"
 ENV BLOCKSCOUT_INTERMEDIARY_HEADER="Blockscout-MCP-Intermediary"
 ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin,EvaluationSuite"
 ENV BLOCKSCOUT_PRO_API_KEY_HEADER="Blockscout-MCP-Pro-Api-Key"
+ENV BLOCKSCOUT_SESSION_MAX_CALLS="5"
+ENV BLOCKSCOUT_SESSION_TTL_SECONDS="900"
+# ENV BLOCKSCOUT_SESSION_SECRET="" # Intentionally commented out: the session-gating feature switch is a signing secret — pass at runtime (-e or a secret manager); never embed it in the image
+# ENV BLOCKSCOUT_SESSION_DB_PATH="" # Intentionally commented out: must point into a mounted persistent volume — pass at runtime together with the volume mount
 
 # Set the default transport mode. Can be overridden at runtime with -e.
 # Options: "stdio" (default), "http"

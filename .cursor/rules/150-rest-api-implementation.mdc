@@ -20,6 +20,8 @@ All request parameter extraction and validation **MUST** be handled by the `extr
 
 If a query parameter requires custom type conversion (e.g., converting "true"/"false" to `bool`), its name **MUST** be registered in the `PARAM_TYPES` dictionary in `api/helpers.py`.
 
+Every tool-wrapper endpoint (except the `unlock_blockchain_analysis` wrappers) **MUST** include `session_id` in the `optional` list of `extract_and_validate_params` and pass it through to the tool function, so a new endpoint cannot silently bypass the session gate.
+
 ## 3. Error Handling
 
 All REST handlers **MUST** be decorated with the `@handle_rest_errors` decorator from `api/helpers.py`. This decorator captures common runtime errors—including `ValueError`, `httpx.HTTPStatusError`, and timeout exceptions—and converts them into JSON responses with an appropriate HTTP status code. Do not implement custom `try...except` blocks inside the handlers.

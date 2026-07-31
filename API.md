@@ -53,6 +53,10 @@ Its data endpoints query Blockscout through its PRO API, so every request to tho
 - If the key is missing, or malformed (it contains control characters or exceeds the maximum allowed length), any request that reaches a PRO-authenticated upstream call fails with HTTP `400`. Endpoints that don't query the PRO API are unaffected.
 - The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API; only the dedicated header above is honored.
 
+### Session identifiers (gated deployments)
+
+Deployments that enable session gating additionally require an opaque `session_id` on every tool endpoint under `/v1/` except `/v1/unlock_blockchain_analysis` (and its legacy alias `/v1/get_instructions`). Call `/v1/unlock_blockchain_analysis` once per session; the response's `data.session_id` carries the identifier to pass as the `session_id` query parameter on every subsequent call. For callers without their own PRO API key, each identifier carries a small, non-renewable usage budget; requests that include a well-formed client-supplied PRO API key in the header above are exempt from the session mechanism entirely. Successful gated responses include a note reporting the remaining budget, and paginated gated responses include the `session_id` in `pagination.next_call.params`, so the replay-verbatim pagination contract is unchanged. On deployments where gating is disabled (the default for self-hosted servers), `session_id` is accepted and ignored.
+
 ## General Concepts
 
 ### Standard Response Structure
@@ -93,11 +97,14 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
   - **Validation Errors (`400 Bad Request`)**: Occur when a required parameter is missing or a parameter value is invalid.
   - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
   - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the API key supplied with the request has been exhausted. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects that key's quota state, not a problem with the request itself: the caller should stop and top up credits (or wait for the daily reset) rather than retry.
+  - **Session Required (`401 Unauthorized`)**: The deployment enforces session gating and the request carried no valid `session_id`. Obtain one from `/v1/unlock_blockchain_analysis` (once per session) and resend the request with it.
+  - **Session Ended (`429 Too Many Requests`)**: The session's free budget is over and the identifier cannot be topped up. Obtain a Blockscout PRO API key at https://mcp.blockscout.com and supply it with future requests.
 
 - **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
   - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.
   - **Downstream Timeouts (`504 Gateway Timeout`)**: Occur when a request to an external service (like a Blockscout API) times out.
   - **Other Downstream Errors**: The server may also pass through other `4xx` or `5xx` status codes from downstream services.
+  - **Session Store Unavailable (`503 Service Unavailable`)**: Free-tier session accounting is temporarily unavailable. Requests carrying a client-supplied PRO API key are unaffected; otherwise retry later.
 
   The server already retries transient transport-level failures internally (up to `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` attempts, default `3`) before surfacing `500` or `504`. Client-side retries on these codes can therefore stay conservative — a single additional attempt is usually sufficient. Retrying `500`/`504` more aggressively multiplies the total attempt count for the same underlying transport failure.
 
@@ -182,7 +189,7 @@ Retrieves a list of all registered MCP resources and their metadata.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Provides custom instructions and operational guidance for using the server. This is a mandatory first step.
+Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool. On gated deployments the response's `data.session_id` carries the opaque session identifier to pass with every subsequent tool call in the same session.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
@@ -206,6 +213,7 @@ Returns supported blockchain chains, including whether each is a testnet, its na
 - **Parameters**
 
   - `query` (`string`, optional): Case-insensitive substring filter applied to chain name, chain ID, native currency, and ecosystem fields. Prefer narrow text terms such as chain name, ecosystem, or currency. Avoid partial numeric chain ID queries like `1`, because substring matching can return many chains.
+  - `session_id` (`string`, optional): Opaque session identifier.
 
 - **Example Requests**
 
@@ -234,11 +242,31 @@ Retrieves the block number and timestamp for a specific date/time or the latest 
   | ---- | ---- | -------- | ----------- |
   | `chain_id` | `string` | Yes | The ID of the blockchain. |
   | `datetime` | `string` | No | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
   ```bash
   curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
+  ```
+
+#### Get Latest Block (legacy alias)
+
+Legacy alias that invokes `get_block_number` with `datetime=None` (the latest block); prefer `/v1/get_block_number`.
+
+`GET /v1/get_latest_block`
+
+- **Parameters**
+
+  | Name | Type | Required | Description |
+  | ---- | ---- | -------- | ----------- |
+  | `chain_id` | `string` | Yes | The ID of the blockchain. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
   ```
 
 #### Get Block Info (`get_block_info`)
@@ -254,6 +282,7 @@ Returns detailed information for a specific block.
   | `chain_id`             | `string`  | Yes      | The ID of the blockchain.                            |
   | `number_or_hash`       | `string`  | Yes      | The block number or its hash.                        |
   | `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -276,6 +305,7 @@ Gets comprehensive information for a single transaction, including a summary of 
   | `chain_id`          | `string`  | Yes      | The ID of the blockchain.                        |
   | `transaction_hash`  | `string`  | Yes      | The hash of the transaction.                     |
   | `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -366,6 +396,7 @@ Gets native currency transfers and contract interactions for an address.
   | `age_to`   | `string` | No       | End date and time (ISO 8601 format).                 |
   | `methods`  | `string` | No       | A method signature to filter by (e.g., `0x304e6ade`).|
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.  |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -389,6 +420,7 @@ Returns ERC-20 token transfers for an address.
   | `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
   | `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -410,6 +442,7 @@ Gets comprehensive information about an address, including balance, contract det
   | ---------- | -------- | -------- | ---------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
   | `address`  | `string` | Yes      | The address to get info for. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -466,6 +499,7 @@ Returns ERC-20 token holdings for an address.
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
   | `address`  | `string` | Yes      | The wallet address to query.                       |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -486,6 +520,7 @@ Retrieves NFT tokens (ERC-721, etc.) owned by an address.
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
   | `address`  | `string` | Yes      | The NFT owner's address.                           |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -507,6 +542,7 @@ Searches for tokens by their symbol or name.
   | ---------- | -------- | -------- | --------------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.         |
   | `symbol`   | `string` | Yes      | The token symbol to search for.   |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -527,6 +563,7 @@ Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum addre
   | Name   | Type     | Required | Description                |
   | ------ | -------- | -------- | -------------------------- |
   | `name` | `string` | Yes      | The ENS name to resolve.   |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -548,6 +585,7 @@ Retrieves the Application Binary Interface (ABI) for a smart contract.
   | ---------- | -------- | -------- | ---------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
   | `address`  | `string` | Yes      | The smart contract address.  |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -568,6 +606,7 @@ Returns contract metadata or the content of a specific source file for a verifie
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                                                      |
   | `address`  | `string` | Yes      | The smart contract address.                                                    |
   | `file_name`| `string` | No       | The name of the source file to fetch. Omit to retrieve metadata and file list. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -591,6 +630,7 @@ Executes a read-only smart contract function and returns its result.
   | `function_name`| `string` | Yes      | Name of the function to call.                     |
   | `args`         | `string` | No       | JSON-encoded array of function arguments.         |
   | `block`        | `string` | No       | Block identifier or number (`latest` by default). |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -616,6 +656,7 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
   | `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
   | `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax in the query string, e.g., `query_params[page]=1`. |
   | `cursor` | `string` | No | The cursor for pagination from a previous response. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -634,6 +675,7 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
   | `chain_id` | Query string | `string` | Yes | The ID of the blockchain. |
   | `endpoint_path` | Query string | `string` | Yes | The Blockscout API path to call (e.g., `/json-rpc`). |
   | `query_params` | Query string | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax, e.g., `query_params[key]=value`. |
+  | `session_id` | Query string | `string` | No | Opaque session identifier. |
   | `Content-Type` | Header | `string` | Yes | Must be `application/json`. |
   | (request body) | Body | `object` | Yes | The JSON object to send to the Blockscout endpoint. |
 

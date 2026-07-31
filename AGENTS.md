@@ -25,6 +25,9 @@ mcp-server/
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
 │   ├── observability.py        # Resource-read observability helpers
 │   ├── pro_api_key_context.py  # Request-scoped client-supplied PRO API key state, resolver, and @pro_api_key_scope decorator; per-invocation credit sink and @pro_api_credit_scope decorator; auth-origin and key-fingerprint helpers for analytics/telemetry; client-key presence helper for response assembly
+│   ├── session_gate.py         # Session-gating policy: HMAC session tokens, typed gate errors, @session_gate decorators, request-scoped remaining-budget value
+│   ├── session_lifecycle.py    # HTTP-app lifecycle: gated-startup validation, session-store init/status, lifespan coordinator (incl. WEB3_POOL closure), sweep loop
+│   ├── session_store.py        # SQLite-backed per-session call counters for the session-gated free tier (atomic check-and-increment, refund, sweep)
 │   ├── cache.py                # Simple in-memory cache for chain data
 │   ├── web3_pool.py            # Async Web3 connection pool manager
 │   ├── models.py               # Defines standardized Pydantic models for all tool responses
@@ -113,6 +116,9 @@ mcp-server/
 │   │   ├── test_api_helpers.py   # Unit tests for REST error-handling helpers (e.g. handle_rest_errors)
 │   │   ├── test_resource_routes.py  # Unit tests for resource discovery routes (/v1/resources)
 │   │   ├── test_routes.py        # Unit tests for API route definitions
+│   │   ├── test_routes_session_gate.py  # Unit tests for session-gate enforcement on REST routes
+│   │   ├── test_routes_session_gate_e2e.py  # End-to-end REST session-gate tests
+│   │   ├── test_routes_session_passthrough.py  # Unit tests for session_id passthrough on REST routes
 │   │   └── test_skill_resource_routes.py  # Unit tests for the bundled skill HTTP mirror
 │   ├── analytics_ctx_helpers.py  # Shared request/context test doubles for the analytics test modules
 │   ├── conftest.py  # Shared test fixtures: mock_ctx, pristine_config, and reset_analytics_state
@@ -147,8 +153,12 @@ mcp-server/
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
+│   ├── test_server_session_gate.py  # Unit tests for gated-startup validation and lifespan session-store wiring
 │   ├── test_server_structured_output.py  # Unit tests for the _wrap_tool_for_structured_output wrapper
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
+│   ├── test_session_store.py  # Unit tests for the SQLite session store
+│   ├── test_session_gate.py  # Unit tests for session token issuance/verification and gate predicates
+│   ├── test_session_gate_http_transport.py  # Unit tests for HTTP-mode-only session gate activation
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_tool_usage_report.py  # Unit tests for the ToolUsageReport telemetry payload model
@@ -200,6 +210,9 @@ mcp-server/
 │       ├── test_common_truncate.py   # Unit tests for truncation helpers
 │       ├── test_common_post_request.py   # Unit tests for POST request helper
 │       ├── test_decorators.py        # Unit tests for logging decorators
+│       ├── test_session_gate_decorator.py  # Unit tests for the @session_gate tool decorators
+│       ├── test_session_budget_note.py     # Unit tests for the remaining-budget response note
+│       ├── test_session_id_redaction.py    # Unit tests for session_id masking in invocation logging
 │       ├── test_credit_tracking_sink.py        # Unit tests for CreditSink running-minimum semantics
 │       ├── test_credit_tracking_capture.py     # Unit tests for x-credits-remaining capture via HTTP helpers
 │       ├── test_credit_tracking_decorator.py   # Unit tests for the @pro_api_credit_scope decorator
