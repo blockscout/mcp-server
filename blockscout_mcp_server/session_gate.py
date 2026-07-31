@@ -339,6 +339,22 @@ def _refund(random_part: str) -> None:
         _log_store_fault("refund", exc)
 
 
+def _refund_exempt(exc: BaseException) -> bool:
+    """Return whether *exc* is a failure that keeps its debit (no refund).
+
+    `ResponseTooLargeError` is the one non-refundable failure: the upstream fetch has
+    already completed on the server's PRO API key and only delivery to the caller was
+    refused for size, so refunding it would let size-capped calls consume upstream
+    credits indefinitely without ever spending session budget. Imported lazily:
+    ``tools/common.py`` imports from this module at load time (the one-way dependency
+    rule in the module docstring), so the import must not run at module level — and by
+    the time a gated tool body can raise, ``tools/common`` is long since imported.
+    """
+    from blockscout_mcp_server.tools.common import ResponseTooLargeError
+
+    return isinstance(exc, ResponseTooLargeError)
+
+
 # ---------------------------------------------------------------------------
 # Pagination continuation injection
 # ---------------------------------------------------------------------------
@@ -391,7 +407,9 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
     7. The tool body runs. On any failure — including cancellation — the debit is
        refunded before the original exception (or `BaseException`, e.g.
        `asyncio.CancelledError`) is re-raised unchanged. A refusal in steps 3-5
-       consumed nothing, so nothing is refunded for those.
+       consumed nothing, so nothing is refunded for those. One failure keeps its
+       debit: `ResponseTooLargeError` (see `_refund_exempt`) — the upstream fetch
+       already happened; only delivery was refused.
     8. On success, if the response carries `pagination`, the presented `session_id`
        is stamped onto `next_call.params`.
 
@@ -422,8 +440,9 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
         try:
             try:
                 result = await func(*args, **kwargs)
-            except BaseException:
-                _refund(random_part)
+            except BaseException as exc:
+                if not _refund_exempt(exc):
+                    _refund(random_part)
                 raise
         finally:
             _remaining_budget.reset(budget_token)

@@ -39,6 +39,7 @@ from blockscout_mcp_server.session_gate import (
     verify_token,
 )
 from blockscout_mcp_server.session_store import close_store, get_store, initialize_store
+from blockscout_mcp_server.tools.common import ResponseTooLargeError
 
 
 @pytest.fixture
@@ -222,6 +223,25 @@ async def test_failed_call_refunds_and_reraises(enabled_session_gate, mock_ctx):
         await tool(ctx=mock_ctx, session_id=token)
 
     assert store.get_calls(random_part) == before
+    assert get_remaining_budget() is None
+
+
+@pytest.mark.asyncio
+async def test_response_too_large_failure_keeps_its_debit(enabled_session_gate, mock_ctx):
+    """`ResponseTooLargeError` is the one non-refundable failure: the upstream fetch
+    already happened on the server's key, so the budget unit is genuinely spent."""
+    token, random_part, _issued_at = _minted()
+    store = get_store()
+    before = store.get_calls(random_part)
+
+    @session_gate
+    async def tool(ctx, session_id: str | None = None):
+        raise ResponseTooLargeError("response exceeds size limit")
+
+    with pytest.raises(ResponseTooLargeError):
+        await tool(ctx=mock_ctx, session_id=token)
+
+    assert store.get_calls(random_part) == before + 1
     assert get_remaining_budget() is None
 
 

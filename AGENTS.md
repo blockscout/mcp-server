@@ -160,6 +160,7 @@ mcp-server/
 │   ├── test_session_store.py  # Unit tests for the SQLite session store
 │   ├── test_session_gate.py  # Unit tests for session token issuance/verification and gate predicates
 │   ├── test_session_gate_http_transport.py  # Unit tests for HTTP-mode-only session gate activation
+│   ├── test_session_gate_tool_coverage.py  # Completeness check: every registered MCP tool enforces the session gate
 │   ├── test_skill_resources_server.py  # Unit tests for MCP resource registration
 │   ├── test_telemetry.py  # Unit tests for telemetry reporting
 │   ├── test_tool_usage_report.py  # Unit tests for the ToolUsageReport telemetry payload model

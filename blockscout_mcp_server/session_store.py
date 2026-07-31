@@ -93,6 +93,10 @@ class SessionStore:
 
         try:
             conn = sqlite3.connect(self._path, isolation_level=None, check_same_thread=True)
+        except sqlite3.Error as exc:
+            raise SessionStoreInitializationError(f"Failed to initialize session store at {self._path}: {exc}") from exc
+
+        try:
             conn.execute(f"PRAGMA busy_timeout = {_BUSY_TIMEOUT_MS}")
             conn.execute("PRAGMA journal_mode = WAL")
             conn.execute("PRAGMA synchronous = NORMAL")
@@ -106,19 +110,20 @@ class SessionStore:
             # fail only at runtime, on the first debit.
             user_version = conn.execute("PRAGMA user_version").fetchone()[0]
             conn.execute(f"PRAGMA user_version = {user_version}")
+            generation = self._load_or_create_generation(conn)
         except sqlite3.Error as exc:
+            conn.close()
             raise SessionStoreInitializationError(f"Failed to initialize session store at {self._path}: {exc}") from exc
 
         self._conn = conn
-        self._generation = self._load_or_create_generation()
+        self._generation = generation
 
-    def _load_or_create_generation(self) -> str:
-        assert self._conn is not None
-        row = self._conn.execute("SELECT generation FROM meta WHERE id = 0").fetchone()
+    def _load_or_create_generation(self, conn: sqlite3.Connection) -> str:
+        row = conn.execute("SELECT generation FROM meta WHERE id = 0").fetchone()
         if row is not None:
             return row[0]
         generation = secrets.token_hex(16)
-        self._conn.execute(
+        conn.execute(
             "INSERT INTO meta (id, generation) VALUES (0, :generation)",
             {"generation": generation},
         )
@@ -199,10 +204,17 @@ _store: SessionStore | None = None
 
 
 def initialize_store(path: str) -> SessionStore:
-    """Create, initialize, and register the module-level session store singleton."""
+    """Create, initialize, and register the module-level session store singleton.
+
+    The new store is initialized before the current one is touched, so a failed
+    re-initialization leaves the existing singleton usable; on success the
+    previous store (if any) is closed rather than leaked.
+    """
     global _store
     store = SessionStore(path)
     store.initialize()
+    if _store is not None:
+        _store.close()
     _store = store
     return store
 

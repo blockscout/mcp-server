@@ -395,6 +395,80 @@ def test_initialize_store_after_close_store_succeeds(tmp_path):
     close_store()
 
 
+def test_initialize_store_closes_previous_singleton(tmp_path):
+    first = initialize_store(str(tmp_path / "first.db"))
+
+    second = initialize_store(str(tmp_path / "second.db"))
+
+    assert first._conn is None  # closed, not leaked
+    assert get_store() is second
+
+
+def test_failed_reinitialize_leaves_previous_singleton_usable(tmp_path):
+    first = initialize_store(str(tmp_path / "first.db"))
+
+    with pytest.raises(SessionStoreInitializationError):
+        initialize_store(str(tmp_path / "does" / "not" / "exist" / "second.db"))
+
+    assert get_store() is first
+    assert first.get_calls("some-id") == 0  # the connection still works
+
+
+def test_initialize_setup_failure_closes_connection(tmp_path, monkeypatch):
+    # Garbage bytes make the first page read fail after sqlite3.connect() has
+    # already succeeded (SQLite opens lazily), exercising the setup-phase
+    # error path, which must close the just-opened connection.
+    db_path = tmp_path / "sessions.db"
+    db_path.write_bytes(b"this is definitely not a sqlite database file")
+
+    captured: dict[str, sqlite3.Connection] = {}
+    real_connect = sqlite3.connect
+
+    def capturing_connect(*args, **kwargs):
+        conn = real_connect(*args, **kwargs)
+        captured["conn"] = conn
+        return conn
+
+    monkeypatch.setattr(session_store.sqlite3, "connect", capturing_connect)
+
+    store = SessionStore(str(db_path))
+    with pytest.raises(SessionStoreInitializationError):
+        store.initialize()
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        captured["conn"].execute("SELECT 1")
+
+
+def test_initialize_wraps_generation_load_failure_and_closes_connection(tmp_path, monkeypatch):
+    # A pre-existing `meta` table without the `generation` column survives the
+    # CREATE TABLE IF NOT EXISTS in the DDL, so the failure surfaces only when
+    # the generation is loaded — that error must be wrapped in
+    # SessionStoreInitializationError (not escape as a raw sqlite3 error) and
+    # must close the connection.
+    db_path = tmp_path / "sessions.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("CREATE TABLE meta (id INTEGER PRIMARY KEY)")
+    conn.commit()
+    conn.close()
+
+    captured: dict[str, sqlite3.Connection] = {}
+    real_connect = sqlite3.connect
+
+    def capturing_connect(*args, **kwargs):
+        connection = real_connect(*args, **kwargs)
+        captured["conn"] = connection
+        return connection
+
+    monkeypatch.setattr(session_store.sqlite3, "connect", capturing_connect)
+
+    store = SessionStore(str(db_path))
+    with pytest.raises(SessionStoreInitializationError, match="generation"):
+        store.initialize()
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        captured["conn"].execute("SELECT 1")
+
+
 def test_get_store_raises_when_uninitialized():
     with pytest.raises(RuntimeError):
         get_store()
