@@ -91,6 +91,31 @@ def test_initialize_readonly_directory_raises(tmp_path):
         readonly_dir.chmod(stat.S_IRWXU)
 
 
+def test_initialize_readonly_existing_db_raises(tmp_path):
+    # A database that already carries the full schema performs no writes during
+    # ordinary initialization, and SQLite silently opens an unwritable file
+    # read-only — so without the explicit write probe an ro-remounted volume
+    # would pass startup ("ENABLED") and every debit would fail at runtime.
+    db_path = tmp_path / "sessions.db"
+    store = SessionStore(str(db_path))
+    store.initialize()
+    store.close()
+
+    artifacts = [db_path, tmp_path / "sessions.db-wal", tmp_path / "sessions.db-shm"]
+    for artifact in artifacts:
+        if artifact.exists():
+            artifact.chmod(stat.S_IRUSR)
+
+    reopened = SessionStore(str(db_path))
+    try:
+        with pytest.raises(SessionStoreInitializationError):
+            reopened.initialize()
+    finally:
+        for artifact in artifacts:
+            if artifact.exists():
+                artifact.chmod(stat.S_IRWXU)
+
+
 def test_store_generation_persists_across_reopen(tmp_path):
     db_path = tmp_path / "sessions.db"
     store = SessionStore(str(db_path))

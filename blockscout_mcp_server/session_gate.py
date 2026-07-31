@@ -218,7 +218,12 @@ def verify_token(token: str) -> tuple[str, int]:
     if not random_part or not issued_at_str or not mac:
         raise SessionIdInvalidError()
 
-    if not issued_at_str.isdigit():
+    # `str.isdigit` alone also accepts non-ASCII digit forms: some crash int()
+    # with a bare ValueError that would bypass the typed error hierarchy (e.g.
+    # superscripts), others parse as alternate encodings of a valid token
+    # (e.g. Arabic-Indic digits). Only the canonical ASCII rendering — the one
+    # the MAC is computed over — may verify.
+    if not (issued_at_str.isascii() and issued_at_str.isdigit()):
         raise SessionIdInvalidError()
     issued_at = int(issued_at_str)
 

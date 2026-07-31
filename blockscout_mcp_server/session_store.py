@@ -97,6 +97,15 @@ class SessionStore:
             conn.execute("PRAGMA journal_mode = WAL")
             conn.execute("PRAGMA synchronous = NORMAL")
             conn.executescript(_DDL)
+            # Probe writability with a real write (rewriting the current
+            # user_version — a header write even when the value is unchanged;
+            # the schema never uses user_version). On a database that already
+            # carries the schema every statement above is a no-op read, and
+            # SQLite silently opens an unwritable file read-only, so without
+            # this probe an ro-remounted volume would pass initialization and
+            # fail only at runtime, on the first debit.
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            conn.execute(f"PRAGMA user_version = {user_version}")
         except sqlite3.Error as exc:
             raise SessionStoreInitializationError(f"Failed to initialize session store at {self._path}: {exc}") from exc
 

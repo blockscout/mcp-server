@@ -118,6 +118,29 @@ def test_empty_string_is_mac_invalid(store):
         verify_token("")
 
 
+def test_non_ascii_digit_issued_at_is_invalid_not_valueerror(store):
+    token = mint_token()
+    random_part, _issued_at, mac = token.split(".")
+
+    # "²²" passes str.isdigit() but crashes int(); it must surface as the
+    # typed invalid-token refusal, not a bare ValueError.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.²².{mac}")
+
+
+def test_non_ascii_encoding_of_valid_issued_at_is_invalid(store):
+    token = mint_token()
+    random_part, issued_at, mac = token.split(".")
+    arabic_indic = issued_at.translate(str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩"))
+
+    # int() parses Arabic-Indic digits to the same integer the MAC was
+    # computed over, so without the ASCII guard this alternate rendering
+    # verifies as a second spelling of the same token; only the canonical
+    # ASCII rendering may verify.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.{arabic_indic}.{mac}")
+
+
 def test_token_minted_under_one_secret_does_not_verify_under_another(store, monkeypatch):
     token = mint_token()
     monkeypatch.setattr(config, "session_secret", "a-different-secret")
