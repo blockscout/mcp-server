@@ -33,9 +33,12 @@ from blockscout_mcp_server.constants import SESSION_BUDGET_NOTE_TEMPLATE, SESSIO
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
 from blockscout_mcp_server.server import _wrap_tool_for_structured_output
-from blockscout_mcp_server.session_gate import mint_token, session_gate
+from blockscout_mcp_server.session_gate import mint_token, session_gate, verify_token
 from blockscout_mcp_server.session_store import close_store, initialize_store
 from blockscout_mcp_server.tools.common import build_tool_response
+from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import (
+    __unlock_blockchain_analysis__,
+)
 
 _MCP_HEADERS = {
     "Accept": "application/json, text/event-stream",
@@ -225,10 +228,6 @@ def _build_unlock_app(*, gated: bool) -> Any:
     fall back to the SDK's auto-serialization instead of the wrapper that actually
     builds `structuredContent` in production, bypassing the very serialization
     boundary these tests exist to cover."""
-    from blockscout_mcp_server.tools.initialization.unlock_blockchain_analysis import (
-        __unlock_blockchain_analysis__,
-    )
-
     mcp = FastMCP(
         name="test-unlock-serialization-transport",
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
@@ -265,8 +264,6 @@ def test_unlock_serialization_gated_includes_verifiable_session_id(tmp_path, mon
             # verify_token is store-I/O-free (only reads the in-memory `generation` attribute set
             # by `initialize_store` above), so it is safe to call on the pytest thread — but it
             # must run before `close_store` tears down the module-level singleton it reads from.
-            from blockscout_mcp_server.session_gate import verify_token
-
             verify_token(session_id)
         finally:
             client.portal.call(close_store)

@@ -99,8 +99,8 @@ def enabled_session_gate(tmp_path, monkeypatch):
     db_path = tmp_path / "sessions.db"
     monkeypatch.setattr(config, "session_secret", "test-session-secret")
     monkeypatch.setattr(config, "session_db_path", str(db_path))
-    analytics.set_http_mode(True)
     initialize_store(str(db_path))
+    analytics.set_http_mode(True)
     yield
     close_store()
     analytics.set_http_mode(False)

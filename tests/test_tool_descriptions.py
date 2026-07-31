@@ -246,8 +246,9 @@ async def test_unlock_blockchain_analysis_description_excludes_mandatory_framing
     tools = {t.name: t for t in await server.mcp.list_tools()}
     tool = tools["__unlock_blockchain_analysis__"]
 
-    assert "MANDATORY" not in tool.description
-    assert "in every session" not in tool.description
+    description = tool.description.casefold()
+    assert "mandatory" not in description
+    assert "in every session" not in description
 
 
 @pytest.mark.asyncio
@@ -289,3 +290,4 @@ async def test_session_id_parameter_present_on_every_tool_except_unlock():
         assert properties["session_id"].get("description") == "Opaque session identifier.", (
             f"{name}: session_id description mismatch: {properties['session_id'].get('description')!r}"
         )
+        assert "session_id" not in tool.inputSchema.get("required", []), f"{name}: session_id must stay optional"
