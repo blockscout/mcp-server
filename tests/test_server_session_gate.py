@@ -14,6 +14,11 @@ field to its code default before each test, so each test here only needs to
 `monkeypatch.setattr(config, ...)` the handful of fields it cares about — no
 `importlib.reload` dance is needed since none of these tests rebuild the config
 module itself.
+
+CLI contract: `main_command` catches `SessionStartupError` /
+`SessionStoreInitializationError` and converts them to a clean stderr message
+plus exit code 1 (no traceback), so the failing-startup tests here assert on
+`result.exit_code` and `result.stderr`, never on `result.exception`.
 """
 
 from __future__ import annotations
@@ -26,7 +31,6 @@ from typer.testing import CliRunner
 
 from blockscout_mcp_server import server, session_store
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.session_lifecycle import SessionStartupError
 
 runner = CliRunner()
 
@@ -76,9 +80,9 @@ def test_empty_db_path_fails_gated_startup(monkeypatch, tmp_path):
 
     result, app, mock_run = _invoke_http_capturing_app()
 
-    assert result.exit_code != 0
-    assert isinstance(result.exception, SessionStartupError)
-    assert "BLOCKSCOUT_SESSION_DB_PATH" in str(result.exception)
+    assert result.exit_code == 1
+    assert "Session gating startup failed" in result.stderr
+    assert "BLOCKSCOUT_SESSION_DB_PATH" in result.stderr
     mock_run.assert_not_called()
     assert app is None
 
@@ -89,9 +93,9 @@ def test_non_absolute_db_path_fails_gated_startup(monkeypatch, bad_path):
 
     result, app, mock_run = _invoke_http_capturing_app()
 
-    assert result.exit_code != 0
-    assert isinstance(result.exception, SessionStartupError)
-    assert "BLOCKSCOUT_SESSION_DB_PATH" in str(result.exception)
+    assert result.exit_code == 1
+    assert "Session gating startup failed" in result.stderr
+    assert "BLOCKSCOUT_SESSION_DB_PATH" in result.stderr
     mock_run.assert_not_called()
     assert app is None
 
@@ -102,13 +106,13 @@ def test_missing_directory_fails_gated_startup(monkeypatch, tmp_path):
 
     result, app, mock_run = _invoke_http_capturing_app()
 
-    assert result.exit_code != 0
+    assert result.exit_code == 1
     assert not missing_dir.exists()
     mock_run.assert_not_called()
     assert app is None
-    assert isinstance(result.exception, session_store.SessionStoreInitializationError)
-    assert str(missing_dir) in str(result.exception)
-    assert "BLOCKSCOUT_SESSION_DB_PATH" in str(result.exception)
+    assert "Session gating startup failed" in result.stderr
+    assert str(missing_dir) in result.stderr
+    assert "BLOCKSCOUT_SESSION_DB_PATH" in result.stderr
 
 
 def test_empty_pro_api_key_header_fails_gated_startup(monkeypatch, tmp_path):
@@ -120,9 +124,9 @@ def test_empty_pro_api_key_header_fails_gated_startup(monkeypatch, tmp_path):
 
     result, app, mock_run = _invoke_http_capturing_app()
 
-    assert result.exit_code != 0
-    assert isinstance(result.exception, SessionStartupError)
-    assert "BLOCKSCOUT_PRO_API_KEY_HEADER" in str(result.exception)
+    assert result.exit_code == 1
+    assert "Session gating startup failed" in result.stderr
+    assert "BLOCKSCOUT_PRO_API_KEY_HEADER" in result.stderr
     assert not db_path.exists()
     mock_run.assert_not_called()
 
@@ -165,9 +169,9 @@ def test_short_secret_fails_gated_startup(monkeypatch, tmp_path, secret_len):
         assert result.exit_code == 0
         mock_run.assert_called_once()
     else:
-        assert result.exit_code != 0
-        assert isinstance(result.exception, SessionStartupError)
-        assert "BLOCKSCOUT_SESSION_SECRET" in str(result.exception)
+        assert result.exit_code == 1
+        assert "Session gating startup failed" in result.stderr
+        assert "BLOCKSCOUT_SESSION_SECRET" in result.stderr
         assert not db_path.exists()
         mock_run.assert_not_called()
 
@@ -203,9 +207,9 @@ def test_empty_pro_api_key_fails_gated_startup(monkeypatch, tmp_path):
 
     result, app, mock_run = _invoke_http_capturing_app()
 
-    assert result.exit_code != 0
-    assert isinstance(result.exception, SessionStartupError)
-    assert "BLOCKSCOUT_PRO_API_KEY" in str(result.exception)
+    assert result.exit_code == 1
+    assert "Session gating startup failed" in result.stderr
+    assert "BLOCKSCOUT_PRO_API_KEY" in result.stderr
     assert not db_path.exists()
     mock_run.assert_not_called()
 
@@ -246,6 +250,8 @@ def test_valid_config_initializes_store_and_logs_enabled(monkeypatch, tmp_path, 
     assert str(db_path) in caplog.text
     assert str(config.session_max_calls) in caplog.text
     assert str(config.session_ttl_seconds) in caplog.text
+    # Sweep interval is unset here, so the logged cadence falls back to the TTL.
+    assert f"sweep={config.session_ttl_seconds}s" in caplog.text
 
     session_store.close_store()
 

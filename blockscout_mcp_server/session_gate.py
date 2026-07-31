@@ -73,8 +73,14 @@ from blockscout_mcp_server.session_store import get_store
 logger = logging.getLogger(__name__)
 
 _SEPARATOR = "."
-_MIN_MAC_HEX_LEN = 24  # ~96 bits; hmac.compare_digest still compares full hex strings.
+_MAC_HEX_LEN = 64  # Exact hex length of an HMAC-SHA256 digest; any other length can never verify.
 _MAX_ISSUED_AT_DIGITS = 20  # Far above any real unix timestamp, far below int()'s conversion limit.
+# Hard cap on a presented token's length, checked before any parsing or MAC work.
+# A genuine token is ~100 characters (22 + 1 + 10 + 1 + 64); the cap rejects
+# multi-KB garbage before it reaches the event-loop HMAC computation, mirroring
+# the `_MAX_KEY_LENGTH` bound on client-supplied PRO API keys in
+# `pro_api_key_context.py`.
+_MAX_TOKEN_LENGTH = 512
 
 __all__ = [
     "SessionGateError",
@@ -203,14 +209,18 @@ def verify_token(token: str) -> tuple[str, int]:
     `initialize()`.
 
     Raises:
-        SessionIdInvalidError: the token is structurally malformed, or its MAC
-            does not verify against the current secret and store generation.
+        SessionIdInvalidError: the token is structurally malformed (including
+            longer than `_MAX_TOKEN_LENGTH`), or its MAC does not verify
+            against the current secret and store generation.
         SessionExpiredError: the token is well-formed and MAC-valid, but its
             `issued_at + config.session_ttl_seconds` is in the past, or its
             `issued_at` is in the future (an NTP step backwards must not
             extend a token's life beyond the TTL, so a future `issued_at` is
             treated as expired rather than invalid).
     """
+    if len(token) > _MAX_TOKEN_LENGTH:
+        raise SessionIdInvalidError()
+
     parts = token.split(_SEPARATOR)
     if len(parts) != 3:
         raise SessionIdInvalidError()
@@ -234,7 +244,7 @@ def verify_token(token: str) -> tuple[str, int]:
         raise SessionIdInvalidError()
     issued_at = int(issued_at_str)
 
-    if len(mac) < _MIN_MAC_HEX_LEN:
+    if len(mac) != _MAC_HEX_LEN:
         raise SessionIdInvalidError()
 
     generation = _current_generation()

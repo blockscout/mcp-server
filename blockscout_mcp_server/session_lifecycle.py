@@ -141,10 +141,11 @@ def log_session_gating_status(run_in_http: bool) -> None:
         return
 
     logger.info(
-        "Session gating: ENABLED (db=%s, calls=%s, ttl=%ss)",
+        "Session gating: ENABLED (db=%s, calls=%s, ttl=%ss, sweep=%ss)",
         config.session_db_path,
         config.session_max_calls,
         config.session_ttl_seconds,
+        _sweep_interval_seconds(),
     )
 
 
@@ -168,10 +169,28 @@ async def run_sweep_pass() -> None:
         logger.exception("Session store sweep pass failed; skipping until the next pass.")
 
 
+def _sweep_interval_seconds() -> int:
+    """Effective sweep cadence: the configured override, else once per TTL.
+
+    Deliberately unconstrained relative to the TTL in either direction: cadence
+    never affects correctness — `sweep_batch`'s deletion cutoff derives from the
+    TTL at call time, so no cadence can delete a live identifier's row — only how
+    long expired rows linger. A long interval suits short TTLs (less write
+    churn), a short interval suits long TTLs (less lingering garbage).
+    """
+    interval = config.session_sweep_interval_seconds
+    return interval if interval is not None else config.session_ttl_seconds
+
+
 async def _periodic_sweep_loop() -> None:
-    """Run :func:`run_sweep_pass` once per `config.session_ttl_seconds`, forever."""
+    """Run :func:`run_sweep_pass` once per :func:`_sweep_interval_seconds`, forever.
+
+    The interval is re-read each iteration, like every other consumer of the
+    session settings, so operator tuning applies without a restart-of-loop
+    special case.
+    """
     while True:
-        await asyncio.sleep(config.session_ttl_seconds)
+        await asyncio.sleep(_sweep_interval_seconds())
         await run_sweep_pass()
 
 

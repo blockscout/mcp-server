@@ -119,6 +119,22 @@ class ServerConfig(BaseSettings):
     # change.
     session_max_calls: int = Field(5, ge=1)
     session_ttl_seconds: int = Field(900, ge=1)
+    # Sweep cadence for expired session rows. Unset (the default) means "once per
+    # `session_ttl_seconds`". Deliberately unconstrained relative to the TTL (only
+    # ge=1): a long interval suits short TTLs (less write churn), a short interval
+    # suits long TTLs (less lingering garbage). Cadence never affects correctness —
+    # the sweep's deletion cutoff derives from the TTL at call time, so no cadence
+    # can delete a live identifier's row (see `SessionStore.sweep_batch`).
+    session_sweep_interval_seconds: int | None = Field(None, ge=1)
+
+    @field_validator("session_sweep_interval_seconds", mode="before")
+    @classmethod
+    def blank_sweep_interval_means_unset(cls, value: object) -> object:
+        # A blank env value must mean "unset" (sweep once per TTL), not a
+        # validation error — `.env.example` ships the `""` idiom for it.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @field_validator("session_secret")
     @classmethod

@@ -29,11 +29,13 @@ from blockscout_mcp_server.constants import (
 from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
 from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.session_lifecycle import (
+    SessionStartupError,
     initialize_gated_store,
     log_session_gating_status,
     validate_gated_startup,
     wire_lifespan,
 )
+from blockscout_mcp_server.session_store import SessionStoreInitializationError
 from blockscout_mcp_server.tools.address.get_address_info import get_address_info
 from blockscout_mcp_server.tools.address.get_tokens_by_address import get_tokens_by_address
 from blockscout_mcp_server.tools.address.nft_tokens_by_address import nft_tokens_by_address
@@ -421,8 +423,14 @@ def main_command(
             # Fail-fast: validate all gated-startup preconditions and initialize the
             # store before Uvicorn ever binds a socket. A rejected startup must not
             # create a database file, so validation runs strictly before initialization.
-            validate_gated_startup()
-            initialize_gated_store()
+            # These are operator configuration errors: surface the message cleanly
+            # and exit non-zero instead of dumping a traceback.
+            try:
+                validate_gated_startup()
+                initialize_gated_store()
+            except (SessionStartupError, SessionStoreInitializationError) as exc:
+                typer.echo(f"Session gating startup failed: {exc}", err=True)
+                raise typer.Exit(code=1) from exc
 
         asgi_app = mcp.streamable_http_app()
 

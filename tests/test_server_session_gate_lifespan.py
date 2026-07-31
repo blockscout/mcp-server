@@ -211,6 +211,43 @@ def test_periodic_sweep_loop_continues_past_failing_pass(monkeypatch, caplog):
     assert len(error_records) >= 3, "each faulting pass must log at ERROR"
 
 
+def test_periodic_sweep_loop_ticks_on_interval_override_not_ttl(monkeypatch):
+    """With a huge TTL and a near-zero `session_sweep_interval_seconds` override, the
+    loop must tick on the override — proving sweep cadence is decoupled from the TTL.
+    (If the loop still slept on the TTL, `sweep_batch` would never be called here.)
+    The 0 override is a test-only monkeypatch value — config validation enforces
+    ge=1 — chosen to spin the loop instantly, same as the near-zero TTL above."""
+    monkeypatch.setattr(config, "session_ttl_seconds", 10_000_000)
+    monkeypatch.setattr(config, "session_sweep_interval_seconds", 0)
+
+    call_count = {"n": 0}
+
+    class _CountingStore:
+        def sweep_batch(self, limit):
+            call_count["n"] += 1
+            return 0
+
+    monkeypatch.setattr(session_store, "get_store", lambda: _CountingStore())
+
+    async def _run():
+        task = asyncio.create_task(session_lifecycle._periodic_sweep_loop())
+        try:
+            for _ in range(1000):
+                if call_count["n"] >= 3:
+                    break
+                await asyncio.sleep(0)
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    asyncio.run(_run())
+
+    assert call_count["n"] >= 3, "loop must tick on the sweep-interval override, not the TTL"
+
+
 def test_first_pass_fault_does_not_abort_lifespan_entry(monkeypatch, tmp_path, caplog):
     db_path = tmp_path / "sessions.db"
     _set_valid_gated_config(monkeypatch, str(db_path))

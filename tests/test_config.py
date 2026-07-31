@@ -295,3 +295,33 @@ def test_session_ttl_seconds_negative_rejected(monkeypatch):
     monkeypatch.setenv("BLOCKSCOUT_SESSION_TTL_SECONDS", "-1")
     with pytest.raises(ValidationError):
         ServerConfig(_env_file=None)
+
+
+def test_session_sweep_interval_default_unset(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_sweep_interval_seconds is None
+
+
+def test_session_sweep_interval_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS", "3600")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_sweep_interval_seconds == 3600
+
+
+def test_session_sweep_interval_blank_means_unset(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS", "   ")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_sweep_interval_seconds is None
+
+
+def test_session_sweep_interval_zero_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS", "0")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)
+
+
+def test_session_sweep_interval_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS", "-1")
+    with pytest.raises(ValidationError):
+        ServerConfig(_env_file=None)

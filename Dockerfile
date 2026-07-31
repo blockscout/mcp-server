@@ -52,6 +52,7 @@ ENV BLOCKSCOUT_INTERMEDIARY_ALLOWLIST="ClaudeDesktop,HigressPlugin,EvaluationSui
 ENV BLOCKSCOUT_PRO_API_KEY_HEADER="Blockscout-MCP-Pro-Api-Key"
 ENV BLOCKSCOUT_SESSION_MAX_CALLS="5"
 ENV BLOCKSCOUT_SESSION_TTL_SECONDS="900"
+# ENV BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS="" # Intentionally commented out: unset means "sweep expired session rows once per TTL" — set at runtime only to decouple sweep cadence from the TTL
 # ENV BLOCKSCOUT_SESSION_SECRET="" # Intentionally commented out: the session-gating feature switch is a signing secret — pass at runtime (-e or a secret manager); never embed it in the image
 # ENV BLOCKSCOUT_SESSION_DB_PATH="" # Intentionally commented out: must point into a mounted persistent volume — pass at runtime together with the volume mount
 

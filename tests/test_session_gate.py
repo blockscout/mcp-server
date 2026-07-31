@@ -145,11 +145,33 @@ def test_oversized_issued_at_is_invalid_not_valueerror(store):
     token = mint_token()
     random_part, _issued_at, mac = token.split(".")
 
-    # 5000 ASCII digits pass the isascii/isdigit guard, but int() on CPython
-    # 3.11+ raises a bare ValueError past its str-to-int conversion limit
-    # (4300 digits); it must surface as the typed invalid-token refusal.
+    # 100 ASCII digits pass the isascii/isdigit guard (and stay under the
+    # whole-token length cap, which would otherwise reject first), but exceed
+    # `_MAX_ISSUED_AT_DIGITS`; the digit-limit guard is what keeps int() from
+    # ever seeing an input near CPython 3.11+'s str-to-int conversion limit,
+    # and it must surface as the typed invalid-token refusal.
     with pytest.raises(SessionIdInvalidError):
-        verify_token(f"{random_part}.{'9' * 5000}.{mac}")
+        verify_token(f"{random_part}.{'9' * 100}.{mac}")
+
+
+def test_token_over_length_cap_is_invalid_before_parsing(store):
+    token = mint_token()
+    random_part, issued_at, mac = token.split(".")
+
+    # Structurally plausible but oversized: the length cap must reject it
+    # before any split/HMAC work (a genuine token is ~100 characters).
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}{'x' * 600}.{issued_at}.{mac}")
+
+
+def test_mac_longer_than_sha256_hex_is_invalid(store):
+    token = mint_token()
+    random_part, issued_at, mac = token.split(".")
+
+    # 65 hex characters can never be an HMAC-SHA256 digest; the exact-length
+    # check rejects it without a comparison.
+    with pytest.raises(SessionIdInvalidError):
+        verify_token(f"{random_part}.{issued_at}.{mac}0")
 
 
 def test_token_minted_under_one_secret_does_not_verify_under_another(store, monkeypatch):
