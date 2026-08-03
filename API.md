@@ -53,9 +53,7 @@ Its data endpoints query Blockscout through its PRO API, so every request to tho
 - If the key is missing, or malformed (it contains control characters or exceeds the maximum allowed length), any request that reaches a PRO-authenticated upstream call fails with HTTP `400`. Endpoints that don't query the PRO API are unaffected.
 - The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API; only the dedicated header above is honored.
 
-### Session identifiers (gated deployments)
-
-Deployments that enable session gating additionally require an opaque `session_id` on every tool endpoint under `/v1/` except `/v1/unlock_blockchain_analysis` (and its legacy alias `/v1/get_instructions`). Call `/v1/unlock_blockchain_analysis` once per session; the response's `data.session_id` carries the identifier to pass as the `session_id` query parameter on every subsequent call. For callers without their own PRO API key, each identifier carries a small, non-renewable usage budget; requests that include a well-formed client-supplied PRO API key in the header above are exempt from the session mechanism entirely. Successful gated responses include a note reporting the remaining budget, and paginated gated responses include the `session_id` in `pagination.next_call.params`, so the replay-verbatim pagination contract is unchanged. On deployments where gating is disabled (the default for self-hosted servers), `session_id` is accepted and ignored.
+The official deployment at `https://mcp.blockscout.com` requires a client-supplied PRO API key for programmatic access: send the header above on every request. Integrations that do not are outside the scope of this document.
 
 ## General Concepts
 
@@ -97,14 +95,11 @@ All error responses, regardless of the HTTP status code, return a JSON object wi
   - **Validation Errors (`400 Bad Request`)**: Occur when a required parameter is missing or a parameter value is invalid.
   - **Deprecated Endpoints (`410 Gone`)**: Occur when a requested endpoint is no longer supported.
   - **Credits Exhausted (`402 Payment Required`)**: Occurs when the Blockscout PRO API daily credit allowance for the API key supplied with the request has been exhausted. This is a distinct, clearly-labeled signal — separate from generic transient upstream failures — and reflects that key's quota state, not a problem with the request itself: the caller should stop and top up credits (or wait for the daily reset) rather than retry.
-  - **Session Required (`401 Unauthorized`)**: The deployment enforces session gating and the request carried no valid `session_id`. Obtain one from `/v1/unlock_blockchain_analysis` (once per session) and resend the request with it.
-  - **Session Ended (`403 Forbidden`)**: The `session_id` has expired, or its free budget is over; either way the identifier cannot be renewed or topped up. This refusal is terminal — do not retry the request as-is. Obtain a Blockscout PRO API key at https://mcp.blockscout.com and supply it with future requests.
 
 - **Server-Side Errors (`5xx` status codes)**: These errors indicate a problem on the server or with a downstream service. Common examples include:
   - **Internal Errors (`500 Internal Server Error`)**: Occur when the server encounters an unexpected condition.
   - **Downstream Timeouts (`504 Gateway Timeout`)**: Occur when a request to an external service (like a Blockscout API) times out.
   - **Other Downstream Errors**: The server may also pass through other `4xx` or `5xx` status codes from downstream services.
-  - **Session Store Unavailable (`503 Service Unavailable`)**: Free-tier session accounting is temporarily unavailable. Requests carrying a client-supplied PRO API key are unaffected; otherwise retry later.
 
   The server already retries transient transport-level failures internally (up to `BLOCKSCOUT_BS_REQUEST_MAX_RETRIES` attempts, default `3`) before surfacing `500` or `504`. Client-side retries on these codes can therefore stay conservative — a single additional attempt is usually sufficient. Retrying `500`/`504` more aggressively multiplies the total attempt count for the same underlying transport failure.
 
@@ -189,7 +184,7 @@ Retrieves a list of all registered MCP resources and their metadata.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool. On gated deployments the response's `data.session_id` carries the opaque session identifier to pass with every subsequent tool call in the same session.
+Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)

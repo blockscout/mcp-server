@@ -24,11 +24,15 @@ from blockscout_mcp_server.tools.decorators import log_tool_invocation
 @pro_api_credit_scope
 async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[InstructionsData]:
     """Initializes a Blockscout MCP session: returns server reference data, the
-    `blockscout-analysis` skill pointer, and the URI resolution rule. When the response
-    payload includes a `session_id`, pass it with every subsequent tool call. Call this
-    tool exactly once per session, before any other tool, and reuse its payload for the
+    `blockscout-analysis` skill pointer, and the URI resolution rule. Call this tool
+    exactly once per session, before any other tool, and reuse its payload for the
     rest of the session; do not call it again.
     """
+    # The docstring above is the MCP tool description, so it reaches every agent on
+    # every deployment — including ungated ones and PRO-key-exempt callers who never
+    # receive a `session_id`. It therefore says nothing about the identifier; the
+    # gated branch of `content_text` below carries that instruction to the only
+    # callers it applies to.
     # Report start of operation
     await report_and_log_progress(
         ctx,

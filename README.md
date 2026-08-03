@@ -205,8 +205,6 @@ Refer to [TESTING.md](TESTING.md) for comprehensive instructions on running both
 
 ## Tool Descriptions
 
-On deployments with session gating enabled, every tool below except `__unlock_blockchain_analysis__` also accepts an optional `session_id` argument (issued by `__unlock_blockchain_analysis__`); it is omitted from the signatures for brevity.
-
 1. `__unlock_blockchain_analysis__()` - Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool.
 2. `get_chains_list(query=None)` - Returns a list of supported chains, with optional filtering by name, chain ID, native currency, or ecosystem.
 3. `get_address_by_ens_name(name)` - Converts an ENS domain name to its corresponding Ethereum address.
@@ -432,9 +430,9 @@ docker run --rm -p 8000:8000 -e BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here \
   ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
 ```
 
-**With the session-gated free tier (official deployment style):**
+**With session metering enabled (optional):**
 
-Session gating meters unauthenticated usage per session identifier issued by `__unlock_blockchain_analysis__`. It is enabled by setting a signing secret (at least 32 bytes — generate it, don't invent it), requires HTTP mode and a server-side PRO API key (free-tier calls are served upstream on it), and needs a persistent volume for the session database. Generate the secret **once** and store it durably (a secret manager, or persistent environment configuration); every restart and redeploy must pass the same stored value:
+Session metering limits how many tool calls a caller without a client-supplied PRO API key may make per session identifier issued by `__unlock_blockchain_analysis__`. It is off by default. Enabling it means setting a signing secret (at least 32 bytes — generate it, don't invent it), and it requires HTTP mode and a server-side PRO API key (metered calls are served upstream on it), plus a persistent volume for the session database. Generate the secret **once** and store it durably (a secret manager, or persistent environment configuration); every restart and redeploy must pass the same stored value:
 
 ```bash
 # Once, not per start: generate the secret and keep it.
@@ -448,7 +446,7 @@ docker run --rm -p 8000:8000 \
   ghcr.io/blockscout/mcp-server:latest python -m blockscout_mcp_server --http --http-host 0.0.0.0
 ```
 
-Ordinary self-hosted deployments do not need any of this: leave `BLOCKSCOUT_SESSION_SECRET` unset (the default) and no volume is required. Losing the volume or rotating the secret invalidates live session identifiers **by design**; the exposure is bounded by the configured TTL. Re-generating the secret inline on every `docker run` is the accidental form of that rotation — it wipes all live identifiers on each restart even though the database volume survived, so never embed the generation command in the start command. Restoring an older copy of the database revives the budgets it recorded — after a historical restore, rotate the secret unless that is intended. Optional knobs: `BLOCKSCOUT_SESSION_MAX_CALLS` (default `5`), `BLOCKSCOUT_SESSION_TTL_SECONDS` (default `900`), and `BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS` (how often expired session rows are cleaned up; default: once per TTL).
+Most deployments do not need any of this: leave `BLOCKSCOUT_SESSION_SECRET` unset (the default) and no volume is required. Losing the volume or rotating the secret invalidates live session identifiers **by design**; the exposure is bounded by the configured TTL. Re-generating the secret inline on every `docker run` is the accidental form of that rotation — it wipes all live identifiers on each restart even though the database volume survived, so never embed the generation command in the start command. Restoring an older copy of the database revives the budgets it recorded — after a historical restore, rotate the secret unless that is intended. Optional knobs: `BLOCKSCOUT_SESSION_MAX_CALLS` (default `5`), `BLOCKSCOUT_SESSION_TTL_SECONDS` (default `900`), and `BLOCKSCOUT_SESSION_SWEEP_INTERVAL_SECONDS` (how often expired session rows are cleaned up; default: once per TTL).
 
 **Stdio Mode:** The default stdio mode is designed for use with MCP hosts/clients (like Claude Desktop, Cursor) and doesn't make sense to run directly with Docker without an MCP client managing the communication.
 

@@ -165,12 +165,14 @@ class InstructionsData(BaseModel):
             "identical to the matching paragraph inside the server's `composed_instructions`."
         )
     )
+    # Deliberately mirrors `SESSION_ID_PARAM_DESCRIPTION` verbatim: this description is
+    # serialized into the unlock tool's `outputSchema` and therefore reaches every MCP
+    # client on every deployment, so it must name no source and no condition. The
+    # instruction to pass the identifier is delivered at runtime instead, in the gated
+    # branch of the tool's `content_text`.
     session_id: str | None = Field(
         default=None,
-        description=(
-            "Opaque session identifier to pass with every subsequent tool call in this session. "
-            "Present only on deployments with session gating enabled."
-        ),
+        description="Opaque session identifier.",
     )
 
     @model_serializer(mode="wrap")
