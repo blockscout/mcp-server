@@ -3,7 +3,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import AdvancedFilterItem, ToolResponse
+from blockscout_mcp_server.session_gate import mint_token
 from blockscout_mcp_server.tools.transaction.get_transactions_by_address import get_transactions_by_address
 
 
@@ -223,3 +225,71 @@ async def test_missing_age_from_raises_error(mock_ctx):
     """Verify a missing age_from raises a TypeError."""
     with pytest.raises(TypeError, match="missing 1 required positional argument"):
         await get_transactions_by_address(chain_id="1", address="0x123", ctx=mock_ctx)
+
+
+# ---------------------------------------------------------------------------
+# Session-gated pagination behavior (issue #442, Phase 7): prove the
+# replay-verbatim pagination contract survives the gate on a real, paginated
+# tool. The per-branch decorator coverage lives in Phase 4's
+# test_session_gate_decorator.py; this test only proves the wiring.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_transactions_by_address_gated_pagination_replay(mock_ctx, enabled_session_gate, monkeypatch):
+    """A gated call whose response carries pagination stamps the presented `session_id`
+    onto `pagination.next_call.params`, and replaying that params dict verbatim (plus
+    ctx) passes the gate and succeeds."""
+    monkeypatch.setattr(config, "advanced_filters_page_size", 1)
+
+    chain_id = "1"
+    address = "0x123abc"
+    age_from = "2024-01-01T00:00:00Z"
+    mock_filtered_items = [
+        {
+            "type": "call",
+            "from": {"hash": "0xfrom_hash_1"},
+            "to": {"hash": "0xto_hash_1"},
+            "value": "kept1",
+            "block_number": 100,
+            "transaction_index": 1,
+            "internal_transaction_index": 0,
+        },
+        {
+            "type": "call",
+            "from": {"hash": "0xfrom_hash_2"},
+            "to": {"hash": "0xto_hash_2"},
+            "value": "kept2",
+            "block_number": 101,
+            "transaction_index": 2,
+            "internal_transaction_index": 0,
+        },
+    ]
+
+    token = mint_token()
+
+    with patch(
+        "blockscout_mcp_server.tools.transaction.get_transactions_by_address."
+        "_fetch_filtered_transactions_with_smart_pagination",
+        new_callable=AsyncMock,
+    ) as mock_smart_pagination:
+        mock_smart_pagination.return_value = (mock_filtered_items, False)
+
+        first_result = await get_transactions_by_address(
+            chain_id=chain_id,
+            address=address,
+            age_from=age_from,
+            ctx=mock_ctx,
+            session_id=token,
+        )
+
+        assert first_result.pagination is not None
+        assert first_result.pagination.next_call.params["session_id"] == token
+
+        # Replay exactly next_call.params (plus ctx) — this must pass the gate and succeed.
+        second_result = await get_transactions_by_address(
+            ctx=mock_ctx,
+            **first_result.pagination.next_call.params,
+        )
+
+    assert isinstance(second_result, ToolResponse)

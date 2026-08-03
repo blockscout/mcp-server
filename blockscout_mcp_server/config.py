@@ -103,6 +103,49 @@ class ServerConfig(BaseSettings):
     intermediary_header: str = "Blockscout-MCP-Intermediary"
     intermediary_allowlist: str = "ClaudeDesktop,HigressPlugin,EvaluationSuite"
 
+    # Session-gated free tier configuration. `session_secret` is the feature switch:
+    # empty (the default) disables the gate entirely, mirroring the "empty = disabled"
+    # idiom used by `pro_api_key`, `pro_api_key_required_notice`, and `mixpanel_token`
+    # above. Even with a secret configured, gating additionally requires the server to
+    # be running in HTTP mode (checked at startup in a later phase) — stdio deployments
+    # are never gated.
+    session_secret: str = ""
+    session_db_path: str = ""
+    # The ge=1 bounds below are deliberate: 0 would silently mean "no free calls at
+    # all" / "already expired" rather than "unlimited", so Pydantic rejects it loudly
+    # (same rationale as the ge=0 bound on `pro_api_low_credits_threshold`). Every
+    # consumer reads `config` at call time rather than hardcoding these defaults, so a
+    # deployment may run a 5-call/15-minute promo or a 5-call/7-day one with no code
+    # change.
+    session_max_calls: int = Field(5, ge=1)
+    session_ttl_seconds: int = Field(900, ge=1)
+    # Sweep cadence for expired session rows. Unset (the default) means "once per
+    # `session_ttl_seconds`". Deliberately unconstrained relative to the TTL (only
+    # ge=1): a long interval suits short TTLs (less write churn), a short interval
+    # suits long TTLs (less lingering garbage). Cadence never affects correctness —
+    # the sweep's deletion cutoff derives from the TTL at call time, so no cadence
+    # can delete a live identifier's row (see `SessionStore.sweep_batch`).
+    session_sweep_interval_seconds: int | None = Field(None, ge=1)
+
+    @field_validator("session_sweep_interval_seconds", mode="before")
+    @classmethod
+    def blank_sweep_interval_means_unset(cls, value: object) -> object:
+        # A blank env value must mean "unset" (sweep once per TTL), not a
+        # validation error — `.env.example` ships the `""` idiom for it.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("session_secret")
+    @classmethod
+    def normalize_session_secret(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("session_db_path")
+    @classmethod
+    def normalize_session_db_path(cls, value: str) -> str:
+        return value.strip()
+
     @property
     def pro_api_config_url(self) -> str:
         """URL for the PRO API chain config endpoint, derived from the PRO API base URL."""

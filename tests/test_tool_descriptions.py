@@ -237,3 +237,57 @@ async def test_direct_api_call_endpoint_path_param_mentions_query_params():
         "endpoint_path parameter description must mention 'query_params' "
         "to guide users away from double-encoding (Phase 5 relocation)."
     )
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_excludes_mandatory_framing():
+    """The rewritten docstring (Phase 6, issue #442) drops the old 'MANDATORY FOR AI AGENTS'
+    framing — the gate now enforces structurally what that wording tried to achieve."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    description = tool.description.casefold()
+    assert "mandatory" not in description
+    assert "in every session" not in description
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_states_once_per_session_rule():
+    """The rewritten docstring must instruct the agent to call the tool exactly once per session."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    assert "exactly once per session" in tool.description
+
+
+@pytest.mark.asyncio
+async def test_unlock_blockchain_analysis_description_length_budget():
+    """Client-visible description must stay within rule 140's <= 500 char target."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+    tool = tools["__unlock_blockchain_analysis__"]
+
+    assert len(tool.description.strip()) <= 500
+
+
+@pytest.mark.asyncio
+async def test_session_id_parameter_present_on_every_tool_except_unlock():
+    """Every MCP tool except `__unlock_blockchain_analysis__` must carry the optional
+    `session_id` parameter with the exact shared description (Phase 7, issue #442);
+    the unlock tool — the sole issuer of the identifier — must not carry it at all."""
+    tools = {t.name: t for t in await server.mcp.list_tools()}
+
+    assert "__unlock_blockchain_analysis__" in tools
+    unlock_tool = tools["__unlock_blockchain_analysis__"]
+    unlock_properties = unlock_tool.inputSchema.get("properties", {})
+    assert "session_id" not in unlock_properties
+
+    gated_tools = {name: tool for name, tool in tools.items() if name != "__unlock_blockchain_analysis__"}
+    assert len(gated_tools) > 0, "No non-unlock tools found — tool discovery is broken"
+
+    for name, tool in gated_tools.items():
+        properties = tool.inputSchema.get("properties", {})
+        assert "session_id" in properties, f"{name}: missing session_id parameter"
+        assert properties["session_id"].get("description") == "Opaque session identifier.", (
+            f"{name}: session_id description mismatch: {properties['session_id'].get('description')!r}"
+        )
+        assert "session_id" not in tool.inputSchema.get("required", []), f"{name}: session_id must stay optional"

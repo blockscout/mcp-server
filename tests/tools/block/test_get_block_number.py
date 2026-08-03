@@ -5,6 +5,8 @@ import pytest
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.models import BlockNumberData, ToolResponse
+from blockscout_mcp_server.session_gate import SessionBudgetExhaustedError, mint_token, verify_token
+from blockscout_mcp_server.session_store import get_store
 from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 
 
@@ -126,3 +128,66 @@ async def test_get_block_number_api_failure(mock_ctx):
             await get_block_number(chain_id=chain_id, ctx=mock_ctx, datetime="2023-01-01T00:00:00Z")
 
         mock_request.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Session-gated behavior (issue #442, Phase 7): representative metered tool
+# exercised through the full decorator stack.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_block_number_gated_valid_token_succeeds_and_increments(mock_ctx, enabled_session_gate):
+    chain_id = "1"
+    mock_api_response = [{"height": 12345, "timestamp": "2023-01-01T00:00:00Z"}]
+    token = mint_token()
+    random_part, _issued_at = verify_token(token)
+
+    with patch(
+        "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.return_value = mock_api_response
+
+        result = await get_block_number(chain_id=chain_id, ctx=mock_ctx, session_id=token)
+
+    assert result.data.block_number == 12345
+    assert result.notes is not None
+    assert f"{config.session_max_calls - 1} of {config.session_max_calls}" in result.notes[-1]
+    assert get_store().get_calls(random_part) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_block_number_gated_upstream_failure_refunds_counter(mock_ctx, enabled_session_gate):
+    chain_id = "1"
+    token = mint_token()
+    random_part, _issued_at = verify_token(token)
+
+    with patch(
+        "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        mock_request.side_effect = ValueError("upstream error")
+
+        with pytest.raises(ValueError, match="upstream error"):
+            await get_block_number(chain_id=chain_id, ctx=mock_ctx, session_id=token)
+
+    # The failed call's debit was refunded, so the counter is back to zero.
+    assert get_store().get_calls(random_part) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_block_number_gated_exhausted_identifier_never_calls_upstream(mock_ctx, enabled_session_gate):
+    chain_id = "1"
+    token = mint_token()
+    random_part, issued_at = verify_token(token)
+
+    # Exhaust the identifier's budget directly against the store.
+    for _ in range(config.session_max_calls):
+        assert get_store().check_and_increment(random_part, issued_at) is not None
+
+    with patch(
+        "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock
+    ) as mock_request:
+        with pytest.raises(SessionBudgetExhaustedError):
+            await get_block_number(chain_id=chain_id, ctx=mock_ctx, session_id=token)
+
+        mock_request.assert_not_called()

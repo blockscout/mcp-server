@@ -40,7 +40,14 @@ def test_pro_api_credit_scope_applied_to_all_scoped_tools() -> None:
     """Every function decorated with @pro_api_key_scope must also have
     @pro_api_credit_scope immediately inside it (appearing after in source
     order).  Driving discovery off the existing @pro_api_key_scope means this
-    guard automatically covers any tool added later."""
+    guard automatically covers any tool added later.
+
+    Also asserts the session-gate decorator's slot: on any module that also
+    carries `@session_gate` or `@session_gate_unmetered`, that decorator must
+    sit *between* `@pro_api_key_scope` and `@pro_api_credit_scope` — below the
+    key scope (exemption reads a ContextVar only that scope populates) and
+    above the credit scope (which must stay innermost, closest to the tool
+    body; see Phase 4's stacking constraint)."""
     tool_py_files = list(TOOLS_ROOT.rglob("*.py"))
 
     violations: list[str] = []
@@ -80,6 +87,21 @@ def test_pro_api_credit_scope_applied_to_all_scoped_tools() -> None:
                     f"*after* @pro_api_key_scope in source (inner decorator), "
                     f"but found key_scope at index {key_idx}, credit_scope at index {credit_idx}"
                 )
+                continue
+
+            gate_names = [name for name in ("session_gate", "session_gate_unmetered") if name in dec_names]
+            if not gate_names:
+                continue
+
+            for gate_name in gate_names:
+                gate_idx = dec_names.index(gate_name)
+                if not (key_idx < gate_idx < credit_idx):
+                    violations.append(
+                        f"{path.relative_to(TOOLS_ROOT.parent.parent)}:"
+                        f"{node.lineno}: {node.name}: @{gate_name} must sit strictly between "
+                        f"@pro_api_key_scope (index {key_idx}) and @pro_api_credit_scope "
+                        f"(index {credit_idx}), but found it at index {gate_idx}"
+                    )
 
     assert decorated_count > 0, "No @pro_api_key_scope-decorated functions found — discovery logic is broken"
     assert not violations, "\n".join(violations)

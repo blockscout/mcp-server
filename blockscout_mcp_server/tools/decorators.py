@@ -11,6 +11,14 @@ from blockscout_mcp_server.client_meta import extract_client_meta_from_ctx, form
 
 logger = logging.getLogger(__name__)
 
+# Placeholder that replaces a live `session_id` value before it reaches any
+# observability sink (INFO log line, Mixpanel `tool_args`, community-telemetry
+# payload). A `session_id` is live capability material — whoever holds it can
+# spend its budget — so it gets the same treatment the PRO API key already
+# gets elsewhere (never forwarded raw to a sink). Presence-vs-absence is left
+# observable: only a present, non-empty value is masked.
+_SESSION_ID_REDACTED_PLACEHOLDER = "<redacted>"
+
 
 def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
     """Log the tool name and arguments when it is invoked."""
@@ -22,6 +30,13 @@ def log_tool_invocation(func: Callable[..., Awaitable[Any]]) -> Callable[..., Aw
         bound.apply_defaults()
         arg_dict = dict(bound.arguments)
         ctx = arg_dict.pop("ctx", None)
+
+        # Mask a live `session_id` before it reaches the log line, analytics, or
+        # telemetry sinks below — all three read this same `arg_dict`. Masking is
+        # unconditional by argument name (not gated on the session feature being
+        # enabled), since ungated deployments also receive this argument.
+        if arg_dict.get("session_id"):
+            arg_dict["session_id"] = _SESSION_ID_REDACTED_PLACEHOLDER
 
         # Extract client metadata consistently using shared helper
         meta = extract_client_meta_from_ctx(ctx)

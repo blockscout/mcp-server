@@ -8,8 +8,10 @@ from pydantic import Field
 from web3.exceptions import ContractLogicError
 from web3.utils.abi import check_if_arguments_can_be_encoded
 
+from blockscout_mcp_server.constants import SESSION_ID_PARAM_DESCRIPTION
 from blockscout_mcp_server.models import ContractReadData, ToolResponse
 from blockscout_mcp_server.pro_api_key_context import pro_api_credit_scope, pro_api_key_scope
+from blockscout_mcp_server.session_gate import session_gate
 from blockscout_mcp_server.tools.common import build_tool_response, report_and_log_progress
 from blockscout_mcp_server.tools.decorators import log_tool_invocation
 from blockscout_mcp_server.web3_pool import WEB3_POOL
@@ -72,6 +74,7 @@ def _normalize_result(obj: Any) -> Any:
 
 @log_tool_invocation
 @pro_api_key_scope
+@session_gate
 @pro_api_credit_scope
 async def read_contract(
     chain_id: Annotated[str, Field(description="The ID of the blockchain")],
@@ -118,6 +121,7 @@ async def read_contract(
     ] = "latest",
     *,
     ctx: Context,
+    session_id: Annotated[str | None, Field(description=SESSION_ID_PARAM_DESCRIPTION)] = None,
 ) -> ToolResponse[ContractReadData]:
     """
         Calls a smart contract function (view/pure, or non-view/pure simulated via eth_call) and returns the

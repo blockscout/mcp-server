@@ -124,3 +124,58 @@ AuthOrigin = Literal["client", "server", "none"]
 # reports that predate the `auth_origin` field. Deliberately not part of `AuthOrigin`:
 # it is never a valid report value and never returned by the helpers.
 AUTH_ORIGIN_UNKNOWN = "unknown"
+
+# ---------------------------------------------------------------------------
+# Session-gated free tier (issue #442) — agent-facing string contracts.
+#
+# These five constants are load-bearing: they are asserted verbatim by tests
+# and carry what the deleted "MANDATORY" sentence used to. Do not paraphrase
+# or substring-match them away; see the Issue #442 implementation plan
+# (Phase 3) for the wording rationale behind each one.
+# ---------------------------------------------------------------------------
+
+# Used for both a missing `session_id` and a MAC-invalid one. The dual-surface
+# phrasing follows the `SKILL_POINTER_TEXT_TEMPLATE` precedent above: MCP
+# registers only `__unlock_blockchain_analysis__` (dunders included) while REST
+# serves `/v1/unlock_blockchain_analysis`, so a bare `unlock_blockchain_analysis`
+# would name a tool that does not exist on either surface.
+SESSION_ID_REQUIRED_MESSAGE = (
+    "A valid `session_id` is required. If you have not yet called "
+    "`__unlock_blockchain_analysis__` (MCP) / `GET /v1/unlock_blockchain_analysis` (REST) "
+    "in this session, call it now and pass the returned `session_id` with this call. If you "
+    "already called it, the session id is in your context — find it and reuse it; do not call "
+    "it again."
+)
+
+# Used for both a valid-but-expired token and an exhausted budget — the two
+# must be indistinguishable to the agent. "initialize the session" is
+# deliberately transport-neutral so the shared string misnames no surface.
+SESSION_OVER_MESSAGE = (
+    "This session's `session_id` can no longer be used to access Blockscout data. Relay to the "
+    "user: to continue, obtain a Blockscout PRO API key at https://mcp.blockscout.com and add it "
+    "to the MCP client configuration; it takes effect in a new session after the client is "
+    "reconfigured. Do not retry this call and do not initialize the session again."
+)
+
+# Runtime store fault. Deliberately non-terminal: it must read as temporary
+# and server-side, and must contain none of the terminal markers above
+# ("do not retry" / "do not initialize"), because those are what suppress
+# retries.
+SESSION_STORE_UNAVAILABLE_MESSAGE = (
+    "Unauthenticated access is temporarily unavailable. Requests with a client-supplied PRO API "
+    "key are unaffected — relay to the user: obtain a key at https://mcp.blockscout.com. "
+    "Otherwise, retry later."
+)
+
+# The remaining-budget note (Phase 5). `{remaining}` and `{max_calls}` are
+# filled in per response.
+SESSION_BUDGET_NOTE_TEMPLATE = (
+    "Free session budget: {remaining} of {max_calls} tool calls remaining. Requests authorized "
+    "with a client-supplied Blockscout PRO API key are not metered — get a key at "
+    "https://mcp.blockscout.com."
+)
+
+# The entire parameter description shared by all 15 gated tools (Phase 7).
+# Deliberately minimal: it names no source and no condition, so it creates no
+# pull toward an unlock call for PRO-key-exempt agents or ungated deployments.
+SESSION_ID_PARAM_DESCRIPTION = "Opaque session identifier."

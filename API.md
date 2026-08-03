@@ -53,6 +53,8 @@ Its data endpoints query Blockscout through its PRO API, so every request to tho
 - If the key is missing, or malformed (it contains control characters or exceeds the maximum allowed length), any request that reaches a PRO-authenticated upstream call fails with HTTP `400`. Endpoints that don't query the PRO API are unaffected.
 - The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API; only the dedicated header above is honored.
 
+The official deployment at `https://mcp.blockscout.com` requires a client-supplied PRO API key for programmatic access: send the header above on every request. Integrations that do not are outside the scope of this document.
+
 ## General Concepts
 
 ### Standard Response Structure
@@ -182,7 +184,7 @@ Retrieves a list of all registered MCP resources and their metadata.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Provides custom instructions and operational guidance for using the server. This is a mandatory first step.
+Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)
@@ -206,6 +208,7 @@ Returns supported blockchain chains, including whether each is a testnet, its na
 - **Parameters**
 
   - `query` (`string`, optional): Case-insensitive substring filter applied to chain name, chain ID, native currency, and ecosystem fields. Prefer narrow text terms such as chain name, ecosystem, or currency. Avoid partial numeric chain ID queries like `1`, because substring matching can return many chains.
+  - `session_id` (`string`, optional): Opaque session identifier.
 
 - **Example Requests**
 
@@ -234,11 +237,31 @@ Retrieves the block number and timestamp for a specific date/time or the latest 
   | ---- | ---- | -------- | ----------- |
   | `chain_id` | `string` | Yes | The ID of the blockchain. |
   | `datetime` | `string` | No | The date and time (ISO 8601 format, e.g. 2025-05-22T23:00:00.00Z) to find the block for. If omitted, returns the latest block. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
   ```bash
   curl "http://127.0.0.1:8000/v1/get_block_number?chain_id=1&datetime=2023-01-01T00:00:00Z"
+  ```
+
+#### Get Latest Block (legacy alias)
+
+Legacy alias that invokes `get_block_number` with `datetime=None` (the latest block); prefer `/v1/get_block_number`.
+
+`GET /v1/get_latest_block`
+
+- **Parameters**
+
+  | Name | Type | Required | Description |
+  | ---- | ---- | -------- | ----------- |
+  | `chain_id` | `string` | Yes | The ID of the blockchain. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
+
+- **Example Request**
+
+  ```bash
+  curl "http://127.0.0.1:8000/v1/get_latest_block?chain_id=1"
   ```
 
 #### Get Block Info (`get_block_info`)
@@ -254,6 +277,7 @@ Returns detailed information for a specific block.
   | `chain_id`             | `string`  | Yes      | The ID of the blockchain.                            |
   | `number_or_hash`       | `string`  | Yes      | The block number or its hash.                        |
   | `include_transactions` | `boolean` | No       | If true, includes a list of transaction hashes.      |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -276,6 +300,7 @@ Gets comprehensive information for a single transaction, including a summary of 
   | `chain_id`          | `string`  | Yes      | The ID of the blockchain.                        |
   | `transaction_hash`  | `string`  | Yes      | The hash of the transaction.                     |
   | `include_raw_input` | `boolean` | No       | If true, includes the raw transaction input data.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -366,6 +391,7 @@ Gets native currency transfers and contract interactions for an address.
   | `age_to`   | `string` | No       | End date and time (ISO 8601 format).                 |
   | `methods`  | `string` | No       | A method signature to filter by (e.g., `0x304e6ade`).|
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.  |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -389,6 +415,7 @@ Returns ERC-20 token transfers for an address.
   | `age_to`   | `string` | No       | End date and time (ISO 8601 format).               |
   | `token`    | `string` | No       | An ERC-20 token contract address to filter by.     |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -410,6 +437,7 @@ Gets comprehensive information about an address, including balance, contract det
   | ---------- | -------- | -------- | ---------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
   | `address`  | `string` | Yes      | The address to get info for. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -466,6 +494,7 @@ Returns ERC-20 token holdings for an address.
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
   | `address`  | `string` | Yes      | The wallet address to query.                       |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -486,6 +515,7 @@ Retrieves NFT tokens (ERC-721, etc.) owned by an address.
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                          |
   | `address`  | `string` | Yes      | The NFT owner's address.                           |
   | `cursor`   | `string` | No       | The cursor for pagination from a previous response.|
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -507,6 +537,7 @@ Searches for tokens by their symbol or name.
   | ---------- | -------- | -------- | --------------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.         |
   | `symbol`   | `string` | Yes      | The token symbol to search for.   |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -527,6 +558,7 @@ Converts an ENS (Ethereum Name Service) name to its corresponding Ethereum addre
   | Name   | Type     | Required | Description                |
   | ------ | -------- | -------- | -------------------------- |
   | `name` | `string` | Yes      | The ENS name to resolve.   |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -548,6 +580,7 @@ Retrieves the Application Binary Interface (ABI) for a smart contract.
   | ---------- | -------- | -------- | ---------------------------- |
   | `chain_id` | `string` | Yes      | The ID of the blockchain.    |
   | `address`  | `string` | Yes      | The smart contract address.  |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -568,6 +601,7 @@ Returns contract metadata or the content of a specific source file for a verifie
   | `chain_id` | `string` | Yes      | The ID of the blockchain.                                                      |
   | `address`  | `string` | Yes      | The smart contract address.                                                    |
   | `file_name`| `string` | No       | The name of the source file to fetch. Omit to retrieve metadata and file list. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -591,6 +625,7 @@ Executes a read-only smart contract function and returns its result.
   | `function_name`| `string` | Yes      | Name of the function to call.                     |
   | `args`         | `string` | No       | JSON-encoded array of function arguments.         |
   | `block`        | `string` | No       | Block identifier or number (`latest` by default). |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -616,6 +651,7 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
   | `endpoint_path` | `string` | Yes | The Blockscout API path to call (e.g., `/api/v2/stats`). |
   | `query_params` | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax in the query string, e.g., `query_params[page]=1`. |
   | `cursor` | `string` | No | The cursor for pagination from a previous response. |
+  | `session_id`         | `string`  | No       | Opaque session identifier.                       |
 
 - **Example Request**
 
@@ -634,6 +670,7 @@ Allows calling a raw Blockscout API endpoint for advanced or chain-specific data
   | `chain_id` | Query string | `string` | Yes | The ID of the blockchain. |
   | `endpoint_path` | Query string | `string` | Yes | The Blockscout API path to call (e.g., `/json-rpc`). |
   | `query_params` | Query string | `object` | No | Additional query parameters forwarded to the Blockscout API. Use bracket syntax, e.g., `query_params[key]=value`. |
+  | `session_id` | Query string | `string` | No | Opaque session identifier. |
   | `Content-Type` | Header | `string` | Yes | Must be `application/json`. |
   | (request body) | Body | `object` | Yes | The JSON object to send to the Blockscout endpoint. |
 

@@ -104,7 +104,9 @@ async def test_get_latest_block_success(mock_tool, client: AsyncClient):
     response = await client.get("/v1/get_latest_block?chain_id=1")
     assert response.status_code == 200
     assert response.json()["data"] == {"block_number": 123}
-    mock_tool.assert_called_once_with(chain_id="1", datetime=None, ctx=ANY)
+    # Phase 8 (issue #442): the legacy wrapper now forwards `session_id` explicitly
+    # (None when absent from the query) alongside its hardcoded `datetime=None`.
+    mock_tool.assert_called_once_with(chain_id="1", datetime=None, session_id=None, ctx=ANY)
 
 
 @pytest.mark.asyncio

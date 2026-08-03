@@ -143,7 +143,7 @@ async def get_block_info_rest(request: Request) -> Response:
     params = extract_and_validate_params(
         request,
         required=["chain_id", "number_or_hash"],
-        optional=["include_transactions"],
+        optional=["include_transactions", "session_id"],
     )
     tool_response = await get_block_info(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
@@ -152,15 +152,20 @@ async def get_block_info_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_latest_block_rest(request: Request) -> Response:
     """REST wrapper for the legacy get_latest_block tool."""
-    params = extract_and_validate_params(request, required=["chain_id"], optional=[])
-    tool_response = await get_block_number(chain_id=params["chain_id"], datetime=None, ctx=get_mock_context(request))
+    params = extract_and_validate_params(request, required=["chain_id"], optional=["session_id"])
+    tool_response = await get_block_number(
+        chain_id=params["chain_id"],
+        datetime=None,
+        session_id=params.get("session_id"),
+        ctx=get_mock_context(request),
+    )
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
 
 @handle_rest_errors
 async def get_block_number_rest(request: Request) -> Response:
     """REST wrapper for the get_block_number tool."""
-    params = extract_and_validate_params(request, required=["chain_id"], optional=["datetime"])
+    params = extract_and_validate_params(request, required=["chain_id"], optional=["datetime", "session_id"])
     tool_response = await get_block_number(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -168,7 +173,7 @@ async def get_block_number_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_address_by_ens_name_rest(request: Request) -> Response:
     """REST wrapper for the get_address_by_ens_name tool."""
-    params = extract_and_validate_params(request, required=["name"], optional=[])
+    params = extract_and_validate_params(request, required=["name"], optional=["session_id"])
     tool_response = await get_address_by_ens_name(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -179,7 +184,7 @@ async def get_transactions_by_address_rest(request: Request) -> Response:
     params = extract_and_validate_params(
         request,
         required=["chain_id", "address", "age_from"],
-        optional=["age_to", "methods", "cursor"],
+        optional=["age_to", "methods", "cursor", "session_id"],
     )
     tool_response = await get_transactions_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
@@ -191,7 +196,7 @@ async def get_token_transfers_by_address_rest(request: Request) -> Response:
     params = extract_and_validate_params(
         request,
         required=["chain_id", "address", "age_from"],
-        optional=["age_to", "token", "cursor"],
+        optional=["age_to", "token", "cursor", "session_id"],
     )
     tool_response = await get_token_transfers_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
@@ -200,7 +205,7 @@ async def get_token_transfers_by_address_rest(request: Request) -> Response:
 @handle_rest_errors
 async def lookup_token_by_symbol_rest(request: Request) -> Response:
     """REST wrapper for the lookup_token_by_symbol tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "symbol"], optional=[])
+    params = extract_and_validate_params(request, required=["chain_id", "symbol"], optional=["session_id"])
     tool_response = await lookup_token_by_symbol(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -208,7 +213,7 @@ async def lookup_token_by_symbol_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_contract_abi_rest(request: Request) -> Response:
     """REST wrapper for the get_contract_abi tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=[])
+    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["session_id"])
     tool_response = await get_contract_abi(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -216,7 +221,9 @@ async def get_contract_abi_rest(request: Request) -> Response:
 @handle_rest_errors
 async def inspect_contract_code_rest(request: Request) -> Response:
     """REST wrapper for the inspect_contract_code tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["file_name"])
+    params = extract_and_validate_params(
+        request, required=["chain_id", "address"], optional=["file_name", "session_id"]
+    )
     tool_response = await inspect_contract_code(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -227,7 +234,7 @@ async def read_contract_rest(request: Request) -> Response:
     params = extract_and_validate_params(
         request,
         required=["chain_id", "address", "abi", "function_name"],
-        optional=["args", "block"],
+        optional=["args", "block", "session_id"],
     )
     try:
         params["abi"] = json.loads(params["abi"])
@@ -245,7 +252,7 @@ async def read_contract_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_address_info_rest(request: Request) -> Response:
     """REST wrapper for the get_address_info tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=[])
+    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["session_id"])
     tool_response = await get_address_info(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -253,7 +260,7 @@ async def get_address_info_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_tokens_by_address_rest(request: Request) -> Response:
     """REST wrapper for the get_tokens_by_address tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
+    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor", "session_id"])
     tool_response = await get_tokens_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -275,7 +282,7 @@ async def transaction_summary_rest(request: Request) -> Response:
 @handle_rest_errors
 async def nft_tokens_by_address_rest(request: Request) -> Response:
     """REST wrapper for the nft_tokens_by_address tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor"])
+    params = extract_and_validate_params(request, required=["chain_id", "address"], optional=["cursor", "session_id"])
     tool_response = await nft_tokens_by_address(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -286,7 +293,7 @@ async def get_transaction_info_rest(request: Request) -> Response:
     params = extract_and_validate_params(
         request,
         required=["chain_id", "transaction_hash"],
-        optional=["include_raw_input"],
+        optional=["include_raw_input", "session_id"],
     )
     tool_response = await get_transaction_info(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
@@ -322,7 +329,7 @@ async def get_transaction_logs_rest(request: Request) -> Response:
 @handle_rest_errors
 async def get_chains_list_rest(request: Request) -> Response:
     """REST wrapper for the get_chains_list tool."""
-    params = extract_and_validate_params(request, required=[], optional=["query"])
+    params = extract_and_validate_params(request, required=[], optional=["query", "session_id"])
     tool_response = await get_chains_list(**params, ctx=get_mock_context(request))
     return JSONResponse(tool_response.model_dump(mode="json", by_alias=True))
 
@@ -330,7 +337,9 @@ async def get_chains_list_rest(request: Request) -> Response:
 @handle_rest_errors
 async def direct_api_call_rest(request: Request) -> Response:
     """REST wrapper for the direct_api_call tool."""
-    params = extract_and_validate_params(request, required=["chain_id", "endpoint_path"], optional=["cursor"])
+    params = extract_and_validate_params(
+        request, required=["chain_id", "endpoint_path"], optional=["cursor", "session_id"]
+    )
     if request.method == "POST":
         try:
             params["json_body"] = await request.json()
@@ -339,7 +348,7 @@ async def direct_api_call_rest(request: Request) -> Response:
         params["method"] = "POST"
     extra: dict[str, str] = {}
     for key, value in request.query_params.items():
-        if key in {"chain_id", "endpoint_path", "cursor", "method", "json_body"}:
+        if key in {"chain_id", "endpoint_path", "cursor", "method", "json_body", "session_id"}:
             continue
         if key.startswith("query_params[") and key.endswith("]"):
             extra[key[13:-1]] = value
