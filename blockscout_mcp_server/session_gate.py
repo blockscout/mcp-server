@@ -95,6 +95,7 @@ __all__ = [
     "gate_enabled",
     "client_supplied_valid_key",
     "get_remaining_budget",
+    "get_effective_max_calls",
     "session_gate",
     "session_gate_unmetered",
 ]
@@ -298,10 +299,43 @@ def gate_enabled() -> bool:
 
 _remaining_budget: ContextVar[int | None] = ContextVar("_remaining_budget", default=None)
 
+# Companion ContextVar carrying the *effective* (surface-resolved) ceiling that
+# produced `_remaining_budget` for this call. Both decorators set both vars as a
+# pair, and both `reset()` them in `finally`: the Phase 5 response note formats
+# "{remaining} of {max_calls}", and `session_gate_unmetered` (the unmetered
+# `get_chains_list` path) produces that note too, so an unmetered call without
+# the effective ceiling would break the note.
+_effective_max_calls: ContextVar[int | None] = ContextVar("_effective_max_calls", default=None)
+
 
 def get_remaining_budget() -> int | None:
     """Return the current request's remaining session budget, or `None` if none applies."""
     return _remaining_budget.get()
+
+
+def get_effective_max_calls() -> int | None:
+    """Return the current request's effective (surface-resolved) call ceiling, or `None`."""
+    return _effective_max_calls.get()
+
+
+# ---------------------------------------------------------------------------
+# Surface-resolved ceiling
+# ---------------------------------------------------------------------------
+
+
+def _effective_ceiling(ctx: Any) -> int:
+    """Return the call's effective ceiling, resolved from its surface.
+
+    `config.session_rest_max_calls` applies if and only if
+    `analytics.get_call_source(ctx)` returns exactly `"rest"` (Overview, decision
+    2); any other value — no marker, empty string, an unexpected marker, or the
+    defensive `"unknown"` fallback — selects `config.session_mcp_max_calls` (the
+    agent-facing default). Read from `config` at call time, like every other
+    consumer, so a runtime config change takes effect on the next call.
+    """
+    if analytics.get_call_source(ctx) == "rest":
+        return config.session_rest_max_calls
+    return config.session_mcp_max_calls
 
 
 # ---------------------------------------------------------------------------
@@ -321,9 +355,9 @@ def _log_store_fault(operation: str, exc: Exception) -> None:
     logger.error("session store failure (%s): %s", operation, exc)
 
 
-def _increment(random_part: str, issued_at: int) -> int | None:
+def _increment(random_part: str, issued_at: int, max_calls: int) -> int | None:
     try:
-        return get_store().check_and_increment(random_part, issued_at, config.session_mcp_max_calls)
+        return get_store().check_and_increment(random_part, issued_at, max_calls)
     except Exception as exc:
         _log_store_fault("check_and_increment", exc)
         raise SessionStoreUnavailableError() from exc
@@ -384,11 +418,19 @@ def _inject_session_id_into_pagination(result: Any, session_id: str) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def _extract_session_id(sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str | None:
-    """Read `session_id` from the call's bound arguments (mirrors `log_tool_invocation`)."""
+def _extract_session_id_and_ctx(
+    sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> tuple[str | None, Any]:
+    """Read `session_id` and `ctx` from the call's bound arguments in one `bind_partial` pass.
+
+    Mirrors `log_tool_invocation`'s bound-argument extraction. Every gated tool takes
+    `ctx`, but a missing `ctx` yields `None` here — `analytics.get_call_source(None)`
+    already resolves to `"mcp"`, so surface resolution degrades gracefully.
+    """
     bound = sig.bind_partial(*args, **kwargs)
     bound.apply_defaults()
-    return dict(bound.arguments).get("session_id", None)
+    arguments = dict(bound.arguments)
+    return arguments.get("session_id", None), arguments.get("ctx", None)
 
 
 # ---------------------------------------------------------------------------
@@ -404,19 +446,31 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
     1. Gate disabled (`gate_enabled()` is `False`) → call straight through.
     2. Exempt caller (`client_supplied_valid_key()`) → call straight through, no
        store access, no note.
-    3. Missing/empty `session_id` → `SessionIdMissingError`.
-    4. `verify_token` → `SessionIdInvalidError` or `SessionExpiredError`, both
+    3. Surface-resolved ceiling is `0` (`_effective_ceiling`, Overview decision 2) →
+       `SessionBudgetExhaustedError`, raised before `session_id` extraction and
+       before `verify_token` (Overview decision 1). A closed surface refuses every
+       non-exempt metered call terminally — no store I/O, no row creation, and no
+       "call unlock first" nudge toward minting an identifier that cannot be used.
+       A caller with a missing, malformed, or valid `session_id` all receive the
+       same terminal `SESSION_OVER_MESSAGE` here, deliberately: a later reordering
+       must not be able to leak a recoverable `SessionIdMissingError` or
+       `SessionIdInvalidError` out of a closed surface.
+    4. Missing/empty `session_id` → `SessionIdMissingError`.
+    5. `verify_token` → `SessionIdInvalidError` or `SessionExpiredError`, both
        raised before any store I/O.
-    5. `check_and_increment` — a store fault becomes `SessionStoreUnavailableError`;
-       an exhausted budget (`None` result) becomes `SessionBudgetExhaustedError`.
-    6. The remaining-budget ContextVar is set to `config.session_mcp_max_calls - calls`.
-    7. The tool body runs. On any failure — including cancellation — the debit is
+    6. `check_and_increment` (passed the resolved ceiling) — a store fault becomes
+       `SessionStoreUnavailableError`; an exhausted budget (`None` result) becomes
+       `SessionBudgetExhaustedError`.
+    7. The remaining-budget ContextVar is set to `effective_ceiling - calls`, and the
+       effective-ceiling ContextVar (`get_effective_max_calls`) is set to
+       `effective_ceiling`.
+    8. The tool body runs. On any failure — including cancellation — the debit is
        refunded before the original exception (or `BaseException`, e.g.
-       `asyncio.CancelledError`) is re-raised unchanged. A refusal in steps 3-5
+       `asyncio.CancelledError`) is re-raised unchanged. A refusal in steps 3-6
        consumed nothing, so nothing is refunded for those. One failure keeps its
        debit: `ResponseTooLargeError` (see `_refund_exempt`) — the upstream fetch
        already happened; only delivery was refused.
-    8. On success, if the response carries `pagination`, the presented `session_id`
+    9. On success, if the response carries `pagination`, the presented `session_id`
        is stamped onto `next_call.params`.
 
     Stacking: must be applied *below* `@pro_api_key_scope` (exemption reads a
@@ -432,17 +486,23 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
         if client_supplied_valid_key():
             return await func(*args, **kwargs)
 
-        session_id = _extract_session_id(sig, args, kwargs)
+        session_id, ctx = _extract_session_id_and_ctx(sig, args, kwargs)
+        effective_ceiling = _effective_ceiling(ctx)
+
+        if effective_ceiling == 0:
+            raise SessionBudgetExhaustedError()
+
         if not session_id:
             raise SessionIdMissingError()
 
         random_part, issued_at = verify_token(session_id)
 
-        calls = _increment(random_part, issued_at)
+        calls = _increment(random_part, issued_at, effective_ceiling)
         if calls is None:
             raise SessionBudgetExhaustedError()
 
-        budget_token = _remaining_budget.set(config.session_mcp_max_calls - calls)
+        budget_token = _remaining_budget.set(effective_ceiling - calls)
+        max_calls_token = _effective_max_calls.set(effective_ceiling)
         try:
             try:
                 result = await func(*args, **kwargs)
@@ -452,6 +512,7 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
                 raise
         finally:
             _remaining_budget.reset(budget_token)
+            _effective_max_calls.reset(max_calls_token)
 
         return _inject_session_id_into_pagination(result, session_id)
 
@@ -466,14 +527,22 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
 def session_gate_unmetered(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
     """Decorator enforcing the gate without metering (`get_chains_list` only).
 
-    Shares steps 1-4 of `session_gate` (disabled / exempt / missing / invalid /
+    Shares steps 1-2 and 4-5 of `session_gate` (disabled / exempt / missing / invalid /
     expired), but instead of incrementing performs a read-only `get_calls` lookup
-    and sets the remaining-budget ContextVar to `max(0, config.session_mcp_max_calls -
-    calls)` — a fresh identifier (no row) reports the full configured budget, and
-    the floor guarantees a successful response never reports a negative remaining
-    budget even if `session_mcp_max_calls` was lowered below an identifier's already-
-    recorded count. Does not check exhaustion: a spent-but-unexpired identifier
-    still navigates (it just reports 0 remaining); only expiry blocks it.
+    against the surface-resolved ceiling (`_effective_ceiling`) and sets the
+    remaining-budget ContextVar to `max(0, effective_ceiling - calls)` — a fresh
+    identifier (no row) reports the full configured budget, and the floor guarantees
+    a successful response never reports a negative remaining budget even if the
+    ceiling was lowered below an identifier's already-recorded count. The
+    effective-ceiling ContextVar (`get_effective_max_calls`) is set to
+    `effective_ceiling` alongside it. Does not check exhaustion: a spent-but-unexpired
+    identifier still navigates (it just reports 0 remaining); only expiry blocks it.
+
+    Deliberately does **not** short-circuit on a `0` ceiling the way `session_gate`
+    does: unmetered navigation writes no row and was already unbounded on every
+    surface — a `0` ceiling closes data access, not the surface (issue #446's
+    explicit design point). On a `0`-ceiling surface the body still runs and the
+    note reports `0` remaining.
 
     Performs the same pagination-injection step as `session_gate`.
     """
@@ -486,20 +555,23 @@ def session_gate_unmetered(func: Callable[..., Awaitable[Any]]) -> Callable[...,
         if client_supplied_valid_key():
             return await func(*args, **kwargs)
 
-        session_id = _extract_session_id(sig, args, kwargs)
+        session_id, ctx = _extract_session_id_and_ctx(sig, args, kwargs)
         if not session_id:
             raise SessionIdMissingError()
 
         random_part, _issued_at = verify_token(session_id)
 
+        effective_ceiling = _effective_ceiling(ctx)
         calls = _read_calls(random_part)
-        remaining = max(0, config.session_mcp_max_calls - calls)
+        remaining = max(0, effective_ceiling - calls)
 
         budget_token = _remaining_budget.set(remaining)
+        max_calls_token = _effective_max_calls.set(effective_ceiling)
         try:
             result = await func(*args, **kwargs)
         finally:
             _remaining_budget.reset(budget_token)
+            _effective_max_calls.reset(max_calls_token)
 
         return _inject_session_id_into_pagination(result, session_id)
 
