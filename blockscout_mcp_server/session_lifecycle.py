@@ -141,12 +141,22 @@ def log_session_gating_status(run_in_http: bool) -> None:
         return
 
     logger.info(
-        "Session gating: ENABLED (db=%s, calls=%s, ttl=%ss, sweep=%ss)",
+        "Session gating: ENABLED (db=%s, mcp_calls=%s, rest_calls=%s, ttl=%ss, sweep=%ss)",
         config.session_db_path,
-        config.session_max_calls,
+        config.session_mcp_max_calls,
+        config.session_rest_max_calls,
         config.session_ttl_seconds,
         _sweep_interval_seconds(),
     )
+
+    if config.session_mcp_max_calls == 0 and config.session_rest_max_calls == 0:
+        logger.warning(
+            "Session gating: both BLOCKSCOUT_SESSION_MCP_MAX_CALLS and "
+            "BLOCKSCOUT_SESSION_REST_MAX_CALLS are 0 — every metered tool call is refused for "
+            "unauthenticated callers on both the MCP and REST surfaces. Identifier issuance and "
+            "unmetered navigation (get_chains_list) remain open, and PRO-key callers are unaffected. "
+            "This may be intentional (closing the free tier) or a misconfiguration."
+        )
 
 
 async def run_sweep_pass() -> None:

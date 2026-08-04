@@ -222,7 +222,7 @@ async def test_get_chains_list_gated_valid_token_succeeds_without_metering(mock_
 
     assert [c.chain_id for c in res.data] == ["1"]
     assert res.notes is not None
-    assert f"{config.session_max_calls} of {config.session_max_calls}" in res.notes[-1]
+    assert f"{config.session_mcp_max_calls} of {config.session_mcp_max_calls}" in res.notes[-1]
     # Read-only: no row created for a fresh identifier, so the counter stays at 0.
     assert get_store().get_calls(random_part) == 0
 

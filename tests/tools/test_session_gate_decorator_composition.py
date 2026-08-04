@@ -29,6 +29,7 @@ from blockscout_mcp_server.session_gate import (
     SessionExpiredError,
     SessionIdMissingError,
     SessionStoreUnavailableError,
+    get_effective_max_calls,
     get_remaining_budget,
     mint_token,
     session_gate,
@@ -136,7 +137,7 @@ async def test_exempt_path_never_injects(enabled_session_gate, monkeypatch, mock
 
 @pytest.mark.asyncio
 async def test_unmetered_valid_token_reads_but_never_increments(enabled_session_gate, store_spy, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 7)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 7)
     token, random_part, _issued_at = _minted()
 
     @session_gate_unmetered
@@ -149,6 +150,8 @@ async def test_unmetered_valid_token_reads_but_never_increments(enabled_session_
     store_spy.get_calls.assert_called_once_with(random_part)
     store_spy.check_and_increment.assert_not_called()
     assert get_store().get_calls(random_part) == 0  # no row created
+    assert get_remaining_budget() is None  # reset after the call
+    assert get_effective_max_calls() is None  # reset after the call
 
 
 @pytest.mark.asyncio
@@ -184,10 +187,10 @@ async def test_unmetered_expired_token_raises_expired(enabled_session_gate, monk
 
 @pytest.mark.asyncio
 async def test_unmetered_exhausted_but_unexpired_identifier_reports_zero(enabled_session_gate, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     token, random_part, issued_at = _minted()
     store = get_store()
-    store.check_and_increment(random_part, issued_at)  # spend the only unit
+    store.check_and_increment(random_part, issued_at, config.session_mcp_max_calls)  # spend the only unit
 
     @session_gate_unmetered
     async def tool(ctx, session_id: str | None = None):
@@ -203,9 +206,9 @@ async def test_unmetered_floors_at_zero_when_max_calls_lowered(enabled_session_g
     token, random_part, issued_at = _minted()
     store = get_store()
     for _ in range(3):
-        store.check_and_increment(random_part, issued_at)
+        store.check_and_increment(random_part, issued_at, max_calls=100)
 
-    monkeypatch.setattr(config, "session_max_calls", 1)  # lowered below the recorded count
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)  # lowered below the recorded count
 
     @session_gate_unmetered
     async def tool(ctx, session_id: str | None = None):
@@ -223,11 +226,11 @@ async def test_unmetered_floors_at_zero_when_max_calls_lowered(enabled_session_g
 
 @pytest.mark.asyncio
 async def test_expiry_and_exhaustion_errors_share_identical_message(enabled_session_gate, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     now = 1_000_000
     monkeypatch.setattr(time, "time", lambda: now)
     token, random_part, issued_at = _minted()
-    get_store().check_and_increment(random_part, issued_at)
+    get_store().check_and_increment(random_part, issued_at, config.session_mcp_max_calls)
 
     @session_gate
     async def tool(ctx, session_id: str | None = None):
@@ -332,9 +335,10 @@ async def test_full_production_order(enabled_session_gate, monkeypatch):
     token, _random_part, _issued_at = _minted()
     result = await tool(ctx=plain_ctx, session_id=token)
     assert result == "ok"
-    assert observed_budget["value"] == config.session_max_calls - 1
+    assert observed_budget["value"] == config.session_mcp_max_calls - 1
     assert len(sinks_created) == 1
     assert get_remaining_budget() is None  # reset afterwards
+    assert get_effective_max_calls() is None  # reset afterwards
 
     # 4. A failing body refunds and both ContextVars are reset afterwards.
     store = get_store()
@@ -344,6 +348,7 @@ async def test_full_production_order(enabled_session_gate, monkeypatch):
         await tool(ctx=plain_ctx, session_id=token, fail=True)
     assert store.get_calls(_random_part2) == before
     assert get_remaining_budget() is None
+    assert get_effective_max_calls() is None
 
 
 # ---------------------------------------------------------------------------
@@ -397,7 +402,7 @@ def test_sweep_vs_token_invariant(enabled_session_gate, monkeypatch):
     token = mint_token()
     random_part, issued_at = verify_token(token)
     store = get_store()
-    store.check_and_increment(random_part, issued_at)
+    store.check_and_increment(random_part, issued_at, max_calls=100)
 
     # Advance past the TTL: the token is rejected...
     monkeypatch.setattr(time, "time", lambda: now + 101)
@@ -416,8 +421,8 @@ def test_swept_then_revived_identifier_restarts_counter(enabled_session_gate, mo
     token = mint_token()
     random_part, issued_at = verify_token(token)
     store = get_store()
-    store.check_and_increment(random_part, issued_at)
-    store.check_and_increment(random_part, issued_at)  # partially spent (calls=2)
+    store.check_and_increment(random_part, issued_at, max_calls=100)
+    store.check_and_increment(random_part, issued_at, max_calls=100)  # partially spent (calls=2)
 
     # Lower the TTL so the row becomes sweep-eligible, then sweep it away.
     monkeypatch.setattr(config, "session_ttl_seconds", 10)
@@ -432,5 +437,5 @@ def test_swept_then_revived_identifier_restarts_counter(enabled_session_gate, mo
     assert random_part2 == random_part
 
     # The next metered call recreates the row with calls = 1 (a fresh budget).
-    calls = store.check_and_increment(random_part2, issued_at2)
+    calls = store.check_and_increment(random_part2, issued_at2, max_calls=100)
     assert calls == 1

@@ -26,7 +26,7 @@ from blockscout_mcp_server.pro_api_key_context import (
     require_pro_api_key,
     resolve_pro_api_key,
 )
-from blockscout_mcp_server.session_gate import get_remaining_budget
+from blockscout_mcp_server.session_gate import get_effective_max_calls, get_remaining_budget
 
 logger = logging.getLogger(__name__)
 
@@ -786,9 +786,23 @@ def build_tool_response(
     # ran, so nothing is appended in those cases.
     remaining_budget = get_remaining_budget()
     if remaining_budget is not None:
-        extra_notes.append(
-            SESSION_BUDGET_NOTE_TEMPLATE.format(remaining=remaining_budget, max_calls=config.session_max_calls)
-        )
+        effective_max_calls = get_effective_max_calls()
+        if effective_max_calls is None:
+            # The two ContextVars are always set as a pair by the session-gate
+            # decorators (`session_gate` / `session_gate_unmetered`), so this
+            # branch means that invariant broke. Never substitute a config
+            # ceiling here — a fabricated ceiling would advertise the wrong
+            # limit to the caller and would hide the very bug this branch
+            # exists to surface. Omit the note entirely; the response itself
+            # is still assembled and returned normally.
+            logger.error(
+                "session-budget ContextVar pairing invariant broken: remaining budget is set "
+                "but effective max_calls is None; omitting session-budget note"
+            )
+        else:
+            extra_notes.append(
+                SESSION_BUDGET_NOTE_TEMPLATE.format(remaining=remaining_budget, max_calls=effective_max_calls)
+            )
 
     # Operator-configured PRO-API-key-required migration notice.  Both conditions
     # must hold: the notice is configured (non-empty; Phase 1's validator already

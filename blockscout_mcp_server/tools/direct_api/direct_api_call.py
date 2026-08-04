@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 from mcp.server.fastmcp import Context
 from pydantic import Field
 
+from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.constants import ALLOW_LARGE_RESPONSE_HEADER, SESSION_ID_PARAM_DESCRIPTION
 from blockscout_mcp_server.models import DirectApiData, NextCallInfo, PaginationInfo, ToolResponse
@@ -169,7 +170,7 @@ async def direct_api_call(
     response_len = len(response_str)
     response_limit = config.direct_api_response_size_limit
     if response_len > response_limit:
-        is_rest_call = getattr(ctx, "call_source", None) == "rest"
+        is_rest_call = analytics.get_call_source(ctx) == "rest"
         if is_rest_call:
             request_context = getattr(ctx, "request_context", None)
             request = getattr(request_context, "request", None) if request_context else None

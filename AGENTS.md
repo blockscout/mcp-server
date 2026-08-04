@@ -159,6 +159,7 @@ mcp-server/
 │   ├── test_server_structured_output.py  # Unit tests for the _wrap_tool_for_structured_output wrapper
 │   ├── test_bundled_skill_artifacts.py  # Unit tests for bundled skill packaging artifacts
 │   ├── test_session_store.py  # Unit tests for the SQLite session store
+│   ├── test_session_store_limits.py  # Unit tests for check_and_increment ceiling semantics
 │   ├── test_session_gate.py  # Unit tests for session token issuance/verification and gate predicates
 │   ├── test_session_gate_http_transport.py  # Unit tests for HTTP-mode-only session gate activation
 │   ├── test_session_gate_tool_coverage.py  # Completeness check: every registered MCP tool enforces the session gate
@@ -214,6 +215,7 @@ mcp-server/
 │       ├── test_common_post_request.py   # Unit tests for POST request helper
 │       ├── test_decorators.py        # Unit tests for logging decorators
 │       ├── test_session_gate_decorator.py  # Unit tests for the @session_gate tool decorators
+│       ├── test_session_gate_surface_ceilings.py  # Unit tests for per-surface ceilings and the zero-ceiling policy
 │       ├── test_session_budget_note.py     # Unit tests for the remaining-budget response note
 │       ├── test_session_id_redaction.py    # Unit tests for session_id masking in invocation logging
 │       ├── test_credit_tracking_sink.py        # Unit tests for CreditSink running-minimum semantics

@@ -139,12 +139,16 @@ def _build_fingerprint_distinct_id(fingerprint: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "https://mcp.blockscout.com/mcp" + "key:" + fingerprint))
 
 
-def _determine_call_source(ctx: Any) -> str:
+def get_call_source(ctx: Any) -> str:
     """Return 'mcp' for MCP calls, 'rest' for REST API, else 'unknown'.
 
     Priority:
     1) Explicit marker set by caller (e.g., REST mock context) via `call_source`.
     2) Default to 'mcp' when no explicit marker is present (applies to MCP-over-HTTP).
+
+    This is also the single source of truth for "which surface did this call
+    arrive on": the session gate uses it to decide which per-surface call
+    ceiling applies (MCP vs. REST).
     """
     try:
         explicit = getattr(ctx, "call_source", None)
@@ -152,7 +156,7 @@ def _determine_call_source(ctx: Any) -> str:
             return explicit
         # No explicit marker: treat as MCP (covers MCP-over-HTTP)
         return "mcp"
-    except Exception:  # pragma: no cover
+    except Exception:
         pass
     return "unknown"
 
@@ -273,7 +277,7 @@ def track_tool_invocation(
             "user_agent": user_agent,
             "tool_args": tool_args,
             "protocol_version": protocol_version,
-            "source": _determine_call_source(ctx),
+            "source": get_call_source(ctx),
             "auth_origin": auth_origin if auth_origin is not None else AUTH_ORIGIN_UNKNOWN,
         }
 

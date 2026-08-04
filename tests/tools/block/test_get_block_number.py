@@ -152,7 +152,7 @@ async def test_get_block_number_gated_valid_token_succeeds_and_increments(mock_c
 
     assert result.data.block_number == 12345
     assert result.notes is not None
-    assert f"{config.session_max_calls - 1} of {config.session_max_calls}" in result.notes[-1]
+    assert f"{config.session_mcp_max_calls - 1} of {config.session_mcp_max_calls}" in result.notes[-1]
     assert get_store().get_calls(random_part) == 1
 
 
@@ -181,8 +181,8 @@ async def test_get_block_number_gated_exhausted_identifier_never_calls_upstream(
     random_part, issued_at = verify_token(token)
 
     # Exhaust the identifier's budget directly against the store.
-    for _ in range(config.session_max_calls):
-        assert get_store().check_and_increment(random_part, issued_at) is not None
+    for _ in range(config.session_mcp_max_calls):
+        assert get_store().check_and_increment(random_part, issued_at, config.session_mcp_max_calls) is not None
 
     with patch(
         "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock

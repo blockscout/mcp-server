@@ -33,6 +33,7 @@ from blockscout_mcp_server.session_gate import (
     SessionIdInvalidError,
     SessionIdMissingError,
     SessionStoreUnavailableError,
+    get_effective_max_calls,
     get_remaining_budget,
     mint_token,
     session_gate,
@@ -173,14 +174,15 @@ async def test_happy_path_increments_and_sets_budget(enabled_session_gate, store
     result = await tool(ctx=mock_ctx, session_id=token)
 
     assert result == "ok"
-    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at)
-    assert observed_budget["value"] == config.session_max_calls - 1
+    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at, config.session_mcp_max_calls)
+    assert observed_budget["value"] == config.session_mcp_max_calls - 1
     assert get_remaining_budget() is None  # reset after the call
+    assert get_effective_max_calls() is None  # reset after the call
 
 
 @pytest.mark.asyncio
 async def test_exhaustion_raises_and_refund_not_attempted(enabled_session_gate, store_spy, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     token, random_part, issued_at = _minted()
 
     calls = {"n": 0}
@@ -224,6 +226,7 @@ async def test_failed_call_refunds_and_reraises(enabled_session_gate, mock_ctx):
 
     assert store.get_calls(random_part) == before
     assert get_remaining_budget() is None
+    assert get_effective_max_calls() is None
 
 
 @pytest.mark.asyncio
@@ -243,6 +246,7 @@ async def test_response_too_large_failure_keeps_its_debit(enabled_session_gate, 
 
     assert store.get_calls(random_part) == before + 1
     assert get_remaining_budget() is None
+    assert get_effective_max_calls() is None
 
 
 @pytest.mark.asyncio
@@ -351,7 +355,7 @@ async def test_database_replacement_invalidates_old_token(enabled_session_gate, 
     token, random_part, issued_at = _minted()
     store = get_store()
     for _ in range(prior_calls):
-        store.check_and_increment(random_part, issued_at)
+        store.check_and_increment(random_part, issued_at, max_calls=100)
 
     # Replace the database file entirely: a fresh generation is minted.
     close_store()

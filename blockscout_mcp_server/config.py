@@ -111,13 +111,21 @@ class ServerConfig(BaseSettings):
     # are never gated.
     session_secret: str = ""
     session_db_path: str = ""
-    # The ge=1 bounds below are deliberate: 0 would silently mean "no free calls at
-    # all" / "already expired" rather than "unlimited", so Pydantic rejects it loudly
-    # (same rationale as the ge=0 bound on `pro_api_low_credits_threshold`). Every
-    # consumer reads `config` at call time rather than hardcoding these defaults, so a
-    # deployment may run a 5-call/15-minute promo or a 5-call/7-day one with no code
-    # change.
-    session_max_calls: int = Field(5, ge=1)
+    # The per-identifier counter is single and shared across surfaces, but the ceiling
+    # is per-surface: `session_mcp_max_calls` gates MCP callers and
+    # `session_rest_max_calls` gates the REST mirror. `0` now has an explicit meaning —
+    # "this surface serves no metered session-gated calls" — accepted here at
+    # validation; the terminal-refusal enforcement semantics live in
+    # `session_gate.py`. Every consumer reads `config` at call time rather than
+    # hardcoding these defaults, so operator tuning applies retroactively to live
+    # identifiers (e.g. a deployment may run a 5-call/15-minute promo or a
+    # 5-call/7-day one with no code change).
+    session_mcp_max_calls: int = Field(5, ge=0)
+    session_rest_max_calls: int = Field(5, ge=0)
+    # The ge=1 bound below is deliberate: 0 would silently mean "already expired"
+    # rather than "unlimited", so Pydantic rejects it loudly (same rationale as the
+    # ge=0 bound on `pro_api_low_credits_threshold` above, before its meaning changed
+    # for the call-ceiling fields).
     session_ttl_seconds: int = Field(900, ge=1)
     # Sweep cadence for expired session rows. Unset (the default) means "once per
     # `session_ttl_seconds`". Deliberately unconstrained relative to the TTL (only
