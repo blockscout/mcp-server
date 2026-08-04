@@ -206,13 +206,13 @@ async def test_unlock_endpoints_reject_and_pass_nothing(mock_tool, client: Async
 
     response = await client.get(f"/v1/get_instructions?session_id={_SESSION_ID}")
     assert response.status_code == 200
-    mock_tool.assert_called_with(ctx=ANY)
+    mock_tool.assert_called_once_with(ctx=ANY)
     _assert_rest_marked_ctx(mock_tool)
 
     mock_tool.reset_mock()
     response = await client.get(f"/v1/unlock_blockchain_analysis?session_id={_SESSION_ID}")
     assert response.status_code == 200
-    mock_tool.assert_called_with(ctx=ANY)
+    mock_tool.assert_called_once_with(ctx=ANY)
     _assert_rest_marked_ctx(mock_tool)
 
 

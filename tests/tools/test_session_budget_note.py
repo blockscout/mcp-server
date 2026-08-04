@@ -25,18 +25,18 @@ _NOTICE_TEXT = "PRO API keys will soon be required for every request; see https:
 def _set_remaining_budget(remaining, max_calls=None):
     """Context manager that sets the session-gate ContextVars and resets them in finally.
 
-    ``max_calls=None`` (the default) leaves ``_effective_max_calls`` unset, which
-    exercises the defensive branch in `build_tool_response` where `remaining` is set
-    but the effective ceiling is not.
+    ``max_calls=None`` (the default) sets ``_effective_max_calls`` to ``None``
+    explicitly — never inheriting an ambient value — which exercises the defensive
+    branch in `build_tool_response` where `remaining` is set but the effective
+    ceiling is not.
     """
     remaining_token = _remaining_budget.set(remaining)
-    max_calls_token = _effective_max_calls.set(max_calls) if max_calls is not None else None
+    max_calls_token = _effective_max_calls.set(max_calls)
     try:
         yield
     finally:
         _remaining_budget.reset(remaining_token)
-        if max_calls_token is not None:
-            _effective_max_calls.reset(max_calls_token)
+        _effective_max_calls.reset(max_calls_token)
 
 
 def test_note_appended_when_remaining_budget_set():
