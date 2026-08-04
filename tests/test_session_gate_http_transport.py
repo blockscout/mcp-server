@@ -214,7 +214,7 @@ def test_valid_token_over_transport_carries_budget_note(gated_app):
     result = _extract_result(response.text)
     assert result.get("isError") is not True
     expected_note = SESSION_BUDGET_NOTE_TEMPLATE.format(
-        remaining=server_config.session_max_calls - 1, max_calls=server_config.session_max_calls
+        remaining=server_config.session_mcp_max_calls - 1, max_calls=server_config.session_mcp_max_calls
     )
     assert result["structuredContent"]["notes"] == [expected_note]
 

@@ -143,7 +143,7 @@ def log_session_gating_status(run_in_http: bool) -> None:
     logger.info(
         "Session gating: ENABLED (db=%s, calls=%s, ttl=%ss, sweep=%ss)",
         config.session_db_path,
-        config.session_max_calls,
+        config.session_mcp_max_calls,
         config.session_ttl_seconds,
         _sweep_interval_seconds(),
     )

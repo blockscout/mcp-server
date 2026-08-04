@@ -173,14 +173,14 @@ async def test_happy_path_increments_and_sets_budget(enabled_session_gate, store
     result = await tool(ctx=mock_ctx, session_id=token)
 
     assert result == "ok"
-    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at, config.session_max_calls)
-    assert observed_budget["value"] == config.session_max_calls - 1
+    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at, config.session_mcp_max_calls)
+    assert observed_budget["value"] == config.session_mcp_max_calls - 1
     assert get_remaining_budget() is None  # reset after the call
 
 
 @pytest.mark.asyncio
 async def test_exhaustion_raises_and_refund_not_attempted(enabled_session_gate, store_spy, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     token, random_part, issued_at = _minted()
 
     calls = {"n": 0}

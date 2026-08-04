@@ -323,7 +323,7 @@ def _log_store_fault(operation: str, exc: Exception) -> None:
 
 def _increment(random_part: str, issued_at: int) -> int | None:
     try:
-        return get_store().check_and_increment(random_part, issued_at, config.session_max_calls)
+        return get_store().check_and_increment(random_part, issued_at, config.session_mcp_max_calls)
     except Exception as exc:
         _log_store_fault("check_and_increment", exc)
         raise SessionStoreUnavailableError() from exc
@@ -409,7 +409,7 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
        raised before any store I/O.
     5. `check_and_increment` — a store fault becomes `SessionStoreUnavailableError`;
        an exhausted budget (`None` result) becomes `SessionBudgetExhaustedError`.
-    6. The remaining-budget ContextVar is set to `config.session_max_calls - calls`.
+    6. The remaining-budget ContextVar is set to `config.session_mcp_max_calls - calls`.
     7. The tool body runs. On any failure — including cancellation — the debit is
        refunded before the original exception (or `BaseException`, e.g.
        `asyncio.CancelledError`) is re-raised unchanged. A refusal in steps 3-5
@@ -442,7 +442,7 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
         if calls is None:
             raise SessionBudgetExhaustedError()
 
-        budget_token = _remaining_budget.set(config.session_max_calls - calls)
+        budget_token = _remaining_budget.set(config.session_mcp_max_calls - calls)
         try:
             try:
                 result = await func(*args, **kwargs)
@@ -468,10 +468,10 @@ def session_gate_unmetered(func: Callable[..., Awaitable[Any]]) -> Callable[...,
 
     Shares steps 1-4 of `session_gate` (disabled / exempt / missing / invalid /
     expired), but instead of incrementing performs a read-only `get_calls` lookup
-    and sets the remaining-budget ContextVar to `max(0, config.session_max_calls -
+    and sets the remaining-budget ContextVar to `max(0, config.session_mcp_max_calls -
     calls)` — a fresh identifier (no row) reports the full configured budget, and
     the floor guarantees a successful response never reports a negative remaining
-    budget even if `session_max_calls` was lowered below an identifier's already-
+    budget even if `session_mcp_max_calls` was lowered below an identifier's already-
     recorded count. Does not check exhaustion: a spent-but-unexpired identifier
     still navigates (it just reports 0 remaining); only expiry blocks it.
 
@@ -493,7 +493,7 @@ def session_gate_unmetered(func: Callable[..., Awaitable[Any]]) -> Callable[...,
         random_part, _issued_at = verify_token(session_id)
 
         calls = _read_calls(random_part)
-        remaining = max(0, config.session_max_calls - calls)
+        remaining = max(0, config.session_mcp_max_calls - calls)
 
         budget_token = _remaining_budget.set(remaining)
         try:

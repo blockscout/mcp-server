@@ -32,8 +32,8 @@ def _set_remaining_budget(value):
 
 def test_note_appended_when_remaining_budget_set(monkeypatch):
     """ContextVar set to a value -> note appended, formatted with that value and
-    the non-default configured session_max_calls."""
-    monkeypatch.setattr(config, "session_max_calls", 7)
+    the non-default configured session_mcp_max_calls."""
+    monkeypatch.setattr(config, "session_mcp_max_calls", 7)
 
     with _set_remaining_budget(3):
         response = build_tool_response(data={"ok": True})
@@ -56,7 +56,7 @@ def test_no_note_when_context_var_unset():
 
 def test_note_present_and_correct_when_remaining_is_zero(monkeypatch):
     """remaining == 0 -> note present and reads '0 of N'."""
-    monkeypatch.setattr(config, "session_max_calls", 5)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 5)
 
     with _set_remaining_budget(0):
         response = build_tool_response(data={"ok": True})
@@ -71,7 +71,7 @@ def test_note_ordering_with_low_credits_and_operator_notice(monkeypatch):
     pro_api_key_required_notice configured, notes appear in the order
     caller-notes -> low-credits -> budget -> operator notice."""
     monkeypatch.setattr(config, "pro_api_low_credits_threshold", 5000)
-    monkeypatch.setattr(config, "session_max_calls", 5)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 5)
     monkeypatch.setattr(config, "pro_api_key_required_notice", _NOTICE_TEXT)
 
     sink = CreditSink()
@@ -93,7 +93,7 @@ def test_note_ordering_with_low_credits_and_operator_notice(monkeypatch):
 
 def test_caller_notes_list_not_mutated_in_place(monkeypatch):
     """Caller-supplied notes list is never mutated in place."""
-    monkeypatch.setattr(config, "session_max_calls", 5)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 5)
 
     original_notes = ["existing note"]
     with _set_remaining_budget(1):

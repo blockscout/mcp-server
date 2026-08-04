@@ -249,26 +249,50 @@ def test_session_db_path_whitespace_only_becomes_empty(monkeypatch):
     assert cfg.session_db_path == ""
 
 
-def test_session_max_calls_default(monkeypatch):
-    monkeypatch.delenv("BLOCKSCOUT_SESSION_MAX_CALLS", raising=False)
+def test_session_mcp_max_calls_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_MCP_MAX_CALLS", raising=False)
     cfg = ServerConfig(_env_file=None)
-    assert cfg.session_max_calls == 5
+    assert cfg.session_mcp_max_calls == 5
 
 
-def test_session_max_calls_env_override(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "10")
+def test_session_mcp_max_calls_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MCP_MAX_CALLS", "10")
     cfg = ServerConfig(_env_file=None)
-    assert cfg.session_max_calls == 10
+    assert cfg.session_mcp_max_calls == 10
 
 
-def test_session_max_calls_zero_rejected(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "0")
+def test_session_mcp_max_calls_zero_accepted(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MCP_MAX_CALLS", "0")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_mcp_max_calls == 0
+
+
+def test_session_mcp_max_calls_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_MCP_MAX_CALLS", "-1")
     with pytest.raises(ValidationError):
         ServerConfig(_env_file=None)
 
 
-def test_session_max_calls_negative_rejected(monkeypatch):
-    monkeypatch.setenv("BLOCKSCOUT_SESSION_MAX_CALLS", "-1")
+def test_session_rest_max_calls_default(monkeypatch):
+    monkeypatch.delenv("BLOCKSCOUT_SESSION_REST_MAX_CALLS", raising=False)
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_rest_max_calls == 5
+
+
+def test_session_rest_max_calls_env_override(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_REST_MAX_CALLS", "10")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_rest_max_calls == 10
+
+
+def test_session_rest_max_calls_zero_accepted(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_REST_MAX_CALLS", "0")
+    cfg = ServerConfig(_env_file=None)
+    assert cfg.session_rest_max_calls == 0
+
+
+def test_session_rest_max_calls_negative_rejected(monkeypatch):
+    monkeypatch.setenv("BLOCKSCOUT_SESSION_REST_MAX_CALLS", "-1")
     with pytest.raises(ValidationError):
         ServerConfig(_env_file=None)
 

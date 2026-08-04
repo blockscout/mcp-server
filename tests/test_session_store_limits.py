@@ -2,7 +2,7 @@
 """Tests for `SessionStore.check_and_increment`'s explicit `max_calls` ceiling.
 
 This module owns the ceiling-bound scenarios that used to live in
-`tests/test_session_store.py` (the `config.session_max_calls`-monkeypatched
+`tests/test_session_store.py` (the `config.session_mcp_max_calls`-monkeypatched
 `check_and_increment` tests). Issue #446 turns the ceiling into an explicit
 per-call parameter instead of a config read, and adds a zero-ceiling guard
 that refuses every identifier — fresh or existing — without creating a row.

@@ -787,7 +787,7 @@ def build_tool_response(
     remaining_budget = get_remaining_budget()
     if remaining_budget is not None:
         extra_notes.append(
-            SESSION_BUDGET_NOTE_TEMPLATE.format(remaining=remaining_budget, max_calls=config.session_max_calls)
+            SESSION_BUDGET_NOTE_TEMPLATE.format(remaining=remaining_budget, max_calls=config.session_mcp_max_calls)
         )
 
     # Operator-configured PRO-API-key-required migration notice.  Both conditions

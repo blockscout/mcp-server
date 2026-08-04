@@ -136,7 +136,7 @@ async def test_exempt_path_never_injects(enabled_session_gate, monkeypatch, mock
 
 @pytest.mark.asyncio
 async def test_unmetered_valid_token_reads_but_never_increments(enabled_session_gate, store_spy, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 7)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 7)
     token, random_part, _issued_at = _minted()
 
     @session_gate_unmetered
@@ -184,10 +184,10 @@ async def test_unmetered_expired_token_raises_expired(enabled_session_gate, monk
 
 @pytest.mark.asyncio
 async def test_unmetered_exhausted_but_unexpired_identifier_reports_zero(enabled_session_gate, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     token, random_part, issued_at = _minted()
     store = get_store()
-    store.check_and_increment(random_part, issued_at, config.session_max_calls)  # spend the only unit
+    store.check_and_increment(random_part, issued_at, config.session_mcp_max_calls)  # spend the only unit
 
     @session_gate_unmetered
     async def tool(ctx, session_id: str | None = None):
@@ -205,7 +205,7 @@ async def test_unmetered_floors_at_zero_when_max_calls_lowered(enabled_session_g
     for _ in range(3):
         store.check_and_increment(random_part, issued_at, max_calls=100)
 
-    monkeypatch.setattr(config, "session_max_calls", 1)  # lowered below the recorded count
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)  # lowered below the recorded count
 
     @session_gate_unmetered
     async def tool(ctx, session_id: str | None = None):
@@ -223,11 +223,11 @@ async def test_unmetered_floors_at_zero_when_max_calls_lowered(enabled_session_g
 
 @pytest.mark.asyncio
 async def test_expiry_and_exhaustion_errors_share_identical_message(enabled_session_gate, monkeypatch, mock_ctx):
-    monkeypatch.setattr(config, "session_max_calls", 1)
+    monkeypatch.setattr(config, "session_mcp_max_calls", 1)
     now = 1_000_000
     monkeypatch.setattr(time, "time", lambda: now)
     token, random_part, issued_at = _minted()
-    get_store().check_and_increment(random_part, issued_at, config.session_max_calls)
+    get_store().check_and_increment(random_part, issued_at, config.session_mcp_max_calls)
 
     @session_gate
     async def tool(ctx, session_id: str | None = None):
@@ -332,7 +332,7 @@ async def test_full_production_order(enabled_session_gate, monkeypatch):
     token, _random_part, _issued_at = _minted()
     result = await tool(ctx=plain_ctx, session_id=token)
     assert result == "ok"
-    assert observed_budget["value"] == config.session_max_calls - 1
+    assert observed_budget["value"] == config.session_mcp_max_calls - 1
     assert len(sinks_created) == 1
     assert get_remaining_budget() is None  # reset afterwards
 

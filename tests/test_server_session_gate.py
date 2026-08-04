@@ -248,7 +248,7 @@ def test_valid_config_initializes_store_and_logs_enabled(monkeypatch, tmp_path, 
     assert app is not None
     assert "Session gating: ENABLED" in caplog.text
     assert str(db_path) in caplog.text
-    assert str(config.session_max_calls) in caplog.text
+    assert str(config.session_mcp_max_calls) in caplog.text
     assert str(config.session_ttl_seconds) in caplog.text
     # Sweep interval is unset here, so the logged cadence falls back to the TTL.
     assert f"sweep={config.session_ttl_seconds}s" in caplog.text
