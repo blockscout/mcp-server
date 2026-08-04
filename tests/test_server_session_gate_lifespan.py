@@ -102,8 +102,8 @@ def test_gated_lifespan_sweeps_and_tears_down_cleanly(monkeypatch, tmp_path):
     store = session_store.get_store()
     # An expired row (created well before the 100s TTL) must be gone once the
     # immediate on-entry sweep pass runs.
-    store.check_and_increment("expired-session", created_at=0)
-    store.check_and_increment("fresh-session", created_at=int(time.time()))
+    store.check_and_increment("expired-session", created_at=0, max_calls=100)
+    store.check_and_increment("fresh-session", created_at=int(time.time()), max_calls=100)
 
     web3_close_mock = AsyncMock()
     monkeypatch.setattr(WEB3_POOL, "close", web3_close_mock)
@@ -333,7 +333,7 @@ def test_sweep_pass_drains_backlog_in_batches(monkeypatch, tmp_path):
 
     store = session_store.initialize_store(str(tmp_path / "sessions.db"))
     for i in range(5):
-        store.check_and_increment(f"expired-{i}", created_at=0)
+        store.check_and_increment(f"expired-{i}", created_at=0, max_calls=100)
 
     real_sweep_batch = store.sweep_batch
     call_count = {"n": 0}

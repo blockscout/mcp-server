@@ -3,7 +3,6 @@
 
 import sqlite3
 import stat
-import threading
 import time
 
 import pytest
@@ -145,15 +144,14 @@ def test_store_generation_differs_for_fresh_database(tmp_path):
     fresh_store.close()
 
 
-def test_durability_across_reopen(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 5)
+def test_durability_across_reopen(tmp_path):
     db_path = tmp_path / "sessions.db"
     store = SessionStore(str(db_path))
     store.initialize()
 
-    store.check_and_increment("session-a", created_at=1_000)
-    store.check_and_increment("session-a", created_at=1_000)
-    store.check_and_increment("session-a", created_at=1_000)
+    store.check_and_increment("session-a", created_at=1_000, max_calls=5)
+    store.check_and_increment("session-a", created_at=1_000, max_calls=5)
+    store.check_and_increment("session-a", created_at=1_000, max_calls=5)
     store.refund("session-a")
     store.close()
 
@@ -163,76 +161,12 @@ def test_durability_across_reopen(tmp_path, monkeypatch):
     reopened.close()
 
 
-def test_check_and_increment_ascends_and_exhausts(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 3)
+def test_refund_decrements(tmp_path):
     store = SessionStore(str(tmp_path / "sessions.db"))
     store.initialize()
 
-    assert store.check_and_increment("s1", created_at=1_000) == 1
-    assert store.check_and_increment("s1", created_at=1_000) == 2
-    assert store.check_and_increment("s1", created_at=1_000) == 3
-    assert store.check_and_increment("s1", created_at=1_000) is None
-
-    store.close()
-
-
-def test_check_and_increment_uses_config_bound(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 1)
-    store = SessionStore(str(tmp_path / "sessions.db"))
-    store.initialize()
-
-    assert store.check_and_increment("s1", created_at=1_000) == 1
-    assert store.check_and_increment("s1", created_at=1_000) is None
-
-    store.close()
-
-
-def test_check_and_increment_concurrent_never_exceeds_max(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 5)
-    db_path = tmp_path / "sessions.db"
-    setup_store = SessionStore(str(db_path))
-    setup_store.initialize()
-    setup_store.close()
-
-    results: list[int | None] = []
-    errors: list[BaseException] = []
-    lock = threading.Lock()
-
-    def worker() -> None:
-        try:
-            worker_store = SessionStore(str(db_path))
-            worker_store.initialize()
-            result = worker_store.check_and_increment("concurrent-session", created_at=1_000)
-            with lock:
-                results.append(result)
-            worker_store.close()
-        except BaseException as exc:  # noqa: BLE001
-            with lock:
-                errors.append(exc)
-
-    threads = [threading.Thread(target=worker) for _ in range(25)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    assert errors == []
-    non_none_results = [r for r in results if r is not None]
-    assert len(non_none_results) == 5
-
-    final_store = SessionStore(str(db_path))
-    final_store.initialize()
-    assert final_store.get_calls("concurrent-session") == 5
-    final_store.close()
-
-
-def test_refund_decrements(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 5)
-    store = SessionStore(str(tmp_path / "sessions.db"))
-    store.initialize()
-
-    store.check_and_increment("s1", created_at=1_000)
-    store.check_and_increment("s1", created_at=1_000)
+    store.check_and_increment("s1", created_at=1_000, max_calls=5)
+    store.check_and_increment("s1", created_at=1_000, max_calls=5)
     store.refund("s1")
 
     assert store.get_calls("s1") == 1
@@ -249,12 +183,11 @@ def test_refund_missing_id_is_noop(tmp_path):
     store.close()
 
 
-def test_refund_at_zero_is_noop(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 5)
+def test_refund_at_zero_is_noop(tmp_path):
     store = SessionStore(str(tmp_path / "sessions.db"))
     store.initialize()
 
-    store.check_and_increment("s1", created_at=1_000)
+    store.check_and_increment("s1", created_at=1_000, max_calls=5)
     store.refund("s1")
     store.refund("s1")
 
@@ -262,17 +195,16 @@ def test_refund_at_zero_is_noop(tmp_path, monkeypatch):
     store.close()
 
 
-def test_increment_refund_increment_sequence(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 2)
+def test_increment_refund_increment_sequence(tmp_path):
     store = SessionStore(str(tmp_path / "sessions.db"))
     store.initialize()
 
-    assert store.check_and_increment("s1", created_at=1_000) == 1
-    assert store.check_and_increment("s1", created_at=1_000) == 2
-    assert store.check_and_increment("s1", created_at=1_000) is None
+    assert store.check_and_increment("s1", created_at=1_000, max_calls=2) == 1
+    assert store.check_and_increment("s1", created_at=1_000, max_calls=2) == 2
+    assert store.check_and_increment("s1", created_at=1_000, max_calls=2) is None
     store.refund("s1")
-    assert store.check_and_increment("s1", created_at=1_000) == 2
-    assert store.check_and_increment("s1", created_at=1_000) is None
+    assert store.check_and_increment("s1", created_at=1_000, max_calls=2) == 2
+    assert store.check_and_increment("s1", created_at=1_000, max_calls=2) is None
 
     store.close()
 
@@ -283,8 +215,8 @@ def test_sweep_deletes_expired_and_keeps_fresh(tmp_path, monkeypatch):
     store.initialize()
 
     now = 1_000_000
-    store.check_and_increment("old-session", created_at=now - 200)
-    store.check_and_increment("fresh-session", created_at=now - 10)
+    store.check_and_increment("old-session", created_at=now - 200, max_calls=100)
+    store.check_and_increment("fresh-session", created_at=now - 10, max_calls=100)
 
     deleted = store.sweep_batch(limit=1_000, now=now)
 
@@ -310,8 +242,8 @@ def test_sweep_batch_bound_drains_backlog(tmp_path, monkeypatch):
 
     now = 1_000_000
     for i in range(7):
-        store.check_and_increment(f"old-{i}", created_at=now - 200)
-    store.check_and_increment("fresh-session", created_at=now - 10)
+        store.check_and_increment(f"old-{i}", created_at=now - 200, max_calls=100)
+    store.check_and_increment("fresh-session", created_at=now - 10, max_calls=100)
 
     first = store.sweep_batch(limit=3, now=now)
     assert first == 3
@@ -337,8 +269,8 @@ def test_sweep_only_deletes_rows_older_than_ttl_cutoff(tmp_path, monkeypatch):
 
     now = 2_000_000
     cutoff = now - ttl
-    store.check_and_increment("just-expired", created_at=cutoff - 1)
-    store.check_and_increment("just-alive", created_at=cutoff + 1)
+    store.check_and_increment("just-expired", created_at=cutoff - 1, max_calls=100)
+    store.check_and_increment("just-alive", created_at=cutoff + 1, max_calls=100)
 
     deleted = store.sweep_batch(limit=1_000, now=now)
 
@@ -362,13 +294,12 @@ def test_get_calls_unknown_id_creates_no_row(tmp_path):
     assert count == 0
 
 
-def test_get_calls_known_id_returns_count(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "session_max_calls", 5)
+def test_get_calls_known_id_returns_count(tmp_path):
     store = SessionStore(str(tmp_path / "sessions.db"))
     store.initialize()
 
-    store.check_and_increment("s1", created_at=1_000)
-    store.check_and_increment("s1", created_at=1_000)
+    store.check_and_increment("s1", created_at=1_000, max_calls=5)
+    store.check_and_increment("s1", created_at=1_000, max_calls=5)
 
     assert store.get_calls("s1") == 2
     store.close()

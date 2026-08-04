@@ -182,7 +182,7 @@ async def test_get_block_number_gated_exhausted_identifier_never_calls_upstream(
 
     # Exhaust the identifier's budget directly against the store.
     for _ in range(config.session_max_calls):
-        assert get_store().check_and_increment(random_part, issued_at) is not None
+        assert get_store().check_and_increment(random_part, issued_at, config.session_max_calls) is not None
 
     with patch(
         "blockscout_mcp_server.tools.block.get_block_number.make_blockscout_request", new_callable=AsyncMock

@@ -129,14 +129,22 @@ class SessionStore:
         )
         return generation
 
-    def check_and_increment(self, session_id: str, created_at: int) -> int | None:
+    def check_and_increment(self, session_id: str, created_at: int, max_calls: int) -> int | None:
         """Atomically increment the call counter for ``session_id``.
 
-        Returns the new call count, or ``None`` if the budget (``config.session_max_calls``)
-        is already exhausted. Creates the row (with ``calls = 1``) on first use.
+        Args:
+            session_id: The session identifier to check and increment.
+            created_at: The row's creation timestamp, used only on first insert.
+            max_calls: The ceiling for this call. A value of ``0`` refuses every
+                identifier (fresh or existing) and creates no row.
+
+        Returns the new call count, or ``None`` if the budget (``max_calls``)
+        is already exhausted. Creates the row (with ``calls = 1``) on first use,
+        unless ``max_calls`` is ``0``.
         """
         assert self._conn is not None
-        max_calls = config.session_max_calls
+        if max_calls == 0:
+            return None
         rows = self._conn.execute(
             """
             INSERT INTO sessions (id, created_at, calls)

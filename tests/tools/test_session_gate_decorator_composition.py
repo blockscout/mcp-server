@@ -187,7 +187,7 @@ async def test_unmetered_exhausted_but_unexpired_identifier_reports_zero(enabled
     monkeypatch.setattr(config, "session_max_calls", 1)
     token, random_part, issued_at = _minted()
     store = get_store()
-    store.check_and_increment(random_part, issued_at)  # spend the only unit
+    store.check_and_increment(random_part, issued_at, config.session_max_calls)  # spend the only unit
 
     @session_gate_unmetered
     async def tool(ctx, session_id: str | None = None):
@@ -203,7 +203,7 @@ async def test_unmetered_floors_at_zero_when_max_calls_lowered(enabled_session_g
     token, random_part, issued_at = _minted()
     store = get_store()
     for _ in range(3):
-        store.check_and_increment(random_part, issued_at)
+        store.check_and_increment(random_part, issued_at, max_calls=100)
 
     monkeypatch.setattr(config, "session_max_calls", 1)  # lowered below the recorded count
 
@@ -227,7 +227,7 @@ async def test_expiry_and_exhaustion_errors_share_identical_message(enabled_sess
     now = 1_000_000
     monkeypatch.setattr(time, "time", lambda: now)
     token, random_part, issued_at = _minted()
-    get_store().check_and_increment(random_part, issued_at)
+    get_store().check_and_increment(random_part, issued_at, config.session_max_calls)
 
     @session_gate
     async def tool(ctx, session_id: str | None = None):
@@ -397,7 +397,7 @@ def test_sweep_vs_token_invariant(enabled_session_gate, monkeypatch):
     token = mint_token()
     random_part, issued_at = verify_token(token)
     store = get_store()
-    store.check_and_increment(random_part, issued_at)
+    store.check_and_increment(random_part, issued_at, max_calls=100)
 
     # Advance past the TTL: the token is rejected...
     monkeypatch.setattr(time, "time", lambda: now + 101)
@@ -416,8 +416,8 @@ def test_swept_then_revived_identifier_restarts_counter(enabled_session_gate, mo
     token = mint_token()
     random_part, issued_at = verify_token(token)
     store = get_store()
-    store.check_and_increment(random_part, issued_at)
-    store.check_and_increment(random_part, issued_at)  # partially spent (calls=2)
+    store.check_and_increment(random_part, issued_at, max_calls=100)
+    store.check_and_increment(random_part, issued_at, max_calls=100)  # partially spent (calls=2)
 
     # Lower the TTL so the row becomes sweep-eligible, then sweep it away.
     monkeypatch.setattr(config, "session_ttl_seconds", 10)
@@ -432,5 +432,5 @@ def test_swept_then_revived_identifier_restarts_counter(enabled_session_gate, mo
     assert random_part2 == random_part
 
     # The next metered call recreates the row with calls = 1 (a fresh budget).
-    calls = store.check_and_increment(random_part2, issued_at2)
+    calls = store.check_and_increment(random_part2, issued_at2, max_calls=100)
     assert calls == 1

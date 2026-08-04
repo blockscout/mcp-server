@@ -173,7 +173,7 @@ async def test_happy_path_increments_and_sets_budget(enabled_session_gate, store
     result = await tool(ctx=mock_ctx, session_id=token)
 
     assert result == "ok"
-    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at)
+    store_spy.check_and_increment.assert_called_once_with(random_part, issued_at, config.session_max_calls)
     assert observed_budget["value"] == config.session_max_calls - 1
     assert get_remaining_budget() is None  # reset after the call
 
@@ -351,7 +351,7 @@ async def test_database_replacement_invalidates_old_token(enabled_session_gate, 
     token, random_part, issued_at = _minted()
     store = get_store()
     for _ in range(prior_calls):
-        store.check_and_increment(random_part, issued_at)
+        store.check_and_increment(random_part, issued_at, max_calls=100)
 
     # Replace the database file entirely: a fresh generation is minted.
     close_store()

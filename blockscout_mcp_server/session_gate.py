@@ -323,7 +323,7 @@ def _log_store_fault(operation: str, exc: Exception) -> None:
 
 def _increment(random_part: str, issued_at: int) -> int | None:
     try:
-        return get_store().check_and_increment(random_part, issued_at)
+        return get_store().check_and_increment(random_part, issued_at, config.session_max_calls)
     except Exception as exc:
         _log_store_fault("check_and_increment", exc)
         raise SessionStoreUnavailableError() from exc
