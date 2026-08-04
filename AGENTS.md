@@ -19,7 +19,7 @@ mcp-server/
 │   │   └── index.html          # Landing page for the REST API
 │   ├── config.py               # Configuration management (e.g., API keys, timeouts, cache settings)
 │   ├── constants.py            # Centralized constants used throughout the application, including data truncation limits
-│   ├── logging_utils.py        # Logging utilities for production-ready log formatting
+│   ├── logging_utils.py        # Logging utilities for production-ready log formatting and client-disconnect log noise suppression
 │   ├── analytics.py            # Centralized Mixpanel analytics for tool invocations (HTTP mode only)
 │   ├── telemetry.py            # Fire-and-forget community telemetry reporting
 │   ├── client_meta.py          # Shared client metadata extraction helpers and defaults
@@ -150,6 +150,7 @@ mcp-server/
 │   ├── test_instructions_data.py  # Unit tests for the InstructionsData payload model
 │   ├── test_integration_helpers.py  # Unit tests for integration test helpers
 │   ├── test_logging_utils.py  # Unit tests for logging utilities
+│   ├── test_logging_utils_disconnect_filter.py  # Unit tests for the client-disconnect log demotion filter
 │   ├── test_models.py            # Unit tests for Pydantic response models
 │   ├── test_server.py            # Unit tests for server CLI and startup logic
 │   ├── test_server_instructions.py  # Unit tests for the composed_instructions string
@@ -377,6 +378,7 @@ mcp-server/
     * **`logging_utils.py`**:
         * Provides utilities for configuring production-ready logging.
         * Contains the `replace_rich_handlers_with_standard()` function that eliminates multi-line Rich formatting from MCP SDK logs.
+        * Contains the `install_client_disconnect_filter()` function that demotes routine client-disconnect errors in MCP SDK logs.
     * **`analytics.py`**:
         * Centralized Mixpanel analytics for MCP tool invocations.
         * Enabled only in HTTP mode when `BLOCKSCOUT_MIXPANEL_TOKEN` is set.
