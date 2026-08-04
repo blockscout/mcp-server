@@ -447,8 +447,10 @@ def session_gate(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable
     2. Exempt caller (`client_supplied_valid_key()`) → call straight through, no
        store access, no note.
     3. Surface-resolved ceiling is `0` (`_effective_ceiling`, Overview decision 2) →
-       `SessionBudgetExhaustedError`, raised before `session_id` extraction and
-       before `verify_token` (Overview decision 1). A closed surface refuses every
+       `SessionBudgetExhaustedError`, raised before the missing-`session_id` check
+       and before `verify_token` (Overview decision 1) — `session_id` was only
+       *extracted* before this point (in one pass with `ctx`, validating
+       nothing). A closed surface refuses every
        non-exempt metered call terminally — no store I/O, no row creation, and no
        "call unlock first" nudge toward minting an identifier that cannot be used.
        A caller with a missing, malformed, or valid `session_id` all receive the

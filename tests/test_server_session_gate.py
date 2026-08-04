@@ -292,7 +292,11 @@ def test_one_ceiling_zero_does_not_log_warning(monkeypatch, tmp_path, caplog, mc
     assert result.exit_code == 0
     mock_run.assert_called_once()
     assert "Session gating: ENABLED" in caplog.text
-    assert not any(record.levelno == logging.WARNING for record in caplog.records)
+    # Scoped to the both-ceilings-zero message: an unrelated warning elsewhere in
+    # the startup path must not fail this test.
+    assert not any(
+        record.levelno == logging.WARNING and "MAX_CALLS" in record.getMessage() for record in caplog.records
+    )
 
     session_store.close_store()
 

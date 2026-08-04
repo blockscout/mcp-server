@@ -54,6 +54,18 @@ def test_check_and_increment_zero_ceiling_fresh_identifier_returns_none(tmp_path
     store.close()
 
 
+def test_check_and_increment_negative_ceiling_refuses_and_creates_no_row(tmp_path):
+    """Config validation forbids negatives, but the store's own guard must cover
+    them: without it the unconditional INSERT branch would admit a fresh
+    identifier (returning 1) while existing rows were refused."""
+    store = SessionStore(str(tmp_path / "sessions.db"))
+    store.initialize()
+
+    assert store.check_and_increment("never-seen", created_at=1_000, max_calls=-1) is None
+    assert store.get_calls("never-seen") == 0
+    store.close()
+
+
 def test_check_and_increment_concurrent_never_exceeds_max(tmp_path):
     db_path = tmp_path / "sessions.db"
     setup_store = SessionStore(str(db_path))
