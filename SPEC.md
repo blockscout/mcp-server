@@ -868,6 +868,8 @@ The server employs a post-initialization handler replacement strategy:
 
 This configuration is applied during server startup, ensuring clean single-line log output across all operational modes.
 
+Startup also installs an idempotent logging filter on the MCP SDK's session-manager logger. In stateless HTTP mode a client aborting an in-flight request is routine, yet the SDK records it as an `ERROR` with a full traceback, drowning out failures an operator must act on. The filter narrowly demotes only that record to a single debug-level line — deliberately kept visible so aborted calls can still be correlated — and passes every other record through untouched. Only the log noise is addressed: execution cancellation and session-budget accounting are deliberately unaffected.
+
 #### 1. Client-Facing Progress Logging
 
 While `report_progress` is the standard for UI feedback, many MCP clients do not yet render progress notifications but do capture log messages sent via `ctx.info`. To provide essential real-time feedback for development and debugging, the server systematically pairs every progress notification with a corresponding `info` log message sent to the client.

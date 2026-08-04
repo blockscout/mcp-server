@@ -4,9 +4,84 @@
 import logging
 import sys
 
+import anyio
+
 # Pre-define module logger to avoid circular dependencies during logging system manipulation
 # This logger is created before any handler manipulation occurs, ensuring safe error reporting
 _module_logger = logging.getLogger(__name__)
+
+# The MCP SDK's stateless streamable-HTTP session manager logs a broad "Stateless session
+# crashed" ERROR record (with a nested-ExceptionGroup traceback) whenever a client aborts the
+# HTTP request while a tool call is still running. Nothing is actually broken in that case: the
+# SDK's per-request transport streams are closed while the detached tool call keeps running, and
+# writing its eventual result to the closed stream raises anyio.ClosedResourceError. The logger
+# name below is the exact interception point for that record (mcp 1.26,
+# mcp/server/streamable_http_manager.py).
+CLIENT_DISCONNECT_LOGGER_NAME = "mcp.server.streamable_http_manager"
+CLIENT_DISCONNECT_RECORD_MESSAGE = "Stateless session crashed"
+
+
+class ClientDisconnectFilter(logging.Filter):
+    """Demote the SDK's "client disconnected mid-call" record to a one-line DEBUG record.
+
+    This filter never drops records - it always returns True. It only recognizes the exact
+    "Stateless session crashed" record shape whose exception tree consists solely of
+    anyio.ClosedResourceError leaves (following BaseExceptionGroup children only, never
+    __cause__/__context__ chains), and mutates that record in place so it renders as a single
+    DEBUG line without a traceback. Every other record - including the SDK's stateful crash
+    record and any exception tree that contains an unrelated exception - passes through
+    untouched.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Demote the matching record in place; always return True."""
+        # Compare record.msg, not getMessage(): %-formatting inside getMessage() can raise on a
+        # record with mismatched args, and logging propagates filter exceptions to the caller.
+        # The target record is logged without args, so the comparison is equivalent for it.
+        if record.msg != CLIENT_DISCONNECT_RECORD_MESSAGE:
+            return True
+
+        if not record.exc_info or record.exc_info[1] is None:
+            return True
+
+        exception = record.exc_info[1]
+        if not self._all_leaves_are_closed_resource_error(exception):
+            return True
+
+        record.levelno = logging.DEBUG
+        record.levelname = logging.getLevelName(logging.DEBUG)
+        record.msg = "Stateless session closed by client disconnect (anyio.ClosedResourceError); traceback suppressed."
+        record.args = None
+        record.exc_info = None
+        record.exc_text = None
+        record.stack_info = None
+        return True
+
+    @staticmethod
+    def _all_leaves_are_closed_resource_error(exception: BaseException) -> bool:
+        """Return True if every leaf of the exception tree is anyio.ClosedResourceError.
+
+        A BaseExceptionGroup node contributes its `.exceptions` children; anything else is a
+        leaf. __cause__/__context__ chains are deliberately not followed.
+        """
+        if isinstance(exception, BaseExceptionGroup):
+            children = exception.exceptions
+            return len(children) > 0 and all(
+                ClientDisconnectFilter._all_leaves_are_closed_resource_error(child) for child in children
+            )
+        return isinstance(exception, anyio.ClosedResourceError)
+
+
+def install_client_disconnect_filter(logger_name: str = CLIENT_DISCONNECT_LOGGER_NAME) -> None:
+    """Attach a ClientDisconnectFilter to the given logger, unless one is already attached.
+
+    The default logger name is the MCP SDK's stateless session-manager logger. An explicit
+    logger_name is accepted for testability, so unit tests can exercise this against a
+    throwaway logger instead of mutating the real, process-global SDK logger.
+    """
+    logger = logging.getLogger(logger_name)
+    if not any(isinstance(existing_filter, ClientDisconnectFilter) for existing_filter in logger.filters):
+        logger.addFilter(ClientDisconnectFilter())
 
 
 def replace_rich_handlers_with_standard() -> None:

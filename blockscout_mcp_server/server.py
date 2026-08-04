@@ -26,7 +26,10 @@ from blockscout_mcp_server.constants import (
     SKILL_RESOLUTION_RULE_TEXT,
     TOOL_INVOCATION_STATUSES,
 )
-from blockscout_mcp_server.logging_utils import replace_rich_handlers_with_standard
+from blockscout_mcp_server.logging_utils import (
+    install_client_disconnect_filter,
+    replace_rich_handlers_with_standard,
+)
 from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.session_lifecycle import (
     SessionStartupError,
@@ -343,6 +346,7 @@ for resource in skill_resources.list_resources():
 
 # Initialize logging and override the rich formatter defined in the FastMCP
 replace_rich_handlers_with_standard()
+install_client_disconnect_filter()
 
 # Create a Typer application for our CLI
 cli_app = typer.Typer()
