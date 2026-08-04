@@ -97,6 +97,20 @@ ENDPOINTS = [
 ]
 
 
+def _assert_rest_marked_ctx(mock_tool: AsyncMock) -> None:
+    """Assert the ctx the tool was actually called with is REST-marked.
+
+    `ctx=ANY` in `assert_called_once_with` only proves *some* ctx arrived; it
+    says nothing about which surface it claims. Pulling the captured ctx out of
+    `call_args.kwargs` and checking `call_source == "rest"` is what turns this
+    module into a structural guard: a future REST wrapper that forgets
+    `get_mock_context` (and would therefore silently meter at the MCP ceiling
+    instead of the REST one) fails here by name.
+    """
+    captured_ctx = mock_tool.call_args.kwargs["ctx"]
+    assert captured_ctx.call_source == "rest"
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("path, query, tool_name, base_kwargs", ENDPOINTS, ids=[e[2] for e in ENDPOINTS])
 async def test_session_id_passed_through_when_present(path, query, tool_name, base_kwargs, client: AsyncClient):
@@ -108,6 +122,7 @@ async def test_session_id_passed_through_when_present(path, query, tool_name, ba
 
     assert response.status_code == 200
     mock_tool.assert_called_once_with(**base_kwargs, session_id=_SESSION_ID, ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -121,6 +136,7 @@ async def test_session_id_absent_when_not_supplied(path, query, tool_name, base_
 
     assert response.status_code == 200
     mock_tool.assert_called_once_with(**base_kwargs, ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -140,6 +156,7 @@ async def test_read_contract_session_id_passthrough(mock_tool, client: AsyncClie
         session_id=_SESSION_ID,
         ctx=ANY,
     )
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -156,6 +173,7 @@ async def test_read_contract_no_session_id_when_absent(mock_tool, client: AsyncC
         function_name="foo",
         ctx=ANY,
     )
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -166,6 +184,7 @@ async def test_get_latest_block_session_id_passthrough(mock_tool, client: AsyncC
     response = await client.get(f"/v1/get_latest_block?chain_id=1&session_id={_SESSION_ID}")
     assert response.status_code == 200
     mock_tool.assert_called_once_with(chain_id="1", datetime=None, session_id=_SESSION_ID, ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -176,6 +195,7 @@ async def test_get_latest_block_session_id_none_when_absent(mock_tool, client: A
     response = await client.get("/v1/get_latest_block?chain_id=1")
     assert response.status_code == 200
     mock_tool.assert_called_once_with(chain_id="1", datetime=None, session_id=None, ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -187,11 +207,13 @@ async def test_unlock_endpoints_reject_and_pass_nothing(mock_tool, client: Async
     response = await client.get(f"/v1/get_instructions?session_id={_SESSION_ID}")
     assert response.status_code == 200
     mock_tool.assert_called_with(ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
     mock_tool.reset_mock()
     response = await client.get(f"/v1/unlock_blockchain_analysis?session_id={_SESSION_ID}")
     assert response.status_code == 200
     mock_tool.assert_called_with(ctx=ANY)
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -211,6 +233,7 @@ async def test_direct_api_call_sweep_guard_get(mock_tool, client: AsyncClient):
         query_params={"status": "ok"},
         ctx=ANY,
     )
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -232,6 +255,7 @@ async def test_direct_api_call_sweep_guard_post(mock_tool, client: AsyncClient):
         query_params={"status": "ok"},
         ctx=ANY,
     )
+    _assert_rest_marked_ctx(mock_tool)
 
 
 @pytest.mark.asyncio
@@ -250,3 +274,4 @@ async def test_direct_api_call_bracketed_query_params_session_id_escape_hatch(mo
         query_params={"session_id": "upstream-value"},
         ctx=ANY,
     )
+    _assert_rest_marked_ctx(mock_tool)
