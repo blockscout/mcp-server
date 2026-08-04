@@ -6,7 +6,9 @@ import io
 import logging
 
 import anyio
+import mcp.server.streamable_http_manager as sdk_module
 
+import blockscout_mcp_server.server  # noqa: F401  # imported for its import-time filter wiring
 from blockscout_mcp_server.logging_utils import (
     CLIENT_DISCONNECT_LOGGER_NAME,
     CLIENT_DISCONNECT_RECORD_MESSAGE,
@@ -224,8 +226,6 @@ class TestServerStartupWiring:
     """Tests that importing the server module installs the filter on the real SDK logger."""
 
     def test_server_import_installs_filter_exactly_once(self):
-        import blockscout_mcp_server.server  # noqa: F401
-
         logger = logging.getLogger(CLIENT_DISCONNECT_LOGGER_NAME)
         matching_filters = [f for f in logger.filters if isinstance(f, ClientDisconnectFilter)]
         assert len(matching_filters) == 1
@@ -240,7 +240,5 @@ class TestSdkInterceptionPoint:
     """
 
     def test_sdk_still_logs_the_intercepted_record(self):
-        import mcp.server.streamable_http_manager as sdk_module
-
         assert sdk_module.logger.name == CLIENT_DISCONNECT_LOGGER_NAME
         assert f'logger.exception("{CLIENT_DISCONNECT_RECORD_MESSAGE}")' in inspect.getsource(sdk_module)
