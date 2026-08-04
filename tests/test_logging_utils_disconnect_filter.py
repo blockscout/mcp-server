@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: LicenseRef-Blockscout
 """Unit tests for the client-disconnect logging filter in blockscout_mcp_server.logging_utils."""
 
+import inspect
 import io
 import logging
 
 import anyio
-import pytest
 
 from blockscout_mcp_server.logging_utils import (
     CLIENT_DISCONNECT_LOGGER_NAME,
@@ -231,5 +231,16 @@ class TestServerStartupWiring:
         assert len(matching_filters) == 1
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+class TestSdkInterceptionPoint:
+    """Canary: the pinned MCP SDK still contains the exact record this filter intercepts.
+
+    The filter is coupled to SDK internals (logger name and record message). If a future mcp
+    version bump renames either, the filter would silently stop matching and the log noise
+    would return; this test turns that into a loud failure.
+    """
+
+    def test_sdk_still_logs_the_intercepted_record(self):
+        import mcp.server.streamable_http_manager as sdk_module
+
+        assert sdk_module.logger.name == CLIENT_DISCONNECT_LOGGER_NAME
+        assert f'logger.exception("{CLIENT_DISCONNECT_RECORD_MESSAGE}")' in inspect.getsource(sdk_module)

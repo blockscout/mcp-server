@@ -35,7 +35,10 @@ class ClientDisconnectFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Demote the matching record in place; always return True."""
-        if record.getMessage() != CLIENT_DISCONNECT_RECORD_MESSAGE:
+        # Compare record.msg, not getMessage(): %-formatting inside getMessage() can raise on a
+        # record with mismatched args, and logging propagates filter exceptions to the caller.
+        # The target record is logged without args, so the comparison is equivalent for it.
+        if record.msg != CLIENT_DISCONNECT_RECORD_MESSAGE:
             return True
 
         if not record.exc_info or record.exc_info[1] is None:
