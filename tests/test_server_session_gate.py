@@ -238,6 +238,8 @@ def test_empty_pro_api_key_stdio_with_secret_only_logs(monkeypatch, caplog):
 def test_valid_config_initializes_store_and_logs_enabled(monkeypatch, tmp_path, caplog):
     db_path = tmp_path / "sessions.db"
     _set_valid_gated_config(monkeypatch, str(db_path))
+    monkeypatch.setattr(config, "session_mcp_max_calls", 7)
+    monkeypatch.setattr(config, "session_rest_max_calls", 3)
 
     with caplog.at_level(logging.INFO):
         result, app, mock_run = _invoke_http_capturing_app()
@@ -248,10 +250,49 @@ def test_valid_config_initializes_store_and_logs_enabled(monkeypatch, tmp_path, 
     assert app is not None
     assert "Session gating: ENABLED" in caplog.text
     assert str(db_path) in caplog.text
-    assert str(config.session_mcp_max_calls) in caplog.text
+    assert "mcp_calls=7" in caplog.text
+    assert "rest_calls=3" in caplog.text
     assert str(config.session_ttl_seconds) in caplog.text
     # Sweep interval is unset here, so the logged cadence falls back to the TTL.
     assert f"sweep={config.session_ttl_seconds}s" in caplog.text
+
+    session_store.close_store()
+
+
+def test_both_ceilings_zero_logs_warning(monkeypatch, tmp_path, caplog):
+    db_path = tmp_path / "sessions.db"
+    _set_valid_gated_config(monkeypatch, str(db_path))
+    monkeypatch.setattr(config, "session_mcp_max_calls", 0)
+    monkeypatch.setattr(config, "session_rest_max_calls", 0)
+
+    with caplog.at_level(logging.INFO):
+        result, app, mock_run = _invoke_http_capturing_app()
+
+    assert result.exit_code == 0
+    mock_run.assert_called_once()
+    assert "Session gating: ENABLED" in caplog.text
+    assert any(record.levelno == logging.WARNING and "both" in record.getMessage().lower() for record in caplog.records)
+
+    session_store.close_store()
+
+
+@pytest.mark.parametrize(
+    ("mcp_max_calls", "rest_max_calls"),
+    [(0, 5), (5, 0)],
+)
+def test_one_ceiling_zero_does_not_log_warning(monkeypatch, tmp_path, caplog, mcp_max_calls, rest_max_calls):
+    db_path = tmp_path / "sessions.db"
+    _set_valid_gated_config(monkeypatch, str(db_path))
+    monkeypatch.setattr(config, "session_mcp_max_calls", mcp_max_calls)
+    monkeypatch.setattr(config, "session_rest_max_calls", rest_max_calls)
+
+    with caplog.at_level(logging.INFO):
+        result, app, mock_run = _invoke_http_capturing_app()
+
+    assert result.exit_code == 0
+    mock_run.assert_called_once()
+    assert "Session gating: ENABLED" in caplog.text
+    assert not any(record.levelno == logging.WARNING for record in caplog.records)
 
     session_store.close_store()
 
