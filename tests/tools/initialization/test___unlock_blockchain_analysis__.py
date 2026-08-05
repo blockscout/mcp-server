@@ -37,9 +37,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, InstructionsData)
 
-        assert result.data.version == mock_version
-        assert result.data.skill_reference == mock_pointer
-        assert result.data.skill_resolution_rule == mock_resolution_rule
+        assert result.data.server_version == mock_version
         assert result.instructions == [mock_pointer, mock_resolution_rule]
 
         assert mock_ctx.report_progress.call_count == 2
@@ -100,7 +98,7 @@ async def test_gated_session_id_is_minted_and_no_store_row_written(enabled_sessi
     assert row is None
 
     expected_content_text = (
-        f"Session initialized (server v{result.data.version}). Consult the `blockscout-analysis` skill "
+        f"Session initialized (server v{result.data.server_version}). Consult the `blockscout-analysis` skill "
         "referenced in the payload before invoking any other tool. Your `session_id` is in the "
         "payload — pass it with every subsequent tool call. A session is this entire conversation, "
         "including all tool loops and sub-agents; reconnections and context compaction do not start "

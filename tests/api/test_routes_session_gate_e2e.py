@@ -25,7 +25,12 @@ from mcp.server.fastmcp import FastMCP
 
 from blockscout_mcp_server.api.routes import register_api_routes
 from blockscout_mcp_server.config import config
-from blockscout_mcp_server.constants import SESSION_ID_REQUIRED_MESSAGE, SESSION_OVER_MESSAGE
+from blockscout_mcp_server.constants import (
+    SESSION_ID_REQUIRED_MESSAGE,
+    SESSION_OVER_MESSAGE,
+    SKILL_RESOLUTION_RULE_TEXT,
+)
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.session_gate import get_store, mint_token, verify_token
 from blockscout_mcp_server.tools.block.get_block_number import get_block_number
 from blockscout_mcp_server.tools.common import chains_list_cache
@@ -134,6 +139,7 @@ async def test_unlock_endpoint_gated_returns_session_id(rest_client):
     payload = response.json()
     assert "session_id" in payload["data"]
     assert payload["data"]["session_id"]
+    assert list(payload["data"].keys()) == ["session_id", "server_version"]
 
 
 @pytest.mark.asyncio
@@ -148,6 +154,11 @@ async def test_unlock_endpoint_ungated_omits_session_id(monkeypatch):
     assert response.status_code == 200
     payload = response.json()
     assert "session_id" not in payload["data"]
+    assert list(payload["data"].keys()) == ["server_version"]
+    assert payload["instructions"] == [
+        skill_resources.skill_pointer_text(),
+        SKILL_RESOLUTION_RULE_TEXT,
+    ]
 
 
 @pytest.mark.asyncio

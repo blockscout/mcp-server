@@ -47,11 +47,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         message="Fetching server instructions...",
     )
 
-    instructions_data = InstructionsData(
-        version=SERVER_VERSION,
-        skill_reference=skill_resources.skill_pointer_text(),
-        skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
-    )
+    instructions_data = InstructionsData(server_version=SERVER_VERSION)
 
     content_text = (
         f"Session initialized (server v{SERVER_VERSION}). "

@@ -148,23 +148,12 @@ class DirectApiData(BaseModel):
 class InstructionsData(BaseModel):
     """A structured representation of the server's session-initialization payload.
 
-    Carries server-side reference data (version), a pointer at the
-    `blockscout-analysis` skill, and the rule for resolving its reference paths.
+    Carries session-scoped reference scalars: the session identifier (on gated
+    deployments) and the server version. The skill pointer and its reference-path
+    resolution rule are delivered via the response envelope's `instructions` list
+    instead of this model.
     """
 
-    version: str = Field(description="The version of the Blockscout MCP server.")
-    skill_reference: str = Field(
-        description=(
-            "Canonical pointer text for the `blockscout-analysis` skill. Intentionally identical "
-            "to the matching paragraph inside the server's `composed_instructions`."
-        )
-    )
-    skill_resolution_rule: str = Field(
-        description=(
-            "Canonical rule for resolving reference paths mentioned by the skill. Intentionally "
-            "identical to the matching paragraph inside the server's `composed_instructions`."
-        )
-    )
     # Deliberately mirrors `SESSION_ID_PARAM_DESCRIPTION` verbatim: this description is
     # serialized into the unlock tool's `outputSchema` and therefore reaches every MCP
     # client on every deployment, so it must name no source and no condition. The
@@ -174,6 +163,7 @@ class InstructionsData(BaseModel):
         default=None,
         description="Opaque session identifier.",
     )
+    server_version: str = Field(description="The version of the Blockscout MCP server.")
 
     @model_serializer(mode="wrap")
     def _serialize_omitting_unset_session_id(self, handler: Any) -> dict[str, Any]:

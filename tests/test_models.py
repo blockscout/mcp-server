@@ -38,14 +38,9 @@ def test_tool_response_simple_data():
 
 def test_tool_response_complex_data():
     """Test ToolResponse with a nested Pydantic model as data."""
-    instructions_data = InstructionsData(
-        version="1.0.0",
-        skill_reference="pointer",
-        skill_resolution_rule="rule",
-    )
+    instructions_data = InstructionsData(server_version="1.0.0")
     response = ToolResponse[InstructionsData](data=instructions_data)
-    assert response.data.version == "1.0.0"
-    assert response.data.skill_reference == "pointer"
+    assert response.data.server_version == "1.0.0"
 
 
 def test_tool_response_with_all_fields():

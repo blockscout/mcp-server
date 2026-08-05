@@ -29,9 +29,14 @@ from starlette.testclient import TestClient
 
 from blockscout_mcp_server import analytics
 from blockscout_mcp_server.config import config as server_config
-from blockscout_mcp_server.constants import SESSION_BUDGET_NOTE_TEMPLATE, SESSION_ID_REQUIRED_MESSAGE
+from blockscout_mcp_server.constants import (
+    SESSION_BUDGET_NOTE_TEMPLATE,
+    SESSION_ID_REQUIRED_MESSAGE,
+    SKILL_RESOLUTION_RULE_TEXT,
+)
 from blockscout_mcp_server.models import ToolResponse
 from blockscout_mcp_server.pro_api_key_context import pro_api_key_scope
+from blockscout_mcp_server.resources import skill_resources
 from blockscout_mcp_server.server import _wrap_tool_for_structured_output
 from blockscout_mcp_server.session_gate import mint_token, session_gate, verify_token
 from blockscout_mcp_server.session_store import close_store, initialize_store
@@ -259,8 +264,13 @@ def test_unlock_serialization_gated_includes_verifiable_session_id(tmp_path, mon
             assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
             result = _extract_result(response.text)
             assert result.get("isError") is not True
-            session_id = result["structuredContent"]["data"]["session_id"]
+            data = result["structuredContent"]["data"]
+            session_id = data["session_id"]
             assert session_id
+            # Key order is a stated goal of issue #450: session_id must lead the serialized
+            # payload, proving the model's declaration order survives model_dump and the
+            # transport's JSON round-trip.
+            assert list(data.keys()) == ["session_id", "server_version"]
             # verify_token is store-I/O-free (only reads the in-memory `generation` attribute set
             # by `initialize_store` above), so it is safe to call on the pytest thread — but it
             # must run before `close_store` tears down the module-level singleton it reads from.
@@ -282,7 +292,11 @@ def test_unlock_serialization_ungated_has_no_session_id_key():
     assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
     result = _extract_result(response.text)
     assert result.get("isError") is not True
-    assert "session_id" not in result["structuredContent"]["data"]
+    assert list(result["structuredContent"]["data"].keys()) == ["server_version"]
+    assert result["structuredContent"]["instructions"] == [
+        skill_resources.skill_pointer_text(),
+        SKILL_RESOLUTION_RULE_TEXT,
+    ]
 
 
 def test_exempt_call_carries_no_budget_note(gated_app):
