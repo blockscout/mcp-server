@@ -33,6 +33,12 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
     # receive a `session_id`. It therefore says nothing about the identifier; the
     # gated branch of `content_text` below carries that instruction to the only
     # callers it applies to.
+    #
+    # The skill pointer and the resolution rule are directives, so they ride the
+    # envelope's `instructions` slot below rather than the `data` payload. They remain
+    # byte-identical to the matching paragraphs of `composed_instructions`
+    # (`blockscout_mcp_server/server.py`) — that identity is a tested invariant, not a
+    # coincidence.
     # Report start of operation
     await report_and_log_progress(
         ctx,
@@ -74,5 +80,9 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
 
     return build_tool_response(
         data=instructions_data,
+        instructions=[
+            skill_resources.skill_pointer_text(),
+            SKILL_RESOLUTION_RULE_TEXT,
+        ],
         content_text=content_text,
     )

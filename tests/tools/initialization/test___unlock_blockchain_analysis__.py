@@ -40,6 +40,7 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert result.data.version == mock_version
         assert result.data.skill_reference == mock_pointer
         assert result.data.skill_resolution_rule == mock_resolution_rule
+        assert result.instructions == [mock_pointer, mock_resolution_rule]
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
@@ -57,9 +58,12 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
 async def test_unlock_payload_skill_text_matches_server_instructions(mock_ctx):
     result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
 
-    assert result.data.skill_reference == skill_resources.skill_pointer_text()
-    assert result.data.skill_resolution_rule == SKILL_RESOLUTION_RULE_TEXT
-    assert f"{result.data.skill_reference}\n\n{result.data.skill_resolution_rule}" in composed_instructions
+    assert result.instructions == [
+        skill_resources.skill_pointer_text(),
+        SKILL_RESOLUTION_RULE_TEXT,
+    ]
+    pointer_text, resolution_rule_text = result.instructions
+    assert f"{pointer_text}\n\n{resolution_rule_text}" in composed_instructions
 
 
 _UNGATED_CONTENT_TEXT = (
