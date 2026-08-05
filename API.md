@@ -184,7 +184,7 @@ Retrieves a list of all registered MCP resources and their metadata.
 
 #### Unlock Blockchain Analysis (`__unlock_blockchain_analysis__`)
 
-Initializes a Blockscout MCP session: returns server reference data, the `blockscout-analysis` skill pointer, and the URI resolution rule. Call it once per session, before any other tool.
+Initializes a Blockscout MCP session: returns server reference data (`server_version` and, on session-gated deployments, `session_id`) in `data`, with the `blockscout-analysis` skill pointer and the URI resolution rule delivered in the response's `instructions` list. Call it once per session, before any other tool.
 
 `GET /v1/unlock_blockchain_analysis`
 `GET /v1/get_instructions` (legacy)

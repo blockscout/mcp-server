@@ -37,9 +37,8 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
         assert isinstance(result, ToolResponse)
         assert isinstance(result.data, InstructionsData)
 
-        assert result.data.version == mock_version
-        assert result.data.skill_reference == mock_pointer
-        assert result.data.skill_resolution_rule == mock_resolution_rule
+        assert result.data.server_version == mock_version
+        assert result.instructions == [mock_pointer, mock_resolution_rule]
 
         assert mock_ctx.report_progress.call_count == 2
         assert mock_ctx.info.call_count == 2
@@ -57,13 +56,16 @@ async def test_unlock_blockchain_analysis_success(mock_ctx):
 async def test_unlock_payload_skill_text_matches_server_instructions(mock_ctx):
     result = await __unlock_blockchain_analysis__(ctx=mock_ctx)
 
-    assert result.data.skill_reference == skill_resources.skill_pointer_text()
-    assert result.data.skill_resolution_rule == SKILL_RESOLUTION_RULE_TEXT
-    assert f"{result.data.skill_reference}\n\n{result.data.skill_resolution_rule}" in composed_instructions
+    assert result.instructions == [
+        skill_resources.skill_pointer_text(),
+        SKILL_RESOLUTION_RULE_TEXT,
+    ]
+    pointer_text, resolution_rule_text = result.instructions
+    assert f"{pointer_text}\n\n{resolution_rule_text}" in composed_instructions
 
 
 _UNGATED_CONTENT_TEXT = (
-    "Consult the `blockscout-analysis` skill referenced in the payload before invoking any other tool."
+    "Consult the `blockscout-analysis` skill referenced in the response before invoking any other tool."
 )
 
 
@@ -96,13 +98,14 @@ async def test_gated_session_id_is_minted_and_no_store_row_written(enabled_sessi
     assert row is None
 
     expected_content_text = (
-        f"Session initialized (server v{result.data.version}). Consult the `blockscout-analysis` skill "
-        "referenced in the payload before invoking any other tool. Your `session_id` is in the "
-        "payload — pass it with every subsequent tool call. A session is this entire conversation, "
-        "including all tool loops and sub-agents; reconnections and context compaction do not start "
-        "a new one. Do not initialize this session again."
+        f"Session initialized (server v{result.data.server_version}). Consult the `blockscout-analysis` skill "
+        "referenced in the response before invoking any other tool. Your `session_id` is "
+        f"`{result.data.session_id}` — pass it with every subsequent tool call. A session is this entire "
+        "conversation, including all tool loops and sub-agents; reconnections and context compaction do "
+        "not start a new one. Do not initialize this session again."
     )
     assert result.content_text == expected_content_text
+    assert result.data.session_id in result.content_text
 
 
 @pytest.mark.asyncio

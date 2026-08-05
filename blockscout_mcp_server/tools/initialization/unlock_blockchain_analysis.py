@@ -33,6 +33,12 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
     # receive a `session_id`. It therefore says nothing about the identifier; the
     # gated branch of `content_text` below carries that instruction to the only
     # callers it applies to.
+    #
+    # The skill pointer and the resolution rule are directives, so they ride the
+    # envelope's `instructions` slot below rather than the `data` payload. They remain
+    # byte-identical to the matching paragraphs of `composed_instructions`
+    # (`blockscout_mcp_server/server.py`) — that identity is a tested invariant, not a
+    # coincidence.
     # Report start of operation
     await report_and_log_progress(
         ctx,
@@ -41,15 +47,11 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         message="Fetching server instructions...",
     )
 
-    instructions_data = InstructionsData(
-        version=SERVER_VERSION,
-        skill_reference=skill_resources.skill_pointer_text(),
-        skill_resolution_rule=SKILL_RESOLUTION_RULE_TEXT,
-    )
+    instructions_data = InstructionsData(server_version=SERVER_VERSION)
 
     content_text = (
         f"Session initialized (server v{SERVER_VERSION}). "
-        "Consult the `blockscout-analysis` skill referenced in the payload before invoking any other tool."
+        "Consult the `blockscout-analysis` skill referenced in the response before invoking any other tool."
     )
 
     if gate_enabled():
@@ -58,10 +60,10 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         instructions_data.session_id = mint_token()
         content_text = (
             f"Session initialized (server v{SERVER_VERSION}). Consult the `blockscout-analysis` skill "
-            "referenced in the payload before invoking any other tool. Your `session_id` is in the "
-            "payload — pass it with every subsequent tool call. A session is this entire conversation, "
-            "including all tool loops and sub-agents; reconnections and context compaction do not start "
-            "a new one. Do not initialize this session again."
+            "referenced in the response before invoking any other tool. Your `session_id` is "
+            f"`{instructions_data.session_id}` — pass it with every subsequent tool call. A session is "
+            "this entire conversation, including all tool loops and sub-agents; reconnections and "
+            "context compaction do not start a new one. Do not initialize this session again."
         )
 
     # Report completion
@@ -74,5 +76,9 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
 
     return build_tool_response(
         data=instructions_data,
+        instructions=[
+            skill_resources.skill_pointer_text(),
+            SKILL_RESOLUTION_RULE_TEXT,
+        ],
         content_text=content_text,
     )

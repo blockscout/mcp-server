@@ -431,7 +431,7 @@ mcp-server/
             * Tool functions remain `async`, accept a `Context` argument for progress reporting, and use `typing.Annotated`/`pydantic.Field` for argument descriptions.
             * The function docstring provides the description surfaced to FastMCP clients.
             * Example modules:
-                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`. Returns server reference data (version, recommended chains) and the same two-paragraph skill pointer-plus-resolution-rule block that the server emits through its MCP `instructions` field.
+                * `initialization/unlock_blockchain_analysis.py`: Implements `__unlock_blockchain_analysis__`, the mandatory session-initialization call, returning `InstructionsData` (`models.py`).
                 * `chains/get_chains_list.py`: Implements `get_chains_list`, returning a formatted list of blockchain chains with their IDs.
                 * `ens/get_address_by_ens_name.py`: Implements `get_address_by_ens_name` via the BENS API.
                 * `search/lookup_token_by_symbol.py`: Implements `lookup_token_by_symbol(chain_id, symbol)` with a strict result cap.
