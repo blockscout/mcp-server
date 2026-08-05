@@ -65,7 +65,7 @@ async def test_unlock_payload_skill_text_matches_server_instructions(mock_ctx):
 
 
 _UNGATED_CONTENT_TEXT = (
-    "Consult the `blockscout-analysis` skill referenced in the payload before invoking any other tool."
+    "Consult the `blockscout-analysis` skill referenced in the response before invoking any other tool."
 )
 
 
@@ -99,7 +99,7 @@ async def test_gated_session_id_is_minted_and_no_store_row_written(enabled_sessi
 
     expected_content_text = (
         f"Session initialized (server v{result.data.server_version}). Consult the `blockscout-analysis` skill "
-        "referenced in the payload before invoking any other tool. Your `session_id` is "
+        "referenced in the response before invoking any other tool. Your `session_id` is "
         f"`{result.data.session_id}` — pass it with every subsequent tool call. A session is this entire "
         "conversation, including all tool loops and sub-agents; reconnections and context compaction do "
         "not start a new one. Do not initialize this session again."

@@ -51,7 +51,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
 
     content_text = (
         f"Session initialized (server v{SERVER_VERSION}). "
-        "Consult the `blockscout-analysis` skill referenced in the payload before invoking any other tool."
+        "Consult the `blockscout-analysis` skill referenced in the response before invoking any other tool."
     )
 
     if gate_enabled():
@@ -60,7 +60,7 @@ async def __unlock_blockchain_analysis__(ctx: Context) -> ToolResponse[Instructi
         instructions_data.session_id = mint_token()
         content_text = (
             f"Session initialized (server v{SERVER_VERSION}). Consult the `blockscout-analysis` skill "
-            "referenced in the payload before invoking any other tool. Your `session_id` is "
+            "referenced in the response before invoking any other tool. Your `session_id` is "
             f"`{instructions_data.session_id}` — pass it with every subsequent tool call. A session is "
             "this entire conversation, including all tool loops and sub-agents; reconnections and "
             "context compaction do not start a new one. Do not initialize this session again."
