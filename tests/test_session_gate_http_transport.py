@@ -279,6 +279,40 @@ def test_unlock_serialization_gated_includes_verifiable_session_id(tmp_path, mon
             client.portal.call(close_store)
 
 
+def test_unlock_serialization_gated_summary_client_states_literal_session_id(tmp_path, monkeypatch):
+    """Gated deployment, summary-content client (the real unlock tool, over the real
+    transport): the minted `structuredContent.data.session_id` appears literally in
+    `content[0].text` — the issue's headline scenario. The generic wrapper tests in
+    `tests/test_server_structured_output.py` prove the summary-routing mechanism with
+    dummy responses only; this proves the real tool's gated content_text composes with
+    it end-to-end."""
+    db_path = tmp_path / "unlock-summary-sessions.db"
+    monkeypatch.setattr(server_config, "session_secret", "test-session-secret")
+    monkeypatch.setattr(server_config, "session_db_path", str(db_path))
+
+    app = _build_unlock_app(gated=True)
+    with TestClient(app) as client:
+        client.portal.call(initialize_store, str(db_path))
+        try:
+            body = _build_tools_call_body("__unlock_blockchain_analysis__")
+            body["params"]["_meta"] = {"openai/userAgent": "ChatGPT/1.0"}
+            response = client.post(
+                "/mcp",
+                json=body,
+                headers=_MCP_HEADERS,
+            )
+
+            assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+            result = _extract_result(response.text)
+            assert result.get("isError") is not True
+            session_id = result["structuredContent"]["data"]["session_id"]
+            assert session_id
+            assert session_id in result["content"][0]["text"]
+            verify_token(session_id)
+        finally:
+            client.portal.call(close_store)
+
+
 def test_unlock_serialization_ungated_has_no_session_id_key():
     """Ungated deployment: structuredContent.data has no session_id key at all."""
     app = _build_unlock_app(gated=False)
