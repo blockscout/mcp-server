@@ -157,7 +157,7 @@ This architecture provides the flexibility of a multi-protocol server without th
 ### Workflow Description
 
 1. **Instructions Retrieval**:
-   - MCP Host calls `__unlock_blockchain_analysis__` to receive server reference data (version) and a pointer to the `blockscout-analysis` skill, which holds the operating rules and analysis framework.
+   - MCP Host calls `__unlock_blockchain_analysis__` to receive server reference data (server version and, on session-gated deployments, the session identifier) and a pointer to the `blockscout-analysis` skill, which holds the operating rules and analysis framework.
    - MCP Server provides context-specific guidance
 
 2. **ENS Resolution**:
@@ -743,10 +743,10 @@ Earlier iterations packaged the full operational and strategy ruleset inline: er
 
 The resolution is to move operational and strategy rules out of the server entirely and into the `blockscout-analysis` skill, which is the natural home for agent-side methodology: it is consumed equally by MCP- and REST-mode agents, evolves on its own cadence independent of server releases, and is reviewed alongside the rest of the skill content.
 
-What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` payload is intentionally minimal — operational guidance, including default-chain resolution (e.g. Ethereum Mainnet = `chain_id` `1`), now lives in the `blockscout-analysis` skill and in the relevant tool descriptions rather than here:
+What the server now sends through both `composed_instructions` (the MCP `instructions=` string) and the `__unlock_blockchain_analysis__` response is intentionally minimal — operational guidance, including default-chain resolution (e.g. Ethereum Mainnet = `chain_id` `1`), now lives in the `blockscout-analysis` skill and in the relevant tool descriptions rather than here:
 
-1. The server version.
-2. A two-paragraph block: a pointer at the `blockscout-analysis` skill (with the verifiable "use the copy already loaded; otherwise fetch from `blockscout-mcp://skill/SKILL.md` over MCP or `GET /skill/SKILL.md` over HTTP" condition) followed by the URI-resolution rule for navigating from the entry point into reference files. The pointer also advertises the bundled skill's version — sourced from `metadata.version` in the bundled `SKILL.md` frontmatter and carried inline within the pointer text rather than as a separate structured field — and this is the surface an agent uses to decide whether an already-loaded copy matches the server's bundled copy before reusing it (when the version cannot be determined the pointer is served without it, otherwise unchanged). The exact same text, including the version annotation, is emitted from both surfaces so clients that consume only one of them are not at a disadvantage. See the `### Bundled blockscout-analysis Skill - Resources and HTTP Mirror` section for the addressable space the pointer refers to.
+1. The server version and, on session-gated deployments, the freshly minted session identifier. The version field is named `server_version` (a bare `version` beside a session identifier is ambiguous — the server's, the session's, or the skill's?) and the identifier is declared first: issue #450 traced agents overlooking the identifier to its position behind multi-sentence prose. For the same reason, the gated human-readable summary states the issued identifier's literal value instead of only pointing at the payload.
+2. A two-paragraph block: a pointer at the `blockscout-analysis` skill (with the verifiable "use the copy already loaded; otherwise fetch from `blockscout-mcp://skill/SKILL.md` over MCP or `GET /skill/SKILL.md` over HTTP" condition) followed by the URI-resolution rule for navigating from the entry point into reference files. The pointer also advertises the bundled skill's version — sourced from `metadata.version` in the bundled `SKILL.md` frontmatter and carried inline within the pointer text rather than as a separate structured field — and this is the surface an agent uses to decide whether an already-loaded copy matches the server's bundled copy before reusing it (when the version cannot be determined the pointer is served without it, otherwise unchanged). The exact same text, including the version annotation, is emitted from both surfaces so clients that consume only one of them are not at a disadvantage. In the tool response this block rides the envelope's `instructions` list rather than the `data` payload — the paragraphs are directives addressed to the agent, which is exactly what that field models, and moving them out of `data` lets the identifier lead the payload; the verbatim-equivalence invariant concerns text identity and is independent of the carrying field. See the `### Bundled blockscout-analysis Skill - Resources and HTTP Mirror` section for the addressable space the pointer refers to.
 
 `__unlock_blockchain_analysis__` remains the mandatory first call: its role as the structural-guidance anchor for clients that do not reliably consume the MCP `instructions=` field is unchanged. On deployments with session gating enabled (see the `### Session-Gated Free Tier` section), this is no longer only a narrative: a `session_id` issued by this tool is a functional precondition for every other tool, so enforcement has replaced persuasion there. Ungated deployments continue to rely on the structural-guidance narrative alone.
 
@@ -783,7 +783,7 @@ Resource annotations are used purposefully:
 
 #### Resolution Rule
 
-`SKILL.md` mentions reference files in prose, such as `references/blockscout-api-index.md`. The corresponding resource URI is `blockscout-mcp://skill/` plus that path, and the HTTP equivalent is `GET /skill/` plus that path. Both the MCP `instructions` field and the `__unlock_blockchain_analysis__` payload carry this rule verbatim.
+`SKILL.md` mentions reference files in prose, such as `references/blockscout-api-index.md`. The corresponding resource URI is `blockscout-mcp://skill/` plus that path, and the HTTP equivalent is `GET /skill/` plus that path. Both the MCP `instructions` field and the `instructions` list of the `__unlock_blockchain_analysis__` response envelope carry this rule verbatim.
 
 #### Key Design Decisions
 
