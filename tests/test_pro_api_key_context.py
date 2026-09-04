@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import contextmanager
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from pro_api_key_helpers import ctx_with_header, ctx_with_malformed_header
+from pro_api_key_helpers import (
+    ctx_with_header,
+    ctx_with_malformed_header,
+)
 
 from blockscout_mcp_server.config import config
 from blockscout_mcp_server.pro_api_key_context import (
@@ -18,7 +20,6 @@ from blockscout_mcp_server.pro_api_key_context import (
     _Malformed,
     _normalize_key,
     _Valid,
-    extract_client_pro_api_key_from_ctx,
     pro_api_key_scope,
     resolve_pro_api_key,
 )
@@ -104,96 +105,12 @@ def test_normalize_exactly_max_length_is_valid():
 
 
 # ===========================================================================
-# Extraction scoping
-# ===========================================================================
-
-
-def test_extraction_rest_call_source_reads_header(monkeypatch):
-    """A REST-source context that carries the configured header must yield _Valid."""
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
-    ctx.call_source = "rest"  # type: ignore[attr-defined]
-    state = extract_client_pro_api_key_from_ctx(ctx)
-    assert isinstance(state, _Valid)
-    assert state.value == "client-key-123"
-
-
-def test_extraction_rest_call_source_absent_header_is_absent(monkeypatch):
-    """A REST-source context with no header value yields _Absent."""
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "")
-    ctx.call_source = "rest"  # type: ignore[attr-defined]
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_rest_call_source_malformed_header_is_malformed(monkeypatch):
-    """A REST-source context with a control-char header value yields _Malformed."""
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", "bad\nkey")
-    ctx.call_source = "rest"
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
-
-
-def test_extraction_rest_call_source_over_length_header_is_malformed(monkeypatch):
-    """A REST-source context with an over-length header value yields _Malformed."""
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = ctx_with_malformed_header("Blockscout-MCP-Pro-Api-Key", "a" * 257)
-    ctx.call_source = "rest"
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Malformed)
-
-
-def test_extraction_rest_call_source_disabled_feature_is_absent(monkeypatch):
-    """Feature disabled (empty header config) → absent even if the header is present."""
-    monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
-    ctx.call_source = "rest"  # type: ignore[attr-defined]
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_empty_header_config_is_absent(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", "", raising=False)
-    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "client-key-123")
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_no_request_context_is_absent(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = SimpleNamespace()  # no request_context attribute
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_none_request_context_is_absent(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = SimpleNamespace(request_context=None)
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_stdio_like_no_request_is_absent(monkeypatch):
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    ctx = SimpleNamespace(request_context=SimpleNamespace(request=None))
-    assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
-
-
-def test_extraction_mcp_ctx_with_valid_header(monkeypatch):
-    """Real starlette Headers + non-canonical casing → valid state."""
-    monkeypatch.setattr(config, "pro_api_key_header", "Blockscout-MCP-Pro-Api-Key", raising=False)
-    # ctx_with_header upper-cases the header name, so this exercises case-insensitive lookup.
-    ctx = ctx_with_header("Blockscout-MCP-Pro-Api-Key", "my-client-key")
-
-    state = extract_client_pro_api_key_from_ctx(ctx)
-    assert isinstance(state, _Valid)
-    assert state.value == "my-client-key"
-
-
-def test_extraction_defensive_on_unexpected_ctx():
-    """An entirely unexpected context shape must return absent, not raise."""
-    state = extract_client_pro_api_key_from_ctx(object())
-    assert isinstance(state, _Absent)
-
-
-# ===========================================================================
 # Resolution precedence matrix
 # ===========================================================================
+#
+# Note: extraction-scoping tests for extract_client_pro_api_key_from_ctx live
+# in tests/test_pro_api_key_context_extraction.py (split out to keep both
+# files under the 500 LOC limit in .cursor/rules/210-unit-testing-guidelines.mdc).
 
 
 def test_resolve_client_valid_returns_client_key(monkeypatch):
