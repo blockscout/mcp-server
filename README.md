@@ -37,9 +37,23 @@ Configuring the Blockscout MCP server with an AI agent requires a Blockscout PRO
 
 To obtain a key, register on the [Blockscout Developer Portal](https://dev.blockscout.com) (the free tier does not require a credit card) and generate an API key; keys are prefixed `proapi_`. Then supply it when configuring your client, as shown in the sections below.
 
-### Using Claude Connectors Directory - Recommended
+### Claude Setup (Web, Desktop, Cowork) - Recommended
 
-The easiest way to use the Blockscout MCP server with Claude (Web, Desktop, and Code) is through the official [Anthropic Connectors Directory](https://claude.com/connectors). This provides a native, managed installation experience with automatic updates.
+The easiest way to use the Blockscout MCP server with Claude is the official hosted server: a native, managed installation experience with automatic updates and nothing to run yourself. Add it as a Custom Connector with your own PRO API key. Claude sends the key on every request in an `x-api-key` header, which the server accepts as an alias for its `Blockscout-MCP-Pro-Api-Key` header.
+
+1. Open Claude and go to **Customize > Connectors**. On Team and Enterprise plans an organization Owner does this under **Organization settings > Connectors**.
+2. Click **Add custom connector**. Set the name to `Blockscout` and the URL to `https://mcp.blockscout.com/mcp`, then continue.
+3. Leave **Authentication** as `None` (Claude detects it). A warning that the connector has no credentials is expected: the key is supplied in the next step.
+4. Open **Request headers**, select `x-api-key` from the list, and paste your PRO API key as the value. Pick exactly this name; the server does not read the other similar-looking names in the list.
+5. Click **Add**.
+
+> **Note:** The **Request headers** section is in beta and is not yet available to every organization. If your dialog does not show it, use the [Connectors Directory](#using-claude-connectors-directory) below.
+
+> **Note:** On Team and Enterprise plans the key is entered once by the Owner and shared by the whole organization. Authentication settings cannot be edited after a connector is added: to change the key, remove the connector and add it again.
+
+### Using Claude Connectors Directory
+
+If the Custom Connector dialog has no **Request headers** section, install the Blockscout connector from the official [Anthropic Connectors Directory](https://claude.com/connectors). It connects to the same hosted server but uses a shared access key.
 
 #### Installation
 
@@ -54,60 +68,11 @@ Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscou
 3. Search for "Blockscout"
 4. Click "Connect" to install
 
-> **Note:** Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).
-
 > **Limitations:** Due to the use of a shared access key, there may be restrictions on connector access and capabilities.
 
 ### Claude Desktop Setup
 
-To use the official Blockscout MCP server with your own PRO API key in Claude Desktop, choose one of the following options:
-
-#### Option 1: MCP Bundle (MCPB) — Recommended
-
-**Best for:** Easy installation and automatic updates.
-
-1. Download the latest `blockscout-mcp.mcpb` from [GitHub releases](https://github.com/blockscout/mcp-server/releases).
-2. Double-click the `.mcpb` file to install it in Claude Desktop.
-3. Configure your Blockscout PRO API key when prompted.
-4. The extension automatically connects to the hosted Blockscout MCP service.
-
-#### Option 2: Docker Proxy
-
-> **Note:** Docker is required for this setup.
-
-**Best for:** Users comfortable with command-line tools and custom configurations.
-
-1. Open Claude Desktop and click on Settings
-2. Navigate to the "Developer" section
-3. Click "Edit Config"
-4. Open the file `claude_desktop_config.json` and configure the server:
-  
-    ```json
-    {
-      "mcpServers": {
-        "blockscout": {
-          "command": "docker",
-          "args": [
-            "run",
-            "--rm",
-            "-i",
-            "sparfenyuk/mcp-proxy:latest",
-            "--transport",
-            "streamablehttp",
-            "--headers",
-            "Blockscout-MCP-Pro-Api-Key",
-            "proapi_your_key_here",
-            "--headers",
-            "Blockscout-MCP-Intermediary",
-            "ClaudeDesktop",
-            "https://mcp.blockscout.com/mcp"
-          ]
-        }
-      }
-    }
-    ```
-
-5. Save the file and restart Claude Desktop
+Claude Desktop uses the same connectors as Claude Web. Follow [Claude Setup](#claude-setup-web-desktop-cowork---recommended) above.
 
 ### Claude Code Setup
 
@@ -290,7 +255,7 @@ When you run the server yourself, provide the [Blockscout PRO API key](#blocksco
 export BLOCKSCOUT_PRO_API_KEY=proapi_your_key_here
 ```
 
-**Client-supplied keys (HTTP transports).** When the server runs in HTTP mode, a client can supply its own PRO API key in a request header — by default `Blockscout-MCP-Pro-Api-Key`, configurable via `BLOCKSCOUT_PRO_API_KEY_HEADER` (set it to an empty string to disable client-supplied keys entirely). This works the same way for both HTTP transports — MCP-over-HTTP tool calls and the REST API. A client-supplied key takes precedence over `BLOCKSCOUT_PRO_API_KEY` for that request; if the client sends no key, the server falls back to its own configured key; if neither is present, the request fails with the not-configured error. A client key that is present but malformed fails any request that needs the PRO API with no fallback (the server never silently uses its own key in place of a bad client key); tools that don't use the PRO API are unaffected. This makes it possible to run a shared HTTP server where each client authenticates with its own key.
+**Client-supplied keys (HTTP transports).** When the server runs in HTTP mode, a client can supply its own PRO API key in a request header — by default `Blockscout-MCP-Pro-Api-Key`, configurable via `BLOCKSCOUT_PRO_API_KEY_HEADER` (set it to an empty string to disable client-supplied keys entirely). The server also reads the key from an `x-api-key` header, for clients whose header names are restricted to a fixed list (for example Claude Custom Connectors). The configured header wins when both are present; `x-api-key` is consulted only when the configured header is missing or blank, and disabling client-supplied keys disables it too. This works the same way for both HTTP transports — MCP-over-HTTP tool calls and the REST API. A client-supplied key takes precedence over `BLOCKSCOUT_PRO_API_KEY` for that request; if the client sends no key, the server falls back to its own configured key; if neither is present, the request fails with the not-configured error. A client key that is present but malformed fails any request that needs the PRO API with no fallback (the server never silently uses its own key in place of a bad client key); tools that don't use the PRO API are unaffected. This makes it possible to run a shared HTTP server where each client authenticates with its own key.
 
 **Low-credit warning.** Access to the PRO API is metered in credits. When the remaining balance reported by the API drops below a configurable threshold, every data tool appends an advisory note to its response, prompting operators to top up so PRO API access stays ready for continued high-volume usage. The threshold is set via `BLOCKSCOUT_PRO_API_LOW_CREDITS_THRESHOLD` (default `5000` credits; set to `0` to disable the note). The note fires for any balance below the threshold, including zero and negative balances.
 

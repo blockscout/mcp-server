@@ -10,6 +10,8 @@ An MCP Bundle (.mcpb file) bundles an entire MCP server — including all depend
 
 ## Purpose
 
+> **Deprecated:** Claude Desktop can now use the official server with a personal PRO API key through a Custom Connector (see the [Claude Setup](../README.md#claude-setup-web-desktop-cowork---recommended) section of the main README). The bundle is still built and published but is no longer the documented path.
+
 This enables access to the Blockscout MCP Server with a PRO API key in Claude Desktop, even though this option is not currently available in the official Blockscout connector from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout).
 
 Under the hood, it uses [mcp-remote](https://github.com/geelen/mcp-remote) to proxy requests to the Blockscout MCP Server.
