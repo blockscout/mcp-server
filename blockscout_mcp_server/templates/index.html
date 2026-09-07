@@ -52,7 +52,7 @@
 
     <h3>Authorization</h3>
     <p>
-        Tools reach Blockscout data through <a href="https://docs.blockscout.com/devs/pro-api" target="_blank" rel="noopener noreferrer">the Blockscout PRO API</a>. Therefore you must supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header.
+        Tools reach Blockscout data through <a href="https://docs.blockscout.com/devs/pro-api" target="_blank" rel="noopener noreferrer">the Blockscout PRO API</a>. Therefore you must supply your own PRO API key in the <code>Blockscout-MCP-Pro-Api-Key</code> request header. The server also accepts the key in an <code>x-api-key</code> header for clients that can only send header names from a fixed list, such as Claude Custom Connectors.
     </p>
     <ol>
         <li>
@@ -60,7 +60,7 @@
         </li>
         <li>
             <strong>Add your API key via HTTP headers:</strong><br>
-            When making requests (either directly or via an AI agent), include your Blockscout PRO API key in the <code>Blockscout-MCP-Pro-Api-Key</code> header.<br>
+            When making requests (either directly or via an AI agent), include your Blockscout PRO API key in the <code>Blockscout-MCP-Pro-Api-Key</code> header. If your client cannot set that name, use <code>x-api-key</code> instead; when both are present, <code>Blockscout-MCP-Pro-Api-Key</code> wins.<br>
         </li>
         <li>
             <strong>Using with MCP clients:</strong><br>
@@ -72,58 +72,17 @@
     </ol>
     
     <h3>Claude Setup</h3>
-    <h4>Common</h4>
-    <p>
-        Install the Blockscout connector from the <a href="https://claude.com/connectors" target="_blank" rel="noopener noreferrer">Anthropic Connectors Directory</a>:
-    </p>
+    <h4>Common (Web, Desktop, Cowork)</h4>
+    <p>The official hosted server gives you a native, managed installation experience with automatic updates. Add it as a Custom Connector with your own PRO API key:</p>
     <ol>
-        <li><strong>Direct link:</strong> Visit <a href="https://claude.com/connectors/blockscout" target="_blank" rel="noopener noreferrer">claude.com/connectors/blockscout</a> and click <kbd>Connect</kbd>.</li>
-        <li><strong>Or via Settings:</strong> Go to <strong>Settings</strong> &gt; <strong>Connectors</strong> &gt; <strong>Browse connectors</strong>, search for "Blockscout", then click the connector in the "Used in" section and select <kbd>Connect</kbd>.</li>
+        <li>Go to <strong>Customize</strong> &gt; <strong>Connectors</strong> (Team and Enterprise: an organization Owner uses <strong>Organization settings</strong> &gt; <strong>Connectors</strong>) and click <kbd>Add custom connector</kbd>.</li>
+        <li>Set the name to <code>Blockscout</code> and the URL to <code>https://mcp.blockscout.com/mcp</code>, then continue.</li>
+        <li>Leave <strong>Authentication</strong> as <code>None</code>. A warning that the connector has no credentials is expected.</li>
+        <li>Under <strong>Request headers</strong>, select <code>x-api-key</code> (exactly this name) and paste your PRO API key as the value, then click <kbd>Add</kbd>.</li>
     </ol>
-    <p><strong>Note:</strong> Connectors require a paid Claude plan (Pro, Team, Max, or Enterprise).</p>
-    <p>
-        <strong>Limitations:</strong> Due to the use of a shared access key, there may be restrictions on connector access and capabilities. 
-    </p>
-    
-    <h4>Claude Desktop</h4>
-    <p>You have two options to use the official Blockscout MCP server with a PRO API key with Claude Desktop:</p>
+    <p><strong>Note:</strong> The <strong>Request headers</strong> section is in beta. If your dialog does not show it, install the Blockscout connector from the <a href="https://claude.com/connectors/blockscout" target="_blank" rel="noopener noreferrer">Anthropic Connectors Directory</a> instead. It uses a shared access key, so access and capabilities may be restricted.</p>
+    <p><strong>Note:</strong> Authentication settings cannot be edited after a connector is added. To change the key, remove the connector and add it again.</p>
 
-    <h5>Option 1: MCP Bundle (MCPB) - Recommended</h5>
-    <p><strong>Best for:</strong> Easy installation and automatic updates</p>
-    <p>Download and install the pre-built MCP Bundle (.mcpb file):</p>
-    <ol>
-        <li>Download the latest <code>blockscout-mcp.mcpb</code> from the <a href="https://github.com/blockscout/mcp-server/releases">GitHub releases</a></li>
-        <li>Double-click the .mcpb file to install it in Claude Desktop</li>
-        <li>Configure the Blockscout PRO API Key when prompted</li>
-        <li>The extension will automatically connect to the hosted Blockscout MCP service</li>
-    </ol>
-    
-    <h5>Option 2: Docker Proxy</h5>
-    <p><strong>Best for:</strong> Users comfortable with command-line tools and custom configurations</p>
-    <p>Add the following configuration to your <code>claude_desktop_config.json</code> file:</p>
-    <pre><code>{
-  "mcpServers": {
-    "blockscout": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "sparfenyuk/mcp-proxy:latest",
-        "--transport",
-        "streamablehttp",
-        "--headers",
-        "Blockscout-MCP-Pro-Api-Key",
-        "&lt;YOUR_BLOCKSCOUT_PRO_API_KEY&gt;",
-        "--headers",
-        "Blockscout-MCP-Intermediary",
-        "ClaudeDesktop",
-        "https://mcp.blockscout.com/mcp"
-      ]
-    }
-  }
-}</code></pre>
-    
     <h4>Claude Code</h4>
     <pre><code>
     claude mcp add --transport http blockscout https://mcp.blockscout.com/mcp \

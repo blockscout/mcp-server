@@ -144,6 +144,62 @@ async def test_rest_client_key_wins_over_server_key(rest_client):
 
 
 @pytest.mark.asyncio
+async def test_rest_fallback_header_only_wins_over_absent_configured_header(rest_client):
+    """Only the fixed ``x-api-key`` fallback header → HTTP 200 and outgoing request
+    uses the fallback client key."""
+    fake_client = CapturingClient(_ok_response())
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        response = await rest_client.get(
+            _TEST_URL,
+            headers={"x-api-key": _CLIENT_KEY},
+        )
+
+    assert response.status_code == 200
+    assert fake_client.get_headers.get("Authorization") == f"Bearer {_CLIENT_KEY}"
+
+
+@pytest.mark.asyncio
+async def test_rest_configured_header_wins_over_fallback_header(rest_client):
+    """Both headers present with different values → outgoing request uses the
+    configured header's value."""
+    fake_client = CapturingClient(_ok_response())
+    configured_key = "configured-header-key"
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=fake_client),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        response = await rest_client.get(
+            _TEST_URL,
+            headers={
+                "Blockscout-MCP-Pro-Api-Key": configured_key,
+                "x-api-key": _CLIENT_KEY,
+            },
+        )
+
+    assert response.status_code == 200
+    assert fake_client.get_headers.get("Authorization") == f"Bearer {configured_key}"
+
+
+@pytest.mark.asyncio
+async def test_rest_malformed_fallback_header_returns_400(rest_client):
+    """Malformed fallback header (control character) → HTTP 400, HTTP client never invoked."""
+    never_called = NeverCalledClient()
+    with (
+        patch("blockscout_mcp_server.tools.common._create_httpx_client", return_value=never_called),
+        patch("blockscout_mcp_server.tools.common.ensure_chain_supported", AsyncMock()),
+    ):
+        response = await rest_client.get(
+            _TEST_URL,
+            headers={"x-api-key": "bad\x01key"},
+        )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_rest_non_canonical_header_casing_is_honored(rest_client):
     """Non-canonical header casing exercises case-insensitive lookup."""
     fake_client = CapturingClient(_ok_response())

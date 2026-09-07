@@ -8,7 +8,9 @@ per-request remaining-credits observation:
 - A module-level ContextVar holding that state.
 - A normalization/validation helper.
 - An extractor that reads the key from any HTTP request context (MCP-over-HTTP
-  or REST).
+  or REST), falling back to the fixed ``x-api-key`` header when the configured
+  header is absent or blank so Claude's Custom Connector UI (which only sends
+  header names from Anthropic's allowlist) can still supply a client key.
 - A single precedence decision (``_apply_key_precedence``) shared by the resolver
   and the analytics signal derivation, so the enforced key and the reported
   ``auth_origin`` cannot drift apart.
@@ -73,6 +75,21 @@ logger = logging.getLogger(__name__)
 # that would only inflate the per-invocation ContextVar / log paths).
 # ---------------------------------------------------------------------------
 _MAX_KEY_LENGTH = 256
+
+
+# ---------------------------------------------------------------------------
+# Fixed second header name consulted when the configured header carries no
+# value. Claude's Custom Connector UI only lets a user send header names from
+# Anthropic's own allowlist, so the operator-configured PascalCase header
+# (default ``Blockscout-MCP-Pro-Api-Key``) is never reachable from that UI;
+# ``x-api-key`` is on the allowlist. This is deliberately a code constant, not
+# a setting — the issue this fixes explicitly rejects adding configuration
+# surface for it. ``Authorization`` was considered and rejected: OAuth owns
+# that header on Claude connections, its value needs a scheme prefix, some
+# intermediaries rewrite it, and the server already emits it upstream to the
+# Blockscout PRO API.
+# ---------------------------------------------------------------------------
+_FALLBACK_KEY_HEADER = "x-api-key"
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +287,14 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
     - There is no HTTP request context (e.g. stdio transport).
     - Any unexpected context shape is encountered.
 
+    Header precedence: the configured header (``config.pro_api_key_header``) is
+    read first; the fixed fallback header (:data:`_FALLBACK_KEY_HEADER`,
+    ``x-api-key``) is only consulted when the configured header is absent or
+    blank. A malformed value in the configured header is terminal — it is
+    returned immediately and the fallback is never consulted. An empty
+    ``config.pro_api_key_header`` setting disables both names (the feature
+    switch).
+
     Never raises.
     """
     try:
@@ -288,8 +313,13 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
         if headers is None:
             return _ABSENT
 
-        raw = get_header_case_insensitive(headers, config.pro_api_key_header, "")
-        return _normalize_key(raw)
+        # Order is the precedence: the configured header wins, and the fixed
+        # fallback name is consulted only when it yields no state.
+        for header_name in (config.pro_api_key_header, _FALLBACK_KEY_HEADER):
+            state = _normalize_key(get_header_case_insensitive(headers, header_name, ""))
+            if not isinstance(state, _Absent):
+                return state
+        return _ABSENT
 
     except Exception:
         # Defensive: an unexpected ctx shape (e.g. after an MCP transport

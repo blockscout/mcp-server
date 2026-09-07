@@ -12,7 +12,7 @@ import hashlib
 from unittest.mock import MagicMock
 
 import pytest
-from pro_api_key_helpers import ctx_with_header, ctx_with_malformed_header
+from pro_api_key_helpers import ctx_with_header, ctx_with_headers, ctx_with_malformed_header
 
 from blockscout_mcp_server import pro_api_key_context
 from blockscout_mcp_server.config import config
@@ -75,6 +75,14 @@ def test_auth_signals_valid_client_returns_client_and_client_hash(monkeypatch):
     monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
     ctx = ctx_with_header(_HEADER_NAME, "client-key-123")
     assert compute_auth_signals(ctx) == ("client", _expected_fingerprint("client-key-123"))
+
+
+def test_auth_signals_fallback_header_only_returns_client_and_client_hash(monkeypatch):
+    """The observability path reports a fallback-header-only key as client origin."""
+    monkeypatch.setattr(config, "pro_api_key_header", _HEADER_NAME, raising=False)
+    monkeypatch.setattr(config, "pro_api_key", "server-key", raising=False)
+    ctx = ctx_with_headers({"x-api-key": "fallback-client-key"})
+    assert compute_auth_signals(ctx) == ("client", _expected_fingerprint("fallback-client-key"))
 
 
 def test_auth_signals_malformed_returns_none_and_no_fingerprint(monkeypatch):

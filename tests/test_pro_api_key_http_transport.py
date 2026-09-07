@@ -107,6 +107,40 @@ def test_missing_client_header_falls_back_to_server_key(mcp_app):
     assert _extract_text_result(response.text) == "server-key"
 
 
+def test_fallback_header_only_reaches_tool_body(mcp_app):
+    """When only the fixed ``x-api-key`` fallback header is sent (non-canonical casing),
+    the tool resolves the client-supplied fallback key rather than the server key."""
+    with TestClient(mcp_app) as client:
+        response = client.post(
+            "/mcp",
+            json=_build_tools_call_body("echo_resolved_key"),
+            headers={
+                **_MCP_HEADERS,
+                # Non-canonical casing — exercises case-insensitive extraction
+                "X-API-KEY": "fallback-client-key",
+            },
+        )
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    assert _extract_text_result(response.text) == "fallback-client-key"
+
+
+def test_configured_header_wins_over_fallback_header(mcp_app):
+    """When both the configured header and the fallback header are sent with different
+    values, the tool resolves the configured header's value."""
+    with TestClient(mcp_app) as client:
+        response = client.post(
+            "/mcp",
+            json=_build_tools_call_body("echo_resolved_key"),
+            headers={
+                **_MCP_HEADERS,
+                "Blockscout-MCP-Pro-Api-Key": "configured-client-key",
+                "x-api-key": "fallback-client-key",
+            },
+        )
+    assert response.status_code == 200, f"Unexpected status: {response.status_code}, body: {response.text}"
+    assert _extract_text_result(response.text) == "configured-client-key"
+
+
 @pytest.fixture()
 def unlock_app(monkeypatch):
     """A throwaway FastMCP instance carrying the real, fully local, keyless

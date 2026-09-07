@@ -15,15 +15,13 @@ See the [agent-skills README](https://github.com/blockscout/agent-skills) for fu
 **Best for:** Claude Desktop, Cursor, MCP Inspector, and other native MCP clients
 **Benefits:** Context-aware, progress tracking, intelligent pagination, optimized for LLM token usage
 
-**Authentication:** Tools reach Blockscout data through [the Blockscout PRO API](https://dev.blockscout.com/). Therefore you must supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header.
+**Authentication:** Tools reach Blockscout data through [the Blockscout PRO API](https://dev.blockscout.com/). Therefore you must supply your own PRO API key in the `Blockscout-MCP-Pro-Api-Key` request header. Clients that can only send header names from a fixed list (such as Claude Custom Connectors) may send it as `x-api-key` instead; `Blockscout-MCP-Pro-Api-Key` wins when both are present.
 
 **Configuration:**
 - **Cloud instance:** `https://mcp.blockscout.com/mcp`
-- **Claude (Connector):** Install from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout). Note: Access may be limited if using a shared PRO API key.
+- **Claude (Web, Desktop, Cowork):** Add `https://mcp.blockscout.com/mcp` as a Custom Connector with Authentication `None` and an `x-api-key` request header holding your PRO API key. If the Request headers section is unavailable, install from the [Anthropic Connectors Directory](https://claude.com/connectors/blockscout) (shared PRO API key, access may be limited).
 - **ChatGPT Apps:** Enable the Blockscout app from the [ChatGPT Apps marketplace](https://chatgpt.com/apps?q=Blockscout). Note: Access may be limited if using a shared PRO API key.
 - **Claude Code, Codex and Cursor:** Direct HTTP URL with 180-second timeout
-- **Claude Desktop (MCP Bundle):** Download and install `blockscout-mcp.mcpb` from GitHub releases for one-click setup
-- **Claude Desktop (Docker):** Use `sparfenyuk/mcp-proxy:latest` with streamable HTTP transport
 
 ### REST API Interface
 

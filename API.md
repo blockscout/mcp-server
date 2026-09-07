@@ -51,7 +51,7 @@ Its data endpoints query Blockscout through its PRO API, so every request to tho
 
 - The supplied key authenticates that request's upstream PRO API calls, so each caller consumes its own PRO credit allowance.
 - If the key is missing, or malformed (it contains control characters or exceeds the maximum allowed length), any request that reaches a PRO-authenticated upstream call fails with HTTP `400`. Endpoints that don't query the PRO API are unaffected.
-- The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API; only the dedicated header above is honored.
+- The key is never written to logs, analytics, or cache keys. A raw `Authorization` header sent by the client is ignored and never forwarded to the PRO API.
 
 The official deployment at `https://mcp.blockscout.com` requires a client-supplied PRO API key for programmatic access: send the header above on every request. Integrations that do not are outside the scope of this document.
 
