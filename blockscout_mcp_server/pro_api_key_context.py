@@ -313,17 +313,11 @@ def extract_client_pro_api_key_from_ctx(ctx: Any) -> ClientKeyState:
         if headers is None:
             return _ABSENT
 
-        # Deduplicate case-insensitively so an operator who configures the
-        # header as e.g. "X-Api-Key" does not trigger a second, identical
-        # lookup for the fallback name.
-        header_names: list[str] = [config.pro_api_key_header]
-        if config.pro_api_key_header.lower() != _FALLBACK_KEY_HEADER.lower():
-            header_names.append(_FALLBACK_KEY_HEADER)
-
-        for header_name in header_names:
-            raw = get_header_case_insensitive(headers, header_name, "")
-            state = _normalize_key(raw)
-            if state is not _ABSENT:
+        # Order is the precedence: the configured header wins, and the fixed
+        # fallback name is consulted only when it yields no state.
+        for header_name in (config.pro_api_key_header, _FALLBACK_KEY_HEADER):
+            state = _normalize_key(get_header_case_insensitive(headers, header_name, ""))
+            if not isinstance(state, _Absent):
                 return state
         return _ABSENT
 

@@ -171,11 +171,11 @@ def test_extraction_disabled_feature_ignores_fallback_header(monkeypatch):
     assert isinstance(extract_client_pro_api_key_from_ctx(ctx), _Absent)
 
 
-def test_extraction_configured_header_case_variant_of_fallback_deduplicates(monkeypatch):
+def test_extraction_configured_header_equals_fallback_name(monkeypatch):
     """config.pro_api_key_header == "X-Api-Key" (case variant of the fallback) -> _Valid.
 
-    This is the behavioral check for deduplication; the number of lookups is an
-    implementation detail and is not asserted here.
+    An operator may configure the fallback name itself; the two lookups then
+    read the same header and must still resolve it once, to the same state.
     """
     monkeypatch.setattr(config, "pro_api_key_header", "X-Api-Key", raising=False)
     ctx = ctx_with_headers({"x-api-key": "single-header-value"})

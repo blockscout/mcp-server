@@ -70,10 +70,6 @@ Visit [claude.com/connectors/blockscout](https://claude.com/connectors/blockscou
 
 > **Limitations:** Due to the use of a shared access key, there may be restrictions on connector access and capabilities.
 
-### Claude Desktop Setup
-
-Claude Desktop uses the same connectors as Claude Web. Follow [Claude Setup](#claude-setup-web-desktop-cowork---recommended) above.
-
 ### Claude Code Setup
 
 Pass your PRO API key via the `Blockscout-MCP-Pro-Api-Key` header when adding the server:
