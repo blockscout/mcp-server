@@ -1,6 +1,6 @@
 # Blockscout MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@blockscout/mcp-server)](https://smithery.ai/server/@blockscout/mcp-server)
+[![LightNow](https://lightnow.ai/badge/com.blockscout/mcp-server)](https://lightnow.ai/servers/com.blockscout/mcp-server)
 
 <a href="https://glama.ai/mcp/servers/@blockscout/mcp-server">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@blockscout/mcp-server/badge" alt="Blockscout Server MCP server" />
