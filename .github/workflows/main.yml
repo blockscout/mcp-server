@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           submodules: recursive
           persist-credentials: false
 
-      - uses: actions-ecosystem/action-regex-match@v2
+      - uses: actions-ecosystem/action-regex-match@9e6c4fb3d5e898f505be7a1fb6e7b0a278f6665b # v2
         id: regex
         with:
           text: ${{ github.ref }}
@@ -40,7 +40,9 @@ jobs:
           (if ! [[ "$t" == "" ]]; then echo tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$t, ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest; elif ! [[ "$m" == "" ]]; then echo tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$m; else echo tags=; fi) >> $GITHUB_OUTPUT
 
       - name: Setup repo
-        uses: blockscout/actions/.github/actions/setup-multiarch-buildx@main
+        # Pinned to an immutable commit SHA: floating branch refs (e.g. @main)
+        # can be silently retargeted and execute attacker-controlled code in CI.
+        uses: blockscout/actions/.github/actions/setup-multiarch-buildx@e91d205298a5788dd72ce1f4c4c1c19257f08c4f # @main as of audit
         id: setup
         with:
           docker-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -54,7 +56,7 @@ jobs:
         run: python scripts/bake_skill_metadata.py
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: "Dockerfile"
@@ -76,7 +78,7 @@ jobs:
     steps:
       - name: Get Vault credentials
         id: retrieve-vault-secrets
-        uses: hashicorp/vault-action@v2.4.1
+        uses: hashicorp/vault-action@abba4a3980d0264909f6a0892d7f593b74ce0884 # v2.4.1
         with:
           url: https://vault.k8s.blockscout.com
           role: ci-dev
@@ -87,7 +89,7 @@ jobs:
           secrets: |
             ci/data/dev/github token | WORKFLOW_TRIGGER_TOKEN ;
       - name: Trigger deploy
-        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        uses: convictional/trigger-workflow-and-wait@924e4984551efec603bec665c0663332498c381a # v1.6.1
         with:
           owner: blockscout
           repo: deployment-values
