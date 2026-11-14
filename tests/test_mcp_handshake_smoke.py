@@ -50,6 +50,10 @@ def http_app(monkeypatch):
         TransportSecuritySettings(enable_dns_rebinding_protection=False),
         raising=False,
     )
+    # The session manager is created lazily and cached on the module: if an earlier
+    # test already built (or entered) one, the patched transport settings above never
+    # reach it, and its lifespan cannot run a second time.
+    monkeypatch.setattr(mcp, "_session_manager", None)
     return mcp.streamable_http_app()
 
 
